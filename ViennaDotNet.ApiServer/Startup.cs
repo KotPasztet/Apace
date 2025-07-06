@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
 using ViennaDotNet.ApiServer.Authentication;
@@ -38,6 +39,8 @@ public class Startup
 
         services.AddAuthentication("GenoaAuth")
             .AddScheme<AuthenticationSchemeOptions, GenoaAuthenticationHandler>("GenoaAuth", null);
+
+        services.AddDbContext<LiveDbContext>(options => options.UseSqlite(Configuration.GetConnectionString("LiveDBConnection")));
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -71,6 +74,8 @@ public class Startup
         //app.UseHttpsRedirection();
 
         app.UseRouting();
+
+        app.UseStaticFiles();
 
         app.UseAuthentication();
         app.UseAuthorization();
