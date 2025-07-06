@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 namespace ViennaDotNet.ApiServer.Controllers.XboxLive;
 
 [Route("titles")]
+[Route("title.mgt.xboxlive.com/titles")]
 public class TitleMgtController : ViennaControllerBase
 {
     private static readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions()
@@ -41,11 +42,8 @@ public class TitleMgtController : ViennaControllerBase
                     Debug.Assert(host.HasValue);
 
                     bool isHostIp = IPAddress.TryParse(host.Host, out _);
-                    if (isHostIp && !config.Environment.SingleDomainMode)
-                    {
-                        Log.Error("A connection using ip address was made, but Environment.SingleDomainMode is set to false. Only domain connections are allowed when SingleDomainMode is false");
-                        return BadRequest();
-                    }
+
+                    bool singleDomainMode = !Request.Path.StartsWithSegments(new PathString("/titles"), StringComparison.Ordinal);
 
                     string hostString = isHostIp
                         ? host.Host
@@ -53,7 +51,7 @@ public class TitleMgtController : ViennaControllerBase
 
                     endpoints =
                     [
-                        config.Environment.SingleDomainMode ?
+                        singleDomainMode ?
                         new Endpoint(
                             protocol,
                             hostString,

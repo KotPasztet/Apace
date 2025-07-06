@@ -2,13 +2,10 @@
 
 namespace ViennaDotNet.ApiServer;
 
-public sealed record class Config(Config.EnvironmentR Environment, Config.LoginR Login, Config.XboxLiveR XboxLive, Config.PlayfabApiR PlayfabApi)
+public sealed record class Config(Config.LoginR Login, Config.XboxLiveR XboxLive, Config.PlayfabApiR PlayfabApi)
 {
     public static readonly Config Default = new Config
     (
-        new EnvironmentR(
-            SingleDomainMode: false
-        ),
         new LoginR(
             SoapHeaderValidityMinutes: 1,
             UserTokenValidityMinutes: 7 * 24 * 60,
@@ -33,8 +30,6 @@ public sealed record class Config(Config.EnvironmentR Environment, Config.LoginR
             DummyItemPreviewURL: "http://20ca2.playfabapi.com/dummyItemPreview.png"
         )
     );
-
-    public sealed record EnvironmentR(bool SingleDomainMode);
 
     public sealed record LoginR(
         int SoapHeaderValidityMinutes,

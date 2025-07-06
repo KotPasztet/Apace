@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ViennaDotNet.ApiServer.Controllers.XboxLive;
 
+[Route("")]
+[Route("accounts.xboxlive.com")]
 public class AccountsController : ViennaControllerBase
 {
     private readonly LiveDbContext _dbContext;

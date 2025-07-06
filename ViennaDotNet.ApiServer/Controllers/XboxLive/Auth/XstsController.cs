@@ -5,6 +5,7 @@ using ViennaDotNet.ApiServer.Utils;
 namespace ViennaDotNet.ApiServer.Controllers.XboxLive.Auth;
 
 [Route("xsts/authorize")]
+[Route("xsts.auth.xboxlive.com/xsts/authorize")]
 public class XstsController : ViennaControllerBase
 {
     private static Config config => Program.config;

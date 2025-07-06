@@ -3,6 +3,7 @@
 namespace ViennaDotNet.ApiServer.Controllers.XboxAb;
 
 [Route("ab")]
+[Route("www/ab")]
 public class AbController : ViennaControllerBase
 {
     [HttpGet]

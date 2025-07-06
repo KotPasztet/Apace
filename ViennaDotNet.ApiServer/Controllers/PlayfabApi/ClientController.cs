@@ -8,6 +8,7 @@ using ViennaDotNet.Common.Utils;
 namespace ViennaDotNet.ApiServer.Controllers.PlayfabApi;
 
 [Route("Client")]
+[Route("20CA2.playfabapi.com/Client")]
 public partial class ClientController : ViennaControllerBase
 {
     private static Config config => Program.config;

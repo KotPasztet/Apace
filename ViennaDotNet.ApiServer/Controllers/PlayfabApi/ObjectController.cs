@@ -5,6 +5,7 @@ using ViennaDotNet.Common.Utils;
 namespace ViennaDotNet.ApiServer.Controllers.PlayfabApi;
 
 [Route("Object")]
+[Route("20CA2.playfabapi.com/Object")]
 public class ObjectController : ViennaControllerBase
 {
     private sealed record GetObjectsRequest(

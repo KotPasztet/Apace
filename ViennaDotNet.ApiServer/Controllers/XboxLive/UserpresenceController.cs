@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 namespace ViennaDotNet.ApiServer.Controllers.XboxLive;
 
 [Route("users")]
+[Route("userpresence.xboxlive.com/users")]
 public partial class UserpresenceController : ViennaControllerBase
 {
     [HttpPost("{xuidParam}/devices/current/titles/current")]

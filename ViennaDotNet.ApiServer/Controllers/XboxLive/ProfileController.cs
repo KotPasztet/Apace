@@ -7,6 +7,7 @@ using ViennaDotNet.Common.Utils;
 namespace ViennaDotNet.ApiServer.Controllers.XboxLive;
 
 [Route("users")]
+[Route("profile.xboxlive.com/users")]
 public partial class ProfileController : ViennaControllerBase
 {
     private readonly LiveDbContext _dbContext;

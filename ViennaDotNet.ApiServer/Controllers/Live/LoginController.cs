@@ -14,7 +14,8 @@ using ViennaDotNet.Common.Utils;
 
 namespace ViennaDotNet.ApiServer.Controllers.Live;
 
-[Route("ppsecure")]
+[Route("")]
+[Route("login.live.com")]
 public partial class LoginController : ViennaControllerBase
 {
     private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
@@ -44,13 +45,13 @@ public partial class LoginController : ViennaControllerBase
         _dbContext = context;
     }
 
-    [HttpGet("InlineConnect.srf")]
+    [HttpGet("ppsecure/InlineConnect.srf")]
     public IActionResult GetLoginPage()
     {
         return File("/login.html", "text/html");
     }
 
-    [HttpGet("reauthenticateStart")]
+    [HttpGet("ppsecure/reauthenticateStart")]
     public IActionResult GetReauthenticatePage()
     {
         return File("/reauthenticate.html", "text/html");
@@ -67,7 +68,7 @@ public partial class LoginController : ViennaControllerBase
         string SessionKey
     );
 
-    [HttpPost("login")]
+    [HttpPost("ppsecure/login")]
     public async Task<IActionResult> Login([FromForm] string username, [FromForm] string password, CancellationToken cancellationToken)
     {
         username = username.Trim();
@@ -93,7 +94,7 @@ public partial class LoginController : ViennaControllerBase
         return JsonCamelCase(CreateLoginResponse(account));
     }
 
-    [HttpPost("register")]
+    [HttpPost("ppsecure/register")]
     public async Task<IActionResult> Register([FromForm] string username, [FromForm] string password, [FromForm] string? firstName, [FromForm] string? lastName, CancellationToken cancellationToken)
     {
         username = username.Trim();
@@ -175,20 +176,20 @@ public partial class LoginController : ViennaControllerBase
         return JsonCamelCase(CreateLoginResponse(account));
     }
 
-    [HttpPost("reauthenticate")]
+    [HttpPost("ppsecure/reauthenticate")]
     public async Task<IActionResult> Reauthenticate([FromForm] string userToken, [FromForm] string password, CancellationToken cancellationToken)
     {
         // TODO
         throw new NotImplementedException();
     }
 
-    [HttpPost("deviceaddcredential.srf")]
+    [HttpPost("ppsecure/deviceaddcredential.srf")]
     public IActionResult DeviceAddCredential()
         => Content("""
             <DeviceAddResponse Success="true"><success>true</success><puid>0</puid></DeviceAddResponse>
             """);
 
-    [HttpPost("/RST2.srf")]
+    [HttpPost("RST2.srf")]
     public async Task<IActionResult> RST2()
     {
         var cancellationToken = Request.HttpContext.RequestAborted;

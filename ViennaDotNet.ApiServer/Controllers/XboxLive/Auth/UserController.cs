@@ -5,6 +5,7 @@ using ViennaDotNet.ApiServer.Utils;
 namespace ViennaDotNet.ApiServer.Controllers.XboxLive.Auth;
 
 [Route("user/authenticate")]
+[Route("user.auth.xboxlive.com/user/authenticate")]
 public class UserController : ViennaControllerBase
 {
     private static Config config => Program.config;

@@ -7,6 +7,7 @@ using ViennaDotNet.Common.Utils;
 namespace ViennaDotNet.ApiServer.Controllers.PlayfabApi;
 
 [Route("Authentication")]
+[Route("20CA2.playfabapi.com/Authentication")]
 public class AuthenticationController : ViennaControllerBase
 {
     private static Config config => Program.config;

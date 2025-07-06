@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 namespace ViennaDotNet.ApiServer.Controllers.XboxLive;
 
 [Route("users")]
+[Route("privacy.xboxlive.com/users")]
 public partial class PrivacyController : ViennaControllerBase
 {
     private sealed record PeopleResponse(

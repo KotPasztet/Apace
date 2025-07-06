@@ -5,6 +5,7 @@ using ViennaDotNet.Common.Utils;
 namespace ViennaDotNet.ApiServer.Controllers.PlayfabApi;
 
 [Route("Catalog")]
+[Route("20CA2.playfabapi.com/Catalog")]
 public class CatalogController : ViennaControllerBase
 {
     private sealed record CatalogSearchRequest(
