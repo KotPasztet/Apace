@@ -109,8 +109,8 @@ public class InventoryController : ControllerBase
         return Content(resp, "application/json");
     }
 
-    [HttpGet("hotbar")]
-    public async Task<IActionResult> GetHotbar(CancellationToken cancellationToken)
+    [HttpPut("hotbar")]
+    public async Task<IActionResult> SetHotbar(CancellationToken cancellationToken)
     {
         string? playerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(playerId))
