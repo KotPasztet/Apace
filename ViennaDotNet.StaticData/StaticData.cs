@@ -8,6 +8,7 @@ public sealed class StaticData
     public readonly EncountersConfig EncountersConfig;
     public readonly TileRenderer TileRenderer;
     public readonly Buildplates Buildplates;
+    public readonly Playfab Playfab;
 
     public StaticData(string dir)
     {
@@ -19,5 +20,6 @@ public sealed class StaticData
         EncountersConfig = new EncountersConfig(Path.Combine(dir, "encounters"));
         TileRenderer = new TileRenderer(Path.Combine(dir, "tile_renderer"));
         Buildplates = new Buildplates(Path.Combine(dir, "buildplates"));
+        Playfab = new Playfab(Path.Combine(dir, "playfab"));
     }
 }
