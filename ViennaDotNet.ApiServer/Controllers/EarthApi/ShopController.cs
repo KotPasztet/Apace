@@ -23,7 +23,7 @@ namespace ViennaDotNet.ApiServer.Controllers.EarthApi;
 [Route("1/api/v{version:apiVersion}/commerce")]
 public class ShopController : ViennaControllerBase
 {
-    private static Catalog catalog => Program.staticData.Catalog;
+    private static StaticData.StaticData staticData => Program.staticData;
     private static EarthDB earthDB => Program.DB;
     private static ObjectStoreClient objectStoreClient => Program.objectStore;
     private static Importer importer => Program.importer;
@@ -83,7 +83,7 @@ public class ShopController : ViennaControllerBase
 
                         string model = Encoding.ASCII.GetString(previewData);
 
-                        var itemFromMap = catalog.ShopCatalog.Items.GetValueOrDefault(itemId);
+                        var itemFromMap = staticData.Catalog.ShopCatalog.Items.GetValueOrDefault(itemId);
 
                         result.Add(new StoreItemInfo(
                             itemId,
@@ -163,10 +163,21 @@ public class ShopController : ViennaControllerBase
 
     private static async Task<(int Purchased, int Earned)?> ProcessPurchase(string playerId, Guid itemId, int expectedPurchasePrice, CancellationToken cancellationToken)
     {
-        // TODO: when playfab is implemented, validate expectedPurchasePrice (price is stored in playfab)
-        if (!catalog.ShopCatalog.Items.TryGetValue(itemId, out var itemToPurchase))
+        if (!staticData.Catalog.ShopCatalog.Items.TryGetValue(itemId, out var itemToPurchase))
         {
-            Log.Warning($"Player {playerId} tried to purchase unknown item '{itemId}'");
+            Log.Debug($"Player {playerId} tried to purchase unknown item '{itemId}' (api)");
+            return null;
+        }
+
+        if (!staticData.Playfab.ItemByEarthId.TryGetValue(itemId, out var playfabItem))
+        {
+            Log.Debug($"Player {playerId} tried to purchase unknown item '{itemId}' (playfab)");
+            return null;
+        }
+
+        // TODO: do this or just use playfabItem.Cost?
+        if (expectedPurchasePrice != playfabItem.Cost)
+        {
             return null;
         }
 
@@ -184,7 +195,7 @@ public class ShopController : ViennaControllerBase
 
                     if (profile.Rubies.Total < expectedPurchasePrice)
                     {
-                        Log.Warning($"Player {playerId} tried to purchase item '{itemId}' but does not have enough rubies");
+                        Log.Debug($"Player {playerId} tried to purchase item '{itemId}' but does not have enough rubies");
                         return EarthDB.Query.Empty;
                     }
 
@@ -230,16 +241,23 @@ public class ShopController : ViennaControllerBase
                     Debug.Assert(spent);
 
                     query.Update("profile", playerId, profile);
+                    query.Extra("rubies", profile.Rubies);
 
                     return query;
                 })
                 .ExecuteAsync(earthDB, cancellationToken);
+
+            var rubies = results.GetExtra("rubies") as Rubies;
+            if (rubies is null)
+            {
+                return null;
+            }
+
+            return (rubies.Purchased, rubies.Earned);
         }
         catch (EarthDB.DatabaseException ex)
         {
             throw new ServerErrorException(ex);
         }
-
-        return (0, 0);
     }
 }

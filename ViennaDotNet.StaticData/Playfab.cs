@@ -15,6 +15,7 @@ namespace ViennaDotNet.StaticData;
 public sealed class Playfab
 {
     public readonly FrozenDictionary<Guid, Item> Items;
+    public readonly FrozenDictionary<Guid, Item> ItemByEarthId;
 
     internal Playfab(string dir)
     {
@@ -39,6 +40,12 @@ public sealed class Playfab
             }
 
             Items = items.ToFrozenDictionary(item => item.Id);
+            ItemByEarthId = items.ToFrozenDictionary(item => item.Data switch
+            {
+                Item.BuildplateData bd => bd.Id,
+                Item.InventoryItemData iid => iid.Id,
+                _ => throw new UnreachableException(),
+            });
         }
         catch (Exception exception)
         {
@@ -98,7 +105,7 @@ public sealed class Playfab
 
         public sealed class BuildplateData : ItemData
         {
-            public required string Id { get; init; }
+            public required Guid Id { get; init; }
 
             public required BuidplateSize Size { get; init; }
 
@@ -107,7 +114,7 @@ public sealed class Playfab
 
         public sealed class InventoryItemData : ItemData
         {
-            public required string Id { get; init; }
+            public required Guid Id { get; init; }
 
             public required int Amount { get; init; }
         }
