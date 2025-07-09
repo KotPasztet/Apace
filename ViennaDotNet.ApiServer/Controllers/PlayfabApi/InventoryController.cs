@@ -1,0 +1,56 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using ViennaDotNet.ApiServer.Models.Playfab;
+
+namespace ViennaDotNet.ApiServer.Controllers.PlayfabApi;
+
+[Route("inventory")]
+[Route("20CA2.playfabapi.com/inventory")]
+public class InventoryController : ViennaControllerBase
+{
+    [HttpPost("GetVirtualCurrencies")]
+    public IActionResult GetVirtualCurrencies()
+    {
+        return JsonPascalCase(new PlayfabOkResponse(
+            200,
+            "OK",
+            new Dictionary<string, object>()
+            {
+                ["Currencies"] = (IEnumerable<object>)[new Dictionary<string, object>() {
+                    ["CurrencyId"] = "ecd19d3c-7635-402c-a185-eb11cb6c6946",
+                    ["Amount"] = 0,
+                    ["ChangedAmount"] = 0,
+                }],
+                ["Items"] = Array.Empty<object>(),
+            }
+        ));
+    }
+
+    [HttpPost("redeem")]
+    public IActionResult Redeem()
+    {
+        return JsonPascalCase(new PlayfabOkResponse(
+            200,
+            "OK",
+            new Dictionary<string, object>()
+            {
+                ["Succeeded"] = Array.Empty<object>(),
+                ["Failed"] = Array.Empty<object>(),
+            }
+        ));
+    }
+
+    [HttpPost("GetInventoryItems")]
+    public IActionResult GetInventoryItems()
+    {
+        return JsonPascalCase(new PlayfabOkResponse(
+            200,
+            "OK",
+            new Dictionary<string, object>()
+            {
+                ["Items"] = Array.Empty<object>(),
+                ["ItemMetadata"] = Array.Empty<object>(),
+                ["Subscriptions"] = Array.Empty<object>(),
+            }
+        ));
+    }
+}

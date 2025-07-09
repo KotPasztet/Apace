@@ -175,8 +175,20 @@ public class ShopController : ViennaControllerBase
             return null;
         }
 
-        // TODO: do this or just use playfabItem.Cost?
-        if (expectedPurchasePrice != playfabItem.Cost)
+        int? playfabPrice = playfabItem.Data switch
+        {
+            Playfab.Item.BuildplateData data => data.Cost,
+            Playfab.Item.InventoryItemData data => data.Cost,
+            _ => null,
+        };
+
+        if (playfabPrice is not { } actualPurchasePrice)
+        {
+            return null;
+        }
+
+        // TODO: do this or just use actualPurchasePrice?
+        if (expectedPurchasePrice != actualPurchasePrice)
         {
             return null;
         }

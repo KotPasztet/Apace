@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using ViennaDotNet.ApiServer.Models;
 using ViennaDotNet.ApiServer.Models.Playfab;
 using ViennaDotNet.ApiServer.Utils;
@@ -65,12 +66,13 @@ public partial class ClientController : ViennaControllerBase
                         ["PlayFabCommerceEnabled"] = new Dictionary<string, string>()
                         {
                             ["Value"] = "true",
-                            ["Permission"] = "Private",
-                            ["LastUpdated"] = "2020-05-17T13:25:32.85Z",
+                            ["LastUpdated"] = "2019-12-08T13:07:33.96Z",
+                            ["Permission"] = "Public",
                         },
+                        ["DataVersion"] = 35,
                     };
 
-                    return JsonPascalCase(new OkResponse(
+                    return JsonPascalCase(new PlayfabOkResponse(
                         200,
                         "OK",
                         new Dictionary<string, object>()
@@ -78,7 +80,7 @@ public partial class ClientController : ViennaControllerBase
                             ["Data"] = request.Keys
                                 .Where(publisherData.ContainsKey)
                                 .ToDictionary(field => field, field => publisherData[field]),
-                            ["DataVersion"] = 84,
+                            ["DataVersion"] = 35,
                         }
                     ));
                 }
@@ -142,7 +144,7 @@ public partial class ClientController : ViennaControllerBase
             ["ChallengesCompleted"] = 0,
         };
 
-        return JsonPascalCase(new OkResponse(
+        return JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -154,6 +156,19 @@ public partial class ClientController : ViennaControllerBase
                         StatisticName = field,
                         Value = statistics[field],
                     }),
+            }
+        ));
+    }
+
+    [HttpPost("WritePlayerEvent")]
+    public IActionResult WritePlayerEvent()
+    {
+        return JsonPascalCase(new PlayfabOkResponse(
+            200,
+            "OK",
+            new Dictionary<string, object>()
+            {
+                ["EventId"] = Guid.NewGuid().ToString("N"),
             }
         ));
     }

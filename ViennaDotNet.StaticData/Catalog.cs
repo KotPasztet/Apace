@@ -510,6 +510,7 @@ public sealed class Catalog
         }
     }
 
+    // TODO: get rid of this, use data from playfab
     public sealed class ShopCatalogR
     {
         public FrozenDictionary<Guid, StoreItemInfo> Items { get; }

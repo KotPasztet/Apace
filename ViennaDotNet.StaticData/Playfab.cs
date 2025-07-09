@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using ViennaDotNet.Common;
-
 namespace ViennaDotNet.StaticData;
 
 public sealed class Playfab
@@ -17,10 +18,38 @@ public sealed class Playfab
     public readonly FrozenDictionary<Guid, Item> Items;
     public readonly FrozenDictionary<Guid, Item> ItemByEarthId;
 
+    public readonly ImmutableArray<Tab> ShopTabs;
+
+    public readonly ImmutableArray<string> ShopNotSearchQueryTags;
+
     internal Playfab(string dir)
     {
         try
         {
+            var shopTabs = ImmutableArray.CreateBuilder<Tab>(2);
+            foreach (string file in Directory.EnumerateFiles(Path.Combine(dir, "shop_tabs"))
+                .OrderBy(file => Path.GetFileName(file)))
+            {
+                if (Path.GetExtension(file) != ".json")
+                {
+                    continue;
+                }
+
+                using (var stream = File.OpenRead(file))
+                {
+                    var tab = JsonSerializer.Deserialize<Tab>(stream);
+
+                    Debug.Assert(tab is not null);
+
+                    shopTabs.Add(tab);
+                }
+            }
+
+            ShopTabs = shopTabs.DrainToImmutable();
+
+            ShopNotSearchQueryTags = [.. File.ReadLines(Path.Combine(dir, "shop_not_search_query_tags.txt"))
+                .Where(line => !string.IsNullOrWhiteSpace(line) && line.Length > 0)];
+
             LinkedList<Item> items = [];
             foreach (string file in Directory.EnumerateFiles(Path.Combine(dir, "items")))
             {
@@ -39,13 +68,41 @@ public sealed class Playfab
                 }
             }
 
+            items.AddLast(new Item(
+                true,
+                new Item.QueryManifestData(
+                    "0.25.0",
+                    "1.0.20",
+                    ShopTabs,
+                    ShopNotSearchQueryTags
+                ),
+                "Home L1",
+                "Home L1",
+                null,
+                new(2020, 12, 10, 18, 59, 39, 396, DateTimeKind.Utc),
+                new(2021, 1, 4, 19, 42, 53, 773, DateTimeKind.Utc), // TODO: get this from file modified date or make it configurable?
+                new(1, 1, 1, 0, 0, 0, DateTimeKind.Utc), // originally null, but it must be not null to get filtered correctly
+                Guid.Parse("06e44b91-e7f5-46b6-9986-ca755890f3bf"),
+                null,
+                "B63A0803D3653643",
+                "3C0BE9326354CBB7",
+                ["mctestdefault"],
+                new Dictionary<string, Item.KeywordValues>() { ["en-US"] = new([]), ["NEUTRAL"] = new([]), ["neutral"] = new([]), },
+                [],
+                [],
+                new Dictionary<string, string>() { ["en-US"] = "Home L1" },
+                new Dictionary<string, string>() { ["en-US"] = "Home L1" }
+            ));
+
             Items = items.ToFrozenDictionary(item => item.Id);
-            ItemByEarthId = items.ToFrozenDictionary(item => item.Data switch
-            {
-                Item.BuildplateData bd => bd.Id,
-                Item.InventoryItemData iid => iid.Id,
-                _ => throw new UnreachableException(),
-            });
+            ItemByEarthId = items
+                .Where(item => item.Data is Item.BuildplateData or Item.InventoryItemData)
+                .ToFrozenDictionary(item => item.Data switch
+                {
+                    Item.BuildplateData bd => bd.Id,
+                    Item.InventoryItemData iid => iid.Id,
+                    _ => throw new UnreachableException(),
+                });
         }
         catch (Exception exception)
         {
@@ -53,9 +110,21 @@ public sealed class Playfab
         }
     }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum ContentType
+    {
+        Durable,
+        Collection,
+        Bundle,
+        Persona,
+        Genoa,
+        BuildplateOffer,
+        RubyOffer,
+        InventoryItemOffer,
+    }
+
     public sealed record Item(
         bool Purchasable,
-        int Cost,
         Item.ItemData Data,
         string Title,
         string Description,
@@ -68,13 +137,17 @@ public sealed class Playfab
         string SourceEntityId,
         string CreatorEntityId,
         IReadOnlyList<string> Tags,
-        object Keywords,
-        IReadOnlyList<object> Contents,
+        IReadOnlyDictionary<string, Item.KeywordValues> Keywords,
+        IReadOnlyList<IReadOnlyDictionary<string, object>> Contents,
         IReadOnlyList<Item.ItemReference> ItemReferences,
         IReadOnlyDictionary<string, string> TitleTranslations,
         IReadOnlyDictionary<string, string> DescriptionTranslations
     )
     {
+        public sealed record KeywordValues(
+            IReadOnlyList<string> Values
+        );
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public enum Rarity
         {
@@ -97,31 +170,74 @@ public sealed class Playfab
         [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
         [JsonDerivedType(typeof(BuildplateData), "Buildplate")]
         [JsonDerivedType(typeof(InventoryItemData), "InventoryItem")]
-        public abstract class ItemData
+        [JsonDerivedType(typeof(RubyData), "Ruby")]
+        public abstract record ItemData
         {
-            public required string Version { get; init; }
-            public required Rarity Rarity { get; init; }
         }
 
-        public sealed class BuildplateData : ItemData
-        {
-            public required Guid Id { get; init; }
+        public sealed record BuildplateData(
+            Guid Id,
+            int Cost,
+            BuidplateSize Size,
+            int UnlockLevel,
+            Rarity Rarity,
+            string Version
+        ) : ItemData;
 
-            public required BuidplateSize Size { get; init; }
+        public sealed record InventoryItemData(
+            Guid Id,
+            int Cost,
+            int Amount,
+            Rarity Rarity,
+            string Version
+        ) : ItemData;
 
-            public required int UnlockLevel { get; init; }
-        }
+        public sealed record RubyData(
+            int CoinCount,
+            int? BonusCoinCount,
+            string Sku,
+            string OriginalCreatorId
+        ) : ItemData;
 
-        public sealed class InventoryItemData : ItemData
-        {
-            public required Guid Id { get; init; }
-
-            public required int Amount { get; init; }
-        }
+        // does not have type discriminator, so cannot be loaded from items, instead created manually from shop tabs
+        public sealed record QueryManifestData(
+            string MinClientVersion,
+            string MaxClientVersion,
+            IReadOnlyList<Tab> Tabs,
+            IReadOnlyList<string> GlobalNotSearchQueryTags
+        ) : ItemData;
 
         public sealed record ItemReference(
             Guid Id,
             int Amount
+        );
+    }
+
+    public sealed record Tab(
+        string TabId,
+        string TabTitle,
+        string TabIcon,
+        IReadOnlyList<Tab.ScreenLayoutQuery> ScreenLayoutQueries
+    )
+    {
+        public sealed record ScreenLayoutQuery(
+            ColumnType ColumnType,
+            IReadOnlyList<Query> Queries,
+            Guid ComponentId
+        );
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public enum ColumnType
+        {
+            Rectangle,
+            Square,
+            Grid,
+        }
+
+        public sealed record Query(
+            IReadOnlyList<string> ProductIds,
+            IReadOnlyList<ContentType> QueryContentTypes,
+            int TopCount
         );
     }
 }

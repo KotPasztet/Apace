@@ -134,13 +134,13 @@ public partial class ProfileController : ViennaControllerBase
         ]));
     }
 
-    private static Dictionary<string, string> GetProfile(Account account)
+    private Dictionary<string, string> GetProfile(Account account)
         => new Dictionary<string, string>()
         {
             ["AppDisplayName"] = account.Username,
-            ["AppDisplayPicRaw"] = account.ProfilePictureUrl,
+            ["AppDisplayPicRaw"] = $"{(Request.IsHttps ? "https://" : "http://")}{Request.Host.Value}/{account.ProfilePictureUrl}",
             ["GameDisplayName"] = account.Username,
-            ["GameDisplayPicRaw"] = account.ProfilePictureUrl,
+            ["GameDisplayPicRaw"] = $"{(Request.IsHttps ? "https://" : "http://")}{Request.Host.Value}/{account.ProfilePictureUrl}",
             ["Gamertag"] = account.Username,
             ["Gamerscore"] = "69",
             ["FirstName"] = account.FirstName ?? account.Username,
@@ -148,7 +148,7 @@ public partial class ProfileController : ViennaControllerBase
             ["SpeechAccessibility"] = "",
         };
 
-    private static IEnumerable<ProfileSetting> GetProfileFields(Account account, IEnumerable<string> fields)
+    private IEnumerable<ProfileSetting> GetProfileFields(Account account, IEnumerable<string> fields)
     {
         var profile = GetProfile(account);
 

@@ -41,7 +41,7 @@ public partial class LoginController : ViennaControllerBase
             return BadRequest();
         }
 
-        return JsonCamelCase(new ErrorResponse(
+        return JsonCamelCase(new PlayfabErrorResponse(
             403,
             "Forbidden",
             "NotAuthorizedByTitle",
@@ -104,9 +104,9 @@ public partial class LoginController : ViennaControllerBase
         var entityToken = new Tokens.Playfab.EntityToken(userId, "title_player_account");
         string entityTokenString = JwtUtils.Sign(entityToken, config.PlayfabApi.EntityTokenSecretBytes, entityTokenValidity);
 
-        return JsonPascalCase(new OkResponse(
+        return JsonPascalCase(new PlayfabOkResponse(
             200,
-            "Ok",
+            "OK",
             new Dictionary<string, object>()
             {
                 ["SessionTicket"] = $"{userId.ToUpperInvariant()}-{sessionTicketString}",
@@ -124,7 +124,7 @@ public partial class LoginController : ViennaControllerBase
                     ["AccountInfo"] = new Dictionary<string, object>()
                     {
                         ["PlayFabId"] = userId,
-                        ["Created"] = DateTimeOffset.FromUnixTimeSeconds(account.CreatedDate).UtcDateTime,
+                        ["Created"] =  DateTimeOffset.FromUnixTimeSeconds(account.CreatedDate).UtcDateTime,
                         ["TitleInfo"] = new Dictionary<string, object>()
                         {
                             ["Origination"] = "XboxLive",
@@ -174,6 +174,19 @@ public partial class LoginController : ViennaControllerBase
                     ["Variables"] = Array.Empty<object>(),
                 },
             }
+        ));
+    }
+
+    [HttpPost("LinkXboxAccount")]
+    public IActionResult LinkXboxAccount()
+    {
+        return JsonCamelCase(new PlayfabErrorResponse(
+            401,
+            "Unauthorized",
+            "NotAuthenticated",
+            1074,
+            "This API method does not allow anonymous callers.",
+            null
         ));
     }
 

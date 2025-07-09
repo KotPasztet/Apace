@@ -63,7 +63,7 @@ public class AccountsController : ViennaControllerBase
             return NotFound();
         }
 
-        return JsonPascalCase(new ProfileResponse(
+        return JsonCamelCase(new ProfileResponse(
             GamerTag: account.Username,
             MidasConsole: null,
             TouAcceptanceDate: new DateTime(1, 1, 1),

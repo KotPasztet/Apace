@@ -69,7 +69,7 @@ public class AuthenticationController : ViennaControllerBase
                     var entityToken = new Tokens.Playfab.EntityToken(request.Entity.Id, request.Entity.Type);
                     string entityTokenSting = JwtUtils.Sign(entityToken, config.PlayfabApi.EntityTokenSecretBytes, entityTokenValidity);
 
-                    return JsonPascalCase(new OkResponse(
+                    return JsonPascalCase(new PlayfabOkResponse(
                         200,
                         "OK",
                         new GetEntityTokenResponse(

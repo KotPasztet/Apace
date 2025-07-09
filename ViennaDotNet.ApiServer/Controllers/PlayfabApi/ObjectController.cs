@@ -49,12 +49,12 @@ public class ObjectController : ViennaControllerBase
         {
             case "master_player_account":
                 // TODO:
-                return JsonPascalCase(new OkResponse(
+                return JsonPascalCase(new PlayfabOkResponse(
                     200,
                     "OK",
                     new Dictionary<string, object>()
                     {
-                        ["ProfileVersion"] = 6,
+                        ["ProfileVersion"] = 172,
                         ["Objects"] = new Dictionary<string, object>
                         {
                             ["personaProfile"] = new Dictionary<string, object>
@@ -68,11 +68,11 @@ public class ObjectController : ViennaControllerBase
                                         {
                                             new Dictionary<string, object>
                                             {
-                                                ["id"] = "c18e65aa-7b21-4637-9b63-8ad63622ef01_Steve",
+                                                ["id"] = "00000000-0000-0000-0000-000000000000_",
                                                 ["isPlatformLocked"] = false,
                                                 ["isTitleLocked"] = false,
-                                                ["lastUsedPersonaSlot"] = "persona_profile_persona4",
-                                                ["packId"] = "c18e65aa-7b21-4637-9b63-8ad63622ef01",
+                                                ["lastUsedPersonaSlot"] = "persona_profile_persona2",
+                                                ["packId"] = "00000000-0000-0000-0000-000000000000",
                                                 ["typeId"] = "skin"
                                             },
                                         },
@@ -85,7 +85,8 @@ public class ObjectController : ViennaControllerBase
                                 ["ObjectName"] = "personaProfile2",
                                 ["DataObject"] = new Dictionary<string, object>
                                 {
-                                    ["personaCollection"] = new Dictionary<string, object>
+                                    ["slotname"] = "",
+                                    ["personaCollection"] = new Dictionary<string, object?>
                                     {
                                         ["universalApp"] = new object[]
                                         {
@@ -95,28 +96,32 @@ public class ObjectController : ViennaControllerBase
                                                 ["skcol"] = "#ffb37b62",
                                                 ["skin"] = false,
                                             },
+                                            new Dictionary<string, object> { ["id"] = "c18e65aa-7b21-4637-9b63-8ad63622ef01.Custome4e3c9cbcb5b4b179a1034a6d5ef3d29" ,},
                                             new Dictionary<string, object> { ["id"] = "8f96d1f8-e9bb-40d2-acc8-eb79746c5d7c/d" ,},
                                             new Dictionary<string, object> { ["id"] = "1042557f-d1f9-44e3-ba78-f404e8fb7363/d" ,},
                                             new Dictionary<string, object> { ["id"] = "f1e4c577-19ba-4d77-9222-47f145857f78/d" ,},
-                                            new Dictionary<string, object> { ["id"] = "49f93789-a512-4c47-95cb-0606cdc1c2be/d" ,},
+                                            new Dictionary<string, object> { ["id"] = "49f93789-a512-4c47-95cb-0606cdc1c2be/d", },
                                             new Dictionary<string, object> { ["id"] = "68bfe60d-f30a-422f-b32c-72374ebdd057/d", },
                                             new Dictionary<string, object> { ["id"] = "b6702f0e-a4b5-497a-8820-6c8e3946bb55/d", },
                                             new Dictionary<string, object>
                                             {
-                                                ["col"] = new object[] { "#0", "#0", "#ff774235", "#0" },
-                                                ["id"] = "52dd0726-cd68-4d7d-8561-515a4866de39/d",
-                                            },
-                                            new Dictionary<string, object>
-                                            {
-                                                ["col"] = new object[] { "#ff523d89", "#0", "#0", "#0" },
+                                                ["col"] = new string[] { "#ff523d89", "#0", "#0", "#0" },
                                                 ["id"] = "a0f263b3-e093-4c85-aadb-3759417898ff/d",
                                             },
                                             new Dictionary<string, object>
                                             {
-                                                ["col"] = new object[] { "#ff2f1f0f", "#0", "#0", "#0" },
+                                                ["col"] = new string[] { "#ff2f1f0f", "#0", "#0", "#0" },
                                                 ["id"] = "2bb1473b-9a5c-4eae-9fd5-82302a6aa3da/d",
                                             },
+                                            new Dictionary<string, object>
+                                            {
+                                                ["col"] = new string[] { "#0", "#0", "#ff774235", "#0" },
+                                                ["id"] = "2e4341c3-c014-4114-94b5-73968230aaaf/d",
+                                            },
                                         },
+                                        ["tplApps"] = null,
+                                        ["tlApps"] = null,
+                                        ["plApps"] = null,
                                     },
                                     ["version"] = "0.0.1",
                                 }

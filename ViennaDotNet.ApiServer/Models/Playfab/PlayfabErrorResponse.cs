@@ -2,7 +2,7 @@
 
 namespace ViennaDotNet.ApiServer.Models.Playfab;
 
-internal sealed record ErrorResponse(
+internal sealed record PlayfabErrorResponse(
     int Code,
     string Status,
     string Error,

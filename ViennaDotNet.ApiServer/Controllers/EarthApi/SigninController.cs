@@ -13,6 +13,7 @@ public partial class SigninController : ViennaControllerBase
     private static partial Regex GetUserIdRegex();
 
     [HttpPost("api/v{version:apiVersion}/player/profile/{profileID}")]
+    [HttpPost("1/api/v{version:apiVersion}/player/profile/{profileID}")]
     public async Task<IActionResult> Post(string profileID, CancellationToken cancellationToken)
     {
         if (profileID != "signin")

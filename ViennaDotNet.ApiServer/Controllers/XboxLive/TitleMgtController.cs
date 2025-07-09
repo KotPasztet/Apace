@@ -20,11 +20,9 @@ public class TitleMgtController : ViennaControllerBase
 
     private static DomainParser? _domainParser;
 
-    private static Config config => Program.config;
-
     private sealed record EndpointsResponse(IEnumerable<Endpoint> EndPoints);
 
-    private sealed record Endpoint(string Protocol, string Host, int? Port, string HostType, string RelyingParty, string TokenType);
+    private sealed record Endpoint(string Protocol, string Host, int? Port, string HostType, string? RelyingParty, string? TokenType);
 
     [HttpGet("{title}/endpoints")]
     public async Task<IActionResult> GetEndpoints(string title)
@@ -91,6 +89,30 @@ public class TitleMgtController : ViennaControllerBase
                             "wildcard",
                             "https://b980a380.minecraft.playfabapi.com/",
                             "JWT"
+                        ),
+                        new Endpoint(
+                            "https",
+                            "*.commerce.gameservices.com",
+                            null,
+                            "wildcard",
+                            "https://minecraft.commerce.microsoftstudios.com/",
+                            "JWT"
+                        ),
+                        new Endpoint(
+                            "http",
+                            "*",
+                            null,
+                            "wildcard",
+                            null,
+                            null
+                        ),
+                        new Endpoint(
+                            "https",
+                            "*",
+                            null,
+                            "wildcard",
+                            null,
+                            null
                         ),
                     ];
                 }

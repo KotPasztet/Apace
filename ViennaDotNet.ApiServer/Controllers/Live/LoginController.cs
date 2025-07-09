@@ -154,14 +154,12 @@ public partial class LoginController : ViennaControllerBase
 
         byte[] paswordHash = HashPassword(password, passwordSalt);
 
-        string baseServerIP = $"{(Request.IsHttps ? "https://" : "http://")}{Request.Host.Value}";
-
         account = new Account()
         {
             Id = userId,
             CreatedDate = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             Username = username,
-            ProfilePictureUrl = $"baseServerIP/images/default_pfp.png", // TODO
+            ProfilePictureUrl = $"images/default_pfp.png", // TODO
             FirstName = firstName,
             LastName = lastName,
             PasswordSalt = passwordSalt,

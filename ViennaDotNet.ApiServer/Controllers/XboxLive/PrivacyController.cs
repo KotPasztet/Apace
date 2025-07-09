@@ -36,7 +36,7 @@ public partial class PrivacyController : ViennaControllerBase
             return Unauthorized();
         }
 
-        return JsonPascalCase(new PeopleResponse(
+        return JsonCamelCase(new PeopleResponse(
             []
         ));
     }
