@@ -9,8 +9,7 @@ public class InventoryController : ViennaControllerBase
 {
     [HttpPost("GetVirtualCurrencies")]
     public IActionResult GetVirtualCurrencies()
-    {
-        return JsonPascalCase(new PlayfabOkResponse(
+        => JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -23,12 +22,10 @@ public class InventoryController : ViennaControllerBase
                 ["Items"] = Array.Empty<object>(),
             }
         ));
-    }
 
     [HttpPost("redeem")]
     public IActionResult Redeem()
-    {
-        return JsonPascalCase(new PlayfabOkResponse(
+        => JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -37,12 +34,10 @@ public class InventoryController : ViennaControllerBase
                 ["Failed"] = Array.Empty<object>(),
             }
         ));
-    }
 
     [HttpPost("GetInventoryItems")]
     public IActionResult GetInventoryItems()
-    {
-        return JsonPascalCase(new PlayfabOkResponse(
+        => JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -53,5 +48,4 @@ public class InventoryController : ViennaControllerBase
                 ["Subscriptions"] = Array.Empty<object>(),
             }
         ));
-    }
 }

@@ -124,7 +124,7 @@ public partial class LoginController : ViennaControllerBase
                     ["AccountInfo"] = new Dictionary<string, object>()
                     {
                         ["PlayFabId"] = userId,
-                        ["Created"] =  DateTimeOffset.FromUnixTimeSeconds(account.CreatedDate).UtcDateTime,
+                        ["Created"] = DateTimeOffset.FromUnixTimeSeconds(account.CreatedDate).UtcDateTime,
                         ["TitleInfo"] = new Dictionary<string, object>()
                         {
                             ["Origination"] = "XboxLive",
@@ -179,8 +179,7 @@ public partial class LoginController : ViennaControllerBase
 
     [HttpPost("LinkXboxAccount")]
     public IActionResult LinkXboxAccount()
-    {
-        return JsonCamelCase(new PlayfabErrorResponse(
+        => JsonCamelCase(new PlayfabErrorResponse(
             401,
             "Unauthorized",
             "NotAuthenticated",
@@ -188,7 +187,6 @@ public partial class LoginController : ViennaControllerBase
             "This API method does not allow anonymous callers.",
             null
         ));
-    }
 
     [GeneratedRegex("^[0-9A-F]{5}$")]
     private static partial Regex GetTitleIdRegex();

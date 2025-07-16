@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using ViennaDotNet.ApiServer.Models;
 using ViennaDotNet.ApiServer.Models.Playfab;
 using ViennaDotNet.ApiServer.Utils;
@@ -66,7 +65,7 @@ public partial class ClientController : ViennaControllerBase
                         ["PlayFabCommerceEnabled"] = new Dictionary<string, string>()
                         {
                             ["Value"] = "true",
-                            ["LastUpdated"] = "2019-12-08T13:07:33.96Z",
+                            ["LastUpdated"] = "2019-12-01T00:00:00Z",
                             ["Permission"] = "Public",
                         },
                         ["DataVersion"] = 35,

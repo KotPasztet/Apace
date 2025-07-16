@@ -1,19 +1,10 @@
-﻿using CommandLine;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
-using Microsoft.OData.UriParser;
 using OData2Linq;
-using Org.BouncyCastle.Math;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO.Pipelines;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using ViennaDotNet.ApiServer.Models.Playfab;
 using ViennaDotNet.Common.Utils;
 using CItem = ViennaDotNet.StaticData.Playfab.Item;
@@ -44,54 +35,6 @@ public class CatalogController : ViennaControllerBase
 
         itemData = [
             // shop items/layout
-            /*new Item(
-                new("B63A0803D3653643", "namespace", "namespace"),
-                new("B63A0803D3653643", "namespace", "namespace"),
-                Guid.Parse("06e44b91-e7f5-46b6-9986-ca755890f3bf"),
-                "catalogItem",
-                [],
-                null,
-                new() { ["en-US"] = "Home L1", ["NEUTRAL"] = "Home L1", ["neutral"] = "Home L1", },
-                new() { ["en-US"] = "Home L1", ["NEUTRAL"] = "Home L1", ["neutral"] = "Home L1", },
-                new() { ["en-US"] = new([]), ["NEUTRAL"] = new([]), ["neutral"] = new([]), },
-                "GenoaQueryManifest_V0.0.3",
-                new("3C0BE9326354CBB7", "title_player_account", "title_player_account"),
-                new("3C0BE9326354CBB7", "title_player_account", "title_player_account"),
-                null, // IsStackable
-                ["android.googleplay", "ios.store", "uwp.store", "title.earth"],
-                ["mctestdefault"],
-                new(2020, 12, 10, 18, 59, 39, 396, DateTimeKind.Utc),
-                new(2021, 1, 4, 19, 42, 53, 773, DateTimeKind.Utc), // TODO: get this from file modified date or make it configurable?
-                new(1, 1, 1, 0, 0, 0, DateTimeKind.Utc), // originally null, but it must be not null to get filtered correctly
-                [],
-                [],
-                [],
-                null,
-                null,
-                [],
-                Item.DisplayPropertiesR.CreateQueryManifest(
-                    "0.25.0",
-                    "1.0.20",
-                    staticData.Playfab.ShopTabs.Select(tab => new Item.DisplayPropertiesR.Tab(
-                        tab.ScreenLayoutQueries.Select(layoutQuery => new Item.DisplayPropertiesR.Tab.ScreenLayoutQuery(
-                            // TODO: haven't seen it yet, but it's possible these can have properties
-                            layoutQuery.ColumnType is StaticData.Playfab.Tab.ColumnType.Rectangle ? new object() : null,
-                            layoutQuery.ColumnType is StaticData.Playfab.Tab.ColumnType.Square ? new object() : null,
-                            layoutQuery.ColumnType is StaticData.Playfab.Tab.ColumnType.Grid ? new object() : null,
-                            layoutQuery.Queries.Select(query => new Item.DisplayPropertiesR.Tab.ScreenLayoutQuery.Query(
-                                query.ProductIds,
-                                query.QueryContentTypes.Select(type => type.ToString()),
-                                query.TopCount
-                            )),
-                            layoutQuery.ComponentId
-                        )),
-                        tab.TabIcon,
-                        tab.TabTitle,
-                        tab.TabId
-                    )),
-                    staticData.Playfab.ShopNotSearchQueryTags
-                )
-            ),*/
             // required for shop to load for some reason...
             new Item(
                 new("B63A0803D3653643", "namespace", "namespace"),
@@ -135,7 +78,7 @@ public class CatalogController : ViennaControllerBase
                     "persona_feet"
                 )
             ),
-            .. staticData.Playfab.Items.Select(item => CIItemToItem(item.Value, "")),
+            .. staticData.Playfab.Items.Select(item => CIItemToItem(item.Value)),
         ];
     }
 
@@ -161,14 +104,10 @@ public class CatalogController : ViennaControllerBase
             return BadRequest();
         }
 
-        Item[] items;
+        IEnumerable<Item> items;
         try
         {
-            if (request.Filter.StartsWith("(contentType eq 'PersonaDurable') and platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth') and not tags/any(t: t eq 'hidden_offer') and (startDate ge ") && request.Filter.EndsWith(")and((displayProperties/pieceType ne 'persona_emote'))"))
-            {
-                return new VirtualFileResult("playfab/res" + (request.Skip ?? 0), "application/json");
-            }
-            else if (request.Filter.StartsWith("(contentType eq 'GenoaQueryManifest_V0.0.3') and platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth') and (startDate le "))
+            if (request.Filter.StartsWith("(contentType eq 'GenoaQueryManifest_V0.0.3') and platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth') and (startDate le "))
             {
                 return Content("""
                     {
@@ -8416,9 +8355,8 @@ public class CatalogController : ViennaControllerBase
             }
 
             items = query
-                .ToArray() // TODO
-                .Select(item => item.ContentType is "GenoaQueryManifest_V0.0.3" ? item with { StartDate = null } : item)
-                .ToArray();
+                .ToArray()
+                .Select(item => ToResponse(item, Request));
         }
         catch (Exception ex)
         {
@@ -8429,17 +8367,11 @@ public class CatalogController : ViennaControllerBase
 
         if (request.Count)
         {
-            response["Count"] = items.Length;
+            response["Count"] = items.Count(); // items is empty or select over array, so this is fine
         }
 
         response["Items"] = items;
         response["ConfigurationName"] = "DEFAULT";
-
-        /*return JsonPascalCase(new PlayfabOkResponse(
-            200,
-            "OK",
-            response
-        ));*/
 
         Response.Headers.Append("access-control-allow-credentials", "true");
         Response.Headers.Append("access-control-allow-headers", "Content-Type, Content-Encoding, X-Authentication, X-Authorization, X-PlayFabSDK, X-ReportErrorAsSuccess, X-SecretKey, X-EntityToken, Authorization, x-ms-app, x-ms-client-request-id, x-ms-user-id, traceparent, tracestate, Request-Id");
@@ -8488,648 +8420,6 @@ public class CatalogController : ViennaControllerBase
             return BadRequest();
         }
 
-        if (request.ItemId == "06e44b91-e7f5-46b6-9986-ca755890f3bf")
-        {
-            return Content("""
-                {
-                  "code": 200,
-                  "status": "OK",
-                  "data": {
-                    "Item": {
-                      "SourceEntity": {
-                        "Id": "B63A0803D3653643",
-                        "Type": "namespace",
-                        "TypeString": "namespace"
-                      },
-                      "SourceEntityKey": {
-                        "Id": "B63A0803D3653643",
-                        "Type": "namespace",
-                        "TypeString": "namespace"
-                      },
-                      "Id": "06e44b91-e7f5-46b6-9986-ca755890f3bf",
-                      "Type": "catalogItem",
-                      "AlternateIds": [],
-                      "Title": {
-                        "NEUTRAL": "Home L1",
-                        "en-US": "Home L1",
-                        "neutral": "Home L1"
-                      },
-                      "Description": {
-                        "NEUTRAL": "Home L1",
-                        "en-US": "Home L1",
-                        "neutral": "Home L1"
-                      },
-                      "Keywords": {},
-                      "ContentType": "GenoaQueryManifest_V0.0.3",
-                      "CreatorEntityKey": {
-                        "Id": "3C0BE9326354CBB7",
-                        "Type": "title_player_account",
-                        "TypeString": "title_player_account"
-                      },
-                      "CreatorEntity": {
-                        "Id": "3C0BE9326354CBB7",
-                        "Type": "title_player_account",
-                        "TypeString": "title_player_account"
-                      },
-                      "Platforms": [
-                        "android.googleplay",
-                        "ios.store",
-                        "uwp.store",
-                        "title.earth"
-                      ],
-                      "Tags": [
-                        "mctestdefault"
-                      ],
-                      "CreationDate": "2020-12-10T18:59:39.396Z",
-                      "LastModifiedDate": "2021-01-04T19:42:53.773Z",
-                      "StartDate": "2021-01-05T17:00:00Z",
-                      "Contents": [
-                        {
-                          "Id": "f3f2b4fc-f144-4357-9e41-198db3a47957",
-                          "Url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/f3f2b4fc-f144-4357-9e41-198db3a47957/master_loc_contents.json",
-                          "MaxClientVersion": "6555.6555.6555",
-                          "MinClientVersion": "1.2.0",
-                          "Tags": [],
-                          "Type": "resourcebinary"
-                        }
-                      ],
-                      "Images": [],
-                      "ItemReferences": [],
-                      "DeepLinks": [],
-                      "DisplayProperties": {
-                        "minClientVersion": "0.25.0",
-                        "maxClientVersion": "1.0.20",
-                        "tabs": [
-                          {
-                            "screenLayoutQueries": [
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "c095d219-d568-408e-ac2f-b432be3559a1"
-                                    ],
-                                    "queryContentTypes": [
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "58b67dbf-49dc-4e6d-2b0a-b6da2554f6e8"
-                              },
-                              {
-                                "column_square": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "a3e4b8b2-88cb-4d26-a414-ce2c6e61c389",
-                                      "83cbec6b-749c-472e-a93b-0003e3aa638b",
-                                      "85bdb91e-d2e0-4fc2-8269-d171ac0ca4ac",
-                                      "716c33f5-f34f-4a1a-8e95-446b9bfc9127",
-                                      "937fe1d9-7dff-4112-8c43-943b3e86065a",
-                                      "331d952a-081d-4ea5-9581-1cbad1c8176d",
-                                      "41cddd77-390c-4bea-881b-7bc97be8967b",
-                                      "717c4f02-56e5-4743-a074-44bcdd461db0",
-                                      "6643edae-3d4a-4932-bae2-cc47317a1041",
-                                      "30055134-bf86-44fe-915e-e096caae2de1",
-                                      "dcbc054f-51c1-4d95-96f3-aaa0a2d0d7ff",
-                                      "faa5120c-5d20-467a-b53e-0b47a7caf31b",
-                                      "af54c6cb-34ac-44e3-ada4-fffd4c580c1e",
-                                      "8e8e5af4-7865-43a7-8fa9-847cffff5cf6",
-                                      "3c14f929-4f9d-4f94-b5ce-abb22b80e5c6",
-                                      "1102b106-9da4-4e82-8fe9-828d617d323f",
-                                      "efa4cd81-fc7b-4806-9419-9141027333f8",
-                                      "4e42e674-e337-43d0-9587-b7ac947103ff",
-                                      "7fd89680-7c9b-4adc-92cf-3e26a2dd71cb",
-                                      "6078f5c8-81cf-473b-8ebb-0db0a6edadf8",
-                                      "8aaa1577-5a4d-409b-842f-73ae13a05f78",
-                                      "998b5e8f-7271-4de6-949f-eda15c7100d7",
-                                      "c4a1cce4-c4ef-4f99-a210-071e2e30f154",
-                                      "b9272a8c-603c-4188-a75b-e7838bbab567"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "81ef2b04-b29d-45f5-2d7d-19aa74979ea8"
-                              }
-                            ],
-                            "tabIcon": "textures/ui/icons/pixel_icons/buildplate",
-                            "tabTitle": "editorialtool.earth.Buildplates",
-                            "tabId": "buildplate"
-                          },
-                          {
-                            "screenLayoutQueries": [
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "14573f0c-0e18-4b4c-8868-c4d90e3cd509"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "7862b0de-ecc0-4107-c7e3-2f2cb8c02c41"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "c025702d-5b96-4745-bb4b-93911ee8c32a",
-                                      "9f13aa99-9243-47eb-8fe4-82909b49de8e"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "a75ca215-681c-4000-2419-6225577239f0"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "6c7e7718-b800-483b-93f3-80f28a7bc597"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "943c0b1b-f3cf-4675-0208-402b0c86874c"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "43a5011e-911a-4061-b5fb-1f9295bcbba1",
-                                      "98c03065-5271-4303-933a-0643af1d1e41"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "874fabfe-0570-483c-22bd-580c2c28ee87"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "b29f5e35-5e01-43f7-821e-690735a99e88"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "938cf1b8-6bc1-4b93-73a9-5baec9b1f1e6"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "eacc48e8-ebbd-4b6f-983f-3522865eccea",
-                                      "d96c0f65-1001-4220-bd80-405060bbf3be"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "0fb6b780-73bc-450f-6c74-3fc1b23cb7d4"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "b54a3553-8d6a-4d45-aac4-2b0a904e6f47"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "52e570a0-208b-4295-5702-da746e00b073"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "4062100a-ada2-4974-86d2-09b606596bc7",
-                                      "c5ea2fb3-b3f6-4d9f-8b22-c9c2b69eed9e"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "58d4b9a9-536c-47f3-77b9-5606a25ca466"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "c3120a4c-a5c3-4dbb-bbfc-64d55b176952"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "5708c274-b7fe-406d-fcc3-8b85a91e7685"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "4166efe4-26a0-4e20-bc84-84cc78632bbc",
-                                      "23ce5e1d-2074-4f84-9ccd-249819030054"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "0d193497-b532-4a12-6f68-35806745e3c1"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "3bedcd77-a506-47a8-ba59-01a915ddb5c5"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "9a7a90b4-4ab1-4825-812f-f6e7a54c1894"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "9d957be1-94c8-4be8-9e1d-d497471943b7",
-                                      "055229aa-c10a-40af-92b9-15086096dac4"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "df6b83e0-258d-49ef-a5f0-eb18d0cfcb3c"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "8366474d-7afb-4d6d-a376-ad2b09c807f4"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "11652079-c692-4adf-c5ef-dccb275f5c96"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "3a0fbea6-d40d-40ab-9467-91900438d9b1",
-                                      "643826f8-c109-4b42-b763-be039ea7752b"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "5fa59b4f-cf8c-4e4c-f3f5-ee5314ebd8d4"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "995b4adb-e856-4c4b-a559-8af1bfeeb99b"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "c6b6170e-2f99-47d2-0134-ab8706d508ed"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "8ba36e03-6def-4479-8aac-454dc21caa9b",
-                                      "200b31fc-137b-4a05-838e-ff532b95eba3"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "fd2d4fd9-7241-4753-a44d-1fcfe9f31005"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "6209f825-d137-48f9-8081-c095aab9849f"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "c6932a96-4f81-47cc-a93a-ed98504f8360"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "8fcf61aa-31f1-43dd-bf20-4ce67f6de2b5",
-                                      "ca70fd76-da76-41a2-9159-6dd4c034c156"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "b3d0a464-a686-457e-fe90-f815ac54e375"
-                              },
-                              {
-                                "column_rectangle": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "a4eac031-6f19-41ac-a041-d04902dfd9ba"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "8e7848f2-4fc3-4182-2fea-78a5703b460f"
-                              },
-                              {
-                                "column_grid": {},
-                                "queries": [
-                                  {
-                                    "productIds": [
-                                      "5de2c884-8b0d-4db2-893e-6824d603454e",
-                                      "46e14441-e111-4773-b845-8ba31bd1db60"
-                                    ],
-                                    "queryContentTypes": [
-                                      "Durable",
-                                      "Collection",
-                                      "Bundle",
-                                      "Persona",
-                                      "Genoa",
-                                      "BuildplateOffer",
-                                      "RubyOffer",
-                                      "InventoryItemOffer"
-                                    ],
-                                    "topCount": 25
-                                  }
-                                ],
-                                "componentId": "27b3732f-3fd6-402e-a128-e4d2576a24a9"
-                              }
-                            ],
-                            "tabIcon": "textures/ui/icons/pixel_icons/boost",
-                            "tabTitle": "editorialtool.earth.Boosts",
-                            "tabId": "boosts"
-                          },
-                              {
-                  "screenLayoutQueries": [
-                    {
-                      "column_grid": {},
-                      "queries": [
-                        {
-                          "productIds": [
-                            "536dba5b-408d-4c47-a27d-f8f36707f16a",
-                            "259ea494-5b5f-4290-a1bb-a1bee005fa35",
-                            "7173136a-2bc6-4ec4-b718-3d6fe9f6735e",
-                            "4eeda6ab-bd85-4327-9113-3d8fdc4fd61a",
-                            "be87981e-52af-41bf-b96f-64f777580d67"
-                          ],
-                          "queryContentTypes": [
-                            "Durable",
-                            "Collection",
-                            "Bundle",
-                            "Persona",
-                            "Genoa",
-                            "BuildplateOffer",
-                            "RubyOffer",
-                            "InventoryItemOffer"
-                          ],
-                          "topCount": 25
-                        }
-                      ],
-                      "componentId": "ad07683e-f114-41a9-25cf-bd2368a7d8e4"
-                    }
-                  ],
-                  "tabIcon": "textures/ui/icons/pixel_icons/ruby",
-                  "tabTitle": "editorialtool.earth.Rubies",
-                  "tabId": "ruby"
-                }
-                        ],
-                        "globalNotSearchQueryTags": [
-                          "hidden_offer",
-                          "earth_achievement"
-                        ]
-                      },
-                      "ETag": "\"040060e3-0000-0300-0000-60ef93270000\""
-                    }
-                  }
-                }
-                """, "application/json");
-        }
-
         if (!Guid.TryParse(request.ItemId, out var itemId))
         {
             return JsonPascalCase(new PlayfabErrorResponse(
@@ -9145,22 +8435,24 @@ public class CatalogController : ViennaControllerBase
             ));
         }
 
-        if (!staticData.Playfab.Items.TryGetValue(itemId, out var item))
+        if (!staticData.Playfab.Items.TryGetValue(itemId, out var cItem))
         {
             // TODO: fake not found
             return NotFound();
         }
 
+        var item = CIItemToItem(cItem);
+
         return Content(JsonSerializer.Serialize(new PlayfabOkResponse(
             200,
             "OK",
             new GetPublishedItemResponse(
-                CIItemToItem(item, $"{(Request.IsHttps ? "https://" : "http://")}{Request.Host.Value}") with { ETag = "\"040060e3-0000-0300-0000-60ef93270000\"" }
+                ToResponse(item, Request)
             )
         ), jsonOptions), "application/json");
     }
 
-    private static Item CIItemToItem(CItem item, string serverHostname)
+    private static Item CIItemToItem(CItem item)
     {
         Item.PriceR? price = item.Data switch
         {
@@ -9221,8 +8513,12 @@ public class CatalogController : ViennaControllerBase
             item.CreationDate,
             item.LastModifiedDate,
             item.StartDate,
-            item.Contents,
-            item.ThumbnailImageId is null ? [] : [new(item.ThumbnailImageId, "Thumbnail", "Thumbnail", "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/f5c84c8b-3613-4783-9f5c-d9f910469332/default_Thumbnail.jpg"/*$"{serverHostname}/playfab/images/{item.ThumbnailImageId}.jpg"*/)],
+            item.Contents.Select(content => content switch
+            {
+                CItem.QueryManifestContent qmContent => new Item.QueryManifestContent(qmContent.Id, qmContent.Url, qmContent.MaxClientVersion, qmContent.MinClientVersion, qmContent.Tags, qmContent.Type),
+                _ => content,
+            }),
+            item.ThumbnailImageId is null ? [] : [new(item.ThumbnailImageId, "Thumbnail", "Thumbnail", $"/playfab/images/{item.ThumbnailImageId}.png")],
             item.ItemReferences.Select(reference => new Item.ItemReference(reference.Id, reference.Amount)),
             price,
             price,
@@ -9279,6 +8575,21 @@ public class CatalogController : ViennaControllerBase
         );
     }
 
+    private static Item ToResponse(Item item, HttpRequest request)
+    {
+        string host = $"{(request.IsHttps ? "https://" : "http://")}{request.Host.Value}";
+
+        return item with
+        {
+            Images = item.Images.Select(image => image with { Url = host + image.Url, }),
+            Contents = item.Contents.Select(content => content switch
+            {
+                Item.QueryManifestContent qmContent => qmContent with { Url = host + qmContent.Url, },
+                _ => content,
+            }),
+        };
+    }
+
     public static IEdmModel GetEdmModel()
     {
         var builder = new ODataConventionModelBuilder();
@@ -9319,7 +8630,7 @@ public class CatalogController : ViennaControllerBase
         DateTime CreationDate,
         DateTime LastModifiedDate,
         DateTime? StartDate,
-        IEnumerable<IReadOnlyDictionary<string, object>> Contents,
+        IEnumerable<object> Contents,
         IEnumerable<Item.Image> Images,
         IEnumerable<Item.ItemReference> ItemReferences,
         Item.PriceR? Price,
@@ -9371,6 +8682,15 @@ public class CatalogController : ViennaControllerBase
             string Id,
             string ItemId,
             int Amount
+        );
+
+        public sealed record QueryManifestContent(
+            string Id,
+            string Url,
+            string MaxClientVersion,
+            string MinClientVersion,
+            IEnumerable<string> Tags,
+            string Type
         );
 
         public sealed record PackIdentity(

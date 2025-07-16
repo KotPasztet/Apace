@@ -81,14 +81,21 @@ public sealed class Playfab
                 null,
                 new(2020, 12, 10, 18, 59, 39, 396, DateTimeKind.Utc),
                 new(2021, 1, 4, 19, 42, 53, 773, DateTimeKind.Utc), // TODO: get this from file modified date or make it configurable?
-                new(1, 1, 1, 0, 0, 0, DateTimeKind.Utc), // originally null, but it must be not null to get filtered correctly
+                new(2021, 1, 5, 17, 0, 0, DateTimeKind.Utc), // originally null, but it must be not null to get filtered correctly
                 Guid.Parse("06e44b91-e7f5-46b6-9986-ca755890f3bf"),
                 null,
                 "B63A0803D3653643",
                 "3C0BE9326354CBB7",
                 ["mctestdefault"],
                 new Dictionary<string, Item.KeywordValues>() { ["en-US"] = new([]), ["NEUTRAL"] = new([]), ["neutral"] = new([]), },
-                [],
+                [new Item.QueryManifestContent(
+                   "f3f2b4fc-f144-4357-9e41-198db3a47957",
+                    "/playfab/master_loc_contents.json",
+                     "6555.6555.6555",
+                     "1.2.0",
+                     Array.Empty<string>(),
+                     "resourcebinary"
+                )],
                 [],
                 new Dictionary<string, string>() { ["en-US"] = "Home L1" },
                 new Dictionary<string, string>() { ["en-US"] = "Home L1" }
@@ -138,7 +145,7 @@ public sealed class Playfab
         string CreatorEntityId,
         IReadOnlyList<string> Tags,
         IReadOnlyDictionary<string, Item.KeywordValues> Keywords,
-        IReadOnlyList<IReadOnlyDictionary<string, object>> Contents,
+        IReadOnlyList<object> Contents,
         IReadOnlyList<Item.ItemReference> ItemReferences,
         IReadOnlyDictionary<string, string> TitleTranslations,
         IReadOnlyDictionary<string, string> DescriptionTranslations
@@ -166,6 +173,15 @@ public sealed class Playfab
             Medium,
             Large,
         }
+
+        public sealed record QueryManifestContent(
+            string Id,
+            string Url,
+            string MaxClientVersion,
+            string MinClientVersion,
+            IReadOnlyList<string> Tags,
+            string Type
+        );
 
         [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
         [JsonDerivedType(typeof(BuildplateData), "Buildplate")]

@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Nager.PublicSuffix;
 using Nager.PublicSuffix.RuleProviders;
-using Serilog;
 using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
