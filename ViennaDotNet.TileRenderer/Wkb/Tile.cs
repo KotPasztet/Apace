@@ -1,6 +1,6 @@
 ﻿namespace ViennaDotNet.TileRenderer.Wkb;
 
-internal sealed class Tile
+public sealed class Tile
 {
     public Tile(Point slippy, int zoom, int resolution)
     {
@@ -17,12 +17,10 @@ internal sealed class Tile
 
     public Point ToLocalPixel(Point sphereMerc)
     {
-        //printf("Converting point: %lf, %lf\n", sphereMerc.x, sphereMerc.y);
         Point slippy = TileUtils.SphereMercToSlippy(sphereMerc, Zoom);
-        //printf("Offsetting point: %lf, %lf\n", slippy.x, slippy.y);
         slippy -= Slippy;
         slippy *= Resolution;
-        //printf("Rendering point: %lf, %lf\n\n", slippy.x, slippy.y);
+
         return slippy;
     }
 }

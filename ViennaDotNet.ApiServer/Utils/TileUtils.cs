@@ -28,7 +28,7 @@ internal static class TileUtils
             return await TryWriteTileFromObject(tileObjectId, dest, cancellationToken);
         }
 
-        Log.Information("Generating preview");
+        Log.Information("Rendering tile");
         _requestSender ??= Program.eventBus.AddRequestSender();
         string? tilePng64 = await _requestSender.Request("tile", "renderTile", Json.Serialize(new RenderTileRequest(tileX, tileY, 16))).Task;
 

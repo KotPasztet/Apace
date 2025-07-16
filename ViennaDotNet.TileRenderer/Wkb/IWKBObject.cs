@@ -2,7 +2,7 @@
 
 namespace ViennaDotNet.TileRenderer.Wkb;
 
-internal interface IWKBObject
+public interface IWKBObject
 {
     bool ByteOrder { get; }
 

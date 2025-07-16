@@ -8,13 +8,13 @@ namespace ViennaDotNet.TileRenderer;
 
 internal sealed class EventBusTileRenderer : IDisposable
 {
-    private readonly NpgsqlDataSource _tileDB;
+    private readonly ITileDataSource _dataSource;
     private readonly EventBusClient _eventBus;
     private readonly TileRenderer _renderer;
 
-    public EventBusTileRenderer(NpgsqlDataSource tileDB, EventBusClient eventBus, StaticData.StaticData staticData)
+    public EventBusTileRenderer(ITileDataSource dataSource, EventBusClient eventBus, StaticData.StaticData staticData)
     {
-        _tileDB = tileDB;
+        _dataSource = dataSource;
         _eventBus = eventBus;
         _renderer = TileRenderer.Create(staticData.TileRenderer.TagMapJson, Log.Logger);
     }
@@ -41,7 +41,7 @@ internal sealed class EventBusTileRenderer : IDisposable
                 using (var bitmap = new SKBitmap(128, 128))
                 using (var canvas = new SKCanvas(bitmap))
                 {
-                    await _renderer.RenderAsync(_tileDB, canvas, getTile.TileX, getTile.TileY, getTile.Zoom, Log.Logger);
+                    await _renderer.RenderAsync(_dataSource, canvas, getTile.TileX, getTile.TileY, getTile.Zoom, Log.Logger);
 
                     // TODO: higher/lower quality?
                     using (var data = bitmap.Encode(SKEncodedImageFormat.Png, 80))

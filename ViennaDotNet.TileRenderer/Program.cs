@@ -114,7 +114,7 @@ internal static class Program
 
         Log.Information("Loaded static data");
 
-        using (EventBusTileRenderer renderer = new EventBusTileRenderer(tileDB, eventBusClient, staticData))
+        using (EventBusTileRenderer renderer = new EventBusTileRenderer(new DatabaseTileDataSource(tileDB), eventBusClient, staticData))
         {
             renderer.Run();
         }

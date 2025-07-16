@@ -12,7 +12,7 @@ public class CdnTileController : ViennaControllerBase
     [HttpGet]
     public async Task<IActionResult> GetTile(int _, int tilePos1, int tilePos2, CancellationToken cancellationToken) // _ used because we dont care :|
     {
-        if (!await TileUtils.TryWriteTile(tilePos1, tilePos2, Response.Body, cancellationToken))
+        if (!await TileUtils.TryWriteTile(tilePos1, tilePos2, Response.Body, default))
         {
             return NotFound();
         }

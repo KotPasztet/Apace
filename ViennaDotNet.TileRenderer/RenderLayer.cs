@@ -1,6 +1,6 @@
 ﻿namespace ViennaDotNet.TileRenderer;
 
-internal enum RenderLayer // Layer order is bottom to top btw, not in same order as Genoa Colours!!!
+public enum RenderLayer // Layer order is bottom to top btw, not in same order as Genoa Colours!!!
 {
     LAYER_BASE_BACKGROUND,
     LAYER_SAND,

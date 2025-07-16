@@ -106,121 +106,30 @@ public class TileRenderer
         return new TileRenderer(tags, tagsMap);
     }
 
-    public async Task RenderAsync(NpgsqlDataSource dataSource, SKCanvas canvas, int tileX, int tileY, int zoom, ILogger logger, CancellationToken cancellationToken = default)
+    public async Task RenderAsync(ITileDataSource dataSource, SKCanvas canvas, int tileX, int tileY, int zoom, ILogger logger, CancellationToken cancellationToken = default)
     {
         Tile tile = new Tile(new Point(tileX, tileY), zoom, 128);
 
         canvas.Clear(LayerToColor((int)RenderLayer.LAYER_NONE));
 
-        const string Sql = @"
-            SELECT aeroway, amenity, barrier, building, highway, landuse, leisure, military, ""natural"", railway, waterway, ST_AsBinary(way)
-            FROM planet_osm_polygon
-            WHERE way && ST_TileEnvelope(@zoom, @tileX, @tileY) AND boundary IS NULL
-            UNION
-            SELECT aeroway, amenity, barrier, building, highway, landuse, leisure, military, ""natural"", railway, waterway, ST_AsBinary(way)
-            FROM planet_osm_line
-            WHERE way && ST_TileEnvelope(@zoom, @tileX, @tileY)
-              AND boundary IS NULL
-              AND route IS NULL
-              AND NOT (railway IS NULL AND highway IS NULL)
-              AND (railway IS NULL OR railway != 'subway');";
-
         logger.Information("Loading map data");
-        await using (var cmd = dataSource.CreateCommand(Sql))
+
+        var layers = await dataSource.GetTileAsync(new RenderContext(_tags, _tagsMap), zoom, tileX, tileY, cancellationToken);
+
+        logger.Information("Rendering image");
+        for (int renderLayer = 0; renderLayer < (int)RenderLayer.LAYER_NONE; renderLayer++)
         {
-            cmd.Parameters.AddWithValue("zoom", zoom);
-            cmd.Parameters.AddWithValue("tileY", tileY);
-            cmd.Parameters.AddWithValue("tileX", tileX);
+            cancellationToken.ThrowIfCancellationRequested();
 
-            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            var layer = layers[renderLayer];
 
-            List<List<IWKBObject>> layers = [];
-            for (int i = 0; i <= (int)RenderLayer.LAYER_NONE; i++)
+            foreach (var obj in layer)
             {
-                layers.Add([]);
+                obj.Render(canvas, tile, LayerToColor(renderLayer), 2);
             }
-
-            int rowCount = 0;
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                rowCount++;
-
-                if (reader.IsDBNull(11)) // ST_AsBinary index
-                {
-                    continue;
-                }
-
-                RenderLayer targetLayer = RenderLayer.LAYER_NONE;
-
-                foreach (string tagName in _tags)
-                {
-                    int ord = reader.GetOrdinal(tagName);
-                    if (reader.IsDBNull(ord))
-                    {
-                        continue;
-                    }
-
-                    string tagValue = reader.GetString(ord);
-
-                    if (_tagsMap.TryGetValue(tagName, out var valMap))
-                    {
-                        if (valMap.TryGetValue(tagValue, out var layer))
-                        {
-                            targetLayer = layer;
-                            break;
-                        }
-                        else if (valMap.TryGetValue("*", out var defaultLayer))
-                        {
-                            targetLayer = defaultLayer;
-                            break;
-                        }
-                    }
-                }
-
-                byte[] wkb = (byte[])reader[11];
-                if (wkb.Length < 5)
-                {
-                    continue; // invalid
-                }
-
-                // Read WKB geometry type (skip endian byte at wkb[0])
-                WkbGeometryType wkbType = (WkbGeometryType)BitConverter.ToUInt32(wkb, 1);
-
-                using var ms = new MemoryStream(wkb);
-                using var bReader = new BinaryReader(ms);
-
-                IWKBObject? obj = wkbType switch
-                {
-                    WkbGeometryType.Point => null,
-                    WkbGeometryType.MultiPoint => null,
-                    WkbGeometryType.LineString => WKBLineString.Load(bReader),
-                    WkbGeometryType.Polygon => WKBPolygon.Load(bReader),
-                    WkbGeometryType.MultiLineString => WKBMultiLineString.Load(bReader),
-                    WkbGeometryType.MultiPolygon => WKBMultiPolygon.Load(bReader),
-                    _ => throw new Exception($"Unknown WKB type: {wkbType}"),
-                };
-
-                if (obj is not null)
-                {
-                    layers[(int)targetLayer].Add(obj);
-                }
-            }
-
-            logger.Information("Rendering image");
-            for (int renderLayer = 0; renderLayer < (int)RenderLayer.LAYER_NONE; renderLayer++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var layer = layers[renderLayer];
-
-                for (int j = 0; j < layer.Count; j++)
-                {
-                    layer[j].Render(canvas, tile, LayerToColor(renderLayer), 2);
-                }
-            }
-
-            canvas.Flush();
         }
+
+        canvas.Flush();
     }
 
     private static SKColor LayerToColor(int layer)

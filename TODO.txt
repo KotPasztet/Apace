@@ -1,8 +1,7 @@
 shop
-encounters - convert (maybe even manually) the data in weird format to normal buildplate format and then MCEToJava
+encounters
 rewrite launcher
 admin panel - manage player inventory, stats, boosts, buildplates, ...
 Get rid of LinkedList
-get the rest of shop buidlplates - the ones in the weird format
-playfab
 use Guid instead of string
+create playfab items for the rest of the buildplates that crafters guide has
