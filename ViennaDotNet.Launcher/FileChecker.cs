@@ -19,7 +19,8 @@ internal static class FileChecker
         "catalog/recipes.json",
         "server_jars/buildplate-connector-plugin-0.0.1-SNAPSHOT-jar-with-dependencies.jar",
         "server_jars/fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar",
-        "tile_renderer/tagMap.json",
+        "tile_renderer/tagMap1.json",
+        "tile_renderer/tagMap2.json",
     ];
 
     private static readonly string[] expectedStaticDirectories = [

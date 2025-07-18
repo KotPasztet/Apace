@@ -1,5 +1,4 @@
-﻿using Npgsql;
-using Serilog;
+﻿using Serilog;
 using SkiaSharp;
 using ViennaDotNet.Common;
 using ViennaDotNet.EventBus.Client;

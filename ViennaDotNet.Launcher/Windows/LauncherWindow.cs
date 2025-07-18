@@ -4,10 +4,11 @@ using Terminal.Gui.App;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using ViennaDotNet.Common.Utils;
+using ViennaDotNet.DB;
 using ViennaDotNet.Launcher.Programs;
 using ViennaDotNet.Launcher.Utils;
 
-namespace ViennaDotNet.Launcher;
+namespace ViennaDotNet.Launcher.Windows;
 
 internal sealed class LauncherWindow : Window
 {
@@ -67,31 +68,36 @@ internal sealed class LauncherWindow : Window
             settings.Save(Program.SettingsFile);
         };
 
-        var importBuildplateBtn = new Button()
+        var dataBtn = new Button()
         {
             X = Pos.Center(),
             Y = Pos.Bottom(optionsBtn) + 1,
-            Text = "_Import buildplate",
+            Text = "_Manage data",
         };
-        importBuildplateBtn.Accepting += (s, e) =>
+        dataBtn.Accepting += (s, e) =>
         {
             e.Handled = true;
 
-            using var importBuildplate = new ImportBuildplateWindow(settings)
+            EarthDB db;
+            try
+            {
+                db = EarthDB.Open(settings.EarthDatabaseConnectionString ?? "");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Failed to open Earth database: {ex}");
+                MessageBox.ErrorQuery("Error", "Failed to connect to earth database", "OK");
+                return;
+            }
+
+            using var data = new DataWindow(db, settings)
             {
                 X = Pos.Center(),
                 Y = Pos.Center(),
                 //Modal = true,
             };
 
-            Application.Run(importBuildplate);
-        };
-
-        var dataBtn = new Button()
-        {
-            X = Pos.Center(),
-            Y = Pos.Bottom(importBuildplateBtn) + 1,
-            Text = "_Modify data",
+            Application.Run(data);
         };
 
         var exitBtn = new Button()
@@ -107,11 +113,11 @@ internal sealed class LauncherWindow : Window
             e.Handled = true;
         };
 
-        Add(startBtn, stopBtn, optionsBtn, importBuildplateBtn, dataBtn, exitBtn);
+        Add(startBtn, stopBtn, optionsBtn, dataBtn, exitBtn);
     }
 
     private void Start(Settings settings)
-        => UIUtils.RunWithLogs(this, async (logger, cancellationToken) =>
+        => UIUtils.RunWithLogsAsync(this, false, async (logger, cancellationToken) =>
         {
             await FileChecker.Check(settings, false, logger, cancellationToken);
 
@@ -157,7 +163,7 @@ internal sealed class LauncherWindow : Window
             return;
         }
 
-        UIUtils.RunWithLogs(this, async (logger, cancellationToken) =>
+        UIUtils.RunWithLogsAsync(this, false, async (logger, cancellationToken) =>
         {
             foreach (string programName in programExes)
             {

@@ -4,4 +4,4 @@ rewrite launcher
 admin panel - manage player inventory, stats, boosts, buildplates, ...
 Get rid of LinkedList
 use Guid instead of string
-create playfab items for the rest of the buildplates that crafters guide has
+load static data types only when needed

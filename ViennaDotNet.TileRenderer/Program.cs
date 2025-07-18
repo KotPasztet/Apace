@@ -1,15 +1,11 @@
 ﻿using CommandLine;
 using Npgsql;
 using Serilog;
-using SkiaSharp;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 using ViennaDotNet.EventBus.Client;
 using ViennaDotNet.StaticData;
-using ViennaDotNet.TileRenderer.Wkb;
 
 namespace ViennaDotNet.TileRenderer;
 

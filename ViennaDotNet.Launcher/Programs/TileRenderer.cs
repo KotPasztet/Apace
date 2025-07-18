@@ -26,7 +26,11 @@ internal static class TileRenderer
         logger.Information($"Running {DispName}");
         Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)),
         [
-            $"--tileDB={settings.TileDatabaseConnectionString}",
+            settings.TileDataSource switch{
+                Settings.TileDataSourceEnum.MapTiler => $"--maptiler_key={settings.MapTilerApiKey}",
+                Settings.TileDataSourceEnum.PostgreSQL => $"--tileDB={settings.TileDatabaseConnectionString}",
+                _ => throw new UnreachableException(),
+            },
             $"--eventbus=localhost:{settings.EventBusPort}",
         ])
         {

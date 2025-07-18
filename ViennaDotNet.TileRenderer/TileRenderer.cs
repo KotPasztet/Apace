@@ -1,5 +1,4 @@
-﻿using Npgsql;
-using Serilog;
+﻿using Serilog;
 using SkiaSharp;
 using System.Collections.Frozen;
 using System.Text.Json;

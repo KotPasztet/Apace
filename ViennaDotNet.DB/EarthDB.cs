@@ -1,31 +1,36 @@
 ﻿using Microsoft.Data.Sqlite;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using ViennaDotNet.Common;
 using ViennaDotNet.Common.Excceptions;
 using ViennaDotNet.Common.Utils;
 
+[assembly: InternalsVisibleTo("Launcher")]
+
 namespace ViennaDotNet.DB;
 
 public sealed class EarthDB : IDisposable
 {
-    private const string ObjectsTable = "objects";
-    private const string TilesTable = "tiles";
-    private const string BuildplatesTable = "buildplates";
+    internal const string ObjectsTable = "objects";
+    internal const string TilesTable = "tiles";
+    internal const string BuildplatesTable = "buildplates";
 
     private static readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private const int TRANSACTION_TIMEOUT = 60;
+    internal const int TRANSACTION_TIMEOUT = 60;
 
     public static EarthDB Open(string connectionString)
         => new EarthDB(connectionString);
 
     private readonly string connectionString;
+    // TODO: remove when executed
     private readonly HashSet<SqliteTransaction> transactions = [];
 
+    // TODO: is this necessary?
 #if NET9_0_OR_GREATER
     private readonly Lock _lock = new();
 #else
@@ -71,7 +76,14 @@ public sealed class EarthDB : IDisposable
         }
     }
 
-    private SqliteTransaction CreateTransaction(bool write)
+    internal SqliteConnection OpenConnection()
+    {
+        var connection = new SqliteConnection("Data Source=" + connectionString);
+        connection.Open();
+        return connection;
+    }
+
+    internal SqliteTransaction CreateTransaction(bool write)
     {
         lock (_lock)
         {
@@ -86,6 +98,44 @@ public sealed class EarthDB : IDisposable
             catch (SqliteException ex)
             {
                 throw new DatabaseException(ex);
+            }
+        }
+    }
+
+    internal void ExecuteCommand(bool write, Action<SqliteCommand> action)
+    {
+        using SqliteTransaction transaction = CreateTransaction(write);
+
+        using (var command = transaction.Connection!.CreateCommand())
+        {
+            action(command);
+        }
+
+        transaction.Commit();
+        if (transaction.Connection is not null)
+        {
+            transaction.Connection.Close();
+        }
+    }
+
+    internal async Task ExecuteCommandAsync(bool write, Action<SqliteCommand> action, CancellationToken cancellationToken = default)
+    {
+        using SqliteTransaction transaction = CreateTransaction(write);
+
+        try
+        {
+            using (var command = transaction.Connection!.CreateCommand())
+            {
+                action(command);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        finally
+        {
+            if (transaction.Connection is not null)
+            {
+                await transaction.Connection.CloseAsync();
             }
         }
     }
@@ -549,13 +599,13 @@ public sealed class EarthDB : IDisposable
     private static object? FromJson(string json, Type valueType)
         => Json.Deserialize(json, valueType, jsonOptions);
 
-    private static T? FromJson<T>(string json)
+    internal static T? FromJson<T>(string json)
         => Json.Deserialize<T>(json, jsonOptions);
 
     private static string ToJson(object value)
         => Json.Serialize(value, jsonOptions);
 
-    private static string ToJson<T>(T value)
+    internal static string ToJson<T>(T value)
         => Json.Serialize(value, jsonOptions);
 
     private static object CreateNewInstance(Type valueType)

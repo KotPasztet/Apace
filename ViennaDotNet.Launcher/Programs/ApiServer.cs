@@ -27,7 +27,8 @@ internal static class ApiServer
         return Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)),
         [
             $"--port={settings.ApiPort}",
-            $"--db=\"{settings.EarthDatabaseConnectionString}\"",
+            $"--earth-db=\"{settings.EarthDatabaseConnectionString}\"",
+            $"--live-db=\"{settings.LiveDatabaseConnectionString}\"",
             $"--eventbus=localhost:{settings.EventBusPort}",
             $"--objectstore=localhost:{settings.ObjectStorePort}"
         ])

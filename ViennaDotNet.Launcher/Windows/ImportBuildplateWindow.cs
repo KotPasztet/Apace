@@ -5,7 +5,7 @@ using Terminal.Gui.Views;
 using ViennaDotNet.Launcher.Programs;
 using ViennaDotNet.Launcher.Utils;
 
-namespace ViennaDotNet.Launcher;
+namespace ViennaDotNet.Launcher.Windows;
 
 internal sealed class ImportBuildplateWindow : Window
 {
@@ -112,7 +112,7 @@ internal sealed class ImportBuildplateWindow : Window
     }
 
     private void Import(Settings settings, string playerId, string filePath)
-        => UIUtils.RunWithLogs(this, async (logger, cancellationToken) =>
+        => UIUtils.RunWithLogsAsync(this, false, async (logger, cancellationToken) =>
         {
             await FileChecker.Check(settings, true, logger, cancellationToken);
 

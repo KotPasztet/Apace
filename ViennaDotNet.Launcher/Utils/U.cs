@@ -1,4 +1,4 @@
-﻿namespace ViennaDotNet.Launcher;
+﻿namespace ViennaDotNet.Launcher.Utils;
 
 internal static class U
 {

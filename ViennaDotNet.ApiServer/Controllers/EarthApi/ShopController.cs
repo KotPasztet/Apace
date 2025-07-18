@@ -83,7 +83,7 @@ public class ShopController : ViennaControllerBase
 
                         string model = Encoding.ASCII.GetString(previewData);
 
-                        var itemFromMap = staticData.Catalog.ShopCatalog.Items.GetValueOrDefault(itemId);
+                        //var itemFromMap = staticData.Catalog.ShopCatalog.Items.GetValueOrDefault(itemId);
 
                         result.Add(new StoreItemInfo(
                             itemId,
@@ -93,8 +93,8 @@ public class ShopController : ViennaControllerBase
                             model,
                             new Offset(0, buildplate.Offset, 0),
                             new Dimension(buildplate.Size, buildplate.Size),
-                            itemFromMap?.ItemCounts,
-                            itemFromMap?.FeaturedItem));
+                            null,
+                            null));
                     }
 
                     break;

@@ -1,6 +1,7 @@
 ﻿using Serilog;
 using System.Net;
 using System.Text.Json;
+using ViennaDotNet.Launcher.Utils;
 
 namespace ViennaDotNet.Launcher;
 
@@ -9,6 +10,7 @@ public class Settings
     private static readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions()
     {
         WriteIndented = true,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
 
     public static readonly Settings Default = new Settings()
@@ -18,6 +20,10 @@ public class Settings
         ObjectStorePort = 5396,
         IPv4 = "192.168.x.x",
         EarthDatabaseConnectionString = $".{Path.DirectorySeparatorChar}data{Path.DirectorySeparatorChar}earth.db",
+        LiveDatabaseConnectionString = $".{Path.DirectorySeparatorChar}data{Path.DirectorySeparatorChar}live.db",
+        EnableTileRenderingLabel = true,
+        TileDataSource = TileDataSourceEnum.MapTiler,
+        MapTilerApiKey = null,
         TileDatabaseConnectionString = "Host=localhost;Username=mylogin;Password=mypass;Database=genoa_tile_data",
         GeneratePreviewOnImport = true,
         SkipFileChecks = false,
@@ -27,12 +33,23 @@ public class Settings
     public ushort? EventBusPort { get; set; }
     public ushort? ObjectStorePort { get; set; }
     public string? IPv4 { get; set; }
+
     public string? EarthDatabaseConnectionString { get; set; }
+    public string? LiveDatabaseConnectionString { get; set; }
+
+    public bool? EnableTileRenderingLabel { get; set; }
+    public TileDataSourceEnum? TileDataSource { get; set; }
+    public string? MapTilerApiKey { get; set; }
     public string? TileDatabaseConnectionString { get; set; }
 
     public bool? GeneratePreviewOnImport { get; set; }
-
     public bool? SkipFileChecks { get; set; }
+
+    public enum TileDataSourceEnum
+    {
+        MapTiler,
+        PostgreSQL,
+    }
 
     public void Save(string path)
         => File.WriteAllText(path, JsonSerializer.Serialize(this, jsonOptions));
@@ -99,17 +116,45 @@ public class Settings
             anyErrors = true;
         }
 
-        if (settings.IPv4 is null || !IPAddress.TryParse(settings.IPv4, out var _))
+        if (settings.IPv4 is null || !IPAddress.TryParse(settings.IPv4, out _))
         {
             Log.Warning($"IPv4 is invalid, using default: '{Default.IPv4}' (Change this in Options/IPv4)");
             settings.IPv4 = Default.IPv4;
             anyErrors = true;
         }
 
-        if (settings.EarthDatabaseConnectionString is null)
+        if (string.IsNullOrWhiteSpace(settings.EarthDatabaseConnectionString))
         {
             Log.Warning($"DatabaseConnectionString is invalid, using default: '{Default.EarthDatabaseConnectionString}'");
             settings.EarthDatabaseConnectionString = Default.EarthDatabaseConnectionString;
+            anyErrors = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.LiveDatabaseConnectionString))
+        {
+            Log.Warning($"LiveDatabaseConnectionString is invalid, using default: '{Default.LiveDatabaseConnectionString}'");
+            settings.LiveDatabaseConnectionString = Default.LiveDatabaseConnectionString;
+            anyErrors = true;
+        }
+
+        if (settings.EnableTileRenderingLabel is null)
+        {
+            Log.Warning($"EnableTileRenderingLabel is invalid, using default: '{Default.EnableTileRenderingLabel}'");
+            settings.EnableTileRenderingLabel = Default.EnableTileRenderingLabel;
+            anyErrors = true;
+        }
+
+        if (settings.TileDataSource is null)
+        {
+            Log.Warning($"TileDataSource is invalid, using default: '{Default.TileDataSource}'");
+            settings.TileDataSource = Default.TileDataSource;
+            anyErrors = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.MapTilerApiKey))
+        {
+            Log.Warning($"MapTilerApiKey is invalid, using default: '{Default.MapTilerApiKey}'");
+            settings.MapTilerApiKey = Default.MapTilerApiKey;
             anyErrors = true;
         }
 
