@@ -1094,7 +1094,7 @@ public class Instance
 
     public void WaitForShutdown()
     {
-        for (; ; )
+        while (true)
         {
             try
             {
