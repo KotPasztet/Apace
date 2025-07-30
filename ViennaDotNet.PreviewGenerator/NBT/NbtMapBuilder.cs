@@ -6,7 +6,7 @@ namespace ViennaDotNet.PreviewGenerator.NBT;
 
 public class NbtMapBuilder : IDictionary<string, object>
 {
-    public static NbtMapBuilder from(NbtMap map)
+    public static NbtMapBuilder From(NbtMap map)
     {
         NbtMapBuilder builder = [];
         builder._map.AddRange(map._map);

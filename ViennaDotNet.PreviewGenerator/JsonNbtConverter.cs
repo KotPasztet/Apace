@@ -47,12 +47,12 @@ internal sealed class JsonNbtConverter
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public enum TypeE
         {
-            Compound,
-            List,
-            Int,
-            Byte,
-            Float,
-            String
+            [JsonStringEnumMemberName("compound")] Compound,
+            [JsonStringEnumMemberName("list")] List,
+            [JsonStringEnumMemberName("int")] Int,
+            [JsonStringEnumMemberName("byte")] Byte,
+            [JsonStringEnumMemberName("float")] Float,
+            [JsonStringEnumMemberName("string")] String
         }
 
         public readonly TypeE Type;

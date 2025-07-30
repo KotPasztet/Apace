@@ -9,7 +9,7 @@ internal static class BuildplateLauncher
     public static readonly string ExeName = "BuildplateLauncher" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
     public const string DispName = "Buildplate launcher";
 
-    public const string ServerJarName = "fabric-server-mc.1.20.4-loader.0.15.7-launcher.1.0.0.jar";
+    public const string ServerJarName = "fabric-server-mc.1.20.4-loader.0.15.10-launcher.1.0.1.jar";
 
     public static bool Check(Settings settings, ILogger logger)
     {

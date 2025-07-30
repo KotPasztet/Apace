@@ -19,6 +19,8 @@ internal static class FileChecker
         "catalog/recipes.json",
         "server_jars/buildplate-connector-plugin-0.0.1-SNAPSHOT-jar-with-dependencies.jar",
         "server_jars/fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar",
+        "server_template_dir/mods/fountain-0.0.1.jar",
+        "server_template_dir/mods/vienna-0.0.1.jar",
         "tile_renderer/tagMap1.json",
         "tile_renderer/tagMap2.json",
     ];
@@ -111,8 +113,8 @@ internal static class FileChecker
             {
                 logger.Warning("Fabric api mod not found, downloading");
 
-                var response = await httpClient.GetAsync("https://cdn.modrinth.com/data/P7dR8mSH/versions/9p2sguD7/fabric-api-0.96.4%2B1.20.4.jar", cancellationToken);
-                using (var fs = File.OpenWrite(Path.Combine(Program.StaticDataDir, "server_template_dir", "mods", "fabric-api-0.96.4+1.20.4.jar")))
+                var response = await httpClient.GetAsync("https://cdn.modrinth.com/data/P7dR8mSH/versions/xklQBMta/fabric-api-0.97.0%2B1.20.4.jar", cancellationToken);
+                using (var fs = File.OpenWrite(Path.Combine(Program.StaticDataDir, "server_template_dir", "mods", "fabric-api-0.97.0+1.20.4.jar")))
                 {
                     await response.Content.CopyToAsync(fs, cancellationToken);
                 }
@@ -123,8 +125,8 @@ internal static class FileChecker
             if (!File.Exists(Path.Combine(Program.StaticDataDir, "server_template_dir", BuildplateLauncher.ServerJarName)))
             {
                 logger.Warning("Fabric server not found, downloading");
-
-                var response = await httpClient.GetAsync("https://meta.fabricmc.net/v2/versions/loader/1.20.4/0.15.7/1.0.3/server/jar", cancellationToken);
+                
+                var response = await httpClient.GetAsync("https://meta.fabricmc.net/v2/versions/loader/1.20.4/0.15.10/1.0.1/server/jar", cancellationToken);
                 using (var fs = File.OpenWrite(Path.Combine(Program.StaticDataDir, "server_template_dir", BuildplateLauncher.ServerJarName)))
                 {
                     await response.Content.CopyToAsync(fs, cancellationToken);

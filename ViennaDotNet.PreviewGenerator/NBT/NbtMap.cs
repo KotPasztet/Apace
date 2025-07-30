@@ -36,7 +36,7 @@ public class NbtMap// : IDictionary<string, object>
 
     public static NbtMap fromMap(IDictionary<string, object> map) => new NbtMap(map.AsReadOnly());
 
-    public NbtMapBuilder toBuilder() => NbtMapBuilder.from(this);
+    public NbtMapBuilder toBuilder() => NbtMapBuilder.From(this);
 
     public bool ContainsKey(string key)
         => _map.ContainsKey(key);
