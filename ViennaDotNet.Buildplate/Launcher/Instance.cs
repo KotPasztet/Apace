@@ -180,7 +180,7 @@ public class Instance
             Log.Information("Running server");
 
             _subscriber = _eventBusClient.AddSubscriber(_eventBusQueueName, new Subscriber.SubscriberListener(
-                async @event => await HandleConnectorEvent(@event),
+                HandleConnectorEvent,
                 () =>
                 {
                     Log.Error("Event bus subscriber error");
@@ -270,7 +270,7 @@ public class Instance
                 {
                     Log.Information("Server is ready");
                     StartBridgeProcess();
-                    await SendEventBusInstanceStatusNotification("ready");
+                    SendEventBusInstanceStatusNotification("ready");
                     if (_shutdownTime is not null)
                     {
                         StartShutdownTimer();
@@ -488,17 +488,18 @@ public class Instance
         object Request
     );
 
-    private async Task SendEventBusInstanceStatusNotification(string status)
+    private void SendEventBusInstanceStatusNotification(string status)
     {
         Debug.Assert(_publisher is not null);
 
-        bool result = await _publisher.Publish("buildplates", status, InstanceId);
-
-        if (!result)
+        _publisher.Publish("buildplates", status, InstanceId).ContinueWith(task =>
         {
-            Log.Error("Event bus publisher error");
-            BeginShutdown();
-        }
+            if (!task.Result)
+            {
+                Log.Error("Event bus publisher error");
+                BeginShutdown();
+            }
+        });
     }
 
     private Task<T?> SendEventBusRequest<T>(string type, object obj, bool returnResponse)
@@ -1045,7 +1046,7 @@ public class Instance
 
             Log.Information("Beginning shutdown");
 
-            await SendEventBusInstanceStatusNotification("shuttingDown");
+            SendEventBusInstanceStatusNotification("shuttingDown");
 
             if (_bridgeProcess is not null)
             {
