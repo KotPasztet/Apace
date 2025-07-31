@@ -321,10 +321,14 @@ public sealed class BuildplateInstanceRequestHandler
         {
             previewObjectId = (await _objectStoreClient.Store(Encoding.ASCII.GetBytes(preview)).Task) as string;
             if (previewObjectId is null)
+            {
                 Log.Warning($"Could not store new preview object for buildplate {buildplateId} in object store");
+            }
         }
         else
+        {
             previewObjectId = null;
+        }
 
         try
         {

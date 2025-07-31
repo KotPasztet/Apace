@@ -188,10 +188,10 @@ public class Instance
                 }
             ));
             _requestHandler = _eventBusClient.AddRequestHandler(_eventBusQueueName, new RequestHandler.Handler(
-                request =>
+                async request =>
                 {
-                    object? responseObject = HandleConnectorRequest(request);
-                    return Task.FromResult(responseObject is not null ? Json.Serialize(responseObject) : null);
+                    object? responseObject = await HandleConnectorRequest(request);
+                    return responseObject is not null ? Json.Serialize(responseObject) : null;
                 },
                 () =>
                 {
