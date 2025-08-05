@@ -71,7 +71,7 @@ public sealed class Playfab
                 "Home L1",
                 null,
                 new(2020, 12, 10, 18, 59, 39, 396, DateTimeKind.Utc),
-                new(2021, 1, 4, 19, 42, 53, 773, DateTimeKind.Utc), // TODO: get this from file modified date or make it configurable?
+                new(2021, 1, 4, 19, 42, 53, 773, DateTimeKind.Utc),
                 new(2021, 1, 5, 17, 0, 0, DateTimeKind.Utc),
                 Guid.Parse("06e44b91-e7f5-46b6-9986-ca755890f3bf"),
                 null,

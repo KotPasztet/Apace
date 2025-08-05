@@ -22,6 +22,27 @@ internal static class DataUtils
         }
     }
 
+    public static long? GetPlayerCount(EarthDB db)
+    {
+        long? playerCount = null;
+        try
+        {
+            db.ExecuteCommand(false, command =>
+            {
+                command.CommandText = $"""
+                    SELECT COUNT(DISTINCT id) FROM {EarthDB.ObjectsTable};
+                    """;
+
+                playerCount = command.ExecuteScalar() as long?;
+            });
+        }
+        catch
+        {
+        }
+
+        return playerCount;
+    }
+
     public static async Task<long?> GetPlayerCountAsync(EarthDB db, CancellationToken cancellationToken = default)
     {
         long? playerCount = null;
@@ -73,7 +94,7 @@ internal static class DataUtils
         {
             using (var reader = await command.ExecuteReaderAsync(cancellationToken))
             {
-                while (reader.Read())
+                while (await reader.ReadAsync(cancellationToken))
                 {
                     string id = reader.GetString(0);
                     var profile = EarthDB.FromJson<Profile>(reader.GetString(1));

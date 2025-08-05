@@ -125,7 +125,7 @@ internal static class FileChecker
             if (!File.Exists(Path.Combine(Program.StaticDataDir, "server_template_dir", BuildplateLauncher.ServerJarName)))
             {
                 logger.Warning("Fabric server not found, downloading");
-                
+
                 var response = await httpClient.GetAsync("https://meta.fabricmc.net/v2/versions/loader/1.20.4/0.15.10/1.0.1/server/jar", cancellationToken);
                 using (var fs = File.OpenWrite(Path.Combine(Program.StaticDataDir, "server_template_dir", BuildplateLauncher.ServerJarName)))
                 {

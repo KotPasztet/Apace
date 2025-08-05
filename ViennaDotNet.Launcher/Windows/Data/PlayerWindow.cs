@@ -140,20 +140,20 @@ internal sealed class PlayerWindow : Window
                         .Update("profile", playerId, profile)
                         .ExecuteAsync(_db);
 
-                    MessageBox.Query("Info", "Saved", "OK");
+                    Application.RequestStop(this);
                 }
                 catch (EarthDB.DatabaseException ex)
                 {
-                    MessageBox.ErrorQuery("Error", $"Failed to save: {(ex.InnerException is not null ? ex.InnerException.Message : ex.Message)}", "OK");
+                    MessageBox.ErrorQuery("Error", $"Failed to save: {ex.GetInnerMostMessage()}", "OK");
                 }
             };
 
-            var backBtn = new Button()
+            var cancelBtn = new Button()
             {
-                Text = "_Back",
+                Text = "_Cancel",
                 Y = Pos.Bottom(saveBtn),
             };
-            backBtn.Accepting += (s, e) =>
+            cancelBtn.Accepting += (s, e) =>
             {
                 e.Handled = true;
 
@@ -165,7 +165,7 @@ internal sealed class PlayerWindow : Window
                     rubiesPurchasedLabel, rubiesPurchasedInput, rubiesPurchasedAdd, rubiesPurchasedRemove,
                     rubiesEarnedLabel, rubiesEarnedInput, rubiesEarnedAdd, rubiesEarnedRemove,
                 saveBtn,
-                backBtn);
+                cancelBtn);
         });
     }
 }

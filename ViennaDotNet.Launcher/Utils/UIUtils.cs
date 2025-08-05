@@ -116,7 +116,7 @@ internal static class UIUtils
             }
             catch (Exception ex)
             {
-                MessageBox.ErrorQuery("Error", $"An error occurred: {GetMessage(ex)}", "OK");
+                MessageBox.ErrorQuery("Error", $"An error occurred: {ex.GetInnerMostMessage()}", "OK");
                 Application.RequestStop(window);
             }
             finally
@@ -133,11 +133,6 @@ internal static class UIUtils
                     window.KeyDown -= KeyDown;
                 }
             }
-        }
-
-        static string GetMessage(Exception ex)
-        {
-            return ex is AggregateException { InnerException: { } } agg ? GetMessage(agg.InnerException!) : ex.Message;
         }
     }
 }

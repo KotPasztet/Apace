@@ -1,5 +1,4 @@
 using CommandLine;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;

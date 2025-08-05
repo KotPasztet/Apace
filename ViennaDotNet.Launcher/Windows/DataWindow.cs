@@ -29,7 +29,7 @@ internal sealed class DataWindow : Window
             {
                 e.Handled = true;
 
-                using var window = new PlayersWindow(_db, settings)
+                using var window = new PlayersWindow(this, _db, settings)
                 {
                     X = Pos.Center(),
                     Y = Pos.Center(),

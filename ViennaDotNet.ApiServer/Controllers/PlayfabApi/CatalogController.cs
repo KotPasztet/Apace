@@ -34,7 +34,6 @@ public class CatalogController : ViennaControllerBase
         ], []);
 
         itemData = [
-            // shop items/layout
             // required for shop to load for some reason...
             new Item(
                 new("B63A0803D3653643", "namespace", "namespace"),
