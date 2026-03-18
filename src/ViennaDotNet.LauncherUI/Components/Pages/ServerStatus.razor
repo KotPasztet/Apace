@@ -3,6 +3,7 @@
 @using System.Security.Claims
 @using ViennaDotNet.LauncherUI.Utils
 @inject AuthenticationStateProvider AuthStateProvider
+@inject LogsLogService LogService
 
 <div class="container-fluid py-3 px-2 px-md-4">
     <div class="card shadow-sm border-0 mb-3">
@@ -55,7 +56,7 @@
                         @foreach (var component in _components)
                         {
                             <li class="nav-item">
-                                <button class="nav-link py-2 me-2 @(_activeTab == component ? "active" : "bg-light text-dark")" 
+                                <button class="nav-link py-2 me-2 @(_activeTab == component ? "active" : "bg-light text-dark")"
                                         @onclick="() => _activeTab = component">
                                     @component
                                 </button>
@@ -66,10 +67,10 @@
 
                 <div class="log-container">
                     <div class="log-content">
-                        @foreach (var log in GetMockLogs(_activeTab))
+                        @foreach (var log in GetDisplayLogs())
                         {
                             <div class="log-line">
-                                <span class="log-time">[@DateTime.Now.ToString("HH:mm")]</span> 
+                                <span class="log-time">[@DateTime.Now.ToString("HH:mm")]</span>
                                 <span class="log-msg">@log</span>
                             </div>
                         }
@@ -90,36 +91,52 @@
 @code {
     private enum Status { Online, Starting, Offline }
     private Status _currentStatus = Status.Online;
-    private string _activeTab = "API Gateway";
-    private readonly string[] _components = { "API Gateway", "Database", "Auth Service", "Worker-01" };
+
+    // 1. Added "Launcher" to the components
+    private string _activeTab = "Launcher";
+    private readonly string[] _components = { "Launcher", "API Gateway", "Database", "Auth Service" };
 
     private ClaimsPrincipal? _user;
 
-     protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _user = authState.User;
+
+        // 2. Subscribe to live log events
+        LogService.OnLogReceived += HandleLogUpdate;
     }
 
-    private bool HasPermission(string permission)
-        => _user?.HasPermission(permission) ?? false;
-
-    private bool IsButtonDisabled(string permission) => !HasPermission(permission);
-
-    private string GetStatusClass() => _currentStatus switch
+    // 3. Helper to determine which logs to show
+    private IEnumerable<string> GetDisplayLogs()
     {
-        Status.Online => "status-online",
-        Status.Starting => "status-starting",
-        _ => "status-offline"
-    };
+        return _activeTab == "Launcher"
+            ? LogService.Logs
+            : GetMockLogs(_activeTab);
+    }
 
+    private async void HandleLogUpdate()
+    {
+        // InvokeAsync is required because Serilog might emit from a background thread
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        // 4. Unsubscribe to prevent memory leaks
+        LogService.OnLogReceived -= HandleLogUpdate;
+    }
+
+    private bool HasPermission(string permission) => _user?.HasPermission(permission) ?? false;
+    private bool IsButtonDisabled(string permission) => !HasPermission(permission);
+    private string GetStatusClass() => _currentStatus == Status.Online ? "status-online" : _currentStatus == Status.Starting
+? "status-starting" : "status-offline";
     private void SetStatus(Status newStatus) => _currentStatus = newStatus;
 
     private List<string> GetMockLogs(string component) => new()
     {
         $"Checking {component} health...",
         $"All systems nominal.",
-        $"Memory usage: 142MB",
-        $"Requests per second: 12"
+        $"Memory usage: 142MB"
     };
 }

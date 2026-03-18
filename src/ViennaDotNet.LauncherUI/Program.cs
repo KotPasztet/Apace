@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Serilog;
+using Serilog.Events;
 using ViennaDotNet.LauncherUI.Components;
 using ViennaDotNet.LauncherUI.Components.Account;
 using ViennaDotNet.LauncherUI.Data;
@@ -12,11 +14,30 @@ namespace ViennaDotNet.LauncherUI;
 
 public partial class Program
 {
+    public const string ProgramsDir = "./"; // same as launcher
+    public const string StaticDataDir = "staticdata";
+
     private static async Task Main(string[] args)
     {
+
         Settings.Instance = await Settings.LoadAsync(Settings.DefaultPath);
 
         var builder = WebApplication.CreateBuilder(args);
+
+        var logsLogService = new LogsLogService();
+        builder.Services.AddSingleton(logsLogService);
+
+        var log = new LoggerConfiguration()
+            .WriteTo.Console()
+            .WriteTo.File("logs/api_server/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.LogsLogSink(logsLogService)
+            .MinimumLevel.Debug()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
+            .MinimumLevel.Override("ViennaDotNet.ApiServer.Authentication", LogEventLevel.Information)
+            .CreateLogger();
+
+        Log.Logger = log;
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
