@@ -1,0 +1,61 @@
+ /* Custom Status Glows */
+ .status-indicator {
+     width: 24px;
+     height: 24px;
+     border-radius: 50%;
+ }
+
+ .status-online {
+     background-color: #2ecc71;
+     box-shadow: 0 0 12px rgba(46, 204, 113, 0.5);
+ }
+
+ .status-starting {
+     background-color: #f1c40f;
+     box-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
+ }
+
+ .status-offline {
+     background-color: #e74c3c;
+     box-shadow: 0 0 12px rgba(231, 76, 60, 0.5);
+ }
+
+ .log-container {
+     background: #121212;
+     border-radius: 8px;
+     padding: 12px;
+     height: 300px;
+     overflow-y: auto;
+     -webkit-overflow-scrolling: touch;
+ }
+
+ .log-content {
+     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+     font-size: 0.8rem;
+     line-height: 1.4;
+ }
+
+ .log-line {
+     color: #e0e0e0;
+     margin-bottom: 4px;
+     display: flex;
+ }
+
+ .log-time {
+     color: #888;
+     margin-right: 8px;
+     flex-shrink: 0;
+ }
+
+ .log-msg {
+     word-break: break-all;
+ }
+
+ .nav-scroller {
+     scrollbar-width: none;
+     -ms-overflow-style: none;
+ }
+
+ .nav-scroller::-webkit-scrollbar {
+     display: none;
+ }

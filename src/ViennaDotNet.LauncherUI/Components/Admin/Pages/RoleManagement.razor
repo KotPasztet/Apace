@@ -141,17 +141,42 @@
 
                     <h6>Permissions</h6>
                     <div class="row">
-                        @foreach (var perm in Permissions.All)
+                        @foreach (var categoryGroup in Permissions.AllWithInfo.GroupBy(p => p.Category))
                         {
-                            var isAssigned = _modelPermissions.Contains(perm);
-                            <div class="col-md-4">
-                                <div class="form-check p-2 border rounded @(isAssigned ? "bg-light" : "")"
-                                     style="cursor: pointer;">
-                                    <input class="form-check-input ms-1" type="checkbox" checked="@isAssigned"
-                                           disabled="@_model.IsReadOnly" @onchange="@(e => TogglePermission(perm, e.Value))" />
-                                    <label class="form-check-label ms-2 @(isAssigned ? "fw-bold" : "text-muted")">
-                                        @perm
-                                    </label>
+                            <div class="mb-3">
+                                <h5>@categoryGroup.Key</h5>
+                                <div class="row">
+                                    @foreach (var perm in categoryGroup)
+                                    {
+                                        var isAssigned = _modelPermissions.Contains(perm.Name);
+                                        var isExpanded = _expandedPermissions.Contains(perm.Name);
+
+                                        <div class="col-md-4">
+                                            <div class="form-check p-2 border rounded @(isAssigned ? "bg-light" : "")"
+                                                 style="cursor: pointer;">
+                                                <input class="form-check-input ms-1" type="checkbox" checked="@isAssigned"
+                                                       disabled="@_model.IsReadOnly"
+                                                       @onchange="@(e => TogglePermission(perm.Name, e.Value))" />
+                                                <label class="form-check-label ms-2 @(isAssigned ? "fw-bold" : "text-muted")">
+                                                    @perm.Name
+                                                </label>
+
+                                                @if (!string.IsNullOrWhiteSpace(perm.Description))
+                                                {
+                                                    <button class="btn btn-sm btn-link p-0 ms-2"
+                                                            @onclick="() => ToggleDescription(perm.Name)">
+                                                        @(isExpanded ? "▲" : "▼")
+                                                    </button>
+                                                    @if (isExpanded)
+                                                    {
+                                                        <div class="small text-muted mt-1" style="white-space: pre-wrap;">
+                                                            @perm.Description
+                                                        </div>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         }
@@ -202,6 +227,8 @@
     private RoleEditModel _model = new();
     private HashSet<string> _modelPermissions = new();
     private Dictionary<string, List<string>> _rolePermissions = new();
+
+    private HashSet<string> _expandedPermissions = new();
 
     private bool _showDeleteConfirm = false;
     private ApplicationRole? _roleToDelete;
@@ -269,6 +296,8 @@
             .Where(c => c.Type == "Permission")
             .Select(c => c.Value)
             .ToHashSet();
+
+        _expandedPermissions.Clear();
 
         _isEditing = true;
     }
@@ -422,6 +451,15 @@
     {
         if ((bool)checkedValue) _modelPermissions.Add(perm);
         else _modelPermissions.Remove(perm);
+    }
+
+    private void ToggleDescription(string permName)
+    {
+        if (!_expandedPermissions.Add(permName))
+        {
+            // If already exists, remove it to collapse
+            _expandedPermissions.Remove(permName);
+        }
     }
 
     private string GetPermissionPreview(string roleId)

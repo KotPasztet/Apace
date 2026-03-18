@@ -1,0 +1,125 @@
+@page "/ServerStatus"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using ViennaDotNet.LauncherUI.Utils
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container-fluid py-3 px-2 px-md-4">
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body text-center">
+            <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.8rem;">System Status</h6>
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="status-indicator @GetStatusClass() me-3"></div>
+                <h2 class="mb-0 fw-bold">@_currentStatus.ToString().ToUpper()</h2>
+            </div>
+            <small class="text-muted mt-2 d-block">Last updated: @DateTime.Now.ToString("t")</small>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-4">
+        <div class="col-12 col-md-4">
+            <button class="btn btn-lg btn-success w-100 py-3 d-flex flex-column align-items-center"
+                    disabled="@(IsButtonDisabled(Permissions.StartServer) || _currentStatus == Status.Online)"
+                    @onclick="() => SetStatus(Status.Starting)">
+                <i class="bi bi-play-fill fs-2"></i>
+                <span style="font-size: 0.9rem;">Start</span>
+            </button>
+        </div>
+        <div class="col-6 col-md-4">
+            <button class="btn btn-lg btn-warning w-100 py-3 d-flex flex-column align-items-center"
+                    disabled="@(IsButtonDisabled(Permissions.RestartServer) || _currentStatus == Status.Offline)"
+                    @onclick="() => SetStatus(Status.Starting)">
+                <i class="bi bi-arrow-clockwise fs-2"></i>
+                <span style="font-size: 0.9rem;">Restart</span>
+            </button>
+        </div>
+        <div class="col-6 col-md-4">
+            <button class="btn btn-lg btn-danger w-100 py-3 d-flex flex-column align-items-center"
+                    disabled="@(IsButtonDisabled(Permissions.StopServer) || _currentStatus == Status.Offline)"
+                    @onclick="() => SetStatus(Status.Offline)">
+                <i class="bi bi-stop-fill fs-2"></i>
+                <span style="font-size: 0.9rem;">Stop</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 pt-3">
+            <h5 class="fw-bold"><i class="bi bi-terminal me-2"></i>Live Logs</h5>
+        </div>
+        <div class="card-body pt-0">
+            @if (HasPermission(Permissions.ViewServerLogs))
+            {
+                <div class="nav-scroller mb-3">
+                    <ul class="nav nav-pills flex-nowrap" style="overflow-x: auto; white-space: nowrap;">
+                        @foreach (var component in _components)
+                        {
+                            <li class="nav-item">
+                                <button class="nav-link py-2 me-2 @(_activeTab == component ? "active" : "bg-light text-dark")" 
+                                        @onclick="() => _activeTab = component">
+                                    @component
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="log-container">
+                    <div class="log-content">
+                        @foreach (var log in GetMockLogs(_activeTab))
+                        {
+                            <div class="log-line">
+                                <span class="log-time">[@DateTime.Now.ToString("HH:mm")]</span> 
+                                <span class="log-msg">@log</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-light border text-center py-4">
+                    <i class="bi bi-lock-fill text-muted fs-1 d-block mb-2"></i>
+                    <span class="text-muted">Log access restricted</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private enum Status { Online, Starting, Offline }
+    private Status _currentStatus = Status.Online;
+    private string _activeTab = "API Gateway";
+    private readonly string[] _components = { "API Gateway", "Database", "Auth Service", "Worker-01" };
+
+    private ClaimsPrincipal? _user;
+
+     protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User;
+    }
+
+    private bool HasPermission(string permission)
+        => _user?.HasPermission(permission) ?? false;
+
+    private bool IsButtonDisabled(string permission) => !HasPermission(permission);
+
+    private string GetStatusClass() => _currentStatus switch
+    {
+        Status.Online => "status-online",
+        Status.Starting => "status-starting",
+        _ => "status-offline"
+    };
+
+    private void SetStatus(Status newStatus) => _currentStatus = newStatus;
+
+    private List<string> GetMockLogs(string component) => new()
+    {
+        $"Checking {component} health...",
+        $"All systems nominal.",
+        $"Memory usage: 142MB",
+        $"Requests per second: 12"
+    };
+}
