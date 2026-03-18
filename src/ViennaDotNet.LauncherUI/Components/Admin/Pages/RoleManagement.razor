@@ -169,6 +169,31 @@
     </div>
 }
 
+@if (_showDeleteConfirm && _roleToDelete != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">Confirm Delete</h5>
+                    <button class="btn-close" @onclick="CloseDeleteConfirm"></button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        Are you sure you want to delete
+                        <strong>@_roleToDelete.Name</strong>?
+                    </p>
+                    <p class="text-muted small">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseDeleteConfirm">Cancel</button>
+                    <button class="btn btn-danger" @onclick="DeleteConfirmed">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
 
     private List<ApplicationRole> _roles = new();
@@ -177,6 +202,9 @@
     private RoleEditModel _model = new();
     private HashSet<string> _modelPermissions = new();
     private Dictionary<string, List<string>> _rolePermissions = new();
+
+    private bool _showDeleteConfirm = false;
+    private ApplicationRole? _roleToDelete;
 
     private string? _errorMessage;
 
@@ -254,29 +282,26 @@
         {
             role = new ApplicationRole
             {
-                Name = string.IsNullOrWhiteSpace(_model.Name) ? "role" : _model.Name,
+                Name = string.IsNullOrWhiteSpace(_model.Name) ? "new-role" : _model.Name.Trim(),
                 Color = _model.Color,
                 Position = _model.Position
             };
         }
         else
         {
-            role = await RoleManager.FindByIdAsync(_model.Id);
+            role = (await RoleManager.FindByIdAsync(_model.Id))!;
             if (!string.IsNullOrWhiteSpace(_model.Name))
             {
-                role.Name = _model.Name;
+                role.Name = _model.Name.Trim();
             }
+
             role.Color = _model.Color;
         }
 
-        var roleName = string.IsNullOrWhiteSpace(_model.Name)
-            ? (_model.Id is null ? "new-role" : role.Name)
-            : _model.Name.Trim();
-
-        var existingRole = await RoleManager.FindByNameAsync(roleName);
+        var existingRole = await RoleManager.FindByNameAsync(role.Name!);
         if (existingRole != null && existingRole.Id != _model.Id)
         {
-            _errorMessage = $"A role with the name '{roleName}' already exists.";
+            _errorMessage = $"A role with the name '{role.Name}' already exists.";
             return;
         }
 
@@ -343,6 +368,28 @@
         await RoleManager.UpdateAsync(roleA);
 
         await LoadData();
+    }
+
+    private void ConfirmDelete(ApplicationRole role)
+    {
+        _roleToDelete = role;
+        _showDeleteConfirm = true;
+    }
+
+    private void CloseDeleteConfirm()
+    {
+        _showDeleteConfirm = false;
+        _roleToDelete = null;
+    }
+
+    private async Task DeleteConfirmed()
+    {
+        if (_roleToDelete != null)
+        {
+            await DeleteRole(_roleToDelete);
+        }
+
+        CloseDeleteConfirm();
     }
 
     private async Task DeleteRole(ApplicationRole role)
@@ -433,7 +480,7 @@
 
         @if (canManage)
         {
-            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRole(role)">Delete</button>
+            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(role)">Delete</button>
             if (role.Position > 0 && role.Position > _userMinPosition + 1)
             {
                 <button class="btn btn-sm btn-light" @onclick="() => MoveUp(role)">▲</button>
