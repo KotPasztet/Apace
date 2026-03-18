@@ -24,81 +24,88 @@
     }
     else
     {
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Position</th>
-                    <th>Color</th>
-                    <th>Name</th>
-                    <th>Permissions</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var role in _roles.OrderBy(r => r.Position))
-                {
-                    var canManage = role.Position > _userMinPosition && !role.IsBuiltIn;
-                    <tr style="border-left: 5px solid @role.Color">
-                        <td>@role.Position</td>
-                        <td>
-                            <div style="width: 20px; height: 20px; background:@role.Color; border-radius: 4px;"></div>
-                        </td>
-                        <td>
-                            <strong>@role.Name</strong>
-                            @if (role.IsBuiltIn)
-                            {
-                                <span class="badge bg-secondary ms-2">System</span>
-                            }
-                        </td>
-                        <td>
-                            @if (_rolePermissions.TryGetValue(role.Id, out var perms) && perms.Any())
-                            {
-                                <div class="d-flex flex-wrap gap-1 align-items-center">
-                                    @foreach (var p in perms.Take(3))
+        <div class="d-none d-md-block">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Position</th>
+                            <th>Color</th>
+                            <th>Name</th>
+                            <th>Permissions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in _roles.OrderBy(r => r.Position))
+                        {
+                            var canManage = role.Position > _userMinPosition && !role.IsBuiltIn;
+                            <tr style="border-left: 5px solid @role.Color">
+                                <td>@role.Position</td>
+                                <td>
+                                    <div style="width: 20px; height: 20px; background:@role.Color; border-radius: 4px;"></div>
+                                </td>
+                                <td>
+                                    <strong>@role.Name</strong>
+                                    @if (role.IsBuiltIn)
                                     {
-                                        <span class="badge border text-dark fw-normal"
-                                              style="background-color: #f8f9fa; border-color: #dee2e6 !important;">
-                                            @p
-                                        </span>
+                                        <span class="badge bg-secondary ms-2">System</span>
                                     }
-                                    @if (perms.Count > 3)
-                                    {
-                                        <span class="badge bg-secondary-subtle text-secondary border">
-                                            +@(perms.Count - 3) more
-                                        </span>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <span class="text-muted small"><em>No permissions</em></span>
-                            }
-                        </td>
-                        <td>
-                            <button class="btn btn-sm @(canManage ? "btn-outline-primary" : "btn-outline-secondary")"
-                                    @onclick="() => EditRole(role)">
-                                <i class="bi @(canManage ? "bi-pencil" : "bi-eye")"></i>
-                                @(canManage ? "Edit" : "View")
-                            </button>
+                                </td>
+                                <td>
+                                    @RenderPermissions(role)
+                                </td>
+                                <td>
+                                    @RenderActions((role, canManage))
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                            @if (canManage)
-                            {
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRole(role)">Delete</button>
-                                if (role.Position > 0 && role.Position > _userMinPosition + 1)
-                                {
-                                    <button class="btn btn-sm btn-light" @onclick="() => MoveUp(role)">▲</button>
-                                }
+        <div class="d-md-none">
+            @foreach (var role in _roles.OrderBy(r => r.Position))
+            {
+                var canManage = role.Position > _userMinPosition && !role.IsBuiltIn;
 
-                                if (role.Position < _roles.Count - 1)
+                <div class="card mb-3 shadow-sm border-0" style="border-left: 5px solid @role.Color">
+                    <div class="card-body">
+
+                        <!-- Header -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>@role.Name</strong>
+                                @if (role.IsBuiltIn)
                                 {
-                                    <button class="btn btn-sm btn-light" @onclick="() => MoveDown(role)">▼</button>
+                                    <span class="badge bg-secondary ms-2">System</span>
                                 }
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                            </div>
+                            <span class="badge bg-light text-dark">
+                                #@role.Position
+                            </span>
+                        </div>
+
+                        <!-- Color -->
+                        <div class="mt-2 d-flex align-items-center gap-2">
+                            <div style="width:16px;height:16px;background:@role.Color;border-radius:3px;"></div>
+                            <small class="text-muted">@role.Color</small>
+                        </div>
+
+                        <!-- Permissions -->
+                        <div class="mt-2">
+                            @RenderPermissions(role)
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="mt-3 d-flex flex-wrap gap-2">
+                            @RenderActions((role, canManage))
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     }
 </div>
 
@@ -163,6 +170,7 @@
 }
 
 @code {
+
     private List<ApplicationRole> _roles = new();
     private int _userMinPosition = -1;
     private bool _isEditing = false;
@@ -387,6 +395,56 @@
 
         return summary;
     }
+
+    RenderFragment<ApplicationRole> RenderPermissions => role => __builder =>
+    {
+        @if (_rolePermissions.TryGetValue(role.Id, out var perms) && perms.Any())
+        {
+            <div class="d-flex flex-wrap gap-1 align-items-center">
+                @foreach (var p in perms.Take(3))
+                {
+                    <span class="badge border text-dark fw-normal" style="background-color: #f8f9fa; border-color: #dee2e6 !important;">
+                        @p
+                    </span>
+                }
+                @if (perms.Count > 3)
+                {
+                    <span class="badge bg-secondary-subtle text-secondary border">
+                        +@(perms.Count - 3) more
+                    </span>
+                }
+            </div>
+        }
+        else
+        {
+            <span class="text-muted small"><em>No permissions</em></span>
+        }
+    };
+
+    RenderFragment<(ApplicationRole, bool)> RenderActions => item => __builder =>
+    {
+        var (role, canManage) = item;
+
+        <button class="btn btn-sm @(canManage ? "btn-outline-primary" : "btn-outline-secondary")"
+                @onclick="() => EditRole(role)">
+            <i class="bi @(canManage ? "bi-pencil" : "bi-eye")"></i>
+            @(canManage ? "Edit" : "View")
+        </button>
+
+        @if (canManage)
+        {
+            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRole(role)">Delete</button>
+            if (role.Position > 0 && role.Position > _userMinPosition + 1)
+            {
+                <button class="btn btn-sm btn-light" @onclick="() => MoveUp(role)">▲</button>
+            }
+
+            if (role.Position < _roles.Count - 1)
+            {
+                <button class="btn btn-sm btn-light" @onclick="() => MoveDown(role)">▼</button>
+            }
+        }
+    };
 
     public class RoleEditModel
     {
