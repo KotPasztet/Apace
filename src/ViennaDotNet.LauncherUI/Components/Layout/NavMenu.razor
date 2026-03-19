@@ -20,7 +20,7 @@
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
-        
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="ServerStatus">
                 <span class="bi bi-cloud-check" aria-hidden="true"></span> Server Status
@@ -38,7 +38,16 @@
                     </div>
                 }
 
-                @if (HasPermission(Permissions.ManageRoles))
+                @if (HasPermission(Permissions.ViewUsers))
+                {
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="Admin/Users">
+                            <span class="bi bi-people-fill" aria-hidden="true"></span> Manage Users
+                        </NavLink>
+                    </div>
+                }
+
+                @if (HasPermission(Permissions.EditRoles))
                 {
                     <div class="nav-item px-3">
                         <NavLink class="nav-link" href="Admin/Roles">

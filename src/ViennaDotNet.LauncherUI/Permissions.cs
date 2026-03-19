@@ -16,8 +16,16 @@ public static class Permissions
     [PermissionInfo("Server", "View the logs of the server")]
     public const string ViewServerLogs = "server.view.logs";
 
-    [PermissionInfo("Roles", "Manage roles")]
-    public const string ManageRoles = "role.manage";
+    [PermissionInfo("Users", "Manage roles - add, edit, delete")]
+    public const string EditRoles = "user.role.edit";
+    [PermissionInfo("Users", "View all users accounts")]
+    public const string ViewUsers = "user.view";
+    [PermissionInfo("Users", "Assign and remove roles to/from users")]
+    public const string AssignRoles = "user.role.assign";
+    [PermissionInfo("Users", "Delete user accounts")]
+    public const string DeleteUsers = "user.delete";
+    [PermissionInfo("Users", "Edit user account info")]
+    public const string EditAcountInfo = "user.edit";
 
     public static readonly ImmutableArray<string> All;
     public static readonly ImmutableArray<PermissionDescriptor> AllWithInfo;

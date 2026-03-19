@@ -57,7 +57,7 @@ public class ServerManager
     {
         lock (_statusLock)
         {
-            if (Status is ServerStatus.Stopping or ServerStatus.Stopping)
+            if (Status is ServerStatus.Offline or ServerStatus.Stopping)
             {
                 return;
             }
@@ -92,6 +92,25 @@ public class ServerManager
         await Start(cancellationToken);
     }
 
+    public async Task KillAll(CancellationToken cancellationToken = default)
+    {
+        lock (_statusLock)
+        {
+            cancellationToken = InitOperation(cancellationToken);
+
+            Status = ServerStatus.Stopping;
+        }
+
+        foreach (string programName in programExes)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await StopProgram(programName, Log.Logger, cancellationToken);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        Status = ServerStatus.Offline;
+    }
+
     private async Task StartInternal(Serilog.ILogger logger, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -110,7 +129,9 @@ public class ServerManager
         EventBusServer.Run(settings, logger);
         cancellationToken.ThrowIfCancellationRequested();
         ObjectStoreServer.Run(settings, logger);
-        cancellationToken.ThrowIfCancellationRequested();
+
+        await Task.Delay(1500, cancellationToken); // required for next components, wait for startup
+
         ApiServer.Run(settings, logger);
         cancellationToken.ThrowIfCancellationRequested();
         BuildplateLauncher.Run(settings, logger);

@@ -4,7 +4,7 @@
 @using System.Security.Claims
 @using Microsoft.EntityFrameworkCore
 @using ViennaDotNet.LauncherUI.Data
-@attribute [Authorize(Policy = Permissions.ManageRoles)]
+@attribute [Authorize(Policy = Permissions.EditRoles)]
 @rendermode InteractiveServer
 @inject RoleManager<ApplicationRole> RoleManager
 @inject AuthenticationStateProvider AuthStateProvider
@@ -222,7 +222,7 @@
 @code {
 
     private List<ApplicationRole> _roles = new();
-    private int _userMinPosition = -1;
+    private int _userMinPosition = 9999;
     private bool _isEditing = false;
     private RoleEditModel _model = new();
     private HashSet<string> _modelPermissions = new();

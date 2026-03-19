@@ -66,6 +66,13 @@
                 <span style="font-size: 0.9rem;">Stop</span>
             </button>
         </div>
+        <div class="col-12 mt-2">
+            <button class="btn btn-lg btn-outline-danger w-100 py-3 d-flex flex-column align-items-center"
+                    disabled="@IsButtonDisabled(Permissions.StopServer)" @onclick="() => KillAll()">
+                <i class="bi bi-x-circle-fill fs-2"></i>
+                <span style="font-size: 0.9rem; font-weight: bold;">KILL ALL PROCESSES</span>
+            </button>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0">
@@ -127,7 +134,6 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _user = authState.User;
 
-        // Subscribe to both Log and Status updates
         LogService.OnLogReceived += HandleUpdate;
         ServerManager.OnStatusChanged += HandleUpdate;
     }
@@ -143,7 +149,6 @@
 
     private async void HandleUpdate()
     {
-        // Sync the UI thread
         await InvokeAsync(StateHasChanged);
     }
 
@@ -153,7 +158,6 @@
         ServerManager.OnStatusChanged -= HandleUpdate;
     }
 
-    // New methods to trigger the Manager
     private async Task StartServer()
         => await ServerManager.Start();
     private async Task StopServer()
@@ -161,7 +165,16 @@
     private async Task RestartServer()
         => await ServerManager.Restart();
 
-    // Mapping Helpers
+    private async Task KillAll()
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to force kill all server processes?");
+        
+        if (confirmed)
+        {
+            await ServerManager.KillAll();
+        }
+    }
+
     private bool HasPermission(string permission)
         => _user?.HasPermission(permission) ?? false;
     private bool IsButtonDisabled(string permission)
