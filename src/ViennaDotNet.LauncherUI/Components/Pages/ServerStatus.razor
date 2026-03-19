@@ -5,6 +5,29 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject LogsLogService LogService
 @inject ServerManager ServerManager
+@inject IJSRuntime JS
+
+<script>
+    window.initLogScroller = (container) => {
+        if (!container) return;
+
+        container.scrollTop = container.scrollHeight;
+
+        let isScrolledToBottom = true;
+
+        container.addEventListener('scroll', () => {
+            isScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 10;
+        });
+
+        const observer = new MutationObserver(() => {
+            if (isScrolledToBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+
+        observer.observe(container, { childList: true, subtree: true });
+    };
+</script>
 
 <div class="container-fluid py-3 px-2 px-md-4">
     <div class="card shadow-sm border-0 mb-3">
@@ -66,7 +89,7 @@
                     </ul>
                 </div>
 
-                <div class="log-container">
+                <div class="log-container" @ref="_logContainerRef">
                     <div class="log-content">
                         @foreach (var log in GetDisplayLogs())
                         {
@@ -91,10 +114,13 @@
 
 @code {
     private ViennaDotNet.LauncherUI.ServerStatus _currentStatus => ServerManager.Status;
-    
+
     private string _activeTab = "Launcher";
     private readonly string[] _components = { "Launcher", "API Gateway", "Database", "Auth Service" };
     private ClaimsPrincipal? _user;
+
+    private ElementReference _logContainerRef;
+    private bool _scrollerInitialized;
 
     protected override async Task OnInitializedAsync()
     {
@@ -104,6 +130,15 @@
         // Subscribe to both Log and Status updates
         LogService.OnLogReceived += HandleUpdate;
         ServerManager.OnStatusChanged += HandleUpdate;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (HasPermission(Permissions.ViewServerLogs) && !_scrollerInitialized)
+        {
+            await JS.InvokeVoidAsync("initLogScroller", _logContainerRef);
+            _scrollerInitialized = true;
+        }
     }
 
     private async void HandleUpdate()
@@ -119,14 +154,19 @@
     }
 
     // New methods to trigger the Manager
-    private async Task StartServer() => await ServerManager.Start();
-    private async Task StopServer() => await ServerManager.Stop();
-    private async Task RestartServer() => await ServerManager.Restart();
+    private async Task StartServer()
+        => await ServerManager.Start();
+    private async Task StopServer()
+        => await ServerManager.Stop();
+    private async Task RestartServer()
+        => await ServerManager.Restart();
 
     // Mapping Helpers
-    private bool HasPermission(string permission) => _user?.HasPermission(permission) ?? false;
-    private bool IsButtonDisabled(string permission) => !HasPermission(permission);
-    
+    private bool HasPermission(string permission)
+        => _user?.HasPermission(permission) ?? false;
+    private bool IsButtonDisabled(string permission)
+        => !HasPermission(permission);
+
     private string GetStatusClass() => _currentStatus switch
     {
         ViennaDotNet.LauncherUI.ServerStatus.Online => "status-online",
@@ -134,8 +174,9 @@
         _ => "status-offline"
     };
 
-    private IEnumerable<string> GetDisplayLogs() => 
-        _activeTab == "Launcher" ? LogService.Logs : GetMockLogs(_activeTab);
+    private IEnumerable<string> GetDisplayLogs()
+        => _activeTab == "Launcher" ? LogService.Logs : GetMockLogs(_activeTab);
 
-    private List<string> GetMockLogs(string component) => new() { $"Checking {component} health...", "All systems nominal." };
+    private List<string> GetMockLogs(string component)
+        => new() { $"Checking {component} health...", "All systems nominal." };
 }
