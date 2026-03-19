@@ -7,9 +7,23 @@ namespace ViennaDotNet.LauncherUI.Controllers;
 [Route("api/logs")]
 public class LogController : ControllerBase
 {
-    [HttpPost("create")]
-    public async Task<Ok> CreateLogs([FromBody] LogEvent[] body)
+    private readonly LogsLogService _logService;
+
+    public LogController(LogsLogService logService)
     {
-        throw new NotImplementedException();
+        _logService = logService;
+    }
+
+    [HttpPost("create")]
+    public Results<Ok, BadRequest<string>> CreateLogs([FromBody] LogEvent[] body)
+    {
+        if (body == null || body.Length == 0)
+        {
+            return TypedResults.BadRequest("Log payload cannot be empty.");
+        }
+
+        _logService.AddExternalLogs(body);
+
+        return TypedResults.Ok();
     }
 }

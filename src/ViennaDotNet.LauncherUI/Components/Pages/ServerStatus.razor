@@ -77,7 +77,7 @@
             {
                 <div class="nav-scroller mb-3">
                     <ul class="nav nav-pills flex-nowrap" style="overflow-x: auto; white-space: nowrap;">
-                        @foreach (var component in _components)
+                        @foreach (var component in LogService.GetKnownComponents())
                         {
                             <li class="nav-item">
                                 <button class="nav-link py-2 me-2 @(_activeTab == component ? "active" : "bg-light text-dark")"
@@ -91,11 +91,12 @@
 
                 <div class="log-container" @ref="_logContainerRef">
                     <div class="log-content">
-                        @foreach (var log in GetDisplayLogs())
+                        @foreach (var log in LogService.GetLogsFor(_activeTab))
                         {
                             <div class="log-line">
-                                <span class="log-time">[@DateTime.Now.ToString("HH:mm")]</span>
-                                <span class="log-msg">@log</span>
+                                <span class="log-time">[@log.Timestamp.ToString("HH:mm:ss")]</span>
+                                <span class="log-level" style="font-size: 0.8em; opacity: 0.8;">[@log.Level]</span>
+                                <span class="log-msg">@log.RenderedMessage</span>
                             </div>
                         }
                     </div>
@@ -116,7 +117,6 @@
     private ViennaDotNet.LauncherUI.ServerStatus _currentStatus => ServerManager.Status;
 
     private string _activeTab = "Launcher";
-    private readonly string[] _components = { "Launcher", "API Gateway", "Database", "Auth Service" };
     private ClaimsPrincipal? _user;
 
     private ElementReference _logContainerRef;
@@ -173,10 +173,4 @@
         ViennaDotNet.LauncherUI.ServerStatus.Starting => "status-starting",
         _ => "status-offline"
     };
-
-    private IEnumerable<string> GetDisplayLogs()
-        => _activeTab == "Launcher" ? LogService.Logs : GetMockLogs(_activeTab);
-
-    private List<string> GetMockLogs(string component)
-        => new() { $"Checking {component} health...", "All systems nominal." };
 }
