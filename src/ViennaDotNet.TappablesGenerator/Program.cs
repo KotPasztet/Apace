@@ -16,19 +16,14 @@ internal static class Program
 
         [Option("eventbus", Default = "localhost:5532", Required = false, HelpText = "Event bus address")]
         public string EventBusConnectionString { get; set; }
+
+        [Option("logger-url", Default = null, Required = false, HelpText = "Url to send logs to")]
+        public string? LoggerUrl { get; set; }
     }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
     private static async Task<int> Main(string[] args)
     {
-        var log = new LoggerConfiguration()
-           .WriteTo.Console()
-           .WriteTo.File("logs/tappable_generator/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-           .MinimumLevel.Debug()
-           .CreateLogger();
-
-        Log.Logger = log;
-
         if (!Debugger.IsAttached)
         {
             AppDomain.CurrentDomain.UnhandledException += (object sender, UnhandledExceptionEventArgs e) =>
@@ -55,6 +50,21 @@ internal static class Program
         }
         else
             return 1;
+
+        var loggerConfig = new LoggerConfiguration()
+            .WriteTo.Console()
+            .WriteTo.File("logs/tappable_generator/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .Enrich.WithProperty("ComponentName", "TappableGenerator");
+
+        if (!string.IsNullOrWhiteSpace(options.LoggerUrl))
+        {
+            loggerConfig.WriteTo.Http(options.LoggerUrl, 10 * 1024 * 1024);
+        }
+
+        loggerConfig.MinimumLevel.Debug();
+        var log = loggerConfig.CreateLogger();
+
+        Log.Logger = log;
 
         Log.Information("Loading static data");
         StaticData.StaticData staticData;

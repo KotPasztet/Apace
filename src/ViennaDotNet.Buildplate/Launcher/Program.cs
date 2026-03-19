@@ -23,19 +23,14 @@ internal static class Program
         public string FabricJarName { get; set; }
         [Option("connectorPluginJar", Required = true, HelpText = "Fountain connector plugin JAR")]
         public string ConnectorPluginJar { get; set; }
+
+        [Option("logger-url", Default = null, Required = false, HelpText = "Url to send logs to")]
+        public string? LoggerUrl { get; set; }
     }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
     private static int Main(string[] args)
     {
-        var log = new LoggerConfiguration()
-            .WriteTo.Console()
-            .WriteTo.File("logs/buildplate_launcher/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-            .MinimumLevel.Debug()
-            .CreateLogger();
-
-        Log.Logger = log;
-
         Console.CancelKeyPress += (sender, e) =>
         {
             Log.Information("Ctrl+C received, ignored");
@@ -68,6 +63,21 @@ internal static class Program
         }
         else
             return 1;
+
+        var loggerConfig = new LoggerConfiguration()
+            .WriteTo.Console()
+            .WriteTo.File("logs/buildplate_launcher/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .Enrich.WithProperty("ComponentName", "BuildplateLauncher");
+
+        if (!string.IsNullOrWhiteSpace(options.LoggerUrl))
+        {
+            loggerConfig.WriteTo.Http(options.LoggerUrl, 10 * 1024 * 1024);
+        }
+
+        loggerConfig.MinimumLevel.Debug();
+        var log = loggerConfig.CreateLogger();
+
+        Log.Logger = log;
 
         Log.Information("Connecting to event bus");
         EventBusClient eventBusClient;

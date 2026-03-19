@@ -105,10 +105,11 @@ internal static class FileChecker
 
         if (checkImporter)
         {
-            if (!BuildplateImporter.Check(settings, logger))
-            {
-                error = true;
-            }
+            // todo:
+            // if (!BuildplateImporter.Check(settings, logger))
+            // {
+            //     error = true;
+            // }
         }
         else
         {

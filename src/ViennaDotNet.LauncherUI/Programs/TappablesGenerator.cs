@@ -27,7 +27,8 @@ internal static class TappablesGenerator
         logger.Information($"Running {DispName}");
         Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)),
         [
-            $"--eventbus=localhost:{settings.EventBusPort}"
+            $"--eventbus=localhost:{settings.EventBusPort}",
+            $"--logger-url={Program.LoggerAddress}",
         ])
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),

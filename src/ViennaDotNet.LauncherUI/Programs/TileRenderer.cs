@@ -33,6 +33,7 @@ internal static class TileRenderer
                 _ => throw new UnreachableException(),
             },
             $"--eventbus=localhost:{settings.EventBusPort}",
+            $"--logger-url={Program.LoggerAddress}",
         ])
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),

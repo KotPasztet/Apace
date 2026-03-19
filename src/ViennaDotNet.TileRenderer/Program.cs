@@ -24,18 +24,13 @@ internal static class Program
 
         [Option("dir", Default = "./staticdata", Required = false, HelpText = "Static data path")]
         public string? StaticDataPath { get; set; }
+
+        [Option("logger-url", Default = null, Required = false, HelpText = "Url to send logs to")]
+        public string? LoggerUrl { get; set; }
     }
 
     private static async Task<int> Main(string[] args)
     {
-        var log = new LoggerConfiguration()
-           .WriteTo.Console()
-           .WriteTo.File("logs/tile_renderer/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-           .MinimumLevel.Debug()
-           .CreateLogger();
-
-        Log.Logger = log;
-
         if (!Debugger.IsAttached)
         {
             AppDomain.CurrentDomain.UnhandledException += (object sender, UnhandledExceptionEventArgs e) =>
@@ -63,6 +58,21 @@ internal static class Program
                     : 1
                 : 1;
         }
+
+        var loggerConfig = new LoggerConfiguration()
+                 .WriteTo.Console()
+                 .WriteTo.File("logs/tile_renderer/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                 .Enrich.WithProperty("ComponentName", "TileRenderer");
+
+        if (!string.IsNullOrWhiteSpace(options.LoggerUrl))
+        {
+            loggerConfig.WriteTo.Http(options.LoggerUrl, 10 * 1024 * 1024);
+        }
+
+        loggerConfig.MinimumLevel.Debug();
+        var log = loggerConfig.CreateLogger();
+
+        Log.Logger = log;
 
         if (string.IsNullOrEmpty(options.MapTilerApiKey) && string.IsNullOrEmpty(options.TileDatabaseConnectionString))
         {
