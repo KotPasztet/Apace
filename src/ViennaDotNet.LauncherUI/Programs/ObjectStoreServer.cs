@@ -27,7 +27,7 @@ internal static class ObjectStoreServer
         logger.Information($"Running {DispName}");
         return Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)),
         [
-            $"--dataDir=data{Path.DirectorySeparatorChar}object_store",
+            $"--dataDir={Program.DataDir}{Path.DirectorySeparatorChar}object_store",
             $"--port={settings.ObjectStorePort}",
             $"--logger-url={Program.LoggerAddress}",
         ])

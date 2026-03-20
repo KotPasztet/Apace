@@ -20,8 +20,6 @@
   </Project>
   <Project Path="src/ViennaDotNet.EventBus.Server/ViennaDotNet.EventBus.Server.csproj">
   </Project>
-  <Project Path="src/ViennaDotNet.Launcher/ViennaDotNet.Launcher.csproj">
-  </Project>
   <Project Path="src/ViennaDotNet.ObjectStore.Client/ViennaDotNet.ObjectStore.Client.csproj">
   </Project>
   <Project Path="src/ViennaDotNet.ObjectStore.Server/ViennaDotNet.ObjectStore.Server.csproj">

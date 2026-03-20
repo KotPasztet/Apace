@@ -7,7 +7,7 @@ internal static class ProcessUtils
 {
     public static IEnumerable<Process> GetProgramProcesses(string name)
     {
-        string exePath = Path.GetFullPath(name);
+        string exePath = Path.GetFullPath(Path.Join(Program.ProgramsDir, name));
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {

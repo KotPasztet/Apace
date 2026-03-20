@@ -33,6 +33,7 @@ internal static class ApiServer
             $"--eventbus=localhost:{settings.EventBusPort}",
             $"--objectstore=localhost:{settings.ObjectStorePort}",
             $"--logger-url={Program.LoggerAddress}",
+            $"--dir={Program.StaticDataDir}",
         ])
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),

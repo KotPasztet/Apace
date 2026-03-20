@@ -16,8 +16,10 @@ namespace ViennaDotNet.LauncherUI;
 
 public partial class Program
 {
-    public const string ProgramsDir = "./"; // same as launcher
-    public const string StaticDataDir = "staticdata";
+    public static readonly string ProgramsDir = Path.GetFullPath("./../components");
+    public static readonly string StaticDataDir = Path.GetFullPath(Path.Combine("..", "staticdata"));
+    public static readonly string DataDirRelative =  Path.Combine("..", "data");
+    public static readonly string DataDir =  Path.GetFullPath(DataDirRelative);
 
     public static string Address { get; private set; } = "";
 
@@ -25,7 +27,7 @@ public partial class Program
 
     private static async Task Main(string[] args)
     {
-        Environment.CurrentDirectory = AppContext.BaseDirectory; // todo:
+        // Environment.CurrentDirectory = AppContext.BaseDirectory; // todo:
 
         Settings.Instance = await Settings.LoadAsync(Settings.DefaultPath);
 

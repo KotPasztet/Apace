@@ -237,16 +237,19 @@
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (TileDataSource is Settings.TileDataSourceEnum.MapTiler && string.IsNullOrWhiteSpace(MapTilerApiKey))
+            if (EnableTileRendering)
             {
-                yield return new ValidationResult("MapTiler API Key is required when using MapTiler source.", new[] {
+                if (TileDataSource is Settings.TileDataSourceEnum.MapTiler && string.IsNullOrWhiteSpace(MapTilerApiKey))
+                {
+                    yield return new ValidationResult("MapTiler API Key is required when using MapTiler source.", new[] {
 nameof(MapTilerApiKey) });
-            }
+                }
 
-            if (TileDataSource is Settings.TileDataSourceEnum.PostgreSQL && string.IsNullOrWhiteSpace(TileDatabaseConnectionString))
-            {
-                yield return new ValidationResult("Tile database connection string is required for PostgreSQL source.", new[] {
+                if (TileDataSource is Settings.TileDataSourceEnum.PostgreSQL && string.IsNullOrWhiteSpace(TileDatabaseConnectionString))
+                {
+                    yield return new ValidationResult("Tile database connection string is required for PostgreSQL source.", new[] {
 nameof(TileDatabaseConnectionString) });
+                }
             }
         }
     }

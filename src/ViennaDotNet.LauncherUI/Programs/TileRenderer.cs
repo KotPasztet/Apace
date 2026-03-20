@@ -34,6 +34,7 @@ internal static class TileRenderer
             },
             $"--eventbus=localhost:{settings.EventBusPort}",
             $"--logger-url={Program.LoggerAddress}",
+            $"--dir={Program.StaticDataDir}",
         ])
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),

@@ -14,12 +14,12 @@ public sealed class Settings
 
     public static readonly Settings Default = new Settings()
     {
-        ApiPort = 80,
+        ApiPort = 8080,
         EventBusPort = 5532,
         ObjectStorePort = 5396,
         IPv4 = "192.168.x.x",
-        EarthDatabaseConnectionString = $".{Path.DirectorySeparatorChar}data{Path.DirectorySeparatorChar}earth.db",
-        LiveDatabaseConnectionString = $".{Path.DirectorySeparatorChar}data{Path.DirectorySeparatorChar}live.db",
+        EarthDatabaseConnectionString = Path.Combine(Program.DataDirRelative, "earth.db"),
+        LiveDatabaseConnectionString = Path.Combine(Program.DataDirRelative, "live.db"),
         EnableTileRenderingLabel = true,
         TileDataSource = TileDataSourceEnum.MapTiler,
         MapTilerApiKey = null,
