@@ -27,6 +27,9 @@ public static class Permissions
     [PermissionInfo("Users", "Edit user account info")]
     public const string EditAcountInfo = "user.edit";
 
+    [PermissionInfo("Players", "View all player accounts")]
+    public const string ViewPlayers = "player.view";
+
     public static readonly ImmutableArray<string> All;
     public static readonly ImmutableArray<PermissionDescriptor> AllWithInfo;
 

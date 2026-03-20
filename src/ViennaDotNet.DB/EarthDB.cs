@@ -7,6 +7,7 @@ using ViennaDotNet.Common.Excceptions;
 using ViennaDotNet.Common.Utils;
 
 [assembly: InternalsVisibleTo("Launcher")]
+[assembly: InternalsVisibleTo("ViennaDotNet.LauncherUI")]
 
 namespace ViennaDotNet.DB;
 

@@ -1,0 +1,149 @@
+@page "/Admin/Players"
+@using Microsoft.AspNetCore.Authorization
+@using Serilog
+@using ViennaDotNet.DB
+@using ViennaDotNet.DB.Models.Player
+@using ViennaDotNet.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.ViewPlayers)]
+@rendermode InteractiveServer
+
+<div class="container-fluid py-3 px-md-4">
+    <div class="row align-items-center mb-4">
+        <div class="col-12 col-md-6">
+            <h2 class="h3 mb-1"><i class="bi bi-people-fill me-2 text-primary"></i>Players</h2>
+            <p class="text-muted small">Manage accounts and player statistics</p>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+            <span class="badge bg-dark-subtle text-dark border p-2">
+                Total: @(_players?.Count ?? 0)
+            </span>
+        </div>
+    </div>
+
+    @if (_errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i>@_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+        </div>
+    }
+
+    @if (_players == null && _errorMessage == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 text-muted">Loading player data...</div>
+        </div>
+    }
+    else if (_players != null)
+    {
+        <div class="d-none d-md-block card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User ID</th>
+                            <th>Username</th>
+                            <th class="text-center">Level</th>
+                            <th class="text-center">Rubies</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var player in _players)
+                        {
+                            <tr>
+                                <td><code class="text-primary small">@player.Id</code></td>
+                                <td>@RenderUsername(player)</td>
+                                <td class="text-center"><span class="badge bg-info text-dark">Lv. @player.Profile.Level</span></td>
+                                <td class="text-center text-danger fw-bold"><i class="bi bi-gem me-1"></i>@player.Profile.Rubies.Total</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="d-md-none">
+            @foreach (var player in _players)
+            {
+                <div class="card mb-3 shadow-sm border-start border-primary border-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="text-truncate me-2">
+                                <small class="text-muted d-block">ID: @player.Id.Substring(0, Math.Min(12, player.Id.Length))...</small>
+                                @RenderUsername(player)
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-info text-dark d-block mb-1">Lv. @player.Profile.Level</span>
+                                <span class="text-danger fw-bold small"><i class="bi bi-gem"></i> @player.Profile.Rubies.Total</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    RenderFragment RenderUsername((string Id, string? Username, Profile Profile) player) => __builder =>
+    {
+        @if (_editingId == player.Id)
+        {
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" @bind="_tempUsername" placeholder="Enter username..." />
+                <button class="btn btn-success" @onclick="() => SaveUsername(player.Id)"><i class="bi bi-check-lg"></i></button>
+                <button class="btn btn-outline-secondary" @onclick="CancelEdit"><i class="bi bi-x-lg"></i></button>
+            </div>
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(player.Username))
+            {
+                <span class="text-muted fst-italic">No Username</span>
+            }
+            else
+            {
+                <span class="fw-bold">@player.Username</span>
+            }
+        }
+    };
+
+    private EarthDB? _earthDB;
+    private List<(string Id, string? Username, Profile Profile)>? _players;
+    private string? _errorMessage;
+    private string? _editingId;
+    private string _tempUsername = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
+            using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+            _players = await DataUtils.GetFullProfilesAsync(_earthDB, liveDb, default).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex.ToString());
+            _errorMessage = "Database connection failed.";
+        }
+    }
+
+    private void StartEdit(string id, string? currentUsername)
+    {
+        _editingId = id; _tempUsername = currentUsername ?? "";
+    }
+
+    private void CancelEdit()
+    { 
+        _editingId = null; 
+    }
+
+    private async Task SaveUsername(string id) 
+    {
+        var pIdx = _players!.FindIndex(p => p.Id == id);
+        if (pIdx != -1) _players[pIdx] = (_players[pIdx].Id, _tempUsername, _players[pIdx].Profile);
+        _editingId = null;
+    }
+}
