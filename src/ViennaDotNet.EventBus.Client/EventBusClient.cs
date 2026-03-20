@@ -81,32 +81,12 @@ public sealed class EventBusClient
 
     private async Task HandleSendLoop(CancellationToken cancellationToken)
     {
-        int sleepCounter = 0;
         try
         {
-            while (true)
+            foreach (var message in _outgoingMessageQueue.GetConsumingEnumerable(cancellationToken))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if (_outgoingMessageQueue.Count > 0)
-                {
-                    string message = _outgoingMessageQueue.Take(cancellationToken);
-                    byte[] bytes = Encoding.ASCII.GetBytes(message);
-                    await _socket.SendAsync(bytes, cancellationToken);
-                }
-
-                // reduce CPU usage
-                if (sleepCounter >= 2500)
-                {
-                    sleepCounter = 0;
-                    await Task.Delay(1, cancellationToken);
-                }
-                else
-                {
-                    await Task.Yield();
-                }
-
-                sleepCounter++;
+                byte[] bytes = Encoding.ASCII.GetBytes(message);
+                await _socket.SendAsync(bytes, cancellationToken);
             }
         }
         catch (OperationCanceledException)
