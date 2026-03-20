@@ -126,6 +126,9 @@ public partial class Program
         // Apply database migrations and initialize built-in roles
         using (var scope = app.Services.CreateScope())
         {
+            // make sure Data dir exists
+            Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Data"));
+
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             await dbContext.Database.MigrateAsync();
 
