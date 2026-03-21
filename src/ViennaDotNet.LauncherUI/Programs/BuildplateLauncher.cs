@@ -35,6 +35,7 @@ internal static class BuildplateLauncher
             $"--serverTemplateDir={Path.GetFullPath(Path.Combine(Program.StaticDataDir, "server_template_dir"))}",
             $"--fabricJarName={ServerJarName}",
             $"--connectorPluginJar={Path.GetFullPath(Path.Combine(Program.StaticDataDir, "server_jars", "buildplate-connector-plugin-0.0.1-SNAPSHOT-jar-with-dependencies.jar"))}",
+            $"--dir={Program.StaticDataDir}",
             $"--logger-url={Program.LoggerAddress}",
         ])
         {

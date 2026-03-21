@@ -17,16 +17,47 @@ public static class JavaBlocks
     private static readonly Dictionary<string, BedrockMapping> bedrockMapByName = [];
     private static readonly Dictionary<string, BedrockMapping> bedrockNonVanillaMap = [];
 
-    static JavaBlocks()
+    private static readonly Lock _initLock = new Lock();
+    private static volatile bool _isInitialized = false;
+
+     private static void EnsureInitialized()
     {
-        // todo: don't hardcode static data path
-        DataFile.Load("./../staticdata/registry/blocks_java.json", jToken =>
+        if (!_isInitialized)
         {
-            JsonArray jArray = (JsonArray)jToken;
+            lock (_initLock)
+            {
+                if (!_isInitialized)
+                {
+                    throw new InvalidOperationException("Data has not been initialized."+ new StackFrame().ToString());
+                }
+            }
+        }
+    }
+
+    public static void Initialize(string staticData)
+    {
+         if (!_isInitialized)
+        {
+            lock (_initLock)
+            {
+                if (!_isInitialized)
+                {
+                    InitializeInternal(staticData);
+                    _isInitialized = true;
+                }
+            }
+        }
+    }
+
+    private static void InitializeInternal(string staticData)
+    {
+        DataFile.Load(Path.Combine(staticData, "registry", "blocks_java.json"), jToken =>
+        {
+            var jArray = (JsonArray)jToken;
 
             foreach (var _element in jArray)
             {
-                JsonObject? element = _element as JsonObject;
+                var element = _element as JsonObject;
                 Debug.Assert(element is not null);
 
                 int id = element["id"]!.GetValue<int>();
@@ -55,22 +86,22 @@ public static class JavaBlocks
             }
         });
 
-        DataFile.Load("./staticdata/registry/blocks_java_nonvanilla.json", jToken =>
+        DataFile.Load(Path.Combine(staticData, "registry", "blocks_java_nonvanilla.json"), jToken =>
         {
-            JsonArray jArray = (JsonArray)jToken;
+            var jArray = (JsonArray)jToken;
 
             foreach (var _element in jArray)
             {
-                JsonObject? element = _element as JsonObject;
+                var element = _element as JsonObject;
                 Debug.Assert(element is not null);
 
                 string baseName = element["name"]!.GetValue<string>()!;
 
                 LinkedList<string> stateNames = new();
-                JsonArray statesArray = (JsonArray)element["states"]!;
+                var statesArray = (JsonArray)element["states"]!;
                 foreach (var _stateElement in statesArray)
                 {
-                    JsonObject? stateElement = _stateElement as JsonObject;
+                    var stateElement = _stateElement as JsonObject;
                     Debug.Assert(stateElement is not null);
 
                     string stateName = stateElement["name"]!.GetValue<string>()!;
@@ -113,12 +144,12 @@ public static class JavaBlocks
         SortedDictionary<string, object> state = [];
         if (bedrockMappingObject.TryGetPropertyValue("state", out var stateToken))
         {
-            JsonObject? stateObject = stateToken as JsonObject;
+            var stateObject = stateToken as JsonObject;
             Debug.Assert(stateObject is not null);
 
             foreach (var entry in stateObject)
             {
-                JsonValue? stateElement = entry.Value as JsonValue;
+                var stateElement = entry.Value as JsonValue;
                 Debug.Assert(stateElement is not null);
                 var stateElementType = stateElement.GetValueKind();
                 if (stateElementType == JsonValueKind.String)
@@ -143,7 +174,7 @@ public static class JavaBlocks
         BedrockMapping.BlockEntityR? blockEntity = null;
         if (bedrockMappingObject.TryGetPropertyValue("block_entity", out var blockEntityToken))
         {
-            JsonObject? blockEntityObject = blockEntityToken as JsonObject;
+            var blockEntityObject = blockEntityToken as JsonObject;
             Debug.Assert(blockEntityObject is not null);
 
             string type = blockEntityObject["type"]!.GetValue<string>()!;
@@ -226,7 +257,7 @@ public static class JavaBlocks
         BedrockMapping.ExtraDataR? extraData = null;
         if (bedrockMappingObject.TryGetPropertyValue("extra_data", out var extra_dataToken))
         {
-            JsonObject? extraDataObject = extra_dataToken as JsonObject;
+            var extraDataObject = extra_dataToken as JsonObject;
             Debug.Assert(extraDataObject is not null);
 
             string type = extraDataObject["type"]!.GetValue<string>();
@@ -255,25 +286,33 @@ public static class JavaBlocks
 
     public static int GetMaxVanillaBlockId()
     {
+        EnsureInitialized();
+
         if (map.Count == 0) return -1;
         else return map.Keys.Max();
     }
 
     public static string[]? GetStatesForNonVanillaBlock(string name)
     {
+        EnsureInitialized();
+
         LinkedList<string>? states = nonVanillaStatesList.GetOrDefault(name, null);
         return states?.ToArray();
     }
 
     [Obsolete]
-    public static string? GetName(int id) => getName(id, null);
+    public static string? GetName(int id)
+        => GetName(id, null);
 
     [Obsolete]
-    public static BedrockMapping? GetBedrockMapping(int javaId) => GetBedrockMapping(javaId, null);
+    public static BedrockMapping? GetBedrockMapping(int javaId)
+        => GetBedrockMapping(javaId, null);
 
     // TODO?: FabricRegistryManager
-    public static string? getName(int id, /*FabricRegistryManager?*/object? fabricRegistryManager)
+    public static string? GetName(int id, /*FabricRegistryManager?*/object? fabricRegistryManager)
     {
+        EnsureInitialized();
+
         string? name = map.GetOrDefault(id, null);
         if (name is null && fabricRegistryManager is not null)
             name = null;//fabricRegistryManager.getBlockName(id);
@@ -284,6 +323,8 @@ public static class JavaBlocks
     // TODO?: FabricRegistryManager
     public static BedrockMapping? GetBedrockMapping(int javaId, /*FabricRegistryManager?*/object? fabricRegistryManager)
     {
+        EnsureInitialized();
+
         BedrockMapping? bedrockMapping = bedrockMap.GetOrDefault(javaId, null);
         if (bedrockMapping is null && fabricRegistryManager is not null)
         {
@@ -297,10 +338,9 @@ public static class JavaBlocks
 
     public static BedrockMapping? GetBedrockMapping(string javaName)
     {
-        BedrockMapping? bedrockMapping = bedrockMapByName.GetOrDefault(javaName, null);
-        if (bedrockMapping is null)
-            bedrockMapping = bedrockNonVanillaMap.GetOrDefault(javaName, null);
+        EnsureInitialized();
 
+        BedrockMapping? bedrockMapping = bedrockMapByName.GetOrDefault(javaName, null) ?? bedrockNonVanillaMap.GetOrDefault(javaName, null);
         return bedrockMapping;
     }
 

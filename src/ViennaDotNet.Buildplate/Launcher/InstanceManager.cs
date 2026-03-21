@@ -151,7 +151,7 @@ public class InstanceManager
 
                     Log.Information("Generating buildplate preview");
 
-                    string? preview = PreviewGenerator.GeneratePreview(serverData, previewRequest.Night);
+                    string? preview = PreviewGenerator.GeneratePreview(serverData, previewRequest.Night, Program.StaticDataPath);
                     if (preview is null)
                     {
                         Log.Warning("Could not generate preview for buildplate");

@@ -8,6 +8,8 @@ namespace ViennaDotNet.Buildplate.Launcher;
 
 internal static class Program
 {
+    internal static string StaticDataPath = "./staticdata";
+
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private sealed class Options
     {
@@ -23,6 +25,9 @@ internal static class Program
         public string FabricJarName { get; set; }
         [Option("connectorPluginJar", Required = true, HelpText = "Fountain connector plugin JAR")]
         public string ConnectorPluginJar { get; set; }
+
+        [Option("dir", Default = "./staticdata", Required = false, HelpText = "Static data path")]
+        public string StaticDataPath { get; set; }
 
         [Option("logger-url", Default = null, Required = false, HelpText = "Url to send logs to")]
         public string? LoggerUrl { get; set; }
@@ -63,6 +68,8 @@ internal static class Program
         }
         else
             return 1;
+
+        StaticDataPath = options.StaticDataPath;
 
         var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()

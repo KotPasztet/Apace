@@ -13,35 +13,66 @@ public static class BedrockBlocks
     private static readonly Dictionary<BlockNameAndState, int> stateToIdMap = [];
     private static readonly Dictionary<int, BlockNameAndState> idToStateMap = [];
 
-    public static readonly int AirId;
-    public static readonly int WaterId;
+    private static readonly Lock _initLock = new Lock();
+    private static volatile bool _isInitialized = false;
 
-    static BedrockBlocks()
+    public static int AirId { get; private set; }
+    public static int WaterId { get; private set; }
+
+    private static void EnsureInitialized()
     {
-        // todo: don't hardcode static data path
-        DataFile.Load("./../staticdata/registry/blocks_bedrock.json", _root =>
+        if (!_isInitialized)
         {
-            JsonArray root = (JsonArray)_root;
+            lock (_initLock)
+            {
+                if (!_isInitialized)
+                {
+                    throw new InvalidOperationException("Data has not been initialized." + new StackFrame().ToString());
+                }
+            }
+        }
+    }
+
+    public static void Initialize(string staticData)
+    {
+        if (!_isInitialized)
+        {
+            lock (_initLock)
+            {
+                if (!_isInitialized)
+                {
+                    InitializeInternal(staticData);
+                    _isInitialized = true;
+                }
+            }
+        }
+    }
+
+    private static void InitializeInternal(string staticData)
+    {
+        DataFile.Load(Path.Combine(staticData, "registry", "blocks_bedrock.json"), _root =>
+        {
+            var root = (JsonArray)_root;
             foreach (var _element in root)
             {
-                JsonObject? element = _element as JsonObject;
+                var element = _element as JsonObject;
                 Debug.Assert(element is not null);
 
                 int id = element["id"]!.GetValue<int>();
                 string name = element["name"]!.GetValue<string>()!;
                 SortedDictionary<string, object> state = [];
-                JsonObject stateObject = (JsonObject)element["state"]!;
+                var stateObject = (JsonObject)element["state"]!;
                 foreach (var entry in stateObject)
                 {
                     Debug.Assert(entry.Value is JsonValue);
-                    JsonValue stateElement = (JsonValue)entry.Value;
+                    var stateElement = (JsonValue)entry.Value;
                     if (stateElement.GetValueKind() == JsonValueKind.String)
                         state[entry.Key] = stateElement.GetValue<string>()!;
                     else
                         state[entry.Key] = stateElement.GetValue<int>();
                 }
 
-                BlockNameAndState blockNameAndState = new BlockNameAndState(name, state);
+                var blockNameAndState = new BlockNameAndState(name, state);
                 if (stateToIdMap.ContainsKey(blockNameAndState))
                     Log.Warning($"Duplicate Bedrock block name/state {name}", StringComparison.Ordinal);
                 else
@@ -54,6 +85,8 @@ public static class BedrockBlocks
             }
         });
 
+        _isInitialized = true;
+
         AirId = BedrockBlocks.GetId("minecraft:air", []);
         SortedDictionary<string, object> hashMap = new()
         {
@@ -64,18 +97,24 @@ public static class BedrockBlocks
 
     public static int GetId(string name, SortedDictionary<string, object> state)
     {
-        BlockNameAndState blockNameAndState = new BlockNameAndState(name, state);
+        EnsureInitialized();
+
+        var blockNameAndState = new BlockNameAndState(name, state);
         return stateToIdMap.GetOrDefault(blockNameAndState, -1);
     }
 
     public static string? GetName(int id)
     {
+        EnsureInitialized();
+
         BlockNameAndState? blockNameAndState = idToStateMap.GetOrDefault(id, null);
         return blockNameAndState?.Name;
     }
 
     public static Dictionary<string, object>? GetState(int id)
     {
+        EnsureInitialized();
+
         BlockNameAndState? blockNameAndState = idToStateMap.GetOrDefault(id, null);
         if (blockNameAndState is null)
             return null;
@@ -87,6 +126,8 @@ public static class BedrockBlocks
 
     public static NbtMap? GetStateNbt(int id)
     {
+        EnsureInitialized();
+
         BlockNameAndState? blockNameAndState = idToStateMap.GetOrDefault(id, null);
         if (blockNameAndState is null)
             return null;

@@ -1,17 +1,21 @@
 ﻿using Serilog;
 using System.Text;
 using ViennaDotNet.Common;
+using ViennaDotNet.PreviewGenerator.Registry;
 
 namespace ViennaDotNet.Buildplate.Launcher;
 
 public static class PreviewGenerator
 {
-    public static string? GeneratePreview(byte[] serverData, bool isNight)
+    public static string? GeneratePreview(byte[] serverData, bool isNight, string staticDataPath)
     {
+        BedrockBlocks.Initialize(staticDataPath);
+        JavaBlocks.Initialize(staticDataPath);
+
         string previewString;
         try
         {
-            using (MemoryStream ms = new MemoryStream(serverData))
+            using (var ms = new MemoryStream(serverData))
             {
                 previewString = ViennaDotNet.PreviewGenerator.Generator.Generate(ms);
             }
