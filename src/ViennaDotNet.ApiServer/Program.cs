@@ -63,7 +63,7 @@ public static class Program
         // when ran from a tool, don't try to parse args as Options
         if (args.Any(a => a.StartsWith("--applicationName", StringComparison.Ordinal)))
         {
-            CreateHostBuilder(args, 80, "").Build();
+            CreateHostBuilder(args, 8080, "").Build();
             return 0;
         }
 
@@ -274,12 +274,12 @@ public static class Program
     public static IHostBuilder CreateHostBuilder(string[] args, int httpPort, string liveDbConnectionString)
         => Host.CreateDefaultBuilder(args)
             .UseSerilog()
-             .ConfigureAppConfiguration((hostingContext, config) =>
-             {
-                 config.AddInMemoryCollection([
-                     new("ConnectionStrings:LiveDBConnection", "Data Source=" + liveDbConnectionString)
+            .ConfigureAppConfiguration((hostingContext, config) =>
+            {
+                config.AddInMemoryCollection([
+                    new("ConnectionStrings:LiveDBConnection", "Data Source=" + liveDbConnectionString)
                 ]);
-             })
+            })
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseStartup<Startup>();
