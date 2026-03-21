@@ -1,5 +1,14 @@
 # ViennaDotNet
-Unofficial port of [Vienna](https://github.com/Project-Genoa/Vienna) to .NET
+An unofficial port of [Vienna](https://github.com/Project-Genoa/Vienna) to .NET
+
+> [!WARNING]
+> **Work In Progress (WIP):** This project is currently under active development. Some features may be incomplete, and you may encounter bugs or breaking changes. Use at your own risk.
+
+## New Features
+In addition to the original Vienna feature set, this port adds:
+- shop
+- map
+- admin panel
 
 ## Setup
 
