@@ -9,6 +9,7 @@
 - Use tiles when spawning tappables - don't spawn on water/forbidden areas, spawn more trees in forest?
 - Allow setting maximum cache size for tiles
 - Allow java custom resourcepacks? (tool to turn them into earth(bedrock) resourcepacks)
+- Some option to only allow custom login - because we cannot verify microsoft accounts
 
 ## Refactoring
 

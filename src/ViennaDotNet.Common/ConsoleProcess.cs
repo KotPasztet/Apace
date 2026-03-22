@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Serilog;
 using ViennaDotNet.Common.Utils;
 
 namespace ViennaDotNet.Common;
@@ -11,6 +12,7 @@ public sealed class ConsoleProcess
     public readonly Process Process = new Process();
 
     public bool IORedirected { get; private set; }
+    public bool OpenInNewWindow { get; private set; }
 
     public event DataReceivedEventHandler? ErrorTextReceived
     {
@@ -24,32 +26,37 @@ public sealed class ConsoleProcess
         remove => Process.OutputDataReceived -= value;
     }
 
-    public int ExitCode
-        => Process.ExitCode;
-
-    public int Id
-        => Process.Id;
+    public int ExitCode => Process.ExitCode;
+    public int Id => Process.Id;
 
     private bool running;
 
-    public ConsoleProcess(string appName, bool useShellExecute, bool redirect)
+    public ConsoleProcess(string appName, bool useShellExecute, bool redirect, bool openInNewWindow = false)
     {
+        if (openInNewWindow && redirect)
+        {
+            throw new InvalidOperationException("Standard I/O cannot be redirected when opening in a new window.");
+        }
+
         if (redirect && useShellExecute)
-            throw new InvalidOperationException($"Can't redirect std in/out when useShellExecute is true");
+        {
+            throw new InvalidOperationException("Can't redirect std in/out when useShellExecute is true");
+        }
 
-        this._filePath = appName;
-
+        _filePath = appName;
         IORedirected = redirect;
+        OpenInNewWindow = openInNewWindow;
 
-        Process.StartInfo = new ProcessStartInfo(appName);
-        Process.StartInfo.RedirectStandardError = redirect;
+        Process.StartInfo = new ProcessStartInfo(appName)
+        {
+            RedirectStandardError = redirect,
+            RedirectStandardInput = redirect,
+            RedirectStandardOutput = redirect,
+            UseShellExecute = useShellExecute,
+            CreateNoWindow = !useShellExecute && !openInNewWindow,
+        };
 
-        Process.StartInfo.RedirectStandardInput = redirect;
-        Process.StartInfo.RedirectStandardOutput = redirect;
         Process.EnableRaisingEvents = true;
-        Process.StartInfo.CreateNoWindow = !useShellExecute;
-
-        Process.StartInfo.UseShellExecute = useShellExecute;
 
         Process.Exited += ProcessOnExited;
     }
@@ -62,15 +69,44 @@ public sealed class ConsoleProcess
         if (!string.IsNullOrEmpty(workingDir))
             Process.StartInfo.WorkingDirectory = workingDir;
 
-        string arguments = string.Join(" ", args);
-        Process.StartInfo.Arguments = arguments;
+        var formattedArgs = args.Select(a =>
+        {
+            if (string.IsNullOrEmpty(a)) return "\"\"";
+            
+            // If the string contains spaces, brackets, or quotes, it needs special handling
+            if (a.Contains("{") || a.Contains(" ") || a.Contains("\"") || a.Contains("'"))
+            {
+                // 1. Escape single quotes for PowerShell (' becomes '')
+                string escapedForPwsh = a.Replace("'", "''");
+                
+                // 2. Escape double quotes with a backslash so the OS shell (bash/cmd) 
+                // passes them cleanly to PowerShell (\" becomes literal ")
+                string escapedForOs = escapedForPwsh.Replace("\"", "\\\"");
+
+                // 3. Wrap the whole thing in SINGLE QUOTES. 
+                // This tells PowerShell: "Treat everything inside as a literal string, do not parse it!"
+                return $"'{escapedForOs}'";
+            }
+            return a;
+        });
+
+        string arguments = string.Join(" ", formattedArgs);
+
+        if (OpenInNewWindow)
+        {
+            ApplyTerminalWrapper(arguments);
+        }
+        else
+        {
+            Process.StartInfo.Arguments = string.Join(" ", args.Select(a => 
+            a.Contains(" ") || a.Contains("{") || a.Contains("\"") ? $"\"{a.Replace("\"", "\\\"")}\"" : a
+        ));
+        }
 
         Process.Start();
         running = true;
 
-        if (IORedirected && Process.StartInfo.UseShellExecute)
-            throw new InvalidOperationException($"Can't redirect std in/out when useShellExecute is true");
-        else if (IORedirected)
+        if (IORedirected)
         {
             Process.BeginOutputReadLine();
             Process.BeginErrorReadLine();
@@ -100,15 +136,31 @@ public sealed class ConsoleProcess
     public void StopAndWait(int timeout = 15 * 1000)
         => Process.StopGracefullyOrKill(timeout);
 
-    private const int CTRL_C_EVENT = 0;
-    [DllImport("kernel32.dll")]
-    private static extern bool GenerateConsoleCtrlEvent(uint dwCtrlEvent, uint dwProcessGroupId);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool AttachConsole(uint dwProcessId);
-    [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
-    private static extern bool FreeConsole();
-    [DllImport("kernel32.dll")]
-    private static extern bool SetConsoleCtrlHandler(ConsoleCtrlDelegate? HandlerRoutine, bool Add);
-    // Delegate type to be used as the Handler Routine for SCCH
-    private delegate bool ConsoleCtrlDelegate(uint CtrlType);
+    private void ApplyTerminalWrapper(string formattedArgs)
+    {
+        Process.StartInfo.UseShellExecute = true;
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            Process.StartInfo.FileName = "pwsh";
+            // The outer command string is wrapped in "...", so internal " must be \"
+            Process.StartInfo.Arguments = $"-NoExit -Command \"& '{_filePath}' {formattedArgs}\"";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            Process.StartInfo.FileName = "x-terminal-emulator";
+            // Linux terminal emulators vary; passing the command as a single string 
+            // to 'pwsh' is usually the most stable.
+            Process.StartInfo.Arguments = $"-e pwsh -NoExit -Command \"& '{_filePath}' {formattedArgs}\"";
+            Log.Information(Process.StartInfo.Arguments);
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            // AppleScript needs its own layer of quote escaping (replace " with \")
+            string command = $"& '{_filePath}' {formattedArgs}";
+            string appleScript = $"tell application \"Terminal\" to do script \"{command.Replace("\"", "\\\"")}\"";
+            Process.StartInfo.FileName = "osascript";
+            Process.StartInfo.Arguments = $"-e \"{appleScript}\"";
+        }
+    }
 }

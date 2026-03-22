@@ -103,7 +103,7 @@ public class Instance
         _baseDir = baseDir;
         _eventBusAddress = eventBusConnectionString;
         _eventBusQueueName = "buildplate_" + InstanceId;
-        _connectorPluginArgString = Json.Serialize(new ConnectorPluginArg(_eventBusAddress, _eventBusQueueName, _inventoryType)).Replace("\"", "\\\"", StringComparison.Ordinal);
+        _connectorPluginArgString = Json.Serialize(new ConnectorPluginArg(_eventBusAddress, _eventBusQueueName, _inventoryType));
     }
 
     private void Run()
@@ -906,11 +906,11 @@ public class Instance
 
         try
         {
-            bool useShellExecute = true;
+            bool openInNewWindow = true;
 
-            _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute, !useShellExecute);
+            _serverProcess = new ConsoleProcess(_javaCmd, openInNewWindow, !openInNewWindow, openInNewWindow: openInNewWindow);
 
-            if (!useShellExecute)
+            if (!openInNewWindow)
             {
                 _serverProcess.StandartTextReceived += (sender, e) =>
                 {
@@ -962,10 +962,10 @@ public class Instance
 
         try
         {
-            bool useShellExecute = false;
+            bool openInNewWindow = true;
 
-            _bridgeProcess = new ConsoleProcess(_javaCmd, useShellExecute, !useShellExecute);
-            if (!useShellExecute)
+            _bridgeProcess = new ConsoleProcess(_javaCmd, openInNewWindow, !openInNewWindow, openInNewWindow: openInNewWindow);
+            if (!openInNewWindow)
             {
                 _bridgeProcess.StandartTextReceived += (sender, e) =>
                 {
