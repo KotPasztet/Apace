@@ -142,7 +142,7 @@ public sealed class BuildplateInstanceRequestHandler
                                 if (requestWithBuildplateId is null)
                                     return null;
 
-                                object response = HandleInventoryRemove(requestWithBuildplateId.InstanceId, requestWithBuildplateId.Request);
+                                object response = await HandleInventoryRemove(requestWithBuildplateId.InstanceId, requestWithBuildplateId.Request);
                                 return response is not null ? Json.Serialize(response) : null;
                             }
                         case "inventoryUpdateWear":
@@ -872,7 +872,7 @@ public sealed class BuildplateInstanceRequestHandler
                     inventory.AddItems(inventoryUpdateItemWearMessage.ItemId, [new NonStackableItemInstance(inventoryUpdateItemWearMessage.InstanceId, inventoryUpdateItemWearMessage.Wear)]);
                 }
                 else
-                    Log.Warning("Buildplate instance {instanceId} attempted to update item wear for item {inventoryUpdateItemWearMessage.itemId()} {inventoryUpdateItemWearMessage.instanceId()} player {inventoryUpdateItemWearMessage.playerId()} that is not in inventory");
+                    Log.Warning($"Buildplate instance {instanceId} attempted to update item wear for item {inventoryUpdateItemWearMessage.ItemId} {inventoryUpdateItemWearMessage.InstanceId} player {inventoryUpdateItemWearMessage.PlayerId} that is not in inventory");
 
                 return new EarthDB.Query(true)
                     .Update("inventory", inventoryUpdateItemWearMessage.PlayerId, inventory);

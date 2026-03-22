@@ -311,9 +311,13 @@ public class Instance
 
             case "inventoryAdd":
                 {
+                    Log.Information("**************AddItem**************");
                     InventoryAddItemMessage? inventoryAddItemMessage = ReadJson<InventoryAddItemMessage>(@event.Data);
                     if (inventoryAddItemMessage is not null)
+                    {
                         await SendEventBusRequest<object>("inventoryAdd", inventoryAddItemMessage, false);
+                        Log.Information("**************AddItem null json**************");
+                    }
                 }
 
                 break;
@@ -327,11 +331,18 @@ public class Instance
                 break;
             case "inventorySetHotbar":
                 {
+                    Log.Information("**************SetHotbar**************");
                     InventorySetHotbarMessage? inventorySetHotbarMessage = ReadJson<InventorySetHotbarMessage>(@event.Data);
                     if (inventorySetHotbarMessage is not null)
+                    {
+                        Log.Information("**************SetHotbar null response**************");
                         await SendEventBusRequest<object>("inventorySetHotbar", inventorySetHotbarMessage, false);
+                    }
                 }
 
+                break;
+            default:
+                Log.Warning($"Unkown connector event: {@event.Type}");
                 break;
         }
     }
@@ -387,6 +398,10 @@ public class Instance
                             return playerDisconnectedResponse;
                         }
                     }
+                    else
+                    {
+                        Log.Information("**************playerDisconnected null json**************");
+                    }
                 }
 
                 break;
@@ -400,6 +415,14 @@ public class Instance
                         {
                             return respawn.Value;
                         }
+                        else
+                        {
+                            Log.Information("**************playerDead null response**************");
+                        }
+                    }
+                    else
+                    {
+                        Log.Information("**************playerDead null json**************");
                     }
                 }
 
@@ -407,12 +430,23 @@ public class Instance
             case "getInventory":
                 {
                     string? playerId = ReadJson<string>(request.Data);
+                    Log.Information("**************GetInventory**************");
                     if (playerId is not null)
                     {
                         InventoryResponse? inventoryResponse = await SendEventBusRequest<InventoryResponse>("getInventory", playerId, true);
 
                         if (inventoryResponse is not null)
+                        {
                             return inventoryResponse;
+                        }
+                        else
+                        {
+                            Log.Information("**************GetInventory response null**************");
+                        }
+                    }
+                    else
+                    {
+                        Log.Warning("**************GetInventory player null**************");
                     }
                 }
 
@@ -420,6 +454,7 @@ public class Instance
             case "inventoryRemove":
                 {
                     InventoryRemoveItemRequest? inventoryRemoveItemRequest = ReadJson<InventoryRemoveItemRequest>(request.Data);
+                    Log.Information("**************InventoryRemove**************");
                     if (inventoryRemoveItemRequest is not null)
                     {
                         if (inventoryRemoveItemRequest.InstanceId is not null)
@@ -427,14 +462,30 @@ public class Instance
                             bool? success = await SendEventBusRequest<bool>("inventoryRemove", inventoryRemoveItemRequest, true);
 
                             if (success is not null)
+                            {
                                 return success;
+                            }
+                            else
+                            {
+                                Log.Information("**************inventoryRemove response null 1**************");
+                            }
                         }
                         else
                         {
                             int? removedCount = await SendEventBusRequest<int>("inventoryRemove", inventoryRemoveItemRequest, true);
                             if (removedCount is not null)
+                            {
                                 return removedCount;
+                            }
+                            else
+                            {
+                                Log.Information("**************inventoryRemove response null 2**************");
+                            }
                         }
+                    }
+                    else
+                    {
+                        Log.Warning("**************InventoryRemove request null**************");
                     }
                 }
 
@@ -463,6 +514,9 @@ public class Instance
                     }
                 }
 
+                break;
+            default:
+                Log.Warning($"Unkown connector request: {request.Type}");
                 break;
         }
 

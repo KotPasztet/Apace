@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -18,8 +19,8 @@ public partial class Program
 {
     public static readonly string ProgramsDir = Path.GetFullPath("./../components");
     public static readonly string StaticDataDir = Path.GetFullPath(Path.Combine("..", "staticdata"));
-    public static readonly string DataDirRelative =  Path.Combine("..", "data");
-    public static readonly string DataDir =  Path.GetFullPath(DataDirRelative);
+    public static readonly string DataDirRelative = Path.Combine("..", "data");
+    public static readonly string DataDir = Path.GetFullPath(DataDirRelative);
 
     public static string Address { get; private set; } = "";
 
@@ -120,7 +121,21 @@ public partial class Program
             var server = app.Services.GetRequiredService<IServer>();
             var addressFeature = server.Features.Get<IServerAddressesFeature>();
 
-            Address = addressFeature?.Addresses.FirstOrDefault() ?? "";
+            var address = (addressFeature?.Addresses.FirstOrDefault() ?? "").AsSpan();
+            var index = address.IndexOf("://");
+            if (index != -1)
+            {
+                address = address[(index + 3)..];
+            }
+
+            if (IPEndPoint.TryParse(address, out var endpoint))
+            {
+                Address = $"http://localhost:{endpoint.Port}";
+            }
+            else
+            {
+                Address = "http://localhost:5000";
+            }
         });
 
         // Apply database migrations and initialize built-in roles
