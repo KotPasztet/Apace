@@ -13,7 +13,12 @@
 
 <div class="container-fluid mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-        <h2 class="mb-0">Buildplates</h2>
+        <div class="d-flex align-items-center">
+            <h2 class="mb-0">Buildplates</h2>
+            <span class="badge bg-secondary rounded-pill ms-2">
+                @(_totalBuildplateCount?.ToString() ?? "?")
+            </span>
+        </div>
         
         <div class="input-group" style="max-width: 400px;">
             <input type="text" class="form-control" placeholder="Search by name..." @bind="_searchTerm"
@@ -174,6 +179,8 @@
 @code {
     private ClaimsPrincipal? _user;
     private List<Buildplate> _buildplates = new();
+
+    private int? _totalBuildplateCount;
     
     // Search and Pagination State
     private string _searchTerm = string.Empty;
@@ -211,6 +218,10 @@
             
             Debug.Assert(totalCount is not null);
             _totalItems = totalCount.Value;
+            if (string.IsNullOrWhiteSpace(searchFilter))
+            {
+                _totalBuildplateCount = totalCount.Value;
+            }
             _buildplates.Clear(); // Clear current page data
 
             foreach (var (buildplateId, dbBuildplate) in buildplates)
