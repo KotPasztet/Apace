@@ -1,7 +1,7 @@
 # TODO
 
 - Buildplate importing - allow both Vienna and Project Earth formats - MCEToJava
-- Buildplate preview in admin panel
+- Buildplate preview in admin panel - SkiaSharp render lib + SkiaSharp.Views.Blazor
 - Shop management
 - Player buildplate management
 - Player items management

@@ -1,0 +1,161 @@
+@page "/Buildplates"
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@using ViennaDotNet.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.ViewBuildplates)]
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Buildplates</h2>
+        <a href="/Admin/ImportBuildplate" class="btn btn-primary fw-bold">
+            <i class="bi bi-plus-lg"></i> Import Buildplate(s)
+        </a>
+    </div>
+
+    <div class="row g-4">
+        @if (buildplates == null || !buildplates.Any())
+        {
+            <div class="col-12">
+                <div class="alert alert-info">No buildplates found. Try importing one!</div>
+            </div>
+        }
+        else
+        {
+            @foreach (var bp in buildplates)
+            {
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+                    <div class="card h-100 shadow-sm">
+                        
+                        <div class="bg-dark text-secondary d-flex align-items-center justify-content-center position-relative"
+                             style="height: 220px; overflow: hidden;">
+                            <span>[ TODO: 3D Preview ]</span>
+                            
+                            <span class="position-absolute top-0 end-0 m-2 badge @(bp.IsNight ? "bg-secondary" : "bg-info text-dark")">
+                                @(bp.IsNight ? "Night" : "Day")
+                            </span>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label visually-hidden">Buildplate Name</label>
+                                <input type="text" class="form-control form-control-lg fw-bold border-0 bg-light"
+                                       @bind="bp.Name" @bind:event="oninput" placeholder="Enter name..."
+                                       disabled="@(!HasPermission(Permissions.ManageBuildplates))" />
+                            </div>
+
+                            <div class="row text-muted small">
+                                <div class="col-6 mb-2">
+                                    <span class="d-block fw-bold text-uppercase">Size</span>
+                                    <span>@bp.Size</span>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <span class="d-block fw-bold text-uppercase">Scale</span>
+                                    <span>@bp.Scale</span>
+                                </div>
+                                <div class="col-12">
+                                    <span class="d-block fw-bold text-uppercase">Offset</span>
+                                    <span>@bp.Offset</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (HasPermission(Permissions.ManageBuildplates))
+                        {
+                            <div class="card-footer bg-transparent border-top-0 pb-3 d-flex justify-content-end">
+                                <button class="btn btn-outline-danger btn-sm" @onclick="() => RequestDelete(bp)">
+                                    Delete
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@* --- Delete Confirmation Modal --- *@
+@if (_showDeleteModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong>@_bpToDelete?.Name</strong>?</p>
+                    <p class="text-danger small">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDelete">Delete Buildplate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private ClaimsPrincipal? _user;
+    private List<Buildplate> buildplates = new();
+    
+    // Modal State
+    private bool _showDeleteModal = false;
+    private Buildplate? _bpToDelete;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User;
+
+        // Mock data
+        buildplates = new List<Buildplate>
+        {
+            new Buildplate { Id = 1, Name = "Main Base Hub", Size = "256x256", Offset = "0, 10, 0", Scale = "1.0", IsNight = false },
+            new Buildplate { Id = 2, Name = "Dark Forest Spawner", Size = "128x128", Offset = "-50, 0, 100", Scale = "0.5", IsNight = true },
+            new Buildplate { Id = 3, Name = "Sky Castle", Size = "512x512", Offset = "0, 255, 0", Scale = "2.0", IsNight = false },
+            new Buildplate { Id = 4, Name = "Underground Bunker", Size = "64x64", Offset = "10, -50, 20", Scale = "1.0", IsNight = true }
+        };
+    }
+
+    private void RequestDelete(Buildplate bp)
+    {
+        _bpToDelete = bp;
+        _showDeleteModal = true;
+    }
+
+    private void CancelDelete()
+    {
+        _bpToDelete = null;
+        _showDeleteModal = false;
+    }
+
+    private void ConfirmDelete()
+    {
+        if (_bpToDelete != null && HasPermission(Permissions.ManageBuildplates))
+        {
+            buildplates.Remove(_bpToDelete);
+        }
+        
+        _showDeleteModal = false;
+        _bpToDelete = null;
+    }
+
+    private bool HasPermission(string permission)
+        => _user?.HasPermission(permission) ?? false;
+
+    public class Buildplate
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Size { get; set; } = string.Empty;
+        public string Offset { get; set; } = string.Empty;
+        public string Scale { get; set; } = string.Empty;
+        public bool IsNight { get; set; }
+    }
+}

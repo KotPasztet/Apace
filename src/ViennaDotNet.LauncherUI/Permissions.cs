@@ -30,6 +30,12 @@ public static class Permissions
     [PermissionInfo("Players", "View all player accounts")]
     public const string ViewPlayers = "player.view";
 
+    [PermissionInfo("Buildplates", "View the imported buildplates")]
+    public const string ViewBuildplates = "buildplate.view";
+
+    [PermissionInfo("Buildplates", "Manage buildplates - import, edit, delete")]
+    public const string ManageBuildplates = "buildplate.manage";
+
     public static readonly ImmutableArray<string> All;
     public static readonly ImmutableArray<PermissionDescriptor> AllWithInfo;
 
