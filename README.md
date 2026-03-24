@@ -1,8 +1,17 @@
 # ViennaDotNet
+
 An unofficial port of [Project Vienna](https://github.com/Project-Genoa/Vienna) to .NET
 
 > [!WARNING]
 > **Work In Progress (WIP):** This project is currently under active development. Some features may be incomplete, and you may encounter bugs or breaking changes. Use at your own risk!
+
+## Disclaimer
+
+**ViennaDotNet** is an independent, community-driven project and is **not affiliated with, authorized, maintained, endorsed, or sponsored** by Microsoft Corporation, Mojang Studios, or any of their affiliates or subsidiaries.
+
+* *Minecraft Earth™* is a trademark of Microsoft Corporation. All trademarks and registered trademarks are the property of their respective owners.
+* This software is provided solely for educational, research, and archival purposes to restore functionality to a discontinued service.
+* This project is provided "as-is" without any warranty of any kind, express or implied. In no event shall the authors be held liable for any claim, damages, or other liability.
 
 ## New Features
 In addition to the original Vienna feature set, this port adds:
