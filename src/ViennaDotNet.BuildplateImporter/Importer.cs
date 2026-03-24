@@ -28,7 +28,7 @@ public sealed class Importer
         _logger = logger;
     }
 
-    public async Task<bool> ImportTemplateAsync(string templateId, Stream stream, CancellationToken cancellationToken = default)
+    public async Task<bool> ImportTemplateAsync(string templateId, string name, Stream stream, CancellationToken cancellationToken = default)
     {
         var worldData = await ReadWorldFile(stream, cancellationToken);
 
@@ -39,7 +39,7 @@ public sealed class Importer
 
         byte[] preview = await GeneratePreview(worldData);
 
-        return await StoreTemplate(templateId, preview, worldData, cancellationToken);
+        return await StoreTemplate(templateId, name, preview, worldData, cancellationToken);
     }
 
     public async Task<string?> AddBuidplateToPlayer(string templateId, string playerId, CancellationToken cancellationToken = default)
@@ -278,7 +278,7 @@ public sealed class Importer
         return preview is not null ? Encoding.ASCII.GetBytes(preview) : [];
     }
 
-    private async Task<bool> StoreTemplate(string templateId, byte[] preview, WorldData worldData, CancellationToken cancellationToken)
+    private async Task<bool> StoreTemplate(string templateId, string name, byte[] preview, WorldData worldData, CancellationToken cancellationToken)
     {
         TemplateBuildplate? template;
         try
@@ -372,7 +372,7 @@ public sealed class Importer
                 _ => 33,
             };
 
-            template = new TemplateBuildplate(worldData.Size, worldData.Offset, scale, worldData.Night, serverDataObjectId, previewObjectId);
+            template = new TemplateBuildplate(name, worldData.Size, worldData.Offset, scale, worldData.Night, serverDataObjectId, previewObjectId);
 
             try
             {
