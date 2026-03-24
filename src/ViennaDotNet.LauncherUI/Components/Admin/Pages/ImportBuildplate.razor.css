@@ -185,3 +185,70 @@
 .btn-secondary:hover {
     background-color: #5c636a;
 }
+
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.import-container {
+    position: relative;
+    padding: 40px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 2rem auto;
+}
+
+.btn-back-link {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.btn-back-link:hover {
+    color: #0d6efd;
+    background-color: #f8f9fa;
+}
+
+h2 {
+    margin-top: 10px;
+}
+
+.btn-retry {
+    background: none;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-retry:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}

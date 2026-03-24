@@ -1,6 +1,6 @@
 # TODO
 
-- Buildplate importing - allow both Vienna and Project Earth formats - MCEToJava
+- Buildplate importing - Project Earth format - MCEToJava
 - Buildplate preview in admin panel - SkiaSharp render lib + SkiaSharp.Views.Blazor
 - Shop management
 - Player buildplate management
@@ -15,6 +15,7 @@
 - View old logs in launcher?
 - Clear logs - seperate permission
 - Show roles on profile page
+- Export buildplates in both formats
 
 ## Refactoring
 

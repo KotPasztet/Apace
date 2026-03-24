@@ -407,6 +407,7 @@ public sealed class Importer
         if (previewObjectId is null)
         {
             _logger.Error("Could not store preview object in object store");
+            await _objectStoreClient.Delete(serverDataObjectId).Task;
             return false;
         }
 
@@ -420,7 +421,7 @@ public sealed class Importer
 
                     long lastModified = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-                    Buildplates.Buildplate buildplate = new Buildplates.Buildplate(templateId, template.Size, template.Offset, template.Scale, template.Night, lastModified, serverDataObjectId, previewObjectId);
+                    var buildplate = new Buildplates.Buildplate(templateId, template.Size, template.Offset, template.Scale, template.Night, lastModified, serverDataObjectId, previewObjectId);
 
                     buildplates.AddBuildplate(buildplateId, buildplate);
 
