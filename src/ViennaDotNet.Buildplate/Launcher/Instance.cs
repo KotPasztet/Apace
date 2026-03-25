@@ -850,6 +850,9 @@ public class Instance
     {
         Log.Information("Cleaning up runtime directory");
 
+        Log.Information("Skipped");
+        return;
+
         try
         {
             Files.WalkFileTree(_baseDir.FullName, new FileVisitor(
