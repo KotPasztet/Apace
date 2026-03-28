@@ -374,11 +374,7 @@
 
         try
         {
-            using var earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
-            using var eventBus = EventBusClient.Create($"localhost:{Settings.Instance.EventBusPort}");
-            using var objectStore = ObjectStoreClient.Create($"localhost:{Settings.Instance.ObjectStorePort}");
-            
-            var importer = new Importer(earthDB, eventBus, objectStore, Log.Logger);
+            using var importer = await Importer.CreateFromSettings(Settings.Instance, Log.Logger);
 
             if (!await importer.RegenerateTemplatePreviewAsync(bp.Id, default))
             {
@@ -476,11 +472,7 @@ bp.IsNight, bp.ServerDataObjectId, bp.PreviewObjectId))
                 _isDeleting = true;
                 StateHasChanged();
 
-                using var earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
-                using var eventBus = EventBusClient.Create($"localhost:{Settings.Instance.EventBusPort}");
-                using var objectStore = ObjectStoreClient.Create($"localhost:{Settings.Instance.ObjectStorePort}");
-            
-                var importer = new Importer(earthDB, eventBus, objectStore, Log.Logger);
+                using var importer = await Importer.CreateFromSettings(Settings.Instance, Log.Logger);
 
                 if (!await importer.RemoveTemplateAsync(_bpToDelete.Id, _removeTemplateFromPlayers, default))
                 {
