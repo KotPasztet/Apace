@@ -26,10 +26,13 @@ public class Instance
 
         var instance = new Instance(eventBusClient, playerId, buildplateId, buildplateSource, instanceId, survival, night, saveEnabled, inventoryType, shutdownTime, publicAddress, port, serverInternalPort, javaCmd, fountainBridgeJar, serverTemplateDir, fabricJarName, connectorPluginJar, baseDir, eventBusConnectionstring);
 
+        instance._threadStartedSemaphore.Wait();
         new Thread(instance.Run)
         {
             Name = $"Instance {instanceId}"
         }.Start();
+        instance._threadStartedSemaphore.Wait();
+        instance._threadStartedSemaphore.Release();
 
         return instance;
     }
@@ -61,6 +64,7 @@ public class Instance
     private readonly string _connectorPluginArgString;
 
     private Thread? _thread;
+    private readonly SemaphoreSlim _threadStartedSemaphore = new SemaphoreSlim(1, 1);
 
     private Publisher? _publisher = null;
     private RequestSender? _requestSender = null;
@@ -109,6 +113,7 @@ public class Instance
     private void Run()
     {
         _thread = Thread.CurrentThread;
+        _threadStartedSemaphore.Release();
 
         try
         {
