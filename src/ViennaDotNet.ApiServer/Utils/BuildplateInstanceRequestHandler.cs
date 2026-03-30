@@ -166,7 +166,7 @@ public sealed class BuildplateInstanceRequestHandler
                                     : await HandleInventorySetHotbar(requestWithInstanceId.InstanceId, requestWithInstanceId.Request) ? "" : null;
                             }
                         default:
-                            Log.Error($"Unknown BuildplateInstanceRequestHandler request type '{request.Type}'");
+                            Log.Warning($"Unknown BuildplateInstanceRequestHandler request type '{request.Type}'");
                             return null;
                     }
                 }

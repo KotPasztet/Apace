@@ -161,7 +161,7 @@ public class InstanceManager
                 }
                 else
                 {
-                    Log.Error($"Unknown InstanceManager request: '{request.Type}'");
+                    Log.Warning($"Unknown InstanceManager request: '{request.Type}'");
                     return null;
                 }
             },

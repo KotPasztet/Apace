@@ -250,7 +250,7 @@ public sealed class BuildplateInstancesManager
 
                 break;
             default:
-            Log.Error($"Unknown event in BuildplateInstancesManager: '{@event.Type}'");
+                Log.Warning($"Unknown event in BuildplateInstancesManager: '{@event.Type}'");
                 break;
         }
 
