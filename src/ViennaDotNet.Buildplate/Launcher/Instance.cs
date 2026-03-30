@@ -15,7 +15,7 @@ namespace ViennaDotNet.Buildplate.Launcher;
 
 public class Instance
 {
-    private const int HOST_PLAYER_CONNECT_TIMEOUT = 120000;
+    private const int HOST_PLAYER_CONNECT_TIMEOUT = 60_000;
 
     public static Instance Run(EventBusClient eventBusClient, string? playerId, string buildplateId, BuildplateSource buildplateSource, string instanceId, bool survival, bool night, bool saveEnabled, InventoryType inventoryType, long? shutdownTime, string publicAddress, int port, int serverInternalPort, string javaCmd, FileInfo fountainBridgeJar, DirectoryInfo serverTemplateDir, string fabricJarName, FileInfo connectorPluginJar, DirectoryInfo baseDir, string eventBusConnectionstring)
     {
@@ -24,7 +24,7 @@ public class Instance
             throw new ArgumentException($"{nameof(playerId)} was not while {nameof(buildplateSource)} was {nameof(BuildplateSource.PLAYER)}.", nameof(playerId));
         }
 
-        Instance instance = new Instance(eventBusClient, playerId, buildplateId, buildplateSource, instanceId, survival, night, saveEnabled, inventoryType, shutdownTime, publicAddress, port, serverInternalPort, javaCmd, fountainBridgeJar, serverTemplateDir, fabricJarName, connectorPluginJar, baseDir, eventBusConnectionstring);
+        var instance = new Instance(eventBusClient, playerId, buildplateId, buildplateSource, instanceId, survival, night, saveEnabled, inventoryType, shutdownTime, publicAddress, port, serverInternalPort, javaCmd, fountainBridgeJar, serverTemplateDir, fabricJarName, connectorPluginJar, baseDir, eventBusConnectionstring);
 
         new Thread(instance.Run)
         {
@@ -558,7 +558,7 @@ public class Instance
 
     private Task<T?> SendEventBusRequest<T>(string type, object obj, bool returnResponse)
     {
-        RequestWithInstanceId request = new RequestWithInstanceId(InstanceId, obj);
+        var request = new RequestWithInstanceId(InstanceId, obj);
 
         return SendEventBusRequestRaw<T>(type, request, returnResponse);
     }
@@ -590,7 +590,7 @@ public class Instance
 
     private DirectoryInfo? SetupServerFiles(byte[] serverData)
     {
-        DirectoryInfo workDir = new DirectoryInfo(Path.Combine(_baseDir.FullName, "server"));
+        var workDir = new DirectoryInfo(Path.Combine(_baseDir.FullName, "server"));
         if (!workDir.TryCreate())
         {
             Log.Error("Could not create server working directory");
@@ -652,21 +652,21 @@ public class Instance
             .ToString();
         File.WriteAllText(Path.Combine(workDir.FullName, "server.properties"), serverProperties);
 
-        DirectoryInfo worldDir = new DirectoryInfo(Path.Combine(workDir.FullName, "world"));
+        var worldDir = new DirectoryInfo(Path.Combine(workDir.FullName, "world"));
         if (!worldDir.TryCreate())
         {
             Log.Error("Could not create server world directory");
             return null;
         }
 
-        DirectoryInfo worldEntitiesDir = new DirectoryInfo(Path.Combine(worldDir.FullName, "entities"));
+        var worldEntitiesDir = new DirectoryInfo(Path.Combine(worldDir.FullName, "entities"));
         if (!worldEntitiesDir.TryCreate())
         {
             Log.Error("Could not create server world entities directory");
             return null;
         }
 
-        DirectoryInfo worldRegionDir = new DirectoryInfo(Path.Combine(worldDir.FullName, "region"));
+        var worldRegionDir = new DirectoryInfo(Path.Combine(worldDir.FullName, "region"));
         if (!worldRegionDir.TryCreate())
         {
             Log.Error("Could not create server world regions directory");
@@ -674,10 +674,10 @@ public class Instance
         }
 
         TagCompound levelDatTag = CreateLevelDat(_survival, _night);
-        using (FileStream fs = new FileStream(Path.Combine(worldDir.FullName, "level.dat"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read))
-        using (GZipStream gzs = new GZipStream(fs, CompressionLevel.Optimal))
+        using (var fs = new FileStream(Path.Combine(worldDir.FullName, "level.dat"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read))
+        using (var gzs = new GZipStream(fs, CompressionLevel.Optimal))
         {
-            BinaryTagWriter writer = new BinaryTagWriter(gzs);
+            var writer = new BinaryTagWriter(gzs);
             writer.WriteStartDocument();
             writer.WriteStartTag(null, TagType.Compound);
             writer.WriteTag(levelDatTag);
@@ -686,8 +686,8 @@ public class Instance
         }
         //NBTIO.writeFile(levelDatTag, new File(worldDir, "level.dat"));
 
-        using (MemoryStream byteArrayInputStream = new MemoryStream(serverData))
-        using (ZipArchive zipInputStream = new ZipArchive(byteArrayInputStream))
+        using (var byteArrayInputStream = new MemoryStream(serverData))
+        using (var zipInputStream = new ZipArchive(byteArrayInputStream))
         {
             foreach (ZipArchiveEntry entry in zipInputStream.Entries)
             {
@@ -834,7 +834,7 @@ public class Instance
 
     private DirectoryInfo? SetupBridgeFiles(byte[] serverData)
     {
-        DirectoryInfo workDir = new DirectoryInfo(Path.Combine(_baseDir.FullName, "bridge"));
+        var workDir = new DirectoryInfo(Path.Combine(_baseDir.FullName, "bridge"));
         if (!workDir.TryCreate())
         {
             Log.Error("Could not create bridge working directory");
