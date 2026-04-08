@@ -13,7 +13,7 @@ public static class ImporterExtensions
         public static async Task<Importer> CreateFromSettings(Settings settings, Serilog.ILogger logger)
         {
             var earthDB = EarthDB.Open(settings.EarthDatabaseConnectionString ?? "");
-            var eventBus = EventBusClient.Create($"localhost:{settings.EventBusPort}");
+            var eventBus = await EventBusClient.ConnectAsync($"localhost:{settings.EventBusPort}");
             var objectStore = await ObjectStoreClient.ConnectAsync($"localhost:{settings.ObjectStorePort}");
             
             return new Importer(earthDB, eventBus, objectStore, logger);

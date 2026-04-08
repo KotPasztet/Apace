@@ -415,7 +415,11 @@ public sealed class Importer : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _earthDB.Dispose();
-        _eventBusClient?.Dispose();
+        if (_eventBusClient is not null)
+        {
+            await _eventBusClient.DisposeAsync();
+        }
+        
         await _objectStoreClient.DisposeAsync();
     }
 
