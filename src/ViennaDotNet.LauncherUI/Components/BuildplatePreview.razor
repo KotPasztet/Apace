@@ -49,17 +49,20 @@
         @(IsNight ? "Night" : "Day")
     </span>
 
-    @if (_previewDataUri is not null && !_isPreviewLoading)
+    @if (!_isPreviewLoading)
     {
         <button class="btn btn-sm btn-light position-absolute bottom-0 start-0 m-2 opacity-75 hover-opacity-100"
                 @onclick="RefreshPreviewAsync" title="Refresh Preview">
             <i class="bi bi-arrow-clockwise"></i>
         </button>
 
-        <button class="btn btn-sm btn-light position-absolute bottom-0 end-0 m-2 opacity-75 hover-opacity-100"
-                @onclick="ToggleFullscreen" title="Toggle Fullscreen">
-            <i class="bi bi-arrows-fullscreen"></i>
-        </button>
+        if (_previewDataUri is not null)
+        {
+            <button class="btn btn-sm btn-light position-absolute bottom-0 end-0 m-2 opacity-75 hover-opacity-100"
+                    @onclick="ToggleFullscreen" title="Toggle Fullscreen">
+                <i class="bi bi-arrows-fullscreen"></i>
+            </button>
+        }
     }
 </div>
 

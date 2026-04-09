@@ -1,6 +1,7 @@
 # TODO
 
 - Buildplate importing - Project Earth format - MCEToJava
+- Launcher buildplate preview - liquid rendering
 - Shop management
 - Player items management
 - Encounter generation and AR
