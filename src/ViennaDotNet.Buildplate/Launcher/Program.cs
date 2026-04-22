@@ -2,6 +2,7 @@
 using Serilog;
 using System.Diagnostics;
 using ViennaDotNet.Common;
+using ViennaDotNet.Common.Utils;
 using ViennaDotNet.EventBus.Client;
 
 namespace ViennaDotNet.Buildplate.Launcher;
@@ -96,24 +97,24 @@ internal static class Program
         Log.Information("Connected to event bus");
 
         string javaCmd = JavaLocator.Locate();
-        Starter starter = new Starter(eventBusClient, options.EventBusConnectionString, options.PublicAddress, javaCmd, options.BridgeJar, options.ServerTemplateDir, options.FabricJarName, options.ConnectorPluginJar);
-        InstanceManager instanceManager = new InstanceManager(eventBusClient, starter);
+        var starter = new Starter(eventBusClient, options.EventBusConnectionString, options.PublicAddress, javaCmd, options.BridgeJar, options.ServerTemplateDir, options.FabricJarName, options.ConnectorPluginJar);
+        var instanceManager = await InstanceManager.CreateAsync(eventBusClient, starter);
 
         Console.CancelKeyPress += (sender, e) =>
         {
             Log.Information("Ctrl+C received");
-            instanceManager.Shutdown();
+            instanceManager.ShutdownAsync().Forget();
             e.Cancel = true;
         };
 
         AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
         {
-            instanceManager.Shutdown();
+            instanceManager.ShutdownAsync().Forget();
         };
 
         while (true)
         {
-            Thread.Sleep(100);
+            Thread.Sleep(1000);
         }
     }
 }

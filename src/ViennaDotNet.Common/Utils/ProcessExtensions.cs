@@ -6,7 +6,7 @@ namespace ViennaDotNet.Common.Utils;
 
 public static partial class ProcessExtensions
 {
-    public static void StopGracefullyOrKill(this Process process, int timeout, bool allowConsoleReAlloc = false)
+    public static void StopGracefullyOrKillAndWait(this Process process, int timeout, bool allowConsoleReAlloc = false)
     {
         if (!process.TryStopGracefully(timeout, allowConsoleReAlloc))
         {
@@ -22,6 +22,11 @@ public static partial class ProcessExtensions
         {
             process.Kill();
         }
+    }
+
+    public static async Task StopGracefullyOrKillAndWaitAsync(this Process process, int timeout, bool allowConsoleReAlloc, CancellationToken cancellationToken)
+    {
+        await process.StopGracefullyOrKillAsync(timeout, allowConsoleReAlloc, cancellationToken);
 
         await process.WaitForExitAsync(timeout, cancellationToken);
     }
@@ -60,21 +65,20 @@ public static partial class ProcessExtensions
     {
         try
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && allowConsoleReAlloc)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 if (await process.TryCloseMainWindowAsync(timeout, cancellationToken))
                 {
                     return true;
                 }
 
-                if (await process.WinTrySendCtrlCAsync(timeout, cancellationToken))
+                if (allowConsoleReAlloc && await process.WinTrySendCtrlCAsync(timeout, cancellationToken))
                 {
                     return true;
                 }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // TODO: test if this actually works
                 if (await process.UnixTrySendShutdownSignalAsync(timeout, cancellationToken))
                 {
                     return true;
@@ -137,6 +141,7 @@ public static partial class ProcessExtensions
             Debug.Assert(killProc.HasExited);
 
             process.WaitForExit(timeout);
+
         }
         catch { }
 
@@ -147,26 +152,21 @@ public static partial class ProcessExtensions
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            string fd0Path = $"/proc/{process.Id}/fd/0";
             try
             {
-                var fileInfo = new FileInfo(fd0Path);
+                // We want to see WHERE the symlink points, not read its contents.
+                var linkInfo = File.ResolveLinkTarget($"/proc/{process.Id}/fd/0", returnFinalTarget: true);
+                string targetPath = linkInfo?.FullName ?? string.Empty;
 
-                FileSystemInfo? target = fileInfo.ResolveLinkTarget(returnFinalTarget: true);
-
-                if (target is not null && target.FullName.Contains("/dev/tty", StringComparison.Ordinal))
+                if (targetPath.Contains("/dev/tty") || targetPath.Contains("/dev/pts"))
                 {
                     return "INT";
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Warning($"Could not resolve link target for process '{process.Id}': {ex.Message}");
-            }
+            catch { }
         }
-        else
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
             var psi = new ProcessStartInfo
             {
                 FileName = "ps",
@@ -177,14 +177,15 @@ public static partial class ProcessExtensions
             };
 
             using var ps = Process.Start(psi);
-            Debug.Assert(ps is not null);
-
-            string tty = ps.StandardOutput.ReadToEnd().Trim();
-            ps.WaitForExit();
-
-            if (!string.IsNullOrEmpty(tty) && tty != "?")
+            if (ps is not null)
             {
-                return "INT";
+                string tty = ps.StandardOutput.ReadToEnd();
+                ps.WaitForExit();
+
+                if (!string.IsNullOrWhiteSpace(tty) && !tty.Contains('?'))
+                {
+                    return "INT";
+                }
             }
         }
 
@@ -208,6 +209,7 @@ public static partial class ProcessExtensions
     }
     #endregion
     #region Async
+    // TODO: bundle a small program so that we don't have to do this, remove allow console realloc
     private static async Task<bool> WinTrySendCtrlCAsync(this Process process, int timeout, CancellationToken cancellationToken)
     {
         Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
@@ -250,8 +252,10 @@ public static partial class ProcessExtensions
     {
         try
         {
-            var killProc = Process.Start("kill", $"-s {await process.UnixGetSignalAsync(cancellationToken)} {process.Id}");
-            killProc.WaitForExit(1000);
+            string signal = await process.UnixGetSignalAsync(cancellationToken);
+
+            var killProc = Process.Start("kill", $"-s {signal} {process.Id}");
+            await killProc.WaitForExitAsync(1000, cancellationToken);
             Debug.Assert(killProc.HasExited);
 
             await process.WaitForExitAsync(timeout, cancellationToken);
@@ -290,9 +294,8 @@ public static partial class ProcessExtensions
             };
 
             using var ps = Process.Start(psi);
-            if (ps != null)
+            if (ps is not null)
             {
-                // Use the async version of ReadToEnd to avoid blocking the thread
                 string tty = await ps.StandardOutput.ReadToEndAsync(cancellationToken);
                 await ps.WaitForExitAsync(cancellationToken);
 
