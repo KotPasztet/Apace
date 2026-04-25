@@ -196,14 +196,11 @@ public sealed class ConsoleProcess : IDisposable
     public async Task WaitForExitAsync(CancellationToken cancellationToken = default)
         => await ActualProcess.WaitForExitAsync(cancellationToken);
 
-    public void StopAndWait(int timeout = 15 * 1000)
-        => ActualProcess.StopGracefullyOrKillAndWait(timeout);
-
     public async Task StopNoWaitAsync(int timeout = 15 * 1000, CancellationToken cancellationToken = default)
-        => await ActualProcess.StopGracefullyOrKillAsync(timeout, false, cancellationToken);
+        => await ActualProcess.StopGracefullyOrKillAsync(timeout, cancellationToken);
 
     public async Task StopAndWaitAsync(int timeout = 15 * 1000, CancellationToken cancellationToken = default)
-        => await ActualProcess.StopGracefullyOrKillAndWaitAsync(timeout, false, cancellationToken);
+        => await ActualProcess.StopGracefullyOrKillAndWaitAsync(timeout, cancellationToken);
 
     private void ApplyTerminalWrapper(IEnumerable<string> args)
     {
