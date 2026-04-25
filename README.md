@@ -25,7 +25,7 @@ In addition to the original Vienna feature set, this port adds:
 ### Requirements
 
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
-- Java 17 or higher (JRE)
+- Java 17 (JRE or JDK), newer versions may not work
 
 ### Instructions
 
