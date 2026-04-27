@@ -1,4 +1,9 @@
 ![Banner](src/ViennaDotNet.LauncherUI/wwwroot/banner.png)
+
+![GitHub License](https://img.shields.io/github/license/Earth-Restored/ViennaDotNet?style=flat-square)
+![GitHub Repo stars](https://img.shields.io/github/stars/Earth-Restored/ViennaDotNet?style=flat-square)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Earth-Restored/ViennaDotNet/total?style=flat-square)
+
 # ViennaDotNet
 An unofficial port of [Project Vienna](https://github.com/Project-Genoa/Vienna) to .NET
 
