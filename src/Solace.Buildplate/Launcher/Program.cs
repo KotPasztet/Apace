@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Solace.Common;
 using Solace.Common.Utils;
 using Solace.EventBus.Client;
+using System.Globalization;
 
 namespace Solace.Buildplate.Launcher;
 
@@ -67,8 +68,8 @@ internal static class Program
         StaticDataPath = options.StaticDataPath;
 
         var loggerConfig = new LoggerConfiguration()
-            .WriteTo.Console()
-            .WriteTo.File("logs/buildplate_launcher/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+            .WriteTo.File("logs/buildplate_launcher/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}", formatProvider: CultureInfo.InvariantCulture)
             .Enrich.WithProperty("ComponentName", "BuildplateLauncher");
 
         if (!string.IsNullOrWhiteSpace(options.LoggerUrl))

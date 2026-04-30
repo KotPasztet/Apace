@@ -4,7 +4,9 @@ using Solace.Common.Utils;
 
 namespace Solace.PreviewGenerator.NBT;
 
-public class NbtMap// : IDictionary<string, object>
+#pragma warning disable CA1708 // Identifiers should differ by more than case
+public sealed class NbtMap// : IDictionary<string, object>
+#pragma warning restore CA1708 // Identifiers should differ by more than case
 {
     public static readonly NbtMap EMPTY = new NbtMap();
 
@@ -32,11 +34,11 @@ public class NbtMap// : IDictionary<string, object>
         _map = map;
     }
 
-    public static NbtMapBuilder builder() => [];
+    public static NbtMapBuilder Builder() => [];
 
-    public static NbtMap fromMap(IDictionary<string, object> map) => new NbtMap(map.AsReadOnly());
+    public static NbtMap FromMap(IDictionary<string, object> map) => new NbtMap(map.AsReadOnly());
 
-    public NbtMapBuilder toBuilder() => NbtMapBuilder.From(this);
+    public NbtMapBuilder ToBuilder() => NbtMapBuilder.From(this);
 
     public bool ContainsKey(string key)
         => _map.ContainsKey(key);
@@ -223,17 +225,17 @@ public class NbtMap// : IDictionary<string, object>
     //        return defaultValue;
     //    }
 
-    public override bool Equals(object? o)
+    public override bool Equals(object? obj)
     {
-        if (o == this)
+        if (obj == this)
             return true;
 
-        if (o is not NbtMap m)
+        if (obj is not NbtMap m)
             return false;
         if (m.Count != Count)
             return false;
 
-        if (hashCodeGenerated && m.hashCodeGenerated && hashCode != ((NbtMap)o).hashCode)
+        if (hashCodeGenerated && m.hashCodeGenerated && hashCode != ((NbtMap)obj).hashCode)
             return false;
 
         try

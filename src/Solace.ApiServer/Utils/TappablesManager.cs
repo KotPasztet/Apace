@@ -16,7 +16,7 @@ public sealed class TappablesManager
 
     private readonly Dictionary<string, Dictionary<string, Tappable>> _tappables = [];
     private readonly Dictionary<string, Dictionary<string, Encounter>> _encounters = [];
-    private int _pruneCounter = 0;
+    private int _pruneCounter;
 
     private TappablesManager()
     {
@@ -85,7 +85,9 @@ public sealed class TappablesManager
         int tileX = XToTile(LonToX(lon));
         int tileY = YToTile(LatToY(lat));
         int tileRadius = (int)Math.Ceiling(radius);
-        return [.. Java.IntStream.Range(tileX - tileRadius, tileX + tileRadius + 1).Select(x => Java.IntStream.Range(tileY - tileRadius, tileY + tileRadius + 1).Select(y => $"{x}_{y}")).SelectMany(stream => stream)];
+        int sideLength = (tileRadius * 2) + 1;
+
+        return [.. Enumerable.Range(tileX - tileRadius, sideLength).Select(x => Enumerable.Range(tileY - tileRadius, sideLength).Select(y => $"{x}_{y}")).SelectMany(stream => stream)];
     }
 
     public Tappable? GetTappableWithId(string id, string tileId)

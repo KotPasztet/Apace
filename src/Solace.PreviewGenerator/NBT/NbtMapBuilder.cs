@@ -4,7 +4,9 @@ using Solace.Common.Utils;
 
 namespace Solace.PreviewGenerator.NBT;
 
-public class NbtMapBuilder : IDictionary<string, object>
+#pragma warning disable CA1710 // Identifiers should have correct suffix
+public sealed class NbtMapBuilder : IDictionary<string, object>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
 {
     public static NbtMapBuilder From(NbtMap map)
     {

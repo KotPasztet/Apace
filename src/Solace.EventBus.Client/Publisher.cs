@@ -3,16 +3,16 @@ using Solace.Common.Utils;
 
 namespace Solace.EventBus.Client;
 
-public sealed class Publisher
+public sealed class Publisher : IAsyncDisposable
 {
     private readonly EventBusClient _client;
     private readonly int _channelId;
     private readonly SemaphoreSlim _lock = new(1, 1);
     
-    private bool _closed = false;
+    private bool _closed;
     private readonly LinkedList<string> _queuedEvents = new();
     private readonly LinkedList<TaskCompletionSource<bool>> _queuedEventResults = new();
-    private TaskCompletionSource<bool>? _currentPendingEventResult = null;
+    private TaskCompletionSource<bool>? _currentPendingEventResult;
 
     internal Publisher(EventBusClient client, int channelId)
     {
@@ -62,6 +62,12 @@ public sealed class Publisher
         }
 
         return await tcs.Task;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await FlushAsync();
+        await CloseAsync();
     }
 
     public async Task FlushAsync()
@@ -125,12 +131,12 @@ public sealed class Publisher
 
     private async Task SendNextEventAsync()
     {
-        string message = _queuedEvents.First.Value;
+        string message = _queuedEvents.First!.Value;
         _queuedEvents.RemoveFirst();
 
         await _client.SendMessageAsync(_channelId, message);
 
-        _currentPendingEventResult = _queuedEventResults.First.Value;
+        _currentPendingEventResult = _queuedEventResults.First!.Value;
         _queuedEventResults.RemoveFirst();
     }
 

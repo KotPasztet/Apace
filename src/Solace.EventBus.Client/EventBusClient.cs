@@ -8,7 +8,7 @@ using System.Threading.Channels;
 
 namespace Solace.EventBus.Client;
 
-public class EventBusClient : IAsyncDisposable
+public sealed class EventBusClient : IAsyncDisposable
 {
     private readonly TcpClient _tcpClient;
     private readonly NetworkStream _networkStream;
@@ -18,8 +18,8 @@ public class EventBusClient : IAsyncDisposable
     private readonly Task _incomingTask;
     private readonly CancellationTokenSource _cts = new();
 
-    private int _isClosed = 0;
-    private int _hasError = 0;
+    private int _isClosed;
+    private int _hasError;
 
     private readonly ConcurrentDictionary<int, Publisher> _publishers = new();
     private readonly ConcurrentDictionary<int, Subscriber> _subscribers = new();

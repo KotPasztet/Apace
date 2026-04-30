@@ -31,3 +31,4 @@
 - Use Guid instead of string
 - Load static data types only when needed
 - Generated regex
+- Use new extension syntax

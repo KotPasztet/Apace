@@ -52,10 +52,12 @@ public sealed record BuildplateInstance(
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public enum GameplayModeE
         {
+#pragma warning disable CA1707 // Identifiers should not contain underscores
             [JsonStringEnumMemberName("Buildplate")] BUILDPLATE,
             [JsonStringEnumMemberName("BuildplatePlay")] BUILDPLATE_PLAY,
             [JsonStringEnumMemberName("SharedBuildplatePlay")] SHARED_BUILDPLATE_PLAY,
             [JsonStringEnumMemberName("Encounter")] ENCOUNTER
+#pragma warning restore CA1707 // Identifiers should not contain underscores
         }
     }
 }

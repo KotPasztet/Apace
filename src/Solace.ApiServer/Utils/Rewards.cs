@@ -126,7 +126,7 @@ public sealed class Rewards
                         }
                         else
                         {
-                            inventory.AddItems(id, [.. Java.IntStream.Range(0, quantity).Select(index => new NonStackableItemInstance(U.RandomUuid().ToString(), 0))]);
+                            inventory.AddItems(id, [.. Enumerable.Range(0, quantity).Select(index => new NonStackableItemInstance(U.RandomUuid().ToString(), 0))]);
                         }
 
                         if (journal.AddCollectedItem(id, currentTime, quantity) == 0)

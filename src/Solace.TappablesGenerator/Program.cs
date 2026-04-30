@@ -3,6 +3,7 @@ using Serilog;
 using System.Diagnostics;
 using Solace.EventBus.Client;
 using Solace.StaticData;
+using System.Globalization;
 
 namespace Solace.TappablesGenerator;
 
@@ -52,8 +53,8 @@ internal static class Program
             return 1;
 
         var loggerConfig = new LoggerConfiguration()
-            .WriteTo.Console()
-            .WriteTo.File("logs/tappable_generator/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+            .WriteTo.File("logs/tappable_generator/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}", formatProvider: CultureInfo.InvariantCulture)
             .Enrich.WithProperty("ComponentName", "TappableGenerator");
 
         if (!string.IsNullOrWhiteSpace(options.LoggerUrl))

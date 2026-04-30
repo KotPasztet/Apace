@@ -8,6 +8,7 @@ using System.Text.Json;
 using Solace.Common;
 using Solace.Common.Excceptions;
 using Solace.Common.Utils;
+using System.Globalization;
 
 [assembly: InternalsVisibleTo("Launcher")]
 [assembly: InternalsVisibleTo("Solace.LauncherUI")]
@@ -165,15 +166,15 @@ public sealed class EarthDB : IDisposable
         private readonly List<ExtrasEntry> extras = [];
         private readonly List<ThenFunctionEntry> thenFunctions = [];
 
-        private sealed record WriteObjectsEntry(string type, string id, object value);
+        private sealed record WriteObjectsEntry(string Type, string Id, object Value);
 
-        private sealed record BumpEntry(string type, string id, Type valueType);
+        private sealed record BumpEntry(string Type, string Id, Type ValueType);
 
-        private sealed record ReadObjectsEntry(string type, string id, Type valueType);
+        private sealed record ReadObjectsEntry(string Type, string Id, Type ValueType);
 
-        private sealed record ExtrasEntry(string name, object value);
+        private sealed record ExtrasEntry(string Name, object Value);
 
-        private sealed record ThenFunctionEntry(Func<Results, Task<Query?>> function, bool replaceResults);
+        private sealed record ThenFunctionEntry(Func<Results, Task<Query?>> Function, bool ReplaceResults);
 
         public Query(bool write)
         {
@@ -192,7 +193,7 @@ public sealed class EarthDB : IDisposable
             return this;
         }
 
-        public Query bump(string type, string id, Type valueType)
+        public Query Bump(string type, string id, Type valueType)
         {
             if (!_write)
             {
@@ -273,15 +274,15 @@ public sealed class EarthDB : IDisposable
 
             foreach (WriteObjectsEntry entry in writeObjects)
             {
-                string json = ToJson(entry.value);
+                string json = ToJson(entry.Value);
 
                 using (var command = transaction.Connection!.CreateCommand())
                 {
                     command.CommandTimeout = TRANSACTION_TIMEOUT;
                     command.CommandText = $"INSERT OR REPLACE INTO {ObjectsTable}(type, id, value, version) VALUES ($type, $id, $value, COALESCE((SELECT version FROM {ObjectsTable} WHERE type == $type AND id == $id), 1) + 1)";
 
-                    command.Parameters.AddWithValue("$type", entry.type);
-                    command.Parameters.AddWithValue("$id", entry.id);
+                    command.Parameters.AddWithValue("$type", entry.Type);
+                    command.Parameters.AddWithValue("$id", entry.Id);
                     command.Parameters.AddWithValue("$value", json);
                     await command.ExecuteNonQueryAsync(cancellationToken);
                 }
@@ -291,14 +292,14 @@ public sealed class EarthDB : IDisposable
                     command.CommandTimeout = TRANSACTION_TIMEOUT;
                     command.CommandText = $"SELECT version FROM {ObjectsTable} WHERE type == $type AND id == $id";
 
-                    command.Parameters.AddWithValue("$type", entry.type);
-                    command.Parameters.AddWithValue("$id", entry.id);
+                    command.Parameters.AddWithValue("$type", entry.Type);
+                    command.Parameters.AddWithValue("$id", entry.Id);
                     using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                     {
                         if (await reader.ReadAsync(cancellationToken))
                         {
                             int version = reader.GetInt32(0);
-                            updates[entry.type] = version;
+                            updates[entry.Type] = version;
                         }
                         else
                         {
@@ -316,8 +317,8 @@ public sealed class EarthDB : IDisposable
                     command.CommandTimeout = TRANSACTION_TIMEOUT;
                     command.CommandText = $"SELECT version FROM {ObjectsTable} WHERE type == $type AND id == $id";
 
-                    command.Parameters.AddWithValue("$type", entry.type);
-                    command.Parameters.AddWithValue("$id", entry.id);
+                    command.Parameters.AddWithValue("$type", entry.Type);
+                    command.Parameters.AddWithValue("$id", entry.Id);
                     using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                     {
                         if (await reader.ReadAsync(cancellationToken))
@@ -340,8 +341,8 @@ public sealed class EarthDB : IDisposable
                         command.CommandText = $"UPDATE {ObjectsTable} SET version = $version WHERE type == $type AND id == $id";
 
                         command.Parameters.AddWithValue("$version", version + 1);
-                        command.Parameters.AddWithValue("$type", entry.type);
-                        command.Parameters.AddWithValue("$id", entry.id);
+                        command.Parameters.AddWithValue("$type", entry.Type);
+                        command.Parameters.AddWithValue("$id", entry.Id);
                         await command.ExecuteNonQueryAsync(cancellationToken);
                     }
 
@@ -349,7 +350,7 @@ public sealed class EarthDB : IDisposable
                 }
                 else
                 {
-                    object value = CreateNewInstance(entry.valueType);
+                    object value = CreateNewInstance(entry.ValueType);
                     string json = ToJson(value);
 
                     using (var command = transaction.Connection!.CreateCommand())
@@ -357,8 +358,8 @@ public sealed class EarthDB : IDisposable
                         command.CommandTimeout = TRANSACTION_TIMEOUT;
                         command.CommandText = $"INSERT INTO {ObjectsTable}(type, id, value, version) VALUES ($type, $id, $json, 2)";
 
-                        command.Parameters.AddWithValue("$type", entry.type);
-                        command.Parameters.AddWithValue("$id", entry.id);
+                        command.Parameters.AddWithValue("$type", entry.Type);
+                        command.Parameters.AddWithValue("$id", entry.Id);
                         command.Parameters.AddWithValue("$json", json);
                         await command.ExecuteNonQueryAsync(cancellationToken);
                     }
@@ -366,7 +367,7 @@ public sealed class EarthDB : IDisposable
                     resultVersion = 2;
                 }
 
-                updates[entry.type] = resultVersion;
+                updates[entry.Type] = resultVersion;
             }
 
             foreach (ReadObjectsEntry entry in readObjects)
@@ -376,39 +377,39 @@ public sealed class EarthDB : IDisposable
                     command.CommandTimeout = TRANSACTION_TIMEOUT;
                     command.CommandText = $"SELECT value, version FROM {ObjectsTable} WHERE type == $type AND id == $id";
 
-                    command.Parameters.AddWithValue("$type", entry.type);
-                    command.Parameters.AddWithValue("$id", entry.id);
+                    command.Parameters.AddWithValue("$type", entry.Type);
+                    command.Parameters.AddWithValue("$id", entry.Id);
                     using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                     {
                         if (await reader.ReadAsync(cancellationToken))
                         {
                             string json = reader.GetString(0);
                             int version = reader.GetInt32(1);
-                            object? value = FromJson(json, entry.valueType);
+                            object? value = FromJson(json, entry.ValueType);
                             Debug.Assert(value is not null);
-                            results.getValues[entry.type] = new Results.Result(value, version);
+                            results.getValues[entry.Type] = new Results.Result(value, version);
                         }
                         else
                         {
-                            results.getValues[entry.type] = new Results.Result(CreateNewInstance(entry.valueType), 1);
+                            results.getValues[entry.Type] = new Results.Result(CreateNewInstance(entry.ValueType), 1);
                         }
                     }
                 }
             }
 
             foreach (ExtrasEntry entry in extras)
-                results.extras[entry.name] = entry.value;
+                results.extras[entry.Name] = entry.Value;
 
             foreach (var entry in thenFunctions)
             {
-                Query? query = await entry.function(results);
+                Query? query = await entry.Function(results);
                 if (query is null)
                 {
                     continue;
                 }
 
                 Results innerResults = await query.ExecuteInternalAsync(transaction, write, updates, cancellationToken);
-                if (entry.replaceResults)
+                if (entry.ReplaceResults)
                 {
                     results = innerResults;
                 }
@@ -433,9 +434,9 @@ public sealed class EarthDB : IDisposable
 
         private sealed record SearchEntry(string Table, SearchArguments Arguments);
 
-        private sealed record ExtrasEntry(string name, object value);
+        private sealed record ExtrasEntry(string Name, object Value);
 
-        private sealed record ThenFunctionEntry(Func<ObjectResults, ObjectQuery> function, bool replaceResults);
+        private sealed record ThenFunctionEntry(Func<ObjectResults, ObjectQuery> Function, bool ReplaceResults);
 
         public readonly record struct SearchArguments(bool IncludeValues, bool GetTotalCount, int? Skip = null, int? Take = null, Dictionary<string, MatchValue>? MatchJson = null);
 
@@ -687,10 +688,10 @@ public sealed class EarthDB : IDisposable
 
                     if (args.GetTotalCount)
                     {
-                        sqlBuilder.AppendLine($"SELECT COUNT(*) FROM {entry.Table} {whereSql};");
+                        sqlBuilder.AppendLine(CultureInfo.InvariantCulture, $"SELECT COUNT(*) FROM {entry.Table} {whereSql};");
                     }
 
-                    sqlBuilder.AppendLine($"SELECT {columns} FROM {entry.Table} {whereSql}");
+                    sqlBuilder.AppendLine(CultureInfo.InvariantCulture, $"SELECT {columns} FROM {entry.Table} {whereSql}");
                     sqlBuilder.AppendLine("ORDER BY id");
                     sqlBuilder.AppendLine(limitSql + ";");
 
@@ -723,14 +724,14 @@ public sealed class EarthDB : IDisposable
 
             foreach (ExtrasEntry entry in extras)
             {
-                results.extras[entry.name] = entry.value;
+                results.extras[entry.Name] = entry.Value;
             }
 
             foreach (var entry in thenFunctions)
             {
-                ObjectQuery query = entry.function(results);
+                ObjectQuery query = entry.Function(results);
                 ObjectResults innerResults = await query.ExecuteInternalAsync(transaction, write, cancellationToken);
-                if (entry.replaceResults)
+                if (entry.ReplaceResults)
                 {
                     results = innerResults;
                 }

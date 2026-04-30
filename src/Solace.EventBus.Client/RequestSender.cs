@@ -2,16 +2,16 @@
 
 namespace Solace.EventBus.Client;
 
-public sealed class RequestSender
+public sealed class RequestSender : IAsyncDisposable
 {
     private readonly EventBusClient _client;
     private readonly int _channelId;
     private readonly SemaphoreSlim _lock = new(1, 1);
     
-    private bool _closed = false;
+    private bool _closed;
     private readonly Queue<string> _queuedRequests = new();
     private readonly Queue<TaskCompletionSource<string?>> _queuedRequestResponses = new();
-    private TaskCompletionSource<string?>? _currentPendingResponse = null;
+    private TaskCompletionSource<string?>? _currentPendingResponse;
 
     internal RequestSender(EventBusClient client, int channelId)
     {
@@ -81,6 +81,12 @@ public sealed class RequestSender
         {
             await taskToAwait;
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await FlushAsync();
+        await CloseAsync();
     }
 
     internal async Task<bool> HandleMessageAsync(string message)

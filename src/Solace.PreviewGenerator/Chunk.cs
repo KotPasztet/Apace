@@ -92,7 +92,7 @@ internal sealed class Chunk
                         JavaBlocks.BedrockMapping.BlockEntityR? blockEntityMapping = bedrockMapping is not null && bedrockMapping.BlockEntity is not null ? bedrockMapping.BlockEntity : null;
                         NbtMap? bedrockBlockEntityData = blockEntityMapping is not null ? BlockEntityTranslator.TranslateBlockEntity(blockEntityMapping, null) : null;
                         if (bedrockBlockEntityData is not null)
-                            bedrockBlockEntityData = bedrockBlockEntityData.toBuilder().PutInt("x", x + ChunkX * 16).PutInt("y", y + subchunkY * 16).PutInt("z", z + ChunkZ * 16).PutBoolean("isMovable", false).Build();
+                            bedrockBlockEntityData = bedrockBlockEntityData.ToBuilder().PutInt("x", x + ChunkX * 16).PutInt("y", y + subchunkY * 16).PutInt("z", z + ChunkZ * 16).PutBoolean("isMovable", false).Build();
 
                         BlockEntities[(x * 256 + y + subchunkY * 16) * 16 + z] = bedrockBlockEntityData;
                         blockEntityMappings[(x * 256 + y + subchunkY * 16) * 16 + z] = blockEntityMapping;
@@ -118,7 +118,7 @@ internal sealed class Chunk
 
             NbtMap? bedrockBlockEntityData = blockEntityMapping is not null ? BlockEntityTranslator.TranslateBlockEntity(blockEntityMapping, blockEntityInfo) : null;
             if (bedrockBlockEntityData is not null)
-                bedrockBlockEntityData = bedrockBlockEntityData.toBuilder().PutInt("x", x + ChunkX * 16).PutInt("y", y).PutInt("z", z + ChunkZ * 16).PutBoolean("isMovable", false).Build();
+                bedrockBlockEntityData = bedrockBlockEntityData.ToBuilder().PutInt("x", x + ChunkX * 16).PutInt("y", y).PutInt("z", z + ChunkZ * 16).PutBoolean("isMovable", false).Build();
 
             BlockEntities[(x * 256 + y) * 16 + z] = bedrockBlockEntityData;
         }

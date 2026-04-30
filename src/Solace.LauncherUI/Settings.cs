@@ -22,7 +22,7 @@ public sealed class Settings
         EarthDatabaseConnectionString = Path.Combine(Program.DataDirRelative, "earth.db"),
         LiveDatabaseConnectionString = Path.Combine(Program.DataDirRelative, "live.db"),
         EnableTileRenderingLabel = true,
-        TileDataSource = TileDataSourceEnum.MapTiler,
+        TileDataSource = TileDataSourceE.MapTiler,
         MapTilerApiKey = null,
         TileDatabaseConnectionString = "Host=localhost;Username=mylogin;Password=mypass;Database=genoa_tile_data",
         GeneratePreviewOnImport = true,
@@ -44,7 +44,7 @@ public sealed class Settings
     public string? LiveDatabaseConnectionString { get; set; }
 
     public bool? EnableTileRenderingLabel { get; set; }
-    public TileDataSourceEnum? TileDataSource { get; set; }
+    public TileDataSourceE? TileDataSource { get; set; }
     public string? MapTilerApiKey { get; set; }
     public string? TileDatabaseConnectionString { get; set; }
 
@@ -55,7 +55,7 @@ public sealed class Settings
 
     public bool? LauncherBuildplatePreview { get; set; }
 
-    public enum TileDataSourceEnum
+    public enum TileDataSourceE
     {
         MapTiler,
         PostgreSQL,
@@ -94,7 +94,7 @@ public sealed class Settings
 
                 if (settings is null)
                 {
-                    throw new Exception("Settings is null");
+                    throw new InvalidDataException("Settings is null");
                 }
             }
             catch (Exception ex)

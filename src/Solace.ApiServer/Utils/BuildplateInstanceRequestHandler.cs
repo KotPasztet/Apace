@@ -485,18 +485,11 @@ public sealed class BuildplateInstanceRequestHandler
                         [.. Enumerable.Concat(
                             sharedBuildplate.Hotbar
                                 .Where(item => item is { Count: > 0, InstanceId: null })
-                                .Collect(() => new Dictionary<string, int>(), (hashMap, hotbarItem) =>
-                                {
-                                    Debug.Assert(hotbarItem is not null);
-
-                                    hashMap[hotbarItem.Uuid] = hashMap.GetOrDefault(hotbarItem.Uuid, 0) + hotbarItem.Count;
-                                }, (hashMap1, hashMap2) =>
-                                {
-                                    foreach (var (uuid, count) in hashMap2)
-                                    {
-                                        hashMap1[uuid] = hashMap1.GetOrDefault(uuid) + count;
-                                    }
-                                })
+                                .GroupBy(item => item!.Uuid)
+                                .ToDictionary(
+                                    group => group.Key, 
+                                    group => group.Sum(item => item!.Count)
+                                )
                                 .Select(entry => new InventoryResponse.Item(entry.Key, entry.Value, null, 0)),
                             sharedBuildplate.Hotbar
                                 .Where(item => item is { Count: > 0, InstanceId: not null })

@@ -63,12 +63,14 @@ public class ETagMiddleware
     {
         string checksum = "";
 
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - ok for etag
         using (var algo = SHA1.Create())
         {
             ms.Position = 0;
             byte[] bytes = algo.ComputeHash(ms);
             checksum = $"\"{WebEncoders.Base64UrlEncode(bytes)}\"";
         }
+#pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
 
         return checksum;
     }

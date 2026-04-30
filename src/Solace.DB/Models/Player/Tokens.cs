@@ -61,8 +61,10 @@ public sealed class Tokens
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public enum TypeE
         {
+#pragma warning disable CA1707 // Identifiers should not contain underscores
             LEVEL_UP,
             JOURNAL_ITEM_UNLOCKED
+#pragma warning restore CA1707 // Identifiers should not contain underscores
         }
     }
 

@@ -2,7 +2,7 @@
 
 namespace Solace.TileRenderer.Wkb;
 
-internal class WKBLineString : IWKBObject
+internal sealed class WKBLineString : IWKBObject
 {
     public WKBLineString(bool byteOrder, uint wkbType, uint srid, Point[] points)
     {

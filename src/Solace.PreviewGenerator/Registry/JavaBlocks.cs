@@ -18,9 +18,9 @@ public static class JavaBlocks
     private static readonly Dictionary<string, BedrockMapping> bedrockNonVanillaMap = [];
 
     private static readonly Lock _initLock = new Lock();
-    private static volatile bool _isInitialized = false;
+    private static volatile bool _isInitialized;
 
-     private static void EnsureInitialized()
+    private static void EnsureInitialized()
     {
         if (!_isInitialized)
         {
@@ -28,7 +28,7 @@ public static class JavaBlocks
             {
                 if (!_isInitialized)
                 {
-                    throw new InvalidOperationException("Data has not been initialized."+ new StackFrame().ToString());
+                    throw new InvalidOperationException("Data has not been initialized." + new StackFrame().ToString());
                 }
             }
         }
@@ -36,7 +36,7 @@ public static class JavaBlocks
 
     public static void Initialize(string staticData)
     {
-         if (!_isInitialized)
+        if (!_isInitialized)
         {
             lock (_initLock)
             {
@@ -190,38 +190,36 @@ public static class JavaBlocks
                             string contentsName = contentsToken.GetValue<string>()!;
                             if (javaBlocksArray is not null)
                             {
-                                contents = javaBlocksArray
+                                var element = javaBlocksArray
                                     .Where(element => ((JsonObject)element!)["name"]!.GetValue<string>() == contentsName)
                                     .Select(element => (JsonObject)((JsonObject)element!)["bedrock"]!)
-                                    .Where(element => !element.ContainsKey("ignore") || !element["ignore"]!.GetValue<bool>())
-                                    .FirstOrDefault()!.Map(element =>
+                                    .First(element => !element.ContainsKey("ignore") || !element["ignore"]!.GetValue<bool>());
+
+                                NbtMapBuilder builder = NbtMap.Builder();
+                                builder.PutString("name", element["name"]!.GetValue<string>()!);
+                                if (element.TryGetPropertyValue("state", out var stateToken2))
+                                {
+                                    Debug.Assert(stateToken2 is not null);
+
+                                    NbtMapBuilder stateBuilder = NbtMap.Builder();
+                                    ((JsonObject)stateToken2).ForEach((key, stateElement) =>
                                     {
-                                        NbtMapBuilder builder = NbtMap.builder();
-                                        builder.PutString("name", element["name"]!.GetValue<string>()!);
-                                        if (element.TryGetPropertyValue("state", out var stateToken))
-                                        {
-                                            Debug.Assert(stateToken is not null);
+                                        Debug.Assert(stateElement is not null);
 
-                                            NbtMapBuilder stateBuilder = NbtMap.builder();
-                                            ((JsonObject)stateToken).ForEach((key, stateElement) =>
-                                            {
-                                                Debug.Assert(stateElement is not null);
-
-                                                var stateElementType = stateElement.GetValueKind();
-                                                if (stateElementType == JsonValueKind.String)
-                                                    stateBuilder.PutString(key, stateElement.GetValue<string>()!);
-                                                else if (stateElementType == JsonValueKind.True)
-                                                    stateBuilder.PutInt(key, 1);
-                                                else if (stateElementType == JsonValueKind.False)
-                                                    stateBuilder.PutInt(key, 0);
-                                                else
-                                                    stateBuilder.PutInt(key, stateElement.GetValue<int>());
-                                            });
-                                            builder.PutCompound("states", stateBuilder.Build());
-                                        }
-
-                                        return builder.Build();
+                                        var stateElementType = stateElement.GetValueKind();
+                                        if (stateElementType == JsonValueKind.String)
+                                            stateBuilder.PutString(key, stateElement.GetValue<string>()!);
+                                        else if (stateElementType == JsonValueKind.True)
+                                            stateBuilder.PutInt(key, 1);
+                                        else if (stateElementType == JsonValueKind.False)
+                                            stateBuilder.PutInt(key, 0);
+                                        else
+                                            stateBuilder.PutInt(key, stateElement.GetValue<int>());
                                     });
+                                    builder.PutCompound("states", stateBuilder.Build());
+                                }
+
+                                contents = builder.Build();
                             }
 
                             if (contents is null)

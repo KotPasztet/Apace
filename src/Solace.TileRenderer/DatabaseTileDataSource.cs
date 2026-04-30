@@ -92,7 +92,7 @@ internal sealed class DatabaseTileDataSource : ITileDataSource
                     WkbGeometryType.Polygon => WKBPolygon.Load(bReader),
                     WkbGeometryType.MultiLineString => WKBMultiLineString.Load(bReader),
                     WkbGeometryType.MultiPolygon => WKBMultiPolygon.Load(bReader),
-                    _ => throw new Exception($"Unknown WKB type: {wkbType}"),
+                    _ => throw new InvalidDataException($"Unknown WKB type: {wkbType}"),
                 };
 
                 if (obj is not null)

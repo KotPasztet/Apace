@@ -31,7 +31,7 @@ public static class Generator
         PreviewModel.SubChunk[] subChunks = chunks
             .SelectMany(chunk =>
             {
-                return Java.IntStream.Range(0, 16)
+                return Enumerable.Range(0, 16)
                     .Select(subchunkY =>
                     {
                         Dictionary<int, int> palette = [];

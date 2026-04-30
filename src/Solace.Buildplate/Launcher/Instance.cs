@@ -13,7 +13,9 @@ using Solace.EventBus.Client;
 
 namespace Solace.Buildplate.Launcher;
 
+#pragma warning disable CA1001 // Types that own disposable fields should be disposable
 public sealed class Instance
+#pragma warning restore CA1001 // Types that own disposable fields should be disposable
 {
     private const long HOST_PLAYER_CONNECT_TIMEOUT = 30_000;
 
@@ -62,20 +64,20 @@ public sealed class Instance
     private readonly SemaphoreSlim _threadStartedSemaphore = new SemaphoreSlim(1, 1);
     private readonly ILogger _logger;
 
-    private Publisher? _publisher = null;
-    private RequestSender? _requestSender = null;
+    private Publisher? _publisher;
+    private RequestSender? _requestSender;
 
-    private Subscriber? _subscriber = null;
-    private RequestHandler? _requestHandler = null;
+    private Subscriber? _subscriber;
+    private RequestHandler? _requestHandler;
 
     private DirectoryInfo _serverWorkDir = null!;
     private DirectoryInfo _bridgeWorkDir = null!;
-    private ConsoleProcess? _serverProcess = null;
-    private ConsoleProcess? _bridgeProcess = null;
-    private bool _shuttingDown = false;
+    private ConsoleProcess? _serverProcess;
+    private ConsoleProcess? _bridgeProcess;
+    private bool _shuttingDown;
     private readonly ReentrantAsyncLock.ReentrantAsyncLock _subprocessLock = new ReentrantAsyncLock.ReentrantAsyncLock(); // java uses ReentrantLock, Lock cannot be used, because it does not support locking and unlocking on different threads, which happens due to async, SemaphoreSlim does not support multiple locks from the same async context
 
-    private volatile bool _hostPlayerConnected = false;
+    private volatile bool _hostPlayerConnected;
 
     private Instance(EventBusClient eventBusClient, string? playerId, string buildplateId, BuildplateSource buildplateSource, string instanceId, bool survival, bool night, bool saveEnabled, InventoryType inventoryType, long? shutdownTime, string publicAddress, int port, int serverInternalPort, string javaCmd, FileInfo fountainBridgeJar, DirectoryInfo serverTemplateDir, string fabricJarName, FileInfo connectorPluginJar, DirectoryInfo baseDir, string eventBusConnectionString)
     {
@@ -676,10 +678,10 @@ public sealed class Instance
             .Append("enforce-secure-profile=false\n")
             .Append("sync-chunk-writes=false\n")
             .Append("spawn-protection=0\n")
-            .Append($"server-port={_serverInternalPort.ToString(CultureInfo.InvariantCulture)}\n")
-            .Append($"gamemode={(_survival ? "survival" : "creative")}\n")
-            .Append($"vienna-event-bus-address={_eventBusAddress}\n")
-            .Append($"vienna-event-bus-queue-name={_eventBusQueueName}\n")
+            .Append(CultureInfo.InvariantCulture, $"server-port={_serverInternalPort.ToString(CultureInfo.InvariantCulture)}\n")
+            .Append(CultureInfo.InvariantCulture, $"gamemode={(_survival ? "survival" : "creative")}\n")
+            .Append(CultureInfo.InvariantCulture, $"vienna-event-bus-address={_eventBusAddress}\n")
+            .Append(CultureInfo.InvariantCulture, $"vienna-event-bus-queue-name={_eventBusQueueName}\n")
             .ToString();
         await File.WriteAllTextAsync(Path.Combine(workDir.FullName, "server.properties"), serverProperties);
 
@@ -969,9 +971,9 @@ public sealed class Instance
                 await _bridgeProcess.ExecuteAsync(_bridgeWorkDir!.FullName,
                 [
                     "-jar", _fountainBridgeJar.FullName,
-                    "-port", Port.ToString(),
+                    "-port", Port.ToString(CultureInfo.InvariantCulture),
                     "-serverAddress", "127.0.0.1",
-                    "-serverPort", _serverInternalPort.ToString(),
+                    "-serverPort", _serverInternalPort.ToString(CultureInfo.InvariantCulture),
                     "-connectorPluginJar", _connectorPluginJar.FullName,
                     "-connectorPluginClass", "micheal65536.vienna.buildplate.connector.plugin.ViennaConnectorPlugin",
                     "-connectorPluginArg", _connectorPluginArgString,

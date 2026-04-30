@@ -661,8 +661,8 @@ public partial class LoginController : SolaceControllerBase
         int usernameUTF8Length = Encoding.UTF8.GetBytes(username, usernameUTF8);
         usernameUTF8 = usernameUTF8[..usernameUTF8Length];
 
-        Span<byte> usernameHash = stackalloc byte[16];
-        MD5.HashData(usernameUTF8, usernameHash);
+        Span<byte> usernameHash = stackalloc byte[32];
+        SHA256.HashData(usernameUTF8, usernameHash);
 
         return Convert.ToHexStringLower(usernameHash[..8]);
     }

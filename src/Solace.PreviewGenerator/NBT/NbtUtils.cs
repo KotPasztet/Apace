@@ -4,8 +4,8 @@ namespace Solace.PreviewGenerator.NBT;
 
 public static class NbtUtils
 {
-    public static readonly int MAX_DEPTH = 16;
-    public static readonly long MAX_READ_SIZE = 0; // Disabled by default
+    public static readonly int MaxDepth = 16;
+    public static readonly long MaxReadSize; // Disabled by default
 
     public static string ToString(object o)
     {

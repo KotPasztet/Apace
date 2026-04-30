@@ -30,8 +30,8 @@ internal static class TileRenderer
         return Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)),
         [
             settings.TileDataSource switch{
-                Settings.TileDataSourceEnum.MapTiler => $"--maptiler_key={settings.MapTilerApiKey}",
-                Settings.TileDataSourceEnum.PostgreSQL => $"--tileDB={settings.TileDatabaseConnectionString}",
+                Settings.TileDataSourceE.MapTiler => $"--maptiler_key={settings.MapTilerApiKey}",
+                Settings.TileDataSourceE.PostgreSQL => $"--tileDB={settings.TileDatabaseConnectionString}",
                 _ => throw new UnreachableException(),
             },
             $"--eventbus=localhost:{settings.EventBusPort}",

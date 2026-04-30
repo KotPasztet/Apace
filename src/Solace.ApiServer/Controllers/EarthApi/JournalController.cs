@@ -52,9 +52,8 @@ public class JournalController : ControllerBase
             itemJournalEntry.AmountCollected
         ));
 
-        LinkedList<Types.Journal.JournalRecord.ActivityLogEntry> _activityLogList = activityLogModel.Entries
-            .Select(ActivityLogEntryToApiResponse)
-            .Collect(() => new LinkedList<Types.Journal.JournalRecord.ActivityLogEntry>(), (list, val) => list.AddLast(val), (list1, list2) => list1.AddRange(list1));
+        LinkedList<Types.Journal.JournalRecord.ActivityLogEntry> _activityLogList = new(activityLogModel.Entries
+            .Select(ActivityLogEntryToApiResponse));
 
         var activityLogList = _activityLogList.Reverse().ToArray();
         Types.Journal.JournalRecord.ActivityLogEntry[] activityLog = activityLogList;

@@ -14,7 +14,7 @@ public static class BlockEntityTranslator
         {
             case "bed":
                 {
-                    NbtMapBuilder builder = NbtMap.builder();
+                    NbtMapBuilder builder = NbtMap.Builder();
                     builder.PutString("id", "Bed");
                     builder.PutByte("color", ((JavaBlocks.BedrockMapping.BedBlockEntity)blockEntityMapping).Color switch
                     {
@@ -40,7 +40,7 @@ public static class BlockEntityTranslator
                 }
             case "flower_pot":
                 {
-                    NbtMapBuilder builder = NbtMap.builder();
+                    NbtMapBuilder builder = NbtMap.Builder();
                     builder.PutString("id", "FlowerPot");
                     NbtMap? contents = ((JavaBlocks.BedrockMapping.FlowerPotBlockEntity)blockEntityMapping).Contents;
                     if (contents is not null)
@@ -50,7 +50,7 @@ public static class BlockEntityTranslator
                 }
             case "moving_block":
                 {
-                    NbtMapBuilder builder = NbtMap.builder();
+                    NbtMapBuilder builder = NbtMap.Builder();
 
                     builder.PutString("id", "MovingBlock");
 
@@ -76,14 +76,14 @@ public static class BlockEntityTranslator
                         return null;
                     }
 
-                    NbtMapBuilder movingBlockBuilder = NbtMap.builder();
+                    NbtMapBuilder movingBlockBuilder = NbtMap.Builder();
                     movingBlockBuilder.PutString("name", BedrockBlocks.GetName(bedrockMapping.Id)!);
                     movingBlockBuilder.PutCompound("states", BedrockBlocks.GetStateNbt(bedrockMapping.Id)!);
                     builder.PutCompound("movingBlock", movingBlockBuilder.Build());
 
                     if (bedrockMapping.Waterlogged)
                     {
-                        NbtMapBuilder movingBlockExtraBuilder = NbtMap.builder();
+                        NbtMapBuilder movingBlockExtraBuilder = NbtMap.Builder();
                         movingBlockExtraBuilder.PutString("name", BedrockBlocks.GetName(BedrockBlocks.WaterId)!);
                         movingBlockExtraBuilder.PutCompound("states", BedrockBlocks.GetStateNbt(BedrockBlocks.WaterId)!);
                         builder.PutCompound("movingBlockExtra", movingBlockExtraBuilder.Build());
@@ -93,7 +93,7 @@ public static class BlockEntityTranslator
                     {
                         NbtMap? blockEntityNbt = BlockEntityTranslator.TranslateBlockEntity(bedrockMapping.BlockEntity, null);
                         if (blockEntityNbt is not null)
-                            builder.PutCompound("movingEntity", blockEntityNbt.toBuilder().PutInt("x", javaBlockEntityInfo.X).PutInt("y", javaBlockEntityInfo.Y).PutInt("z", javaBlockEntityInfo.Z).PutBoolean("isMovable", false).Build());
+                            builder.PutCompound("movingEntity", blockEntityNbt.ToBuilder().PutInt("x", javaBlockEntityInfo.X).PutInt("y", javaBlockEntityInfo.Y).PutInt("z", javaBlockEntityInfo.Z).PutBoolean("isMovable", false).Build());
                     }
 
                     if (!javaNbt.ContainsKey("basePos"))
@@ -112,7 +112,7 @@ public static class BlockEntityTranslator
             case "piston":
                 {
                     var pistonBlockEntity = (JavaBlocks.BedrockMapping.PistonBlockEntity)blockEntityMapping;
-                    NbtMapBuilder builder = NbtMap.builder();
+                    NbtMapBuilder builder = NbtMap.Builder();
                     builder.PutString("id", "PistonArm");
                     builder.PutByte("State", (byte)(pistonBlockEntity.Extended ? 2 : 0));
                     builder.PutByte("NewState", (byte)(pistonBlockEntity.Extended ? 2 : 0));

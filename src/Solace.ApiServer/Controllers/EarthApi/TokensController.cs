@@ -39,10 +39,7 @@ public class TokensController : SolaceControllerBase
         {
             {
                 "tokens",
-                tokens.GetTokens().Collect(() => new Dictionary<string, Token>(), (hashmap, token) =>
-                {
-                    hashmap[token.Id] = TokenToApiResponse(token.Token);
-                }, DictionaryExtensions.AddRange)
+                tokens.GetTokens().Select(token => new KeyValuePair<string, Token>(token.Id, TokenToApiResponse(token.Token))).ToDictionary()
             }
         }, null);
     }

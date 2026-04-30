@@ -294,11 +294,13 @@ public sealed class BuildplateInstancesManager
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum InstanceType
     {
+#pragma warning disable CA1707 // Identifiers should not contain underscores
         BUILD,
         PLAY,
         SHARED_BUILD,
         SHARED_PLAY,
         ENCOUNTER,
+#pragma warning restore CA1707 // Identifiers should not contain underscores
     }
 
     public sealed record InstanceInfo(

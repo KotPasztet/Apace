@@ -1,6 +1,7 @@
 ﻿using CommandLine;
 using Serilog;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Solace.ObjectStore.Server;
 
@@ -48,8 +49,8 @@ internal static class Program
             return 1;
 
         var loggerConfig = new LoggerConfiguration()
-                 .WriteTo.Console()
-                 .WriteTo.File("logs/object_store_server/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                 .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+                 .WriteTo.File("logs/object_store_server/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}", formatProvider: CultureInfo.InvariantCulture)
                  .Enrich.WithProperty("ComponentName", "ObjectStore");
 
         if (!string.IsNullOrWhiteSpace(options.LoggerUrl))

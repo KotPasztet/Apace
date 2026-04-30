@@ -68,7 +68,9 @@ public static class Tokens
         ) : ITokenData<EntityToken>;
     }
 
+#pragma warning disable CA1716 // Identifiers should not match keywords
     public static class Shared
+#pragma warning restore CA1716 // Identifiers should not match keywords
     {
         public sealed record XboxTicketToken(
             string UserId,

@@ -3,9 +3,11 @@ using System.Text.Json.Serialization;
 
 namespace Solace.PreviewGenerator.NBT;
 
-public class NbtList : IList
+#pragma warning disable CA1010 // Generic interface should also be implemented
+public sealed class NbtList : IList
+#pragma warning restore CA1010 // Generic interface should also be implemented
 {
-    public static readonly NbtList EMPTY = new NbtList(NbtType.END);
+    public static readonly NbtList EMPTY = new NbtList(NbtType.End);
 
     [JsonInclude, JsonPropertyName("type")]
     public readonly NbtType _type;
@@ -53,7 +55,7 @@ public class NbtList : IList
     public object Get(int index)
     {
         if (index < 0 || index >= _array.Length)
-            throw new IndexOutOfRangeException("Expected 0-" + (_array.Length - 1) + ". Got " + index);
+            throw new ArgumentOutOfRangeException(nameof(index), "Expected 0-" + (_array.Length - 1) + ". Got " + index);
 
         return NbtUtils.Copy(_array.GetValue(index)!);
     }
