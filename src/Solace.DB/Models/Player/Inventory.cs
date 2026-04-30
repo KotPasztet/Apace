@@ -25,7 +25,7 @@ public sealed class Inventory
 
     public Inventory Copy()
     {
-        Inventory inventory = new Inventory();
+        var inventory = new Inventory();
         inventory._stackableItems.AddRange(_stackableItems);
         Dictionary<string, Dictionary<string, NonStackableItemInstance>> nonStackableItems = [];
         _nonStackableItems.ForEach((id, instances) => nonStackableItems.Add(id, new Dictionary<string, NonStackableItemInstance>(instances)));

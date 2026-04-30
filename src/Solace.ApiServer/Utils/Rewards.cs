@@ -60,7 +60,7 @@ public sealed class Rewards
 
     public EarthDB.Query ToRedeemQuery(string playerId, long currentTime, StaticData.StaticData staticData)
     {
-        EarthDB.Query getQuery = new EarthDB.Query(true);
+        var getQuery = new EarthDB.Query(true);
         if (_rubies > 0 || _experiencePoints > 0)
         {
             getQuery.Get("profile", playerId, typeof(Profile));
@@ -82,7 +82,7 @@ public sealed class Rewards
             // TODO
         }
 
-        EarthDB.Query updateQuery = new EarthDB.Query(true);
+        var updateQuery = new EarthDB.Query(true);
         getQuery.Then(results =>
         {
             bool checkLevelUp = false;
@@ -179,7 +179,7 @@ public sealed class Rewards
 
     public static Rewards FromDBRewardsModel(DB.Models.Common.Rewards rewardsModel)
     {
-        Rewards rewards = new Rewards();
+        var rewards = new Rewards();
         rewards.AddRubies(rewardsModel.Rubies);
         rewards.AddExperiencePoints(rewardsModel.ExperiencePoints);
         if (rewardsModel.Level is not null)

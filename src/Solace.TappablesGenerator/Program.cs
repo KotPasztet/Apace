@@ -96,9 +96,9 @@ internal static class Program
 
         Log.Information("Connected to event bus");
 
-        TappableGenerator tappableGenerator = new TappableGenerator(staticData);
-        EncounterGenerator encounterGenerator = new EncounterGenerator(staticData);
-        Spawner[] spawner = new Spawner[1];
+        var tappableGenerator = new TappableGenerator(staticData);
+        var encounterGenerator = new EncounterGenerator(staticData);
+        var spawner = new Spawner[1];
         ActiveTiles activeTiles = await ActiveTiles.CreateAsync(eventBusClient, new ActiveTiles.ActiveTileListener(
             async activeTiles =>
             {

@@ -16,7 +16,7 @@ public sealed class Tokens
 
     public Tokens Copy()
     {
-        Tokens tokens = new Tokens();
+        var tokens = new Tokens();
         tokens._tokens.AddRange(_tokens);
         return tokens;
     }

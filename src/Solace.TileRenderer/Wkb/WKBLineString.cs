@@ -34,7 +34,7 @@ internal class WKBLineString : IWKBObject
         }
 
         int numPoints = reader.ReadInt32();
-        Point[] points = new Point[numPoints];
+        var points = new Point[numPoints];
         for (int i = 0; i < numPoints; i++)
         {
             points[i] = Point.Load(reader);

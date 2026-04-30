@@ -542,7 +542,7 @@ public sealed class BuildplateInstanceRequestHandler
 
                             hotbar.LimitToInventory(inventory);
 
-                            InventoryResponse inventoryResponse = new InventoryResponse(
+                            var inventoryResponse = new InventoryResponse(
                             [
                                 .. inventoryResponseStackableItems.Select(entry => new InventoryResponse.Item(entry.Key, entry.Value ?? 1, null, 0)),
                                     .. inventoryResponseNonStackableItems
@@ -569,7 +569,7 @@ public sealed class BuildplateInstanceRequestHandler
                 break;
         }
 
-        PlayerConnectedResponse playerConnectedResponse = new PlayerConnectedResponse(
+        var playerConnectedResponse = new PlayerConnectedResponse(
             true,
             initialInventoryContents
         );
@@ -640,7 +640,7 @@ public sealed class BuildplateInstanceRequestHandler
 
                     }
 
-                    Hotbar hotbar = new Hotbar();
+                    var hotbar = new Hotbar();
                     for (int index = 0; index < 7; index++)
                     {
                         InventoryResponse.HotbarItem? hotbarItem = backpackContents.Hotbar[index];
@@ -912,7 +912,7 @@ public sealed class BuildplateInstanceRequestHandler
             {
                 Inventory inventory = results1.Get<Inventory>("inventory");
 
-                Hotbar hotbar = new Hotbar();
+                var hotbar = new Hotbar();
                 for (int index = 0; index < hotbar.Items.Length; index++)
                 {
                     InventorySetHotbarMessage.Item item = inventorySetHotbarMessage.Items[index];

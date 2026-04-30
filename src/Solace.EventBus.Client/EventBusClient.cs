@@ -57,7 +57,7 @@ public class EventBusClient : IAsyncDisposable
             throw new ArgumentException("Port number out of range");
         }
 
-        TcpClient tcpClient = new TcpClient();
+        var tcpClient = new TcpClient();
         try
         {
             await tcpClient.ConnectAsync(host, port);

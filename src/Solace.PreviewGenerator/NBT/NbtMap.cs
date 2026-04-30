@@ -284,7 +284,7 @@ public class NbtMap// : IDictionary<string, object>
         if (map.Count == 0)
             return "{}";
 
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         sb.Append('{').Append('\n');
 
         IEnumerator<KeyValuePair<string, object>> enumerator = map.GetEnumerator();

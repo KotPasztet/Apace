@@ -34,8 +34,8 @@ internal sealed class Chunk
         ChunkX = chunkTag.Get<IntTag>("xPos");
         ChunkZ = chunkTag.Get<IntTag>("zPos");
 
-        JavaBlocks.BedrockMapping.BlockEntityR?[] blockEntityMappings = new JavaBlocks.BedrockMapping.BlockEntityR[16 * 256 * 16];
-        JavaBlocks.BedrockMapping.ExtraDataR?[] extraDatas = new JavaBlocks.BedrockMapping.ExtraDataR[16 * 256 * 16];
+        var blockEntityMappings = new JavaBlocks.BedrockMapping.BlockEntityR[16 * 256 * 16];
+        var extraDatas = new JavaBlocks.BedrockMapping.ExtraDataR[16 * 256 * 16];
 
         Array.Fill(Blocks, BedrockBlocks.AirId);
         Array.Fill(BlockEntities, null);
@@ -46,7 +46,7 @@ internal sealed class Chunk
         for (int subchunkY = 0; subchunkY < 16; subchunkY++)
         {
             int sectionIndex = subchunkY + 4 + 1; // Java world height starts at -64, plus one section for bottommost lighting
-            CompoundTag sectionTag = (CompoundTag)chunkTag.Get<ListTag>("sections")[sectionIndex];
+            var sectionTag = (CompoundTag)chunkTag.Get<ListTag>("sections")[sectionIndex];
 
             CompoundTag blockStatesTag = sectionTag.Get<CompoundTag>("block_states");
 
@@ -105,12 +105,12 @@ internal sealed class Chunk
 
         foreach (Tag blockEntityTag in chunkTag.Get<ListTag>("block_entities"))
         {
-            CompoundTag blockEntityCompoundTag = (CompoundTag)blockEntityTag;
+            var blockEntityCompoundTag = (CompoundTag)blockEntityTag;
             int x = GetChunkBlockOffset(blockEntityCompoundTag.Get<IntTag>("x").Value);
             int y = blockEntityCompoundTag.Get<IntTag>("y").Value;
             int z = GetChunkBlockOffset(blockEntityCompoundTag.Get<IntTag>("z").Value);
             string type = blockEntityCompoundTag.Get<StringTag>("id").Value;
-            BlockEntityInfo blockEntityInfo = new BlockEntityInfo(x, y, z, BlockEntityType.FURNACE, blockEntityCompoundTag);    // TODO: use proper type (currently this doesn't matter for any of our translator implementations)
+            var blockEntityInfo = new BlockEntityInfo(x, y, z, BlockEntityType.FURNACE, blockEntityCompoundTag);    // TODO: use proper type (currently this doesn't matter for any of our translator implementations)
 
             JavaBlocks.BedrockMapping.BlockEntityR? blockEntityMapping = blockEntityMappings[(x * 256 + y) * 16 + z];
             if (blockEntityMapping is null)

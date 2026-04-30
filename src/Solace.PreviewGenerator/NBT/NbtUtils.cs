@@ -67,7 +67,7 @@ public static class NbtUtils
 
     public static string Indent(string str)
     {
-        StringBuilder builder = new StringBuilder("  " + str);
+        var builder = new StringBuilder("  " + str);
         for (int i = 2; i < builder.Length; i++)
         {
             if (builder[i] == '\n')
@@ -84,7 +84,7 @@ public static class NbtUtils
 
     public static string ToHexString(byte[] data)
     {
-        StringBuilder r = new StringBuilder(data.Length << 1);
+        var r = new StringBuilder(data.Length << 1);
         foreach (byte b in data)
         {
             r.Append(HEX_CODE[(b >> 4) & 0xF]);

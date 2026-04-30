@@ -111,7 +111,7 @@ public static class BlockEntityTranslator
                 }
             case "piston":
                 {
-                    JavaBlocks.BedrockMapping.PistonBlockEntity pistonBlockEntity = (JavaBlocks.BedrockMapping.PistonBlockEntity)blockEntityMapping;
+                    var pistonBlockEntity = (JavaBlocks.BedrockMapping.PistonBlockEntity)blockEntityMapping;
                     NbtMapBuilder builder = NbtMap.builder();
                     builder.PutString("id", "PistonArm");
                     builder.PutByte("State", (byte)(pistonBlockEntity.Extended ? 2 : 0));

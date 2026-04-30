@@ -9,12 +9,12 @@ public sealed class LevelUtils
 {
     public static EarthDB.Query CheckAndHandlePlayerLevelUp(string playerId, long currentTime, StaticData.StaticData staticData)
     {
-        EarthDB.Query getQuery = new EarthDB.Query(true);
+        var getQuery = new EarthDB.Query(true);
         getQuery.Get("profile", playerId, typeof(Profile));
         getQuery.Then(results =>
         {
             Profile profile = results.Get<Profile>("profile");
-            EarthDB.Query updateQuery = new EarthDB.Query(true);
+            var updateQuery = new EarthDB.Query(true);
             bool changed = false;
             while (profile.Level - 1 < staticData.Levels.Levels.Length && profile.Experience >= staticData.Levels.Levels[profile.Level - 1].ExperienceRequired)
             {
@@ -35,7 +35,7 @@ public sealed class LevelUtils
 
     public static Rewards MakeLevelRewards(PlayerLevels.Level level)
     {
-        Rewards rewards = new Rewards();
+        var rewards = new Rewards();
         if (level.Rubies > 0)
         {
             rewards.AddRubies(level.Rubies);

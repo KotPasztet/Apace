@@ -19,7 +19,7 @@ public sealed class ActivityLog
 
     public ActivityLog Copy()
     {
-        ActivityLog activityLog = new ActivityLog();
+        var activityLog = new ActivityLog();
         activityLog._entries.AddRange(_entries);
         return activityLog;
     }

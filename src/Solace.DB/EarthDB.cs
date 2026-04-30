@@ -272,7 +272,7 @@ public sealed class EarthDB : IDisposable
                 throw new UnsupportedOperationException();
             }
 
-            Results results = new Results();
+            var results = new Results();
 
             foreach (WriteObjectsEntry entry in writeObjects)
             {

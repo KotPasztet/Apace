@@ -86,7 +86,7 @@ internal static class Program
         {
             Log.Information("Verifying maptiler api key");
 
-            HttpClient httpClient = new HttpClient();
+            var httpClient = new HttpClient();
             HttpResponseMessage response;
             try
             {

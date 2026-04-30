@@ -16,7 +16,7 @@ public static class TimeFormatter
 
     public static string FormatDuration(long duration)
     {
-        TimeSpan timeSpan = TimeSpan.FromMilliseconds(duration);
+        var timeSpan = TimeSpan.FromMilliseconds(duration);
         return FormatDuration(timeSpan);
     }
     public static string FormatDuration(TimeSpan timeSpan)

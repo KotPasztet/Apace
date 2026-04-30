@@ -82,7 +82,7 @@ public class TappableGenerator
 
             Tappable.RarityE rarity = Enum.Parse<Tappable.RarityE>(items.Select(item => _staticData.Catalog.ItemsCatalog.GetItem(item.Id)!.Rarity).Max().ToString());
 
-            Tappable tappable = new Tappable(
+            var tappable = new Tappable(
                 U.RandomUuid().ToString(),
                 lat,
                 lon,

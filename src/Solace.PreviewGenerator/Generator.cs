@@ -13,14 +13,14 @@ public static class Generator
     {
         //try
         //{
-        ServerDataZip serverDataZip = ServerDataZip.Read(stream);
+        var serverDataZip = ServerDataZip.Read(stream);
 
         LinkedList<Chunk> chunks = new();
         for (int chunkX = -CHUNK_RADIUS; chunkX < CHUNK_RADIUS; chunkX++)
         {
             for (int chunkZ = -CHUNK_RADIUS; chunkZ < CHUNK_RADIUS; chunkZ++)
             {
-                Chunk? chunk = Chunk.Read(serverDataZip.GetChunkNBT(chunkX, chunkZ));
+                var chunk = Chunk.Read(serverDataZip.GetChunkNBT(chunkX, chunkZ));
                 if (chunk is null)
                     Log.Error($"Could not convert chunk {chunkX}, {chunkZ}");
                 else
@@ -111,7 +111,7 @@ public static class Generator
             ];
 
         // TODO: entities
-        PreviewModel previewModel = new PreviewModel(
+        var previewModel = new PreviewModel(
             1,
             false,
             subChunks,
