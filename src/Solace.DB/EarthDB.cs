@@ -117,10 +117,7 @@ public sealed class EarthDB : IDisposable
         }
 
         transaction.Commit();
-        if (transaction.Connection is not null)
-        {
-            transaction.Connection.Close();
-        }
+        transaction.Connection?.Close();
     }
 
     internal async Task ExecuteCommandAsync(bool write, Action<SqliteCommand> action, CancellationToken cancellationToken = default)

@@ -34,8 +34,8 @@ internal sealed class Chunk
         ChunkX = chunkTag.Get<IntTag>("xPos");
         ChunkZ = chunkTag.Get<IntTag>("zPos");
 
-        var blockEntityMappings = new JavaBlocks.BedrockMapping.BlockEntityR[16 * 256 * 16];
-        var extraDatas = new JavaBlocks.BedrockMapping.ExtraDataR[16 * 256 * 16];
+        var blockEntityMappings = new JavaBlocks.BedrockMapping.BlockEntityR?[16 * 256 * 16];
+        var extraDatas = new JavaBlocks.BedrockMapping.ExtraDataR?[16 * 256 * 16];
 
         Array.Fill(Blocks, BedrockBlocks.AirId);
         Array.Fill(BlockEntities, null);
@@ -155,7 +155,7 @@ internal sealed class Chunk
 
         long[] @in = longArrayTag;
         int inIndex = 0;
-        int inSubIndex = 0;
+        int inSubIndex;
 
         int bits = 64;
         for (int bits1 = 4; bits1 <= 64; bits1++)

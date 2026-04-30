@@ -77,15 +77,15 @@ public static class BlockEntityTranslator
                     }
 
                     NbtMapBuilder movingBlockBuilder = NbtMap.builder();
-                    movingBlockBuilder.PutString("name", BedrockBlocks.GetName(bedrockMapping.Id));
-                    movingBlockBuilder.PutCompound("states", BedrockBlocks.GetStateNbt(bedrockMapping.Id));
+                    movingBlockBuilder.PutString("name", BedrockBlocks.GetName(bedrockMapping.Id)!);
+                    movingBlockBuilder.PutCompound("states", BedrockBlocks.GetStateNbt(bedrockMapping.Id)!);
                     builder.PutCompound("movingBlock", movingBlockBuilder.Build());
 
                     if (bedrockMapping.Waterlogged)
                     {
                         NbtMapBuilder movingBlockExtraBuilder = NbtMap.builder();
-                        movingBlockExtraBuilder.PutString("name", BedrockBlocks.GetName(BedrockBlocks.WaterId));
-                        movingBlockExtraBuilder.PutCompound("states", BedrockBlocks.GetStateNbt(BedrockBlocks.WaterId));
+                        movingBlockExtraBuilder.PutString("name", BedrockBlocks.GetName(BedrockBlocks.WaterId)!);
+                        movingBlockExtraBuilder.PutCompound("states", BedrockBlocks.GetStateNbt(BedrockBlocks.WaterId)!);
                         builder.PutCompound("movingBlockExtra", movingBlockExtraBuilder.Build());
                     }
 

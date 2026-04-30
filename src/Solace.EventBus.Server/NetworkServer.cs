@@ -136,6 +136,7 @@ public sealed class NetworkServer
                     byte[] bytes = Encoding.ASCII.GetBytes(message + "\n");
                     await writer.WriteAsync(bytes);
                 }
+
                 await writer.CompleteAsync();
             }
             catch (Exception ex)

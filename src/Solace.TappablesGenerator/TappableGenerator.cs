@@ -31,7 +31,7 @@ public class TappableGenerator
         _random = new Random();
     }
 
-    public long GetMaxTappableLifetime()
+    public static long GetMaxTappableLifetime()
         => MAX_DELAY + MAX_DURATION + 30 * 1000;
 
     public Tappable[] GenerateTappables(int tileX, int tileY, long currentTime)

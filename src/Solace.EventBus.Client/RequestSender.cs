@@ -126,8 +126,10 @@ public sealed class RequestSender
                 {
                     await SendNextRequestAsync();
                 }
+
                 return true;
             }
+
             return false;
         }
         finally
@@ -149,12 +151,8 @@ public sealed class RequestSender
         try
         {
             _closed = true;
-
-            if (_currentPendingResponse != null)
-            {
-                _currentPendingResponse.TrySetResult(null);
-                _currentPendingResponse = null;
-            }
+            _currentPendingResponse?.TrySetResult(null);
+            _currentPendingResponse = null;
 
             while (_queuedRequestResponses.Count > 0)
             {

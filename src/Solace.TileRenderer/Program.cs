@@ -139,6 +139,7 @@ internal static class Program
                 {
                     Log.Information($"The provided connection string is: '{options.TileDatabaseConnectionString}', make sure that it is in the correct format");
                 }
+
                 Log.CloseAndFlush();
                 return 1;
             }

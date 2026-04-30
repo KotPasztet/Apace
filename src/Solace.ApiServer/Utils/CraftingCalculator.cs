@@ -48,6 +48,7 @@ public static class CraftingCalculator
                     {
                         input.AddLast(new InputItem(inputItem.Id, inputItem.Count - usedCount, []));
                     }
+
                     usedCount = 0;
                 }
             }

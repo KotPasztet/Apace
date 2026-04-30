@@ -176,7 +176,7 @@ public sealed class ConsoleProcess : IDisposable
                 return "\"\"";
             }
 
-            if (a.Contains(" ") || a.Contains("{") || a.Contains("\""))
+            if (a.Contains(' ') || a.Contains('{') || a.Contains('"'))
             {
                 return $"\"{a.Replace("\"", "\\\"")}\"";
             }

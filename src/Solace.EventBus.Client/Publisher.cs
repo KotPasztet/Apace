@@ -140,12 +140,8 @@ public sealed class Publisher
         try
         {
             _closed = true;
-
-            if (_currentPendingEventResult != null)
-            {
-                _currentPendingEventResult.TrySetResult(false);
-                _currentPendingEventResult = null;
-            }
+            _currentPendingEventResult?.TrySetResult(false);
+            _currentPendingEventResult = null;
 
             foreach (var tcs in _queuedEventResults)
             {

@@ -300,11 +300,11 @@ public static class JavaBlocks
         return states?.ToArray();
     }
 
-    [Obsolete]
+    // [Obsolete]
     public static string? GetName(int id)
         => GetName(id, null);
 
-    [Obsolete]
+    // [Obsolete]
     public static BedrockMapping? GetBedrockMapping(int javaId)
         => GetBedrockMapping(javaId, null);
 

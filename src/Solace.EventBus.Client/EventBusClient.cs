@@ -107,6 +107,7 @@ public class EventBusClient : IAsyncDisposable
                 // empty
             }
         }
+
         await Task.CompletedTask;
     }
 
@@ -138,12 +139,14 @@ public class EventBusClient : IAsyncDisposable
         {
             await kvp.Value.ClosedAsync();
         }
+
         _publishers.Clear();
 
         foreach (var kvp in _requestSenders)
         {
             await kvp.Value.ClosedAsync();
         }
+
         _requestSenders.Clear();
     }
 
