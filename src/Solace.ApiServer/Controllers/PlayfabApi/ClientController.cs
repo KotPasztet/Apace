@@ -10,7 +10,7 @@ namespace Solace.ApiServer.Controllers.PlayfabApi;
 
 [Route("Client")]
 [Route("20CA2.playfabapi.com/Client")]
-public partial class ClientController : ViennaControllerBase
+public partial class ClientController : SolaceControllerBase
 {
     private static Config config => Program.config;
 

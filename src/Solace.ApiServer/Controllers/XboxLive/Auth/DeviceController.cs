@@ -7,7 +7,7 @@ namespace Solace.ApiServer.Controllers.XboxLive.Auth;
 
 [Route("device/authenticate")]
 [Route("device.auth.xboxlive.com/device/authenticate")]
-public class DeviceController : ViennaControllerBase
+public class DeviceController : SolaceControllerBase
 {
     private static Config config => Program.config;
 

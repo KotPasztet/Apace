@@ -5,7 +5,7 @@ namespace Solace.ApiServer.Controllers.XboxAb;
 
 [Route("ab")]
 [Route("www.xboxab.com/ab")]
-public class AbController : ViennaControllerBase
+public class AbController : SolaceControllerBase
 {
     [HttpGet]
     public ContentHttpResult Get()

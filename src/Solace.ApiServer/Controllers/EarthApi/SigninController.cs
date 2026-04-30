@@ -8,7 +8,7 @@ using Solace.Common.Utils;
 namespace Solace.ApiServer.Controllers;
 
 [ApiVersion("1.1")]
-public partial class SigninController : ViennaControllerBase
+public partial class SigninController : SolaceControllerBase
 {
     [GeneratedRegex("^[0-9A-F]{16}$")]
     private static partial Regex GetUserIdRegex();

@@ -9,7 +9,7 @@ namespace Solace.ApiServer.Controllers.PlayfabApi;
 
 [Route("Authentication")]
 [Route("20CA2.playfabapi.com/Authentication")]
-public class AuthenticationController : ViennaControllerBase
+public class AuthenticationController : SolaceControllerBase
 {
     private static Config config => Program.config;
 

@@ -14,7 +14,7 @@ namespace Solace.ApiServer.Controllers.PlayfabApi;
 
 [Route("Catalog")]
 [Route("20CA2.playfabapi.com/Catalog")]
-public class CatalogController : ViennaControllerBase
+public class CatalogController : SolaceControllerBase
 {
     private static readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions()
     {

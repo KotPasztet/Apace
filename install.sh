@@ -11,7 +11,7 @@ RST='\033[0m'
 banner() {
     echo -e "${ORG}"
     echo "=============================="
-    echo "    VIENNA DOTNET INSTALLER   "
+    echo "    SOLACE INSTALLER   "
     echo "=============================="
     echo -e "${RST}"
 }
@@ -89,12 +89,12 @@ grep -q COMPlus_gcServer ~/.bashrc || {
     echo 'export DOTNET_GCHeapHardLimit=268435456' >> ~/.bashrc
 }
 
-mkdir -p ~/Vienna
+mkdir -p ~/Solace
 
 echo "[5] Downloading pre-compiled server"
 cd ~
 
-URL=$(curl -s https://api.github.com/repos/FroquaCubez/ViennaDotNet-PreCompiled/releases/tags/v1 \
+URL=$(curl -s https://api.github.com/repos/FroquaCubez/Solace-PreCompiled/releases/tags/v1 \
     | grep browser_download_url \
     | grep linux-arm64 \
     | cut -d '"' -f 4)
@@ -102,20 +102,20 @@ URL=$(curl -s https://api.github.com/repos/FroquaCubez/ViennaDotNet-PreCompiled/
 [ -z "$URL" ] && { echo "[ERROR] Could not find download URL"; exit 1; }
 
 wget -q "$URL"
-unzip -o ViennaDotNet-linux-arm64.zip
-rm -rf ~/Vienna/*
+unzip -o Solace-linux-arm64.zip
+rm -rf ~/Solace/*
 
-if [ -d ViennaDotNet-linux-arm64 ]; then
-    mv ViennaDotNet-linux-arm64/* ~/Vienna/
-    rm -rf ViennaDotNet-linux-arm64
+if [ -d Solace-linux-arm64 ]; then
+    mv Solace-linux-arm64/* ~/Solace/
+    rm -rf Solace-linux-arm64
 else
-    mv run_launcher.ps1 ~/Vienna/ 2>/dev/null || true
-    mv components       ~/Vienna/ 2>/dev/null || true
-    mv launcher         ~/Vienna/ 2>/dev/null || true
-    mv staticdata       ~/Vienna/ 2>/dev/null || true
+    mv run_launcher.ps1 ~/Solace/ 2>/dev/null || true
+    mv components       ~/Solace/ 2>/dev/null || true
+    mv launcher         ~/Solace/ 2>/dev/null || true
+    mv staticdata       ~/Solace/ 2>/dev/null || true
 fi
 
-chmod -R +x ~/Vienna/components/ 2>/dev/null || true
+chmod -R +x ~/Solace/components/ 2>/dev/null || true
 echo "[DONE]"
 EOF
 
@@ -125,7 +125,7 @@ print_step "4. CREATING EARTH COMMAND"
 
 mkdir -p "$PREFIX/bin"
 
-curl -fsSL https://raw.githubusercontent.com/FroquaCubez/ViennaDotNet-PreCompiled/refs/heads/main/TermuxVienna.sh -o "$PREFIX/bin/earth"
+curl -fsSL https://raw.githubusercontent.com/FroquaCubez/Solace-PreCompiled/refs/heads/main/TermuxSolace.sh -o "$PREFIX/bin/earth"
 
 chmod +x "$PREFIX/bin/earth"
 
@@ -153,9 +153,9 @@ else
 fi
 
 HOME_DIR=$(eval echo "~$CURRENT_USER")
-INSTALL_DIR="$HOME_DIR/vienna-dotnet-server"
-REPO_DIR="$INSTALL_DIR/ViennaDotNet"
-SERVICE_FILE="/etc/systemd/system/vienna.service"
+INSTALL_DIR="$HOME_DIR/solace-server"
+REPO_DIR="$INSTALL_DIR/Solace"
+SERVICE_FILE="/etc/systemd/system/solace.service"
 
 OS=$(uname -s)
 case $(uname -m) in
@@ -257,7 +257,7 @@ install_pwsh() {
 
 install_service() {
     if [ "$OS" = "Darwin" ]; then
-        PLIST="$HOME_DIR/Library/LaunchAgents/com.vienna.server.plist"
+        PLIST="$HOME_DIR/Library/LaunchAgents/com.solace.server.plist"
         PWSH_PATH=$(command -v pwsh)
         cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -265,7 +265,7 @@ install_service() {
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.vienna.server</string>
+    <string>com.solace.server</string>
     <key>ProgramArguments</key>
     <array>
         <string>$PWSH_PATH</string>
@@ -287,9 +287,9 @@ install_service() {
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>$BUILD_DIR/logs/vienna.log</string>
+    <string>$BUILD_DIR/logs/solace.log</string>
     <key>StandardErrorPath</key>
-    <string>$BUILD_DIR/logs/vienna.err</string>
+    <string>$BUILD_DIR/logs/solace.err</string>
 </dict>
 </plist>
 EOF
@@ -298,7 +298,7 @@ EOF
     else
         cat > "$SERVICE_FILE" <<EOF
 [Unit]
-Description=Vienna DotNet Server Launcher
+Description=Solace Server Launcher
 After=network.target
 
 [Service]
@@ -318,23 +318,23 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
         systemctl daemon-reload
-        systemctl enable vienna.service
+        systemctl enable solace.service
     fi
 }
 
 start_service() {
     if [ "$OS" = "Darwin" ]; then
-        sudo -u "$CURRENT_USER" launchctl start com.vienna.server
+        sudo -u "$CURRENT_USER" launchctl start com.solace.server
     else
-        systemctl start vienna.service
+        systemctl start solace.service
     fi
 }
 
 stop_service() {
     if [ "$OS" = "Darwin" ]; then
-        sudo -u "$CURRENT_USER" launchctl stop com.vienna.server 2>/dev/null || true
+        sudo -u "$CURRENT_USER" launchctl stop com.solace.server 2>/dev/null || true
     else
-        systemctl stop vienna.service 2>/dev/null || true
+        systemctl stop solace.service 2>/dev/null || true
     fi
 }
 
@@ -426,12 +426,12 @@ echo "  4. Accept the Minecraft EULA when prompted in the logs"
 echo ""
 if [ "$OS" = "Darwin" ]; then
     echo "Useful commands:"
-    echo "  tail -f $BUILD_DIR/logs/vienna.log   → live logs"
-    echo "  launchctl stop com.vienna.server      → stop"
-    echo "  launchctl start com.vienna.server     → start"
+    echo "  tail -f $BUILD_DIR/logs/solace.log   → live logs"
+    echo "  launchctl stop com.solace.server      → stop"
+    echo "  launchctl start com.solace.server     → start"
 else
     echo "Useful commands:"
-    echo "  sudo journalctl -u vienna.service -f     → live logs"
-    echo "  sudo systemctl status vienna.service     → status"
-    echo "  sudo systemctl restart vienna.service    → restart"
+    echo "  sudo journalctl -u solace.service -f     → live logs"
+    echo "  sudo systemctl status solace.service     → status"
+    echo "  sudo systemctl restart solace.service    → restart"
 fi

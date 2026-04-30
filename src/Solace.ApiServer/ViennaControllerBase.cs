@@ -7,7 +7,7 @@ using Solace.ApiServer.Utils;
 namespace Solace.ApiServer;
 
 [ApiController]
-public abstract class ViennaControllerBase : ControllerBase
+public abstract class SolaceControllerBase : ControllerBase
 {
     private static Config config => Program.config;
 

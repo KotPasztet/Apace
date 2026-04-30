@@ -7,7 +7,7 @@ namespace Solace.ApiServer.Controllers.PlayfabApi;
 
 [Route("Event")]
 [Route("20CA2.playfabapi.com/Event")]
-public class EventController : ViennaControllerBase
+public class EventController : SolaceControllerBase
 {
 
     private sealed record WriteTelemetryEventsRequest(

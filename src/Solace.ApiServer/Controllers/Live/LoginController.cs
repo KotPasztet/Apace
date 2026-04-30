@@ -17,7 +17,7 @@ namespace Solace.ApiServer.Controllers.Live;
 
 [Route("")]
 [Route("login.live.com")]
-public partial class LoginController : ViennaControllerBase
+public partial class LoginController : SolaceControllerBase
 {
     private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 

@@ -81,14 +81,14 @@ try {
     
     if ($isWindows) {
         $originalTitle = $Host.UI.RawUI.WindowTitle
-        $Host.UI.RawUI.WindowTitle = "ViennaDotNet Launcher"
+        $Host.UI.RawUI.WindowTitle = "Solace Launcher"
 
         $fullPath = Join-Path $launcherDir "Launcher.exe"
         $launcher = Start-Process -FilePath $fullPath -PassThru
         Wait-Process -Id $launcher.Id
     } elseif ($isLinux) {
         $originalTitle = $null
-        Write-Host "`e]0;ViennaDotNet Launcher`a"
+        Write-Host "`e]0;Solace Launcher`a"
 
         $fullPath = Join-Path $launcherDir "Launcher"
         chmod +x $fullPath

@@ -7,7 +7,7 @@ namespace Solace.ApiServer.Controllers.XboxLive.Auth;
 
 [Route("xsts/authorize")]
 [Route("xsts.auth.xboxlive.com/xsts/authorize")]
-public class XstsController : ViennaControllerBase
+public class XstsController : SolaceControllerBase
 {
     private static Config config => Program.config;
 

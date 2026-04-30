@@ -7,7 +7,7 @@ namespace Solace.ApiServer.Controllers.XboxLive.Auth;
 
 [Route("title/authenticate")]
 [Route("title.auth.xboxlive.com/title/authenticate")]
-public class TitleController : ViennaControllerBase
+public class TitleController : SolaceControllerBase
 {
     private static Config config => Program.config;
 

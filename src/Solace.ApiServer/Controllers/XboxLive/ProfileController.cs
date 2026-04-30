@@ -9,7 +9,7 @@ namespace Solace.ApiServer.Controllers.XboxLive;
 
 [Route("users")]
 [Route("profile.xboxlive.com/users")]
-public partial class ProfileController : ViennaControllerBase
+public partial class ProfileController : SolaceControllerBase
 {
     private readonly LiveDbContext _dbContext;
 

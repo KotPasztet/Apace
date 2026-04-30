@@ -1,19 +1,19 @@
 ![Banner](src/Solace.LauncherUI/wwwroot/banner.png)
 
-![GitHub License](https://img.shields.io/github/license/Earth-Restored/ViennaDotNet?style=flat-square)
-![GitHub Repo stars](https://img.shields.io/github/stars/Earth-Restored/ViennaDotNet?style=flat-square)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Earth-Restored/ViennaDotNet/total?style=flat-square)
+![GitHub License](https://img.shields.io/github/license/Earth-Restored/Solace?style=flat-square)
+![GitHub Repo stars](https://img.shields.io/github/stars/Earth-Restored/Solace?style=flat-square)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Earth-Restored/Solace/total?style=flat-square)
 
-# ViennaDotNet
+# Solace
 
-An unofficial port of [Project Vienna](https://github.com/Project-Genoa/Vienna) to .NET
+An unofficial port of [Vienna](https://github.com/Project-Genoa/Vienna) to .NET
 
 > [!WARNING]
 > **Work In Progress (WIP):** This project is currently under active development. Some features may be incomplete, and you may encounter bugs or breaking changes. Use at your own risk!
 
 ## Disclaimer
 
-**ViennaDotNet** is an independent, community-driven project and is **not affiliated with, authorized, maintained, endorsed, or sponsored** by Microsoft Corporation, Mojang Studios, or any of their affiliates or subsidiaries.
+**Solace** is an independent, community-driven project and is **not affiliated with, authorized, maintained, endorsed, or sponsored** by Microsoft Corporation, Mojang Studios, or any of their affiliates or subsidiaries.
 
 * *Minecraft Earth™* is a trademark of Microsoft Corporation. All trademarks and registered trademarks are the property of their respective owners.
 * This project does not distribute, host, or provide access to original game assets, proprietary binaries, or resource packs. Users are responsible for providing their own legally obtained assets.
@@ -61,7 +61,7 @@ Installed automatically if using the [Semi-automatic installation method](#semi-
 * Open your terminal and run the following command:
 
 ```bash
-curl -sSl https://raw.githubusercontent.com/Earth-Restored/ViennaDotNet/main/install.sh | bash
+curl -sSl https://raw.githubusercontent.com/Earth-Restored/Solace/main/install.sh | bash
 ```
 
 * Wait until the command finishes
@@ -77,7 +77,7 @@ curl -sSl https://raw.githubusercontent.com/Earth-Restored/ViennaDotNet/main/ins
     git clone https://github.com/Earth-Restored/Solace.git
     ```
 
-2. CD to the ViennaDotNet directory, then run `publish.ps1 -profiles framework-dependent-{os}-{arch}`, replace `{os}` with you os (win, linux, osx) and `{arch}` with the cpu architecture (x64, x86, arm64, arm32), e.g. `framework-dependent-win-x64`
+2. CD to the Solace directory, then run `publish.ps1 -profiles framework-dependent-{os}-{arch}`, replace `{os}` with you os (win, linux, osx) and `{arch}` with the cpu architecture (x64, x86, arm64, arm32), e.g. `framework-dependent-win-x64`
 3. Run "run_launcher.ps1"
 4. Now on the same device open http://localhost:5000, create an account, make sure you confirm your email on the page that opens, if you fail to do this, you need to [Delete account db (Option B)](#i-cannot-see-the-start-server-button-when-logged-in), and login
 5. Under "Server Options", set "Network/IPv4 Address" to your PC's IP address and either disable "Map/Enable Tile Rendering" or set the "Map/MapTiler API Key" (it can be found [here](https://cloud.maptiler.com/account/keys/) when logged in)
@@ -114,7 +114,7 @@ curl -sSl https://raw.githubusercontent.com/Earth-Restored/ViennaDotNet/main/ins
 4. Select the downloaded APK file.
 5. Change locator Hostname/IP to `http://{ip}:8080`, replace `{ip}` with your PC's ip or hostname
     * If you want to use non microsoft login, change the options like so (use the same ip/hostname as the locator):
-    ![Correct options for replacement server](https://github.com/Earth-Restored/ViennaDotNet/blob/main/images/patcher-login-server-options.png?raw=true)
+    ![Correct options for replacement server](https://github.com/Earth-Restored/Solace/blob/main/images/patcher-login-server-options.png?raw=true)
 6. Click patch
 7. Move the patched apk to your phone and install it
 8. Once that's done, congratulations! You can now open the newly installed app and play Minecraft Earth!
