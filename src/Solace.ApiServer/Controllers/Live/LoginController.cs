@@ -48,15 +48,11 @@ public partial class LoginController : SolaceControllerBase
 
     [HttpGet("ppsecure/InlineConnect.srf")]
     public VirtualFileHttpResult GetLoginPage()
-    {
-        return TypedResults.VirtualFile("/login.html", "text/html");
-    }
+        => TypedResults.VirtualFile("/login.html", "text/html");
 
     [HttpGet("ppsecure/reauthenticateStart")]
     public VirtualFileHttpResult GetReauthenticatePage()
-    {
-        return TypedResults.VirtualFile("/reauthenticate.html", "text/html");
-    }
+        => TypedResults.VirtualFile("/reauthenticate.html", "text/html");
 
     private sealed record LoginResponse(
         string UserId,
@@ -177,10 +173,7 @@ public partial class LoginController : SolaceControllerBase
 
     [HttpPost("ppsecure/reauthenticate")]
     public async Task<IActionResult> Reauthenticate([FromForm] string userToken, [FromForm] string password, CancellationToken cancellationToken)
-    {
-        // TODO
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException(); // TODO
 
     [HttpPost("ppsecure/deviceaddcredential.srf")]
     public ContentHttpResult DeviceAddCredential()

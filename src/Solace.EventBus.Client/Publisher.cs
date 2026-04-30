@@ -73,7 +73,7 @@ public sealed class Publisher
         {
             taskToAwait = _queuedEventResults.Count == 0 
                 ? _currentPendingEventResult?.Task 
-                : _queuedEventResults.Last.Value.Task;
+                : _queuedEventResults.Last!.Value.Task;
         }
         finally
         {
@@ -102,8 +102,10 @@ public sealed class Publisher
                     {
                         await SendNextEventAsync();
                     }
+
                     return true;
                 }
+
                 return false;
             }
             finally
@@ -159,33 +161,18 @@ public sealed class Publisher
         }
     }
 
-    // Note: Emulates Java's String.matches() which applies the regex to the ENTIRE string implicitly
     private static bool ValidateQueueName(string queueName)
-    {
-        if (queueName.Any(c => c < 32 || c >= 127) || 
-            string.IsNullOrEmpty(queueName) || 
-            Regex.IsMatch(queueName, "^[^A-Za-z0-9_\\-]$") || 
-            Regex.IsMatch(queueName, "^^[^A-Za-z0-9]$"))
-        {
-            return false;
-        }
-        return true;
-    }
+        => !queueName.Any(c => c < 32 || c >= 127) &&
+            !string.IsNullOrEmpty(queueName) &&
+            !Regex.IsMatch(queueName, "^[^A-Za-z0-9_\\-]$") &&
+            !Regex.IsMatch(queueName, "^^[^A-Za-z0-9]$");
 
     private static bool ValidateType(string type)
-    {
-        if (type.Any(c => c < 32 || c >= 127) || 
-            string.IsNullOrEmpty(type) || 
-            Regex.IsMatch(type, "^[^A-Za-z0-9_\\-]$") || 
-            Regex.IsMatch(type, "^^[^A-Za-z0-9]$"))
-        {
-            return false;
-        }
-        return true;
-    }
+        => !type.Any(c => c < 32 || c >= 127) &&
+            !string.IsNullOrEmpty(type) &&
+            !Regex.IsMatch(type, "^[^A-Za-z0-9_\\-]$") &&
+            !Regex.IsMatch(type, "^^[^A-Za-z0-9]$");
 
     private static bool ValidateData(string data)
-    {
-        return !data.Any(c => c < 32 || c >= 127);
-    }
+        => !data.Any(c => c < 32 || c >= 127);
 }

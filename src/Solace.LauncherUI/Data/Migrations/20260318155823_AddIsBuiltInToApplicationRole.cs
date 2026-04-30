@@ -9,21 +9,17 @@ namespace Solace.LauncherUI.Migrations
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AddColumn<bool>(
+            => migrationBuilder.AddColumn<bool>(
                 name: "IsBuiltIn",
                 table: "AspNetRoles",
                 type: "INTEGER",
                 nullable: false,
                 defaultValue: false);
-        }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
+            => migrationBuilder.DropColumn(
                 name: "IsBuiltIn",
                 table: "AspNetRoles");
-        }
     }
 }

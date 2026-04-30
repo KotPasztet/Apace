@@ -9,21 +9,17 @@ namespace Solace.ApiServer.Migrations
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AddColumn<string>(
+            => migrationBuilder.AddColumn<string>(
                 name: "ProfilePictureUrl",
                 table: "Accounts",
                 type: "TEXT",
                 nullable: false,
                 defaultValue: "");
-        }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
+            => migrationBuilder.DropColumn(
                 name: "ProfilePictureUrl",
                 table: "Accounts");
-        }
     }
 }

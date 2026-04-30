@@ -88,13 +88,7 @@ internal sealed class NbtBuilder
         }
 
         public Compound Add(string name, long[] value)
-        {
-            throw new NotImplementedException();
-            //LongArrayTag tag = new LongArrayTag(name);
-            //tag.setValue(value);
-            //tags.add(tag);
-            //return this;
-        }
+            => throw new NotImplementedException();//LongArrayTag tag = new LongArrayTag(name);//tag.setValue(value);//tags.add(tag);//return this;
 
         public Compound Add(string name, Compound value)
         {
@@ -196,13 +190,7 @@ internal sealed class NbtBuilder
         }
 
         public List Add(long[] value)
-        {
-            throw new NotImplementedException();
-            //LongArrayTag tag = new LongArrayTag("");
-            //tag.setValue(value);
-            //this.tags.add(tag);
-            //return this;
-        }
+            => throw new NotImplementedException();//LongArrayTag tag = new LongArrayTag("");//tag.setValue(value);//this.tags.add(tag);//return this;
 
         public List Add(Compound value)
         {

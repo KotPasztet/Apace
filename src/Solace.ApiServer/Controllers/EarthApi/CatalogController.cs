@@ -398,8 +398,5 @@ public class CatalogController : SolaceControllerBase
     }
 
     private static NFCBoost[] MakeNFCBoostsCatalogApiResponse(Catalog catalog)
-    {
-        // TODO
-        return [];
-    }
+        => []; // TODO
 }

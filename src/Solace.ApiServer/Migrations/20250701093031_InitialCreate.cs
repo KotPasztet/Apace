@@ -9,8 +9,7 @@ namespace Solace.ApiServer.Migrations
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.CreateTable(
+            => migrationBuilder.CreateTable(
                 name: "Accounts",
                 columns: table => new
                 {
@@ -23,13 +22,10 @@ namespace Solace.ApiServer.Migrations
                 {
                     table.PrimaryKey("PK_Accounts", x => x.Id);
                 });
-        }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropTable(
+            => migrationBuilder.DropTable(
                 name: "Accounts");
-        }
     }
 }

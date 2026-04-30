@@ -167,8 +167,7 @@ public class CatalogController : SolaceControllerBase
 
     [HttpPost("SearchStores")]
     public ContentHttpResult SearchStores()
-    {
-        return JsonPascalCase(new PlayfabOkResponse(
+        => JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -178,7 +177,6 @@ public class CatalogController : SolaceControllerBase
                 ["ConfigurationName"] = "DEFAULT",
             }
         ));
-    }
 
     private sealed record GetPublishedItemRequest(
         string? ItemId

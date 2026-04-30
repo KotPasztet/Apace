@@ -30,3 +30,4 @@
 - Get rid of LinkedList
 - Use Guid instead of string
 - Load static data types only when needed
+- Generated regex

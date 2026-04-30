@@ -170,23 +170,17 @@ public sealed class RequestSender
     }
 
     private static bool ValidateQueueName(string queueName)
-    {
-        return !string.IsNullOrEmpty(queueName) && 
-               !queueName.Any(c => c < 32 || c >= 127) && 
-               !Regex.IsMatch(queueName, "^[^A-Za-z0-9_\\-]$") && 
-               !Regex.IsMatch(queueName, "^[^A-Za-z0-9]$");
-    }
+        => !string.IsNullOrEmpty(queueName) &&
+            !queueName.Any(c => c < 32 || c >= 127) &&
+            !Regex.IsMatch(queueName, "^[^A-Za-z0-9_\\-]$") &&
+            !Regex.IsMatch(queueName, "^[^A-Za-z0-9]$");
 
     private static bool ValidateType(string type)
-    {
-        return !string.IsNullOrEmpty(type) && 
-               !type.Any(c => c < 32 || c >= 127) && 
-               !Regex.IsMatch(type, "^[^A-Za-z0-9_\\-]$") && 
-               !Regex.IsMatch(type, "^[^A-Za-z0-9]$");
-    }
+        => !string.IsNullOrEmpty(type) &&
+            !type.Any(c => c < 32 || c >= 127) &&
+            !Regex.IsMatch(type, "^[^A-Za-z0-9_\\-]$") &&
+            !Regex.IsMatch(type, "^[^A-Za-z0-9]$");
 
     private static bool ValidateData(string data)
-    {
-        return !data.Any(c => c < 32 || c >= 127);
-    }
+        => !data.Any(c => c < 32 || c >= 127);
 }

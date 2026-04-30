@@ -7,11 +7,10 @@ namespace Solace.ApiServer.Controllers.XboxAb;
 [Route("www.xboxab.com/ab")]
 public class AbController : SolaceControllerBase
 {
+    // TODO: try to set sunsetting to 0/false, see what it does
     [HttpGet]
     public ContentHttpResult Get()
-    {
-        // TODO: try to set sunsetting to 0/false, see what it does
-        return JsonPascalCase(new Dictionary<string, object>()
+        => JsonPascalCase(new Dictionary<string, object?>()
         {
             ["Features"] = new string[]
             {
@@ -79,5 +78,4 @@ public class AbController : SolaceControllerBase
             ["ImpressionId"] = "CE0898A92D6A4755A37D4F4561983AFE",
             ["AssignmentContext"] = "", //"mc-sunsetting_1:30259009;mc-reco-algo2simfirst:30617967;mc-rp-hero-row-timer-2:30321236;mc-signaling-usewebsockets:30418088;mc-signaling-useturn:30357350;mcmktvlt-offerids-recos_lgbm3c:30622925;mc-cloud-file-upload:30440330;mc-oneds-prod:30450267;mc-realms-cayman:30606215;mc-realms-libhttp:30526657;mc-rp-morelicensedsidebar:30594955;control-tower-says-yes:30600225;raknet-enabled:30640316;mc-rp-nycbanner3:30636461;mc-rp-risinglava:30636462;",
         });
-    }
 }

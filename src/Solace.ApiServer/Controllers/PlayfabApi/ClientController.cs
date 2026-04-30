@@ -162,8 +162,7 @@ public partial class ClientController : SolaceControllerBase
 
     [HttpPost("WritePlayerEvent")]
     public ContentHttpResult WritePlayerEvent()
-    {
-        return JsonPascalCase(new PlayfabOkResponse(
+        => JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -171,7 +170,6 @@ public partial class ClientController : SolaceControllerBase
                 ["EventId"] = Guid.NewGuid().ToString("N"),
             }
         ));
-    }
 
     [GeneratedRegex("^[0-9A-F]{16}-(.*)$")]
     private static partial Regex GetAuthRegex();
