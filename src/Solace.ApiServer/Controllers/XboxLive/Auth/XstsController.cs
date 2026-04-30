@@ -7,17 +7,17 @@ namespace Solace.ApiServer.Controllers.XboxLive.Auth;
 
 [Route("xsts/authorize")]
 [Route("xsts.auth.xboxlive.com/xsts/authorize")]
-public class XstsController : SolaceControllerBase
+internal sealed class XstsController : SolaceControllerBase
 {
     private static Config config => Program.config;
 
-    public sealed record AuthenticateRequest(
+    internal sealed record AuthenticateRequest(
         AuthenticateRequest.PropertiesR Properties,
         string RelyingParty,
         string TokenType
     )
     {
-        public sealed record PropertiesR(
+        internal sealed record PropertiesR(
             string SandboxId,
             string DeviceToken,
             string TitleToken,

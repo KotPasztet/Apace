@@ -9,7 +9,7 @@ namespace Solace.ApiServer.Controllers.PlayfabApi;
 
 [Route("Authentication")]
 [Route("20CA2.playfabapi.com/Authentication")]
-public class AuthenticationController : SolaceControllerBase
+internal sealed class AuthenticationController : SolaceControllerBase
 {
     private static Config config => Program.config;
 
@@ -29,7 +29,7 @@ public class AuthenticationController : SolaceControllerBase
         GetEntityTokenResponse.EntityR Entity
     )
     {
-        public sealed record EntityR(
+        internal sealed record EntityR(
             string Id,
             string Type,
             string TypeString

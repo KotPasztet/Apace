@@ -16,6 +16,7 @@ using Solace.DB;
 using Solace.LauncherUI.Components;
 using Solace.LauncherUI.Components.Account;
 using Solace.LauncherUI.Data;
+using Solace.LauncherUI.Utils;
 using Solace.ObjectStore.Client;
 
 namespace Solace.LauncherUI;
@@ -94,7 +95,11 @@ public partial class Program
 
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()
+            .ConfigureApplicationPartManager(manager =>
+            {
+                manager.FeatureProviders.Add(new InternalControllerFeatureProvider());
+            });
 
         var app = builder.Build();
 

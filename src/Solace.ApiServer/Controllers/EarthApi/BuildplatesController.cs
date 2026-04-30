@@ -25,7 +25,7 @@ namespace Solace.ApiServer.Controllers.EarthApi;
 [Authorize]
 [ApiVersion("1.1")]
 [Route("1/api/v{version:apiVersion}")]
-public class BuildplatesController : SolaceControllerBase
+internal sealed class BuildplatesController : SolaceControllerBase
 {
     private static EarthDB earthDB => Program.DB;
     private static BuildplateInstancesManager buildplateInstancesManager => Program.buildplateInstancesManager;

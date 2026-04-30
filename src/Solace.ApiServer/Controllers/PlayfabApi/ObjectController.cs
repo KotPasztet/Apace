@@ -7,7 +7,7 @@ namespace Solace.ApiServer.Controllers.PlayfabApi;
 
 [Route("Object")]
 [Route("20CA2.playfabapi.com/Object")]
-public class ObjectController : SolaceControllerBase
+internal sealed class ObjectController : SolaceControllerBase
 {
     private sealed record GetObjectsRequest(
         GetObjectsRequest.EntityR Entity,

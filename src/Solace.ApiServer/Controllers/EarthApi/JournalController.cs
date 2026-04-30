@@ -15,7 +15,7 @@ namespace Solace.ApiServer.Controllers.EarthApi;
 [Authorize]
 [ApiVersion("1.1")]
 [Route("1/api/v{version:apiVersion}/player/journal")]
-public class JournalController : ControllerBase
+internal sealed class JournalController : ControllerBase
 {
     private static EarthDB earthDB => Program.DB;
 

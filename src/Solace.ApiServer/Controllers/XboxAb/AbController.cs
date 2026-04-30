@@ -5,7 +5,7 @@ namespace Solace.ApiServer.Controllers.XboxAb;
 
 [Route("ab")]
 [Route("www.xboxab.com/ab")]
-public class AbController : SolaceControllerBase
+internal sealed class AbController : SolaceControllerBase
 {
     // TODO: try to set sunsetting to 0/false, see what it does
     [HttpGet]

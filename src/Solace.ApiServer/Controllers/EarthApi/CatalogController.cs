@@ -22,7 +22,7 @@ namespace Solace.ApiServer.Controllers.EarthApi;
 [Authorize]
 [ApiVersion("1.1")]
 [Route("1/api/v{version:apiVersion}")]
-public class CatalogController : SolaceControllerBase
+internal sealed class CatalogController : SolaceControllerBase
 {
     private static Catalog catalog => Program.staticData.Catalog;
 

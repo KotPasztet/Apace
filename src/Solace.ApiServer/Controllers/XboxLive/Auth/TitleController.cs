@@ -7,17 +7,17 @@ namespace Solace.ApiServer.Controllers.XboxLive.Auth;
 
 [Route("title/authenticate")]
 [Route("title.auth.xboxlive.com/title/authenticate")]
-public class TitleController : SolaceControllerBase
+internal sealed class TitleController : SolaceControllerBase
 {
     private static Config config => Program.config;
 
-    public sealed record AuthenticateRequest(
+    internal sealed record AuthenticateRequest(
         AuthenticateRequest.PropertiesR Properties,
         string RelyingParty,
         string TokenType
     )
     {
-        public sealed record PropertiesR(
+        internal sealed record PropertiesR(
             string AuthMethod,
             string DeviceToken,
             string RpsTicket,
