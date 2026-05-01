@@ -697,7 +697,9 @@ public sealed class EarthDB : IDisposable
                     sqlBuilder.AppendLine("ORDER BY id");
                     sqlBuilder.AppendLine(limitSql + ";");
 
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = sqlBuilder.ToString();
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
 
                     using (var reader = await command.ExecuteReaderAsync(cancellationToken))
                     {

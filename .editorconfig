@@ -122,6 +122,9 @@ dotnet_diagnostic.SA1405.severity = suggestion
 # IDE0011: Add braces
 dotnet_diagnostic.IDE0011.severity = warning
 
+# CA2007: Consider calling ConfigureAwait on the awaited task
+dotnet_diagnostic.CA2007.severity = none
+
 [*.{cs,vb}]
 #### Naming styles ####
 
@@ -218,3 +221,11 @@ dotnet_diagnostic.CA1821.severity = warning
 
 # IDE0046: Convert to conditional expression
 dotnet_diagnostic.IDE0046.severity = suggestion
+
+# Avoid uninstantiated internal classes - controllers
+[*.{cs,vb}]
+dotnet_diagnostic.CA1812.severity = none
+
+# Properties should not return arrays
+[*.{cs,vb}]
+dotnet_diagnostic.CA1819.severity = none

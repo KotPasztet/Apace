@@ -8,7 +8,7 @@ internal sealed record Token<TData>(
     TData Data
 ) where TData : ITokenData<TData>;
 
-public static class Tokens
+internal static class Tokens
 {
     internal static class Live
     {
@@ -23,7 +23,7 @@ public static class Tokens
             : ITokenData<DeviceToken>;
     }
 
-    public static class Xbox
+    internal static class Xbox
     {
         [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
         [JsonDerivedType(typeof(DeviceToken), "device")]
@@ -54,15 +54,15 @@ public static class Tokens
             public required string Username { get; init; }
         }
 
-        public sealed record XapiToken(
+        internal sealed record XapiToken(
             string UserId,
             string Username
         ) : ITokenData<XapiToken>;
     }
 
-    public static class Playfab
+    internal static class Playfab
     {
-        public sealed record EntityToken(
+        internal sealed record EntityToken(
             string Id,
             string Type
         ) : ITokenData<EntityToken>;

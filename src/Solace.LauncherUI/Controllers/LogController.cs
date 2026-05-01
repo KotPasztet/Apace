@@ -5,7 +5,7 @@ namespace Solace.LauncherUI.Controllers;
 
 [ApiController]
 [Route("api/logs")]
-internal class LogController : ControllerBase
+internal sealed class LogController : ControllerBase
 {
     private readonly LogsLogService _logService;
 

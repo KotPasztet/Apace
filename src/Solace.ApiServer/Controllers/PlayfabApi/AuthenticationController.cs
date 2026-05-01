@@ -17,7 +17,7 @@ internal sealed class AuthenticationController : SolaceControllerBase
         GetEntityTokenRequest.EntityR Entity
     )
     {
-        public sealed record EntityR(
+        internal sealed record EntityR(
             string Id,
             string Type
         );
