@@ -17,7 +17,7 @@ namespace Solace.Buildplate.Launcher;
 public sealed class Instance
 #pragma warning restore CA1001 // Types that own disposable fields should be disposable
 {
-    private const long HOST_PLAYER_CONNECT_TIMEOUT = 30_000;
+    private const long HOST_PLAYER_CONNECT_TIMEOUT = 120_000;
 
     public static Instance Run(EventBusClient eventBusClient, string? playerId, string buildplateId, BuildplateSource buildplateSource, string instanceId, bool survival, bool night, bool saveEnabled, InventoryType inventoryType, long? shutdownTime, string publicAddress, int port, int serverInternalPort, string javaCmd, FileInfo fountainBridgeJar, DirectoryInfo serverTemplateDir, string fabricJarName, FileInfo connectorPluginJar, DirectoryInfo baseDir, string eventBusConnectionString)
     {
