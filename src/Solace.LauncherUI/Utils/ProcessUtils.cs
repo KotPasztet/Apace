@@ -17,9 +17,18 @@ internal static class ProcessUtils
 
         foreach (var process in Process.GetProcessesByName(name))
         {
-            if (process.MainModule is null || process.MainModule.FileName != exePath)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                continue;
+                try
+                {
+                    if (process.MainModule is null || process.MainModule.FileName != exePath)
+                    {
+                        continue;
+                    }
+                }
+                catch
+                {
+                }
             }
 
             yield return process;
