@@ -48,7 +48,10 @@ public sealed class ServerManager : IDisposable
 
     private int _startLockCount;
     public bool StartLocked => Volatile.Read(ref _startLockCount) > 0;
-    public bool CanStart => !StartLocked;
+
+    public bool CanStart => !StartLocked && Status is not (ServerStatus.Starting or ServerStatus.Online);
+    public bool CanRestart => Status is not (ServerStatus.Stopping or ServerStatus.Offline);
+    public bool CanStop => Status is not (ServerStatus.Stopping or ServerStatus.Offline);
 
     public IReadOnlyList<ServerComponent> Components { get; }
 
@@ -293,7 +296,7 @@ public sealed class ServerManager : IDisposable
     {
         lock (_statusLock)
         {
-            if (Status is not ServerStatus.Offline and not ServerStatus.Online || StartLocked)
+            if (!CanStart)
             {
                 return;
             }
@@ -352,7 +355,7 @@ public sealed class ServerManager : IDisposable
     {
         lock (_statusLock)
         {
-            if (Status is ServerStatus.Stopping or ServerStatus.Starting)
+            if (Status is ServerStatus.Stopping or ServerStatus.Offline)
             {
                 return;
             }
@@ -437,7 +440,7 @@ public sealed class ServerManager : IDisposable
 
             if (comp.Status is ServerStatus.Online)
             {
-                logger.Information($"{comp.Name} is already running.");
+                logger.Debug($"{comp.Name} is already running.");
                 continue;
             }
 
