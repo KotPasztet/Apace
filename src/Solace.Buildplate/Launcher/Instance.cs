@@ -850,9 +850,9 @@ public sealed class Instance
         {
             _baseDir.Delete(recursive: true);
         }
-        catch (IOException exception)
+        catch (Exception exception)
         {
-            _logger.Error(exception, "Exception while cleaning up runtime directory");
+            _logger.Error(exception, $"Exception while cleaning up runtime directory: {exception.Message}");
         }
     }
 
