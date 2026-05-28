@@ -111,7 +111,7 @@ curl -sSl https://raw.githubusercontent.com/Earth-Restored/Solace/main/install.s
 3. Run the patcher.
 4. Select the downloaded APK file.
 5. Change locator Hostname/IP to `{ip}:8080`, replace `{ip}` with your PC's ip or hostname
-    * If you want to use non microsoft login, change the options like so (emabled by default in simple UI mode. Use the same ip/hostname as the locator):
+    * If you want to use non microsoft login, change the options like so (enabled by default in simple UI mode. Use the same ip/hostname as the locator):
     ![Correct options for replacement server](https://github.com/Earth-Restored/Solace/blob/main/images/patcher-login-server-options.png?raw=true)
 6. Click patch
 7. Move the patched apk to your phone and install it
