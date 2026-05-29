@@ -18,7 +18,33 @@ Replacement server for Minecraft Earth™, based on [Vienna](https://github.com/
 * This software is provided solely for educational, research, and archival purposes to restore functionality to a discontinued service.
 * This project is provided "as-is" without any warranty of any kind, express or implied. In no event shall the authors be held liable for any claim, damages, or other liability.
 
-## New Features
+## Features
+
+| Feature       | Status             | Notes                                                                                    |
+|---------------|--------------------|------------------------------------------------------------------------------------------|
+| Map           | :white_check_mark: |                                                                                          |
+| Profile       | :construction:     | Loads, can view activity log/settings, cannot chage skin, statistics are not implemented |
+| Journal       | :white_check_mark: |                                                                                          |
+| Activity Log  | :white_check_mark: |                                                                                          |
+| Inventory     | :white_check_mark: |                                                                                          |
+| Crafting      | :white_check_mark: |                                                                                          |
+| Smelting      | :white_check_mark: |                                                                                          |
+| Boosts        | :white_check_mark: |                                                                                          |
+| Boost Minis   | :construction:     | List loads, activation does not work                                                     |
+| Tappables     | :white_check_mark: | Map is not used for generation, e.g. tappables can spawn on water                        |
+| Buildplates   | :white_check_mark: |                                                                                          |
+| Store         | :white_check_mark: | Tab titles do not load                                                                   |
+| Challenges    | :construction:     |                                                                                          |
+| Seasons       | :construction:     |                                                                                          |
+| Adventures    | :construction:     |                                                                                          |
+| Tutorial      | :x:                |                                                                                          |
+| Daily rewards | :x:                |                                                                                          |
+
+:white_check_mark: - Complete
+
+:construction: - Under Development
+
+:x: - Not Working
 
 In addition to the original Vienna feature set, this port adds:
 
