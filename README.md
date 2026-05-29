@@ -46,12 +46,6 @@ Replacement server for Minecraft Earth™, based on [Vienna](https://github.com/
 
 :x: - Not Working
 
-In addition to the original Vienna feature set, this port adds:
-
-* Shop
-* Map rendering
-* Admin panel
-
 ## Installation
 
 For installation instructions, refer to [Installation.md](Installation.md)
