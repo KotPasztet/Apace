@@ -268,7 +268,7 @@ public sealed class Instance
         }
         catch (Exception exception)
         {
-            _logger.Error(exception, "Unhandled exception");
+            _logger.Error(exception, $"Unhandled exception: {exception.Message}");
         }
         finally
         {

@@ -80,7 +80,7 @@ public static class Program
                 Directory.CreateDirectory("logs/api_server");
                 File.WriteAllText("logs/api_server/_crash.txt", e.ExceptionObject.ToString());
 
-                Log.Fatal($"Unhandeled exception: {e.ExceptionObject}");
+                Log.Fatal($"Unhandled exception: {e.ExceptionObject}");
                 Log.CloseAndFlush();
                 Environment.Exit(1);
             };
