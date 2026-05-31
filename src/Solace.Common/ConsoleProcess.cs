@@ -90,9 +90,15 @@ public sealed class ConsoleProcess : IDisposable
             throw new InvalidOperationException("Can't redirect std in/out when useShellExecute is true");
         }
 
-        if (OperatingSystem.IsLinux() && openInNewWindow && !IsXTerminalEmulatorPresent())
+        if (OperatingSystem.IsLinux() && openInNewWindow)
         {
-            openInNewWindow = false;
+            bool hasDisplay = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")) ||
+                !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
+
+            if (!hasDisplay || !IsXTerminalEmulatorPresent())
+            {
+                openInNewWindow = false;
+            }
         }
 
         _filePath = appName;
@@ -271,28 +277,40 @@ public sealed class ConsoleProcess : IDisposable
     private static async Task<int?> ResolveActualPidAsync(string pidFile, int timeout = 5000)
     {
         using var cts = new CancellationTokenSource(timeout);
-        while (!cts.IsCancellationRequested)
+
+        try
         {
-            try
+            while (!cts.IsCancellationRequested)
             {
-                var content = await File.ReadAllTextAsync(pidFile, cts.Token);
-                if (int.TryParse(content.Trim(), out int pid))
+                try
                 {
-                    // Clean up the temp file
-                    File.Delete(pidFile);
-                    return pid;
+                    if (File.Exists(pidFile))
+                    {
+                        var content = await File.ReadAllTextAsync(pidFile, cts.Token);
+                        if (int.TryParse(content.Trim(), out int pid))
+                        {
+                            File.Delete(pidFile);
+                            return pid;
+                        }
+                    }
                 }
-            }
-            catch (IOException)
-            {
-            }
+                catch (IOException)
+                {
+                }
 
-            await Task.Delay(100, cts.Token);
+                await Task.Delay(100, cts.Token);
+            }
         }
-
-        if (File.Exists(pidFile))
+        catch (OperationCanceledException)
         {
-            File.Delete(pidFile);
+            Log.Warning("Timed out waiting for terminal emulator to report its PID.");
+        }
+        finally
+        {
+            if (File.Exists(pidFile))
+            {
+                File.Delete(pidFile);
+            }
         }
 
         return null;
