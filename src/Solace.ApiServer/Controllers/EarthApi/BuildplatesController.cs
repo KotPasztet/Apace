@@ -884,28 +884,15 @@ internal sealed class BuildplatesController : SolaceControllerBase
                 break;
             case Source.ENCOUNTER:
                 {
-                    EncounterBuildplates.EncounterBuildplate? encounterBuildplate;
-
-                    try
-                    {
-                        EarthDB.Results results = await new EarthDB.Query(false)
-                            .Get("encounterBuildplates", "", typeof(EncounterBuildplates))
-                            .ExecuteAsync(earthDB, cancellationToken);
-                        encounterBuildplate = results.Get<EncounterBuildplates>("encounterBuildplates").GetEncounterBuildplate(instanceInfo.BuildplateId);
-                    }
-                    catch (EarthDB.DatabaseException exception)
-                    {
-                        throw new ServerErrorException(exception);
-                    }
-
-                    if (encounterBuildplate is null)
+                    BuildplateGeometry? geometry = await GetEncounterBuildplateGeometry(instanceInfo.BuildplateId, cancellationToken);
+                    if (geometry is null)
                     {
                         return null;
                     }
 
-                    size = encounterBuildplate.Size;
-                    offset = encounterBuildplate.Offset;
-                    scale = encounterBuildplate.Scale;
+                    size = geometry.Size;
+                    offset = geometry.Offset;
+                    scale = geometry.Scale;
                 }
 
                 break;
@@ -946,6 +933,36 @@ internal sealed class BuildplatesController : SolaceControllerBase
             //new Coordinate(50.99636722700025f, -0.7234904312500047f)
             new Coordinate(0.0f, 0.0f)    // TODO
         );
+    }
+
+    private sealed record BuildplateGeometry(int Size, int Offset, int Scale);
+
+    private static async Task<BuildplateGeometry?> GetEncounterBuildplateGeometry(string buildplateId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            EarthDB.Results results = await new EarthDB.Query(false)
+                .Get("encounterBuildplates", "", typeof(EncounterBuildplates))
+                .ExecuteAsync(earthDB, cancellationToken);
+
+            EncounterBuildplates.EncounterBuildplate? encounterBuildplate = results.Get<EncounterBuildplates>("encounterBuildplates").GetEncounterBuildplate(buildplateId);
+            if (encounterBuildplate is not null)
+            {
+                return new BuildplateGeometry(encounterBuildplate.Size, encounterBuildplate.Offset, encounterBuildplate.Scale);
+            }
+
+            EarthDB.ObjectResults objectResults = await new EarthDB.ObjectQuery(false)
+                .GetBuildplate(buildplateId)
+                .ExecuteAsync(earthDB, cancellationToken);
+            TemplateBuildplate? templateBuildplate = objectResults.GetBuildplate(buildplateId);
+            return templateBuildplate is null
+                ? null
+                : new BuildplateGeometry(templateBuildplate.Size, templateBuildplate.Offset, templateBuildplate.Scale);
+        }
+        catch (EarthDB.DatabaseException exception)
+        {
+            throw new ServerErrorException(exception);
+        }
     }
 
     private sealed record SharedBuildplateInstanceRequest(
