@@ -317,7 +317,7 @@ public sealed class ConsoleProcess : IDisposable
         }
     }
 
-    private static async Task<int?> ResolveActualPidAsync(string pidFile, int timeout = 5000)
+    private static async Task<int?> ResolveActualPidAsync(string pidFile, int timeout = 30000)
     {
         using var cts = new CancellationTokenSource(timeout);
 
@@ -340,9 +340,19 @@ public sealed class ConsoleProcess : IDisposable
                 catch (IOException)
                 {
                 }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
 
-                await Task.Delay(100, cts.Token);
-            }
+                try
+                {
+                    await Task.Delay(100, cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
         }
         catch (OperationCanceledException)
         {
