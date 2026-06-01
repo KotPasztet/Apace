@@ -1,9 +1,9 @@
-﻿using Asp.Versioning;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Solace.DB;
 using Solace.ApiServer.Utils;
-using Solace.Common;
 using Solace.Common.Utils;
 using System.Security.Claims;
 using ApiRewards = Solace.ApiServer.Types.Common.Rewards;
@@ -14,16 +14,16 @@ namespace Solace.ApiServer.Controllers.EarthApi;
 [Authorize]
 [ApiVersion("1.1")]
 [Route("1/api/v{version:apiVersion}/challenges")]
-internal sealed class ChallengeActionsController : ControllerBase
+internal sealed class ChallengeActionsController : SolaceControllerBase
 {
     [HttpPost("{challengeId}/modifyState")]
     [HttpPut("{challengeId}/modifyState")]
-    public async Task<IActionResult> ModifyState(string challengeId, CancellationToken cancellationToken)
+    public async Task<Results<ContentHttpResult, BadRequest>> ModifyState(string challengeId, CancellationToken cancellationToken)
     {
         string? playerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(playerId))
         {
-            return BadRequest();
+            return TypedResults.BadRequest();
         }
 
         long now = HttpContext.GetTimestamp();
@@ -58,39 +58,39 @@ internal sealed class ChallengeActionsController : ControllerBase
         var updates = new EarthApiResponse.UpdatesResponse(results);
         updates.Map["challenges"] = (int)(now / 1000);
 
-        return Content(Json.Serialize(new EarthApiResponse(new Dictionary<string, object?>
+        return EarthJson(new Dictionary<string, object?>
         {
             ["challengeId"] = challengeId,
             ["state"] = "Claimed",
             ["rewards"] = apiRewards ?? rewards.ToApiResponse(),
             ["updates"] = new Dictionary<string, object>()
-        }, updates)), "application/json");
+        }, updates);
     }
 
     [HttpPost("timed/generate")]
     [HttpPut("timed/generate")]
-    public IActionResult GenerateTimedChallenges()
-        => Content(Json.Serialize(new EarthApiResponse(new Dictionary<string, object?>
+    public ContentHttpResult GenerateTimedChallenges()
+        => EarthJson(new Dictionary<string, object?>
         {
             ["updates"] = new Dictionary<string, object>()
-        })), "application/json");
+        });
 
     [HttpPost("reset")]
     [HttpPut("reset")]
-    public IActionResult ResetChallenges()
-        => Content(Json.Serialize(new EarthApiResponse(new Dictionary<string, object?>
+    public ContentHttpResult ResetChallenges()
+        => EarthJson(new Dictionary<string, object?>
         {
             ["updates"] = new Dictionary<string, object>()
-        })), "application/json");
+        });
 
     [HttpPost("continuous/{id}/remove")]
     [HttpDelete("continuous/{id}/remove")]
-    public async Task<IActionResult> RemoveContinuousChallenge(string id, CancellationToken cancellationToken)
+    public async Task<Results<ContentHttpResult, BadRequest>> RemoveContinuousChallenge(string id, CancellationToken cancellationToken)
     {
         string? playerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(playerId))
         {
-            return BadRequest();
+            return TypedResults.BadRequest();
         }
 
         long now = HttpContext.GetTimestamp();
@@ -112,11 +112,11 @@ internal sealed class ChallengeActionsController : ControllerBase
         var updates = new EarthApiResponse.UpdatesResponse(results);
         updates.Map["challenges"] = (int)(now / 1000);
 
-        return Content(Json.Serialize(new EarthApiResponse(new Dictionary<string, object?>
+        return EarthJson(new Dictionary<string, object?>
         {
             ["challengeId"] = id,
             ["updates"] = new Dictionary<string, object>()
-        }, updates)), "application/json");
+        }, updates);
     }
 
     private static RedeemRewards ToRedeemRewards(ApiRewards? rewards)
