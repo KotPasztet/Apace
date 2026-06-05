@@ -1,6 +1,7 @@
 # TODO
 
 - Use EFCore for earth DB, migrations are way easier that way, but also need to write an initial migration from the current schema
+- Show exceptions in launcher logs
 - Make it easier to update, deleting data/staticdata is kinda bad UX
 - Launcher buildplate preview - liquid rendering
 - Shop management
