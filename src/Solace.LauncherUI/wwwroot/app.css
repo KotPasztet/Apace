@@ -827,3 +827,15 @@ html.dark .nav-tabs .nav-link:hover {
 html.dark .btn-close {
     filter: invert(1);
 }
+
+html.dark .form-check-input:disabled {
+    opacity: 0.55; 
+}
+
+html.dark .form-switch .form-check-input {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff' opacity='0.5'/%3e%3c/svg%3e") !important;
+}
+
+html.dark .form-switch .form-check-input:checked {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e") !important;
+}
