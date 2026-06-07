@@ -9,12 +9,38 @@ CYN='\033[1;36m'
 RST='\033[0m'
 
 banner() {
-    echo -e "${ORG}"
-    echo "=============================="
-    echo "    SOLACE INSTALLER   "
-    echo "=============================="
-    echo -e "${RST}"
+    echo -e "\033[1;34m"
+    echo "   _____       __"
+    echo "  / ___/____  / /___ _________"
+    echo "  \__ \/ __ \/ / __ \`/ ___/ _ \\"
+    echo " ___/ / /_/ / / /_/ / /__/  __/"
+    echo "/____/\____/_/\__,_/\___/\___/"
+    echo -e "\033[0m"
 }
+
+help_text() {
+    echo ""
+    echo -e "${CYN}Usage:${RST} install.sh [OPTIONS]"
+    echo ""
+    echo "Install Solace - a Minecraft Earth replacement server."
+    echo ""
+    echo -e "${CYN}Options:${RST}"
+    echo "  -h, --help     Show this help message"
+    echo ""
+    echo -e "${CYN}Platforms:${RST}"
+    echo "  Termux (Android)   Auto-detected, uses proot-distro"
+    echo "  Linux              Auto-detected, uses systemd"
+    echo "  macOS              Auto-detected, uses launchd"
+    echo ""
+    echo "After installation, run: earth"
+    exit 0
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help) help_text ;;
+    esac
+done
 
 print_step() {
     echo ""
@@ -28,6 +54,31 @@ skip() { echo -e "${YLW}[SKIP] $1${RST}"; }
 err()  { echo -e "${RED}[ERROR] $1${RST}"; exit 1; }
 
 banner
+
+# ─── RELEASE CHANNEL ──────────────────────────────────────────
+
+echo ""
+echo -e "${CYN}Select release channel:${RST}"
+echo ""
+echo -e "  ${GRN}1) Stable (recommended)${RST}"
+echo -e "  ${YLW}2) Dev Build (unstable - may break)${RST}"
+echo ""
+
+printf "Choice [1/2] > "
+read -r CHANNEL_CHOICE < /dev/tty
+CHANNEL_CHOICE="$(echo "$CHANNEL_CHOICE" | tr -d '\r\n')"
+
+case "$CHANNEL_CHOICE" in
+    2|dev|Dev)
+        RELEASE_CHANNEL="dev"
+        echo -e "${YLW}[INFO] Selected Dev Build - use at your own risk${RST}"
+        ;;
+    *)
+        RELEASE_CHANNEL="stable"
+        echo -e "${GRN}[INFO] Selected Stable release${RST}"
+        ;;
+esac
+echo ""
 
 
 # ─────────────────────────────────────────
@@ -103,24 +154,33 @@ mkdir -p ~/Solace
 echo "[5] Downloading pre-compiled server"
 cd ~
 
-RELEASE_JSON=$(curl -s https://api.github.com/repos/Earth-Restored/Solace/releases)
+if [ "$RELEASE_CHANNEL" = "dev" ]; then
+    echo "[INFO] Downloading Dev Build..."
+    URL="https://github.com/Earth-Restored/Solace/releases/download/dev-build/Solace-Dev-linux-arm64.zip"
+    TAG="dev-build"
+else
+    echo "[INFO] Fetching latest stable release..."
+    RELEASE_JSON=$(curl -s https://api.github.com/repos/Earth-Restored/Solace/releases)
 
-URL=$(echo "$RELEASE_JSON" \
-| grep -o '"browser_download_url": "[^"]*linux-arm64[^"]*"' \
-| cut -d '"' -f4 \
-| head -n1)
+    URL=$(echo "$RELEASE_JSON" \
+    | grep -o '"browser_download_url": "[^"]*linux-arm64[^"]*"' \
+    | grep -v "\-Dev-" \
+    | cut -d '"' -f4 \
+    | head -n1)
 
-TAG=$(echo "$RELEASE_JSON" \
-| grep '"tag_name"' \
-| head -n1 \
-| cut -d '"' -f4)
+    TAG=$(echo "$RELEASE_JSON" \
+    | grep '"tag_name"' \
+    | cut -d '"' -f4 \
+    | grep -v "^dev-build$" \
+    | head -n1)
+fi
 
 if [ -z "$URL" ]; then
     echo "[ERROR] No download URL found"
     exit 1
 fi
 
-echo "[INFO] Latest build: $TAG"
+echo "[INFO] Build: $TAG"
 echo "[INFO] Downloading..."
 
 curl -L --progress-bar -o Solace-linux-arm64.zip "$URL"
@@ -162,12 +222,20 @@ chmod +x "$PREFIX/bin/earth"
 ok "earth command installed"
 
 echo ""
-echo "=============================="
-echo " INSTALL COMPLETE"
-echo "=============================="
-echo "Run: earth"
-echo "IMPORTANT: Read the guide in the menu first."
-echo "=============================="
+echo -e "${GRN}========================================${RST}"
+echo -e "${ORG}          INSTALL COMPLETE              ${RST}"
+echo -e "${GRN}========================================${RST}"
+echo ""
+echo "  Run: earth"
+echo ""
+echo "Useful commands:"
+echo "  earth              TUI menu"
+echo "  earth eula         accept Minecraft EULA"
+echo "  earth help         show all commands"
+echo ""
+echo -e "${YLW}Installation guide:${RST}"
+echo "  https://github.com/Earth-Restored/Solace/blob/main/Installation.md"
+echo ""
 exit 0
 fi
 
@@ -407,17 +475,25 @@ print_step "3. PULLING LATEST CODE FROM GITHUB"
 mkdir -p "$INSTALL_DIR"
 chown "$CURRENT_USER":"$(id -gn "$CURRENT_USER")" "$INSTALL_DIR"
 
+if [ "$RELEASE_CHANNEL" = "dev" ]; then
+    GIT_BRANCH="dev"
+    echo -e "${YLW}[INFO] Using Dev branch${RST}"
+else
+    GIT_BRANCH="main"
+    echo -e "${GRN}[INFO] Using Stable branch${RST}"
+fi
+
 if [ -d "$REPO_DIR/.git" ]; then
     cd "$REPO_DIR"
     git remote set-url origin https://github.com/Earth-Restored/Solace.git
-    git fetch origin main
-    git reset --hard origin/main
+    git fetch origin "$GIT_BRANCH"
+    git reset --hard "origin/$GIT_BRANCH"
     git submodule update --init --recursive
-    ok "Repository updated"
+    ok "Repository updated ($GIT_BRANCH)"
 else
-    sudo -u "$CURRENT_USER" git clone --recurse-submodules https://github.com/Earth-Restored/Solace.git "$REPO_DIR"
+    sudo -u "$CURRENT_USER" git clone --recurse-submodules -b "$GIT_BRANCH" https://github.com/Earth-Restored/Solace.git "$REPO_DIR"
     cd "$REPO_DIR"
-    ok "Repository cloned"
+    ok "Repository cloned ($GIT_BRANCH)"
 fi
 
 print_step "4. BUILDING SERVER"
@@ -437,10 +513,21 @@ install_service
 print_step "7. STARTING SERVER"
 start_service
 
+print_step "8. INSTALLING EARTH COMMAND"
+if [ "$OS" = "Darwin" ]; then
+    curl -fsSL https://raw.githubusercontent.com/Earth-Restored/Solace/refs/heads/main/distros/macOS.sh \
+        -o /usr/local/bin/earth
+else
+    curl -fsSL https://raw.githubusercontent.com/Earth-Restored/Solace/refs/heads/main/distros/Linux.sh \
+        -o /usr/local/bin/earth
+fi
+chmod +x /usr/local/bin/earth
+ok "earth command installed (/usr/local/bin/earth)"
+
 echo ""
-echo -e "${GRN}==============================${RST}"
-echo -e "${ORG}     INSTALL COMPLETE         ${RST}"
-echo -e "${GRN}==============================${RST}"
+echo -e "${GRN}========================================${RST}"
+echo -e "${ORG}          INSTALL COMPLETE              ${RST}"
+echo -e "${GRN}========================================${RST}"
 echo ""
 echo "   User:    $CURRENT_USER"
 echo "   OS:      $OS ($PKG_MANAGER)"
@@ -448,20 +535,23 @@ echo "   Arch:    $PROFILE"
 echo "   Install: $REPO_DIR"
 echo "   Build:   $BUILD_DIR"
 echo ""
-echo "Next steps:"
-echo "  1. Open http://localhost:5000 and create your admin account"
+echo -e "${CYN}Next steps:${RST}"
+echo "  1. Open http://127.0.0.1:5000 and create your admin account"
 echo "  2. Under 'Server Options', set Network/IPv4 Address to your PC's IP"
 echo "  3. Under 'Server Status', click Start"
 echo "  4. Accept the Minecraft EULA when prompted in the logs"
 echo ""
+echo -e "${CYN}Useful commands:${RST}"
+echo "  earth              TUI menu"
+echo "  earth eula         accept Minecraft EULA"
+echo "  earth help         show all commands"
+echo "  earth uninstall    remove Solace completely"
 if [ "$OS" = "Darwin" ]; then
-    echo "Useful commands:"
-    echo "  tail -f $BUILD_DIR/logs/solace.log   → live logs"
-    echo "  launchctl stop com.solace.server      → stop"
-    echo "  launchctl start com.solace.server     → start"
+    echo "  tail -f $BUILD_DIR/logs/solace.log       live logs"
 else
-    echo "Useful commands:"
-    echo "  sudo journalctl -u solace.service -f     → live logs"
-    echo "  sudo systemctl status solace.service     → status"
-    echo "  sudo systemctl restart solace.service    → restart"
+    echo "  journalctl -u solace.service -f          live logs"
+    echo "  systemctl status solace.service          status"
 fi
+echo ""
+echo -e "${YLW}Installation guide:${RST}"
+echo "  https://github.com/Earth-Restored/Solace/blob/main/Installation.md"
