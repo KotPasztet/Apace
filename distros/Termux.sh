@@ -430,10 +430,8 @@ done
 
 update_solace() {
     load_settings
-    local branch
-    branch=$(pick_branch "Update Branch") || return
-    if [ "$branch" = "dev" ]; then
-        echo -e "${YLW}Downloading dev build...${RST}"
+    if [ "$INSTALL_BRANCH" = "dev" ]; then
+        echo -e "${YLW}Downloading latest developer build...${RST}"
         force_stop_server
         local zip_name="Solace-Dev-${RELEASE_ARCH}.zip"
         local tmp=$(mktemp -d ~/Solace_update_XXXXXX) || return 1
@@ -452,9 +450,9 @@ update_solace() {
   "updatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 JSONEOF
-        rm -rf "$TMP_DIR"
+        rm -rf "$tmp"
         echo "[Solace] Update complete (dev-build)"
-        sleep 2
+        sleep 5
     else
         echo "[Solace] Fetching available releases..."
         local json=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/releases?per_page=100")
@@ -482,7 +480,7 @@ JSONEOF
         echo "$sel" > "$VERSION_FILE"
         rm -rf "$tmp"
         echo "[Solace] Update complete ($sel)"
-        sleep 2
+        sleep 5
     fi
 }
 
@@ -504,8 +502,8 @@ force_stop_server() {
 # ─── SETTINGS ────────────────────────────────────
 
 settings_menu() {
-    load_settings
     while true; do
+        load_settings
         clear; show_banner
         section_title "SETTINGS"
         echo ""
@@ -554,7 +552,7 @@ JSONEOF
                 echo "$tag" > "$VERSION_FILE"
                 rm -rf "$TMP_DIR"
                 echo "[Solace] Switched to $sel ($tag)"
-                sleep 2
+                sleep 5
                 ;;
             "Reset Account Database")
                 printf '\033[H\033[J'; show_banner
@@ -667,7 +665,7 @@ pick_branch() {
     [ -z "$sel" ] && return 1
     local branch=$(echo "$sel" | sed 's/ —.*//')
     if [ "$branch" = "dev" ]; then
-        echo -e "${YLW}⚠  Dev builds are unstable and may break your server.${RST}"
+        echo -e "${YLW}⚠  Dev builds are unstable and may break your server.${RST}" >&2
         local confirm=$(printf "No, cancel\nYes, continue anyway" | fzf --height=15% --reverse --border --prompt="Are you sure? > ")
         [ "$confirm" != "Yes, continue anyway" ] && return 1
     fi

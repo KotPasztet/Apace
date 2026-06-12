@@ -392,14 +392,12 @@ update_prebuilt() {
 {"installMode":"prebuilt","branch":"main","version":"$sel","updatedAt":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
 JSONEOF
     cd /; rm -rf "$tmp"
-    echo "[Solace] Update complete ($sel)"; sleep 2
+    echo "[Solace] Update complete ($sel)"; sleep 5
 }
 
 update_solace() {
     load_settings
-    local branch
-    branch=$(pick_branch "Update Branch") || return
-    if [ "$branch" = "dev" ]; then
+    if [ "$INSTALL_BRANCH" = "dev" ]; then
         echo -e "${YLW}Downloading dev build...${RST}"
         stop_server
         local zip_name="Solace-Dev-linux-${ARCH_PROFILE}.zip"
@@ -420,7 +418,7 @@ update_solace() {
 {"installMode":"prebuilt","branch":"dev","version":"dev-build","updatedAt":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
 JSONEOF
         cd /; rm -rf "$tmp"
-        echo "[Solace] Update complete (dev-build)"; sleep 2
+        echo "[Solace] Update complete (dev-build)"; sleep 5
     else
         echo "[Solace] Fetching available releases..."
         local json=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/releases?per_page=100")
@@ -447,7 +445,7 @@ JSONEOF
 {"installMode":"prebuilt","branch":"main","version":"$sel","updatedAt":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
 JSONEOF
         cd /; rm -rf "$tmp"
-        echo "[Solace] Update complete ($sel)"; sleep 2
+        echo "[Solace] Update complete ($sel)"; sleep 5
     fi
 }
 
@@ -470,8 +468,8 @@ rebuild_source() {
 }
 
 settings_menu() {
-    load_settings
     while true; do
+        load_settings
         clear; show_banner
         section_title "SETTINGS"
         echo -e "  ${CYN}Mode:${RST}    $INSTALL_MODE"
@@ -497,7 +495,50 @@ settings_menu() {
                     git clone --recurse-submodules -b "$sel" "$GITHUB_URL" "$SOURCE_DIR"
                     INSTALL_BRANCH="$sel"; rebuild_source
                 else
-                    update_prebuilt
+                    local sel
+                    sel=$(pick_branch "Switch Branch") || break
+                    stop_server
+                    if [ "$sel" = "dev" ]; then
+                        local zip_name="Solace-Dev-linux-${ARCH_PROFILE}.zip"
+                        local tmp=$(mktemp -d "/tmp/solace_update_XXXXXX") || break
+                        cd "$tmp" || break
+                        curl -L --progress-bar -o server.zip "https://github.com/$GITHUB_REPO/releases/download/dev-build/${zip_name}"
+                        unzip -o server.zip >/dev/null 2>&1
+                        if [ -d "Solace-Dev-linux-${ARCH_PROFILE}" ]; then
+                            mv "Solace-Dev-linux-${ARCH_PROFILE}/"* "$SERVER_DIR/" 2>/dev/null || true
+                        else
+                            find . -maxdepth 1 -not -name 'server.zip' -not -name '.' -exec mv {} "$SERVER_DIR/" \; 2>/dev/null || true
+                        fi
+                        chmod -R +x "$SERVER_DIR/components/" 2>/dev/null || true
+                        echo "dev-build" > "$VERSION_FILE"
+                        cat > "$SETTINGS_FILE" << JSONEOF
+{"installMode":"prebuilt","branch":"dev","version":"dev-build","updatedAt":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+JSONEOF
+                        cd /; rm -rf "$tmp"
+                        echo "[Solace] Switched to dev (dev-build)"
+                    else
+                        local json=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/releases?per_page=100")
+                        local tag=$(echo "$json" | grep -o '"tag_name": *"[^"]*"' | sed 's/"tag_name": *"//;s/"//' | grep -v "^dev-build$" | head -n1)
+                        [ -z "$tag" ] && echo -e "${RED}[ERROR] No release found${RST}" && sleep 2 && break
+                        local zip_name="Solace-linux-${ARCH_PROFILE}.zip"
+                        local tmp=$(mktemp -d "/tmp/solace_update_XXXXXX") || break
+                        cd "$tmp" || break
+                        curl -L --progress-bar -o server.zip "https://github.com/$GITHUB_REPO/releases/download/${tag}/${zip_name}"
+                        unzip -o server.zip >/dev/null 2>&1
+                        if [ -d "Solace-linux-${ARCH_PROFILE}" ]; then
+                            mv "Solace-linux-${ARCH_PROFILE}/"* "$SERVER_DIR/" 2>/dev/null || true
+                        else
+                            find . -maxdepth 1 -not -name 'server.zip' -not -name '.' -exec mv {} "$SERVER_DIR/" \; 2>/dev/null || true
+                        fi
+                        chmod -R +x "$SERVER_DIR/components/" 2>/dev/null || true
+                        echo "$tag" > "$VERSION_FILE"
+                        cat > "$SETTINGS_FILE" << JSONEOF
+{"installMode":"prebuilt","branch":"main","version":"$tag","updatedAt":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+JSONEOF
+                        cd /; rm -rf "$tmp"
+                        echo "[Solace] Switched to main ($tag)"
+                    fi
+                    sleep 5
                 fi ;;
             "Rebuild from Source") [ -d "$SOURCE_DIR/.git" ] && rebuild_source ;;
             "Delete Source Folder")
@@ -638,7 +679,7 @@ pick_branch() {
     [ -z "$sel" ] && return 1
     local branch=$(echo "$sel" | sed 's/ —.*//')
     if [ "$branch" = "dev" ]; then
-        echo -e "${YLW}⚠  Dev builds are unstable and may break your server.${RST}"
+        echo -e "${YLW}⚠  Dev builds are unstable and may break your server.${RST}" >&2
         local confirm=$(printf "No, cancel\nYes, continue anyway" | fzf --height=15% --reverse --border --prompt="Are you sure? > ")
         [ "$confirm" != "Yes, continue anyway" ] && return 1
     fi

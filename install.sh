@@ -66,11 +66,10 @@ banner
 #  TERMUX BRANCH
 # ─────────────────────────────────────────
 if [ -n "$TERMUX_VERSION" ] || echo "$PREFIX" | grep -q "com.termux"; then
-export DEBIAN_FRONTEND=noninteractive
-dpkg --configure -a >/dev/null 2>&1 || true
+    export DEBIAN_FRONTEND=noninteractive
+    dpkg --configure -a >/dev/null 2>&1 || true
 
-print_step "TERMUX DETECTED"
-
+    clear && banner
     print_step "1. CHECKING PROOT-DISTRO"
     if ! command -v proot-distro >/dev/null 2>&1; then
         pkg update -y
@@ -93,10 +92,42 @@ print_step "TERMUX DETECTED"
         ok "Ubuntu installed"
     fi
 
-    print_step "3. CONFIGURING UBUNTU"
-    proot-distro login ubuntu -- bash << 'EOF'
-set -e
+    clear && banner
+    print_step "SELECT BRANCH"
+    echo ""
+    echo -e "${CYN}Select branch:${RST}"
+    echo ""
+    echo -e "  ${GRN}[1] Main (stable - recommended)${RST}"
+    echo -e "  ${YLW}[2] Dev (unstable - may break)${RST}"
+    echo ""
+    printf "Choice [1/2] > "
+    read -r BRANCH_CHOICE < /dev/tty
+    BRANCH_CHOICE="$(echo "$BRANCH_CHOICE" | tr -d '\r\n')"
 
+    ARTIFACT_PREFIX="Solace"
+    INSTALL_BRANCH="main"
+    SELECTED_TAG=""
+    case "$BRANCH_CHOICE" in
+        2|dev|Dev)
+            ARTIFACT_PREFIX="Solace-Dev"
+            INSTALL_BRANCH="dev"
+            SELECTED_TAG="dev-build"
+            echo -e "${YLW}[INFO] Using Dev build${RST}"
+            ;;
+        *)
+            echo "[INFO] Fetching releases..."
+            RELEASE_JSON=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/releases?per_page=100")
+            SELECTED_TAG=$(echo "$RELEASE_JSON" | grep -o '"tag_name": *"[^"]*"' | sed 's/"tag_name": *"//;s/"//' | grep -v "^dev-build$" | head -n1)
+            [ -z "$SELECTED_TAG" ] && err "No releases found."
+            echo "[INFO] Latest main release: $SELECTED_TAG"
+            ;;
+    esac
+
+    ZIP_NAME="${ARTIFACT_PREFIX}-linux-arm64.zip"
+    URL="https://github.com/$GITHUB_REPO/releases/download/${SELECTED_TAG}/${ZIP_NAME}"
+
+    print_step "3. CONFIGURING UBUNTU"
+    proot-distro login ubuntu -- bash << EOF
 echo "[1] System update"
 apt update -y
 
@@ -135,29 +166,15 @@ mkdir -p ~/Solace
 echo "[5] Downloading pre-compiled server"
 cd ~
 
-RELEASE_JSON=$(curl -s https://api.github.com/repos/Earth-Restored/Solace/releases)
-
-URL=$(echo "$RELEASE_JSON" \
-| grep -o '"browser_download_url": "[^"]*linux-arm64[^"]*"' \
-| cut -d '"' -f4 \
-| head -n1)
-
-TAG=$(echo "$RELEASE_JSON" \
-| grep '"tag_name"' \
-| head -n1 \
-| cut -d '"' -f4)
-
-if [ -z "$URL" ]; then
-    echo "[ERROR] No download URL found"
+if [ -z "$SELECTED_TAG" ]; then
+    echo "[ERROR] No release tag found"
     exit 1
 fi
 
-echo "[INFO] Latest build: $TAG"
-echo "[INFO] Downloading..."
-
-curl -L --progress-bar -o Solace-linux-arm64.zip "$URL"
-
-unzip -o Solace-linux-arm64.zip
+echo "[INFO] Downloading ${SELECTED_TAG}..."
+echo "[INFO] URL: $URL"
+curl -Lf --progress-bar -o "$ZIP_NAME" "$URL" || { echo "[ERROR] Download failed"; exit 1; }
+unzip -o "$ZIP_NAME" || { echo "[ERROR] Failed to extract archive"; exit 1; }
 rm -rf ~/Solace/*
 echo "$TAG" > ~/Solace/version.txt
 
@@ -172,6 +189,15 @@ else
 fi
 
 chmod -R +x ~/Solace/components/ 2>/dev/null || true
+
+cat > ~/Solace/settings.json << JSONEOF
+{
+  "installMode": "prebuilt",
+  "branch": "$INSTALL_BRANCH",
+  "version": "$SELECTED_TAG",
+  "updatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+JSONEOF
 
 echo "[6] Cleaning installer leftovers"
 rm -f ~/dotnet-install.sh
@@ -197,7 +223,7 @@ echo -e "  ${CYN}User:${RST}    $(whoami)"
 echo -e "  ${CYN}OS:${RST}      Termux (proot-distro ubuntu)"
 echo -e "  ${CYN}Arch:${RST}    $(uname -m)"
 echo -e "  ${CYN}Mode:${RST}    prebuilt"
-echo -e "  ${CYN}Branch:${RST}  main"
+echo -e "  ${CYN}Branch:${RST}  $INSTALL_BRANCH"
 echo -e "  ${CYN}Server:${RST}  ~/Solace"
 echo ""
 echo -e "${CYN}Next steps:${RST}"
