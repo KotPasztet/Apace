@@ -119,8 +119,19 @@ internal static class FileChecker
 
             if (!File.TryFindCompatibleFile(directory, minimumVersion, fileName, out var path))
             {
-                logger.Error("Static data file '{Path}' does not exist, is outdated, or unsupported. Minimum version is {MinimumVersion}", Path.GetFullPath(Path.Combine(Program.StaticDataDir, template)), minimumVersion);
-                error = true;
+                // server_jars are critical (needed by BuildplateLauncher)
+                // server_template_dir/mods are Fabric plugins — non-critical at startup
+                bool isCritical = directory.Contains("server_jars");
+
+                if (isCritical)
+                {
+                    logger.Error("Static data file '{Path}' does not exist, is outdated, or unsupported. Minimum version is {MinimumVersion}", Path.GetFullPath(Path.Combine(Program.StaticDataDir, template)), minimumVersion);
+                    error = true;
+                }
+                else
+                {
+                    logger.Warning("Optional static file '{Path}' not found — will be needed for buildplate functionality", Path.GetFullPath(Path.Combine(Program.StaticDataDir, template)));
+                }
             }
             else
             {
