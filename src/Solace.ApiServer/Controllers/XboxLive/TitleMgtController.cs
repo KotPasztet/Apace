@@ -43,9 +43,7 @@ internal sealed class TitleMgtController : SolaceControllerBase
 
                     bool singleDomainMode = !Request.Path.StartsWithSegments(new PathString("/titles"), StringComparison.Ordinal);
 
-                    string hostString = isHostIp
-                        ? host.Host
-                        : (await GetDomainParserAsync(cancellationToken)).Parse(host.Host)?.RegistrableDomain ?? host.Host;
+                    string hostString = host.Host;
 
                     endpoints =
                     [
