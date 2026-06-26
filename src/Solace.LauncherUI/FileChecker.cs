@@ -12,6 +12,21 @@ internal static class FileChecker
 {
     private static readonly HttpClient httpClient = new();
 
+    // EULA acceptance mechanism — exposed to panel UI
+    private static TaskCompletionSource? _eulaTcs;
+    private static string? _eulaPath;
+    public static bool EulaPending => _eulaTcs is not null && !_eulaTcs.Task.IsCompleted;
+    public static string? EulaPath => _eulaPath;
+
+    public static void AcceptEula()
+    {
+        if (_eulaPath is not null && File.Exists(_eulaPath))
+        {
+            File.WriteAllText(_eulaPath, "eula=true");
+            _eulaTcs?.TrySetResult();
+        }
+    }
+
     private static readonly string[] expectedStaticFiles =
     [
         "catalog/itemEfficiencyCategories.json",
@@ -119,18 +134,12 @@ internal static class FileChecker
         if (!resourcePack.Exists)
         {
             logger.Error($"Resourcepack file '{resourcePack.FullName}' does not exist");
-            logger.Information("Download it from https://cdn.mceserv.net/availableresourcepack/resourcepacks/dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35 (using internet archive)");
-            logger.Information($"Rename it to vanilla.zip and move it to: {Path.GetFullPath(Path.Combine(Program.StaticDataDir, "resourcepacks"))}");
-
-            error = true;
+            await DownloadResourcePackAsync(resourcePack.FullName, logger, cancellationToken);
         }
         else if (resourcePack.Length < 100_000_000)
         {
             logger.Error($"Resourcepack file '{resourcePack.FullName}' is invalid, expected size: 131885348B, actual size: {resourcePack.Length}B");
-            logger.Information("Download it from https://cdn.mceserv.net/availableresourcepack/resourcepacks/dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35 (using internet archive)");
-            logger.Information($"Rename it to vanilla.zip and move it to: {Path.GetFullPath(Path.Combine(Program.StaticDataDir, "resourcepacks"))}");
-
-            error = true;
+            await DownloadResourcePackAsync(resourcePack.FullName, logger, cancellationToken);
         }
 
         if (checkImporter)
@@ -212,12 +221,22 @@ internal static class FileChecker
 
             if (File.Exists(eulaPath) && !(await File.ReadAllTextAsync(eulaPath, cancellationToken)).Contains("eula=true", StringComparison.OrdinalIgnoreCase))
             {
-                logger.Information($"Server eula not accepted, open '{eulaPath}' and set 'eula=true'");
-                logger.Information("Waiting for you to make the change");
+                logger.Information($"Server eula not accepted, use the panel button or open '{eulaPath}' and set 'eula=true'");
+                logger.Information("Waiting for EULA acceptance...");
+
+                _eulaPath = eulaPath;
+                _eulaTcs = new TaskCompletionSource();
+
                 while (!(await File.ReadAllTextAsync(eulaPath, cancellationToken)).Contains("eula=true", StringComparison.OrdinalIgnoreCase))
                 {
-                    await Task.Delay(1000, cancellationToken);
+                    var delay = Task.Delay(1000, cancellationToken);
+                    await Task.WhenAny(delay, _eulaTcs.Task);
+                    if (_eulaTcs.Task.IsCompleted)
+                        break;
                 }
+
+                _eulaTcs = null;
+                _eulaPath = null;
 
                 logger.Information("Running server to download/generate rest of the files, close it after it starts up");
 
@@ -259,5 +278,51 @@ internal static class FileChecker
         }
 
         return !error;
+    }
+
+    /// <summary>
+    /// Auto-downloads vanilla.zip resourcepack. Tries CDN first, falls back to Internet Archive.
+    /// </summary>
+    private static async Task DownloadResourcePackAsync(string destPath, ILogger logger, CancellationToken cancellationToken)
+    {
+        const string resourcePackId = "dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35";
+        var urls = new[]
+        {
+            $"https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
+            $"https://web.archive.org/web/20250101000000/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
+            $"https://web.archive.org/web/20240101000000/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
+        };
+
+        foreach (var url in urls)
+        {
+            try
+            {
+                logger.Information($"Downloading resourcepack from {url}...");
+                using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    logger.Warning($"Failed to download resourcepack from {url}: HTTP {(int)response.StatusCode}");
+                    continue;
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+                await using var fs = File.OpenWriteNew(destPath);
+                await response.Content.CopyToAsync(fs, cancellationToken);
+                await fs.FlushAsync(cancellationToken);
+
+                var fileInfo = new FileInfo(destPath);
+                logger.Information($"Resourcepack downloaded successfully ({fileInfo.Length} bytes) to '{destPath}'");
+                return;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.Warning($"Download from {url} failed: {ex.Message}");
+            }
+        }
+
+        logger.Error("All download sources failed. Download manually from Internet Archive:");
+        logger.Error($"  https://web.archive.org/web/*/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}");
+        logger.Error($"  Rename to vanilla.zip and place in: {Path.GetDirectoryName(destPath)}");
     }
 }

@@ -43,6 +43,22 @@
         </div>
     </div>
 
+    @if (_eulaPending)
+    {
+        <div class="alert alert-warning border-warning shadow-sm mb-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Mojang EULA must be accepted</strong><br/>
+                    <small class="text-muted">The Minecraft server requires you to accept the End User License Agreement.</small>
+                </div>
+                <button class="btn btn-warning fw-bold" @onclick="AcceptEula">
+                    <i class="bi bi-check-lg me-1"></i>Accept EULA
+                </button>
+            </div>
+        </div>
+    }
+
     <div class="row g-3 mb-4">
         @foreach (var comp in ServerManager.Components)
         {
@@ -159,6 +175,8 @@
 
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
+    private bool _eulaPending;
+    private Timer? _eulaCheckTimer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -167,6 +185,17 @@
 
         LogService.OnLogReceived += HandleUpdate;
         ServerManager.OnStatusChanged += HandleUpdate;
+
+        // Poll EULA status every 2 seconds during server startup
+        _eulaCheckTimer = new Timer(async _ =>
+        {
+            var pending = Solace.LauncherUI.FileChecker.EulaPending;
+            if (_eulaPending != pending)
+            {
+                _eulaPending = pending;
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -187,6 +216,7 @@
     {
         LogService.OnLogReceived -= HandleUpdate;
         ServerManager.OnStatusChanged -= HandleUpdate;
+        _eulaCheckTimer?.Dispose();
     }
 
     private async Task StartServer()
@@ -206,6 +236,12 @@
         {
             await ServerManager.KillAll();
         }
+    }
+
+    private void AcceptEula()
+    {
+        FileChecker.AcceptEula();
+        _eulaPending = false;
     }
 
     private async Task StartComponent(string exeName)
