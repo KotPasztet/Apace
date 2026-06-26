@@ -302,6 +302,7 @@ internal static class FileChecker
         var urls = new[]
         {
             $"https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
+            $"https://web.archive.org/web/20210624200250id_/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
         };
 
         foreach (var url in urls)
