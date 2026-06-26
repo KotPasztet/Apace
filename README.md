@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="images/Apace_branding.png" alt="Apace" width="80%">
+</p>
 # DO NOT USE
 ## Use [this](https://github.com/Earth-Restored/Solace) instead
 
