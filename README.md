@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="images/solace_branding.png" alt="Solace" width="80%">
+  <img src="images/Apace_branding.png" alt="Apace" width="80%">
 </p>
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"></a>
-  <img src="https://img.shields.io/github/stars/Earth-Restored/Solace?style=flat-square" alt="GitHub Stars">
-  <img src="https://img.shields.io/github/downloads/Earth-Restored/Solace/total?style=flat-square" alt="GitHub Downloads">
+  <img src="https://img.shields.io/github/stars/KotPasztet/Apace?style=flat-square" alt="GitHub Stars">
+  <img src="https://img.shields.io/github/downloads/KotPasztet/Apace/total?style=flat-square" alt="GitHub Downloads">
 </p>
 
 Replacement server for Minecraft Earth™, based on [Vienna](https://github.com/Project-Genoa/Vienna)
@@ -15,7 +15,7 @@ Replacement server for Minecraft Earth™, based on [Vienna](https://github.com/
 
 ## Disclaimer
 
-**Solace** is an independent, community-driven project and is **not affiliated with, authorized, maintained, endorsed, or sponsored** by Microsoft Corporation, Mojang Studios, or any of their affiliates or subsidiaries.
+**Apace** is an independent, community-driven project and is **not affiliated with, authorized, maintained, endorsed, or sponsored** by Microsoft Corporation, Mojang Studios, or any of their affiliates or subsidiaries.
 
 * *Minecraft Earth™* is a trademark of Microsoft Corporation. All trademarks and registered trademarks are the property of their respective owners.
 * This project does not distribute, host, or provide access to original game assets, proprietary binaries, or resource packs. Users are responsible for providing their own legally obtained assets.
