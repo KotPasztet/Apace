@@ -281,16 +281,16 @@ internal static class FileChecker
     }
 
     /// <summary>
-    /// Auto-downloads vanilla.zip resourcepack. Tries CDN first, falls back to Internet Archive.
+    /// Auto-downloads vanilla.zip resourcepack. Not critical — server runs without it.
+    /// Clients have the resourcepack embedded, this is only needed for overrides.
     /// </summary>
     private static async Task DownloadResourcePackAsync(string destPath, ILogger logger, CancellationToken cancellationToken)
     {
         const string resourcePackId = "dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35";
+        const long minValidSize = 100_000_000; // ~131MB expected
         var urls = new[]
         {
             $"https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
-            $"https://web.archive.org/web/20250101000000/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
-            $"https://web.archive.org/web/20240101000000/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
         };
 
         foreach (var url in urls)
@@ -302,7 +302,14 @@ internal static class FileChecker
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    logger.Warning($"Failed to download resourcepack from {url}: HTTP {(int)response.StatusCode}");
+                    logger.Warning($"Download failed from {url}: HTTP {(int)response.StatusCode}");
+                    continue;
+                }
+
+                // Check Content-Length header before downloading the body
+                if (response.Content.Headers.ContentLength is long contentLength && contentLength < minValidSize)
+                {
+                    logger.Warning($"Resourcepack at {url} is too small ({contentLength} bytes), skipping");
                     continue;
                 }
 
@@ -312,17 +319,26 @@ internal static class FileChecker
                 await fs.FlushAsync(cancellationToken);
 
                 var fileInfo = new FileInfo(destPath);
+                if (fileInfo.Length < minValidSize)
+                {
+                    logger.Warning($"Downloaded resourcepack is too small ({fileInfo.Length} bytes), deleting");
+                    File.Delete(destPath);
+                    continue;
+                }
+
                 logger.Information($"Resourcepack downloaded successfully ({fileInfo.Length} bytes) to '{destPath}'");
                 return;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.Warning($"Download from {url} failed: {ex.Message}");
+                // Clean up partial download
+                try { File.Delete(destPath); } catch { /* ignore */ }
             }
         }
 
-        logger.Error("All download sources failed. Download manually from Internet Archive:");
-        logger.Error($"  https://web.archive.org/web/*/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}");
-        logger.Error($"  Rename to vanilla.zip and place in: {Path.GetDirectoryName(destPath)}");
+        logger.Warning("Could not download resourcepack automatically. The server will work without it.");
+        logger.Warning($"To add it manually, download from Internet Archive and place at: {destPath}");
+        logger.Warning($"  Archive search: https://web.archive.org/web/*/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}");
     }
 }
