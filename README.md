@@ -52,6 +52,29 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 
 For installation instructions, refer to [Installation.md](Installation.md)
 
+## Migrating from Solace
+
+If you already have Solace running, copy your persistent data to Apace:
+
+```powershell
+# 1. Stop both servers first
+# 2. Copy data directories
+Copy-Item -Path "C:\path\to\Solace\launcher\Data\*" -Destination "C:\path\to\Apace\launcher\Data\" -Recurse
+Copy-Item -Path "C:\path\to\Solace\launcher\config.json" -Destination "C:\path\to\Apace\launcher\config.json"
+Copy-Item -Path "C:\path\to\Solace\staticdata\*" -Destination "C:\path\to\Apace\staticdata\" -Recurse
+
+# 3. Start Apace — accounts, buildplates, and settings are preserved
+```
+
+> [!TIP]
+> The database (`app.db`) and `config.json` are fully compatible between Solace and Apace. Static data (resourcepacks, world templates) should also be copied over.
+
+## Roadmap
+
+- **Single-server multi-world** — replace one-JVM-per-buildplate with shared Fabric server using multiple dimensions, eliminating cold starts and drastically reducing RAM usage
+- **World preloading & pooling** — keep idle instances warm so players join instantly
+- **Unified port routing** — serve all buildplates through a single port instead of one per instance
+
 ## Common Errors & Troubleshooting
 
 ### I cannot see the "Start Server" button when logged in
