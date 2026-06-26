@@ -1,0 +1,34 @@
+services:
+  apace:
+    image: ghcr.io/kotpasztet/apace:dev
+    pull_policy: always
+
+    restart: unless-stopped
+
+    ports:
+      - "1808:1808"
+      - "5532:5532"
+      - "19132:19132/udp"
+
+    volumes:
+      - /opt/apace-persistent/launcher-data:/app/launcher/Data
+      - /opt/apace-persistent/config.json:/app/launcher/config.json
+      - /opt/apace-persistent/launcher-logs:/app/launcher/logs
+      - /opt/apace-persistent/data:/app/data
+      - /opt/apace-persistent/dataprotection-keys:/root/.aspnet/DataProtection-Keys
+      - /opt/apace-persistent/resourcepacks:/app/staticdata/resourcepacks
+      - /opt/apace-persistent/server-template-dir:/app/staticdata/server_template_dir
+      - /opt/apace-persistent/logs:/app/logs
+
+    environment:
+      - DOTNET_SYSTEM_NET_DISABLEIPV6=1
+      - COMPlus_gcServer=0
+      - COMPlus_gcConcurrent=1
+      - DOTNET_GCHeapHardLimit=536870912
+      - ASPNETCORE_URLS=http://0.0.0.0:5000
+      - SOLACE_LOG_CLIENT_REQUESTS=1
+
+    deploy:
+      resources:
+        limits:
+          memory: 2g

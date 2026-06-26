@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
   workflow_dispatch:
 
 permissions:
@@ -34,7 +35,7 @@ jobs:
         with:
           images: ghcr.io/kotpasztet/apace
           tags: |
-            type=raw,value=main
+            type=ref,event=branch
             type=sha,prefix=
 
       - name: Set up Docker Buildx
