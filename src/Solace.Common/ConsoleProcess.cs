@@ -354,6 +354,7 @@ public sealed class ConsoleProcess : IDisposable
                     break;
                 }
         }
+        }
         catch (OperationCanceledException)
         {
             Log.Warning("Timed out waiting for terminal emulator to report its PID.");
