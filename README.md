@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/github/downloads/KotPasztet/Apace/total?style=flat-square" alt="GitHub Downloads">
 </p>
 
-Replacement server for Minecraft Earth™, based on [Vienna](https://github.com/Project-Genoa/Vienna)
+Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace)
 
 > [!WARNING]
 > **Work In Progress (WIP):** This project is currently under active development. Some features may be incomplete, and you may encounter bugs or breaking changes. Use at your own risk!
