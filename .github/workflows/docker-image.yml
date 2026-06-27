@@ -3,7 +3,7 @@ name: Build and publish Docker image
 on:
   push:
     branches:
-      - main
+      - dev
       - dev
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: ${{ fromJSON(github.ref_name == 'main' && '["linux/amd64", "linux/arm64"]' || '["linux/arm64"]') }}
+        platform: ${{ fromJSON(github.ref_name == 'dev' && '["linux/arm64"]' || '["linux/arm64"]') }}
     runs-on: ${{ matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
 
     steps:
@@ -53,7 +53,7 @@ jobs:
 
   merge:
     needs: build
-    if: github.ref_name == 'main'
+    if: github.ref_name == 'dev'
     runs-on: ubuntu-latest
     steps:
       - name: Log in to GitHub Container Registry
