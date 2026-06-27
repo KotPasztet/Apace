@@ -64,17 +64,9 @@ public sealed class Starter
 
 		int port = FindPort(_portsInUse, BASE_PORT);
 
-		// Multi-world: use shared Fabric server if available and ready
-		int serverInternalPort;
-		if (_sharedServer is not null && _sharedServer.IsReady)
-		{
-			serverInternalPort = _sharedServer.ServerPort;
-			Log.Debug("Using shared Fabric server port {Port} for instance {Id}", serverInternalPort, instanceId);
-		}
-		else
-		{
-			serverInternalPort = FindPort(_serverInternalPortsInUse, SERVER_INTERNAL_BASE_PORT);
-		}
+		// Multi-world: shared Fabric server REQUIRED on dev (no legacy fallback)
+		int serverInternalPort = _sharedServer!.ServerPort;
+		Log.Debug("Using shared Fabric server port {Port} for instance {Id}", serverInternalPort, instanceId);
 
 		var instance = Instance.Run(_eventBusClient, playerId, buildplateId, buildplateSource, instanceId, survival, night, saveEnabled, inventoryType, shutdownTime, _publicAddress, port, serverInternalPort, _javaCmd, _fountainBridgeJar, _serverTemplateDir, _fabricJarName, _connectorPluginJar, baseDir, _eventBusConnectionString, _sharedServer);
 
@@ -82,8 +74,6 @@ public sealed class Starter
         {
             await instance.WaitForShutdownAsync();
 			ReleasePort(_portsInUse, port);
-			if (_sharedServer is null)
-				ReleasePort(_serverInternalPortsInUse, serverInternalPort);
         }).Forget();
         
 		return instance;

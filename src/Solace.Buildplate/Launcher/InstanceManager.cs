@@ -76,12 +76,6 @@ public sealed class InstanceManager
                     instanceManager._runningInstanceCount += 1;
                     instanceManager._lock.Exit();
 
-                    // If shared server exists but not ready, fall back to legacy mode
-                    if (instanceManager._starter.SharedServer is not null && !instanceManager._starter.SharedServer.IsReady)
-                    {
-                        Log.Warning("Shared Fabric server not ready yet — using legacy cold-start");
-                    }
-
                     StartRequest startRequest;
                     try
                     {
