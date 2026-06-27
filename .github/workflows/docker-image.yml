@@ -3,7 +3,7 @@ name: Build and publish Docker image
 on:
   push:
     branches:
-      - main
+      - dev
       - dev
   workflow_dispatch:
 
@@ -15,13 +15,7 @@ jobs:
   build:
     strategy:
       matrix:
-<<<<<<< HEAD
-        platform:
-          - linux/amd64
-          - linux/arm64
-=======
-        platform: ${{ fromJSON(github.ref_name == 'main' && '["linux/amd64", "linux/arm64"]' || '["linux/arm64"]') }}
->>>>>>> main
+        platform: ${{ fromJSON(github.ref_name == 'dev' && '["linux/arm64"]' || '["linux/arm64"]') }}
     runs-on: ${{ matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
 
     steps:
@@ -52,10 +46,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-<<<<<<< HEAD
-  merge:
-    needs: build
-=======
       - name: Tag branch image (dev only)
         if: github.ref_name == 'dev'
         run: |
@@ -63,8 +53,7 @@ jobs:
 
   merge:
     needs: build
-    if: github.ref_name == 'main'
->>>>>>> main
+    if: github.ref_name == 'dev'
     runs-on: ubuntu-latest
     steps:
       - name: Log in to GitHub Container Registry
@@ -87,11 +76,7 @@ jobs:
           set -e
           SHA_TAG_AMD64="ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-amd64"
           SHA_TAG_ARM64="ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-arm64"
-<<<<<<< HEAD
-          
-=======
 
->>>>>>> main
           for TAG in ${{ steps.meta.outputs.tags }}; do
             echo "Creating manifest for $TAG"
             docker buildx imagetools create -t $TAG $SHA_TAG_AMD64 $SHA_TAG_ARM64
