@@ -50,29 +50,13 @@ public class LogsLogService : ILogEventSink
             });
 
     public IEnumerable<string> GetKnownComponents()
-    {
-        var components = _logsByComponent.Keys.ToList();
-        // Virtual component: Minecraft server output (filtered from BuildplateLauncher logs)
-        if (_logsByComponent.ContainsKey("BuildplateLauncher"))
-            components.Add("Minecraft");
-        return components.OrderBy(k => k);
-    }
+        => _logsByComponent.Keys.OrderBy(k => k);
 
     public IEnumerable<LogEvent> GetLogsFor(string componentName)
     {
-        if (componentName == "Minecraft")
+        if (_logsByComponent.TryGetValue(componentName, out var queue))
         {
-            // Virtual component: filter BuildplateLauncher logs for [server] output
-            if (_logsByComponent.TryGetValue("BuildplateLauncher", out var queue))
-            {
-                return [.. queue.Where(log => log.RenderedMessage?.Contains("[server") == true || log.RenderedMessage?.Contains("[Server") == true || log.RenderedMessage?.Contains("[main/") == true || log.RenderedMessage?.Contains("[Worker") == true)];
-            }
-            return [];
-        }
-
-        if (_logsByComponent.TryGetValue(componentName, out var q))
-        {
-            return [.. q]; // Creates a safe snapshot for UI rendering
+            return [.. queue];
         }
 
         return [];
