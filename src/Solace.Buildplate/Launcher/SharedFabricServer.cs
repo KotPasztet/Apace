@@ -168,6 +168,7 @@ public sealed class SharedFabricServer : IDisposable
         byte[] serverData, bool survival, bool night)
     {
         var dimId = $"bp_{instanceId.Replace("-", "")[..8]}";
+        _logger.Information("CreateBuildplateDimensionAsync: dimId={DimId}, serverData={DataLen} bytes", dimId, serverData?.Length ?? 0);
         var dimDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace", dimId);
 
         try

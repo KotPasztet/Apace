@@ -231,9 +231,11 @@ public sealed class Instance
 
             if (!_shuttingDown)
             {
+                _logger.Information("Entering server start section (sharedServer={HasShared})", _sharedServer is not null);
                 // Multi-world: shared Fabric server with dimensions
                 if (_sharedServer is not null)
                 {
+                    _logger.Information("Creating buildplate dimension...");
                     string? dimId = await _sharedServer.CreateBuildplateDimensionAsync(
                         InstanceId, _playerId, _buildplateId, serverData, _survival, _night);
                     if (dimId is not null)
