@@ -993,7 +993,7 @@ public sealed class Instance
                 for (int attempt = 0; attempt < 30; attempt++)
                 {
                     await Task.Delay(500);
-                    if (_bridgeProcess.HasExited)
+                    if (_bridgeProcess.Process.HasExited)
                     {
                         _logger.Error("Bridge process exited before binding port");
                         break;
