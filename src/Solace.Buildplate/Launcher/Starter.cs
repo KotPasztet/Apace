@@ -64,9 +64,9 @@ public sealed class Starter
 
 		int port = FindPort(_portsInUse, BASE_PORT);
 
-		// Multi-world: use shared Fabric server if available (one JVM, less RAM)
+		// Multi-world: use shared Fabric server if available and ready
 		int serverInternalPort;
-		if (_sharedServer is not null && _sharedServer.IsRunning)
+		if (_sharedServer is not null && _sharedServer.IsReady)
 		{
 			serverInternalPort = _sharedServer.ServerPort;
 			Log.Debug("Using shared Fabric server port {Port} for instance {Id}", serverInternalPort, instanceId);

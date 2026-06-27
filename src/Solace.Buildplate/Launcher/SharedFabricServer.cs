@@ -21,6 +21,7 @@ public sealed class SharedFabricServer : IDisposable
     private readonly DirectoryInfo _serverWorkDir;
     private ConsoleProcess? _serverProcess;
     private MinecraftRconClient? _rcon;
+    private bool _rconReady;
     private readonly Lock _lock = new();
     private bool _started;
     private bool _disposed;
@@ -31,6 +32,7 @@ public sealed class SharedFabricServer : IDisposable
     public int RconPort { get; }
     public DirectoryInfo ServerWorkDir => _serverWorkDir;
     public bool IsRunning => _serverProcess is not null && !_serverProcess.Process.HasExited;
+    public bool IsReady => _rconReady;
 
     public SharedFabricServer(
         string javaCmd,
@@ -120,6 +122,7 @@ public sealed class SharedFabricServer : IDisposable
         }
         else
         {
+            _rconReady = true;
             _logger.Information("Shared Fabric server ready — accepting buildplate dimensions");
         }
     }
