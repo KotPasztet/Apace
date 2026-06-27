@@ -92,9 +92,18 @@ public sealed class SharedFabricServer : IDisposable
         var dimsDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace");
         Directory.CreateDirectory(dimsDir);
 
-        // Start server
-        _logger.Information("Starting shared Fabric server...");
-        _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute: true, redirect: false, openInNewWindow: true);
+        // Start server with redirect to capture Minecraft output for panel logs
+        _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute: false, redirect: true, openInNewWindow: false);
+        _serverProcess.StandartTextReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data))
+                _logger.Information("[server] {Line}", e.Data);
+        };
+        _serverProcess.ErrorTextReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data))
+                _logger.Error("[server-err] {Line}", e.Data);
+        };
         await _serverProcess.ExecuteAsync(_serverWorkDir.FullName, ["-jar", _fabricJarName, "-nogui"]);
 
         // Wait for server to be ready — poll the game port instead of RCON
