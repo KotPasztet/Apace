@@ -1001,12 +1001,13 @@ public sealed class Instance
                     try
                     {
                         using var udp = new System.Net.Sockets.UdpClient(Port);
+                        // Success = port free → bridge not ready yet
+                    }
+                    catch (System.Net.Sockets.SocketException)
+                    {
+                        // Exception = port in use → bridge IS listening!
                         bridgeReady = true;
                         break;
-                    }
-                    catch
-                    {
-                        // Port not bound yet
                     }
                 }
                 _logger.Information(bridgeReady ? $"Bridge ready on port {Port}" : $"Bridge not ready on port {Port} after 15s");
