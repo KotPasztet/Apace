@@ -111,6 +111,9 @@ internal static class Program
         var starter = new Starter(eventBusClient, options.EventBusConnectionString, options.PublicAddress, javaCmd, options.BridgeJar, options.ServerTemplateDir, options.FabricJarName, options.ConnectorPluginJar);
         var instanceManager = await InstanceManager.CreateAsync(eventBusClient, starter);
 
+        // Multi-world: pre-warm shared Fabric server (one JVM, dimensions via RCON)
+        await starter.InitializeSharedServerAsync();
+
         Console.CancelKeyPress += (sender, e) =>
         {
             Log.Information("Ctrl+C received");

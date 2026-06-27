@@ -26,6 +26,18 @@ public sealed class Starter
 	private const ushort SERVER_INTERNAL_BASE_PORT = 25565;
 	private readonly HashSet<int> _portsInUse = [];
 	private readonly HashSet<int> _serverInternalPortsInUse = [];
+// Multi-world: one Fabric server for all buildplates
+    private SharedFabricServer? _sharedServer;
+    public SharedFabricServer? SharedServer => _sharedServer;
+
+    public async Task InitializeSharedServerAsync()
+    {
+        if (_sharedServer is not null) return;
+        _sharedServer = new SharedFabricServer(
+            _javaCmd, _serverTemplateDir, _fabricJarName,
+            _eventBusConnectionString, Log.Logger);
+        await _sharedServer.StartAsync();
+    }
 
     public Starter(EventBusClient eventBusClient, string eventBusConnectionString, string publicAddress, string javaCmd, string bridgeJar, string serverTemplateDir, string fabricJarName, string connectorPluginJar)
 	{
@@ -51,14 +63,27 @@ public sealed class Starter
 		}
 
 		int port = FindPort(_portsInUse, BASE_PORT);
-		int serverInternalPort = FindPort(_serverInternalPortsInUse, SERVER_INTERNAL_BASE_PORT);
-		var instance = Instance.Run(_eventBusClient, playerId, buildplateId, buildplateSource, instanceId, survival, night, saveEnabled, inventoryType, shutdownTime, _publicAddress, port, serverInternalPort, _javaCmd, _fountainBridgeJar, _serverTemplateDir, _fabricJarName, _connectorPluginJar, baseDir, _eventBusConnectionString);
+
+		// Multi-world: use shared Fabric server if available (one JVM, less RAM)
+		int serverInternalPort;
+		if (_sharedServer is not null && _sharedServer.IsRunning)
+		{
+			serverInternalPort = _sharedServer.ServerPort;
+			Log.Debug("Using shared Fabric server port {Port} for instance {Id}", serverInternalPort, instanceId);
+		}
+		else
+		{
+			serverInternalPort = FindPort(_serverInternalPortsInUse, SERVER_INTERNAL_BASE_PORT);
+		}
+
+		var instance = Instance.Run(_eventBusClient, playerId, buildplateId, buildplateSource, instanceId, survival, night, saveEnabled, inventoryType, shutdownTime, _publicAddress, port, serverInternalPort, _javaCmd, _fountainBridgeJar, _serverTemplateDir, _fabricJarName, _connectorPluginJar, baseDir, _eventBusConnectionString, _sharedServer);
 
         Task.Run(async () =>
         {
             await instance.WaitForShutdownAsync();
 			ReleasePort(_portsInUse, port);
-			ReleasePort(_serverInternalPortsInUse, serverInternalPort);
+			if (_sharedServer is null)
+				ReleasePort(_serverInternalPortsInUse, serverInternalPort);
         }).Forget();
         
 		return instance;

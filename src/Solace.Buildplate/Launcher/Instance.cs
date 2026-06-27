@@ -19,7 +19,7 @@ public sealed class Instance
 {
     private const long HOST_PLAYER_CONNECT_TIMEOUT = 120_000;
 
-    public static Instance Run(EventBusClient eventBusClient, string? playerId, string buildplateId, BuildplateSource buildplateSource, string instanceId, bool survival, bool night, bool saveEnabled, InventoryType inventoryType, long? shutdownTime, string publicAddress, int port, int serverInternalPort, string javaCmd, FileInfo fountainBridgeJar, DirectoryInfo serverTemplateDir, string fabricJarName, FileInfo connectorPluginJar, DirectoryInfo baseDir, string eventBusConnectionString)
+    public static Instance Run(EventBusClient eventBusClient, string? playerId, string buildplateId, BuildplateSource buildplateSource, string instanceId, bool survival, bool night, bool saveEnabled, InventoryType inventoryType, long? shutdownTime, string publicAddress, int port, int serverInternalPort, string javaCmd, FileInfo fountainBridgeJar, DirectoryInfo serverTemplateDir, string fabricJarName, FileInfo connectorPluginJar, DirectoryInfo baseDir, string eventBusConnectionString, SharedFabricServer? sharedServer = null)
     {
         if (playerId is null && buildplateSource is BuildplateSource.PLAYER)
         {
@@ -63,6 +63,7 @@ public sealed class Instance
     private Task? _thread;
     private readonly SemaphoreSlim _threadStartedSemaphore = new SemaphoreSlim(1, 1);
     private readonly ILogger _logger;
+    private readonly SharedFabricServer? _sharedServer;
 
     private Publisher? _publisher;
     private RequestSender? _requestSender;
@@ -79,7 +80,7 @@ public sealed class Instance
 
     private volatile bool _hostPlayerConnected;
 
-    private Instance(EventBusClient eventBusClient, string? playerId, string buildplateId, BuildplateSource buildplateSource, string instanceId, bool survival, bool night, bool saveEnabled, InventoryType inventoryType, long? shutdownTime, string publicAddress, int port, int serverInternalPort, string javaCmd, FileInfo fountainBridgeJar, DirectoryInfo serverTemplateDir, string fabricJarName, FileInfo connectorPluginJar, DirectoryInfo baseDir, string eventBusConnectionString)
+    private Instance(EventBusClient eventBusClient, string? playerId, string buildplateId, BuildplateSource buildplateSource, string instanceId, bool survival, bool night, bool saveEnabled, InventoryType inventoryType, long? shutdownTime, string publicAddress, int port, int serverInternalPort, string javaCmd, FileInfo fountainBridgeJar, DirectoryInfo serverTemplateDir, string fabricJarName, FileInfo connectorPluginJar, DirectoryInfo baseDir, string eventBusConnectionString, SharedFabricServer? sharedServer = null)
     {
         _eventBusClient = eventBusClient;
 
@@ -112,6 +113,7 @@ public sealed class Instance
         ));
 
         _logger = Log.Logger.ForContext("InstanceId", InstanceId);
+        _sharedServer = sharedServer;
     }
 
     private async Task RunAsync()
@@ -225,6 +227,35 @@ public sealed class Instance
 
             if (!_shuttingDown)
             {
+                // Multi-world: shared Fabric server with dimensions
+                if (_sharedServer is not null)
+                {
+                    string? dimId = await _sharedServer.CreateBuildplateDimensionAsync(
+                        InstanceId, _playerId, _buildplateId, serverData, _survival, _night);
+                    if (dimId is not null)
+                    {
+                        _logger.Information("Buildplate dimension {DimId} ready, starting bridge", dimId);
+                        await StartBridgeProcessAsync();
+                        SendEventBusInstanceStatusNotification("ready");
+                        if (_shutdownTime is not null)
+                            StartShutdownTimer();
+                        else
+                            StartHostPlayerConnectTimeout();
+
+                        if (_bridgeProcess is not null)
+                        {
+                            await @lock.DisposeAsync();
+                            await _bridgeProcess.WaitForExitAsync();
+                            @lock = await _subprocessLock.LockAsync(CancellationToken.None);
+                            _bridgeProcess.Dispose();
+                            _bridgeProcess = null;
+                            _shuttingDown = true;
+                            _sharedServer.RemoveDimension(dimId);
+                        }
+                    }
+                }
+                else
+                {
                 await StartServerProcessAsync();
 
                 if (_serverProcess is not null)
@@ -262,6 +293,7 @@ public sealed class Instance
                 {
                     _logger.Information("Server failed to start");
                 }
+                } // legacy else
             }
 
             await @lock.DisposeAsync();
