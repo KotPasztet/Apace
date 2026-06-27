@@ -13,6 +13,14 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+# Check if Docker is running
+$dockerRunning = docker info 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Docker is not running!" -ForegroundColor Red
+    Write-Host "  Start Docker Desktop, wait for it to finish loading, then run this script again." -ForegroundColor Yellow
+    exit 1
+}
+
 # ─── Create directories ───────────────────────────────────────────────
 $APACE_DIR = "$env:USERPROFILE\apace"
 $PERSISTENT = "C:\apace-persistent"
