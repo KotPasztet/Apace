@@ -234,19 +234,6 @@ public sealed class Instance
                 // Multi-world: shared Fabric server with dimensions
                 if (_sharedServer is not null)
                 {
-                    // Wait for shared server to be ready (should already be ready at this point)
-                    if (!_sharedServer.IsReady)
-                    {
-                        _logger.Warning("Shared Fabric server not ready yet, waiting...");
-                        for (int i = 0; i < 60 && !_sharedServer.IsReady; i++)
-                            await Task.Delay(1000);
-                        if (!_sharedServer.IsReady)
-                        {
-                            _logger.Error("Shared Fabric server still not ready after 60s");
-                            return;
-                        }
-                    }
-
                     string? dimId = await _sharedServer.CreateBuildplateDimensionAsync(
                         InstanceId, _playerId, _buildplateId, serverData, _survival, _night);
                     if (dimId is not null)

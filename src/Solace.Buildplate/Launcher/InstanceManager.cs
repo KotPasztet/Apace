@@ -76,6 +76,16 @@ public sealed class InstanceManager
                     instanceManager._runningInstanceCount += 1;
                     instanceManager._lock.Exit();
 
+                    // Wait for shared Fabric server to be ready before accepting buildplate requests
+                    if (instanceManager._starter.SharedServer is not null && !instanceManager._starter.SharedServer.IsReady)
+                    {
+                        Log.Warning("Shared Fabric server not ready yet, rejecting buildplate start request");
+                        instanceManager._lock.Enter();
+                        instanceManager._runningInstanceCount -= 1;
+                        instanceManager._lock.Exit();
+                        return null;
+                    }
+
                     StartRequest startRequest;
                     try
                     {
