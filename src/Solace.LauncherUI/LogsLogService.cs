@@ -65,7 +65,7 @@ public class LogsLogService : ILogEventSink
             // Virtual component: filter BuildplateLauncher logs for [server] output
             if (_logsByComponent.TryGetValue("BuildplateLauncher", out var queue))
             {
-                return [.. queue.Where(log => log.RenderedMessage?.Contains("[server]") == true)];
+                return [.. queue.Where(log => log.RenderedMessage?.Contains("[Server") == true || log.RenderedMessage?.Contains("[main/") == true || log.RenderedMessage?.Contains("[Worker") == true)];
             }
             return [];
         }

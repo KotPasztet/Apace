@@ -234,6 +234,19 @@ public sealed class Instance
                 // Multi-world: shared Fabric server with dimensions
                 if (_sharedServer is not null)
                 {
+                    // Wait for shared server to be ready (should already be ready at this point)
+                    if (!_sharedServer.IsReady)
+                    {
+                        _logger.Warning("Shared Fabric server not ready yet, waiting...");
+                        for (int i = 0; i < 60 && !_sharedServer.IsReady; i++)
+                            await Task.Delay(1000);
+                        if (!_sharedServer.IsReady)
+                        {
+                            _logger.Error("Shared Fabric server still not ready after 60s");
+                            return;
+                        }
+                    }
+
                     string? dimId = await _sharedServer.CreateBuildplateDimensionAsync(
                         InstanceId, _playerId, _buildplateId, serverData, _survival, _night);
                     if (dimId is not null)
@@ -258,46 +271,6 @@ public sealed class Instance
                         }
                     }
                 }
-                else
-                {
-                await StartServerProcessAsync();
-
-                if (_serverProcess is not null)
-                {
-                    await @lock.DisposeAsync();
-                    await _serverProcess.WaitForExitAsync();
-                    @lock = await _subprocessLock.LockAsync(CancellationToken.None);
-                    var exitCode = _serverProcess.ExitCodeText;
-                    _serverProcess.Dispose();
-                    _serverProcess = null;
-                    if (!_shuttingDown)
-                    {
-                        _logger.Warning($"Server process has unexpectedly terminated with exit code {exitCode}");
-                    }
-                    else
-                    {
-                        _logger.Information($"Server has finished with exit code {exitCode}");
-                    }
-
-                    _shuttingDown = true;
-
-                    if (_bridgeProcess is not null)
-                    {
-                        _logger.Information("Bridge is still running, shutting it down now");
-                        await @lock.DisposeAsync();
-                        await _bridgeProcess.StopAndWaitAsync();
-                        exitCode = _bridgeProcess.ExitCodeText;
-                        @lock = await _subprocessLock.LockAsync(CancellationToken.None);
-                        _bridgeProcess.Dispose();
-                        _bridgeProcess = null;
-                        _logger.Information($"Bridge has finished with exit code {exitCode}");
-                    }
-                }
-                else
-                {
-                    _logger.Information("Server failed to start");
-                }
-                } // legacy else
             }
 
             await @lock.DisposeAsync();
