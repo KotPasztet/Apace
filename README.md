@@ -104,3 +104,4 @@ Copy-Item -Path "C:\path\to\Solace\staticdata\*" -Destination "C:\path\to\Apace\
 
 * The server took too long to start - quickly open the app and join the same buildplate again
 * You do not have Java 17 installed - check that the `JAVA_HOME` environment variable is set to Java 17, or that `java --version` prints java 17
+ 
