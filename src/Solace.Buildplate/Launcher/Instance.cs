@@ -238,6 +238,7 @@ public sealed class Instance
                     _logger.Information("Creating buildplate dimension...");
                     string? dimId = await _sharedServer.CreateBuildplateDimensionAsync(
                         InstanceId, _playerId, _buildplateId, serverData, _survival, _night);
+                    _logger.Information("Dimension result: dimId={DimId}", dimId ?? "NULL");
                     if (dimId is not null)
                     {
                         _logger.Information("Buildplate dimension {DimId} ready, starting bridge", dimId);
