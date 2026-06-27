@@ -35,6 +35,15 @@ if ! command -v docker &>/dev/null; then
     echo ""
 fi
 
+# Check if Docker daemon is running
+if ! docker info &>/dev/null; then
+    echo -e "${RED}Docker is not running!${RST}"
+    echo -e "${YLW}Start the Docker daemon and try again:${RST}"
+    echo -e "  sudo systemctl start docker    (Linux)"
+    echo -e "  Open Docker Desktop           (macOS / Windows)"
+    exit 1
+fi
+
 # ─── Create Apace directory ───────────────────────────────────────────
 APACE_DIR="$HOME/apace"
 mkdir -p "$APACE_DIR"
