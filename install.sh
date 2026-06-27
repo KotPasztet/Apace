@@ -53,11 +53,18 @@ if [ ! -f "$PERSISTENT/config.json" ]; then
 fi
 sudo chown -R 1654:1654 "$PERSISTENT" 2>/dev/null || sudo chmod -R 777 "$PERSISTENT" 2>/dev/null
 
+# ─── Detect Docker Compose command ───────────────────────────────────
+if docker compose version &>/dev/null 2>&1; then
+    COMPOSE="docker compose"
+else
+    COMPOSE="docker-compose"
+fi
+
 # ─── Pull and start ───────────────────────────────────────────────────
 echo "Pulling Apace image..."
-docker compose pull
+$COMPOSE pull
 echo "Starting Apace..."
-docker compose up -d
+$COMPOSE up -d
 
 # ─── Done ─────────────────────────────────────────────────────────────
 IP=$(hostname -I 2>/dev/null | awk '{print $1}')
@@ -73,5 +80,5 @@ echo -e "  2. Go to Server Options → set your IP address (${IP:-find it with '
 echo -e "  3. Go to Server Status → click Start All"
 echo -e "  4. Accept the Minecraft EULA when prompted"
 echo ""
-echo -e "  To update:  ${BLD}cd $APACE_DIR && docker compose pull && docker compose up -d${RST}"
-echo -e "  To stop:    ${BLD}cd $APACE_DIR && docker compose down${RST}"
+echo -e "  To update:  ${BLD}cd $APACE_DIR && $COMPOSE pull && $COMPOSE up -d${RST}"
+echo -e "  To stop:    ${BLD}cd $APACE_DIR && $COMPOSE down${RST}"

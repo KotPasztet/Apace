@@ -40,11 +40,14 @@ $compose = Get-Content docker-compose.yml -Raw
 $compose = $compose -replace '/opt/apace-persistent/', 'C:/apace-persistent/'
 $compose | Set-Content docker-compose.yml -NoNewline
 
+# ─── Detect Docker Compose command ───────────────────────────────────
+$composeCmd = if (docker compose version 2>$null) { "docker compose" } else { "docker-compose" }
+
 # ─── Pull and start ───────────────────────────────────────────────────
 Write-Host "Pulling Apace image..."
-docker compose pull
+Invoke-Expression "$composeCmd pull"
 Write-Host "Starting Apace..."
-docker compose up -d
+Invoke-Expression "$composeCmd up -d"
 
 # ─── Done ─────────────────────────────────────────────────────────────
 $IP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object InterfaceAlias -notlike "*Loopback*" | Select-Object -First 1).IPAddress
@@ -61,5 +64,5 @@ Write-Host "  2. Server Options -> set your IP address ($IP)"
 Write-Host "  3. Server Status -> click Start All"
 Write-Host "  4. Accept the Minecraft EULA when prompted"
 Write-Host ""
-Write-Host "  To update:  cd $APACE_DIR; docker compose pull; docker compose up -d"
-Write-Host "  To stop:    cd $APACE_DIR; docker compose down"
+Write-Host "  To update:  cd $APACE_DIR; $composeCmd pull; $composeCmd up -d"
+Write-Host "  To stop:    cd $APACE_DIR; $composeCmd down"
