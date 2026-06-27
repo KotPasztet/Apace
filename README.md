@@ -37,7 +37,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | Tappables     | :white_check_mark: |                                                                                          |
 | Buildplates   | :white_check_mark: |                                                                                          |
 | Store         | :white_check_mark: | Tab titles do not load                                                                   |
-| Challenges    | :white_check_mark: | Daily challenge system (3 per player, deterministic rotation, progress tracking)         |
+| Challenges    | :construction: | Daily challenge system (3 per player, deterministic rotation, progress tracking)         |
 | Seasons       | :white_check_mark: | Seasonal content support                                                                 |
 | Adventures    | :white_check_mark: | Join responses, port reuse, instance lifecycle                                           |
 | Daily Rewards | :white_check_mark: | Daily login rewards with streak tracking                                                 |
