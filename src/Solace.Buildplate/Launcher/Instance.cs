@@ -987,6 +987,29 @@ public sealed class Instance
                 ]);
 
                 _logger.Information($"Bridge process started, PID {_bridgeProcess.Id}");
+
+                // Wait for bridge to bind its UDP port before signaling ready
+                bool bridgeReady = false;
+                for (int attempt = 0; attempt < 30; attempt++)
+                {
+                    await Task.Delay(500);
+                    if (_bridgeProcess.HasExited)
+                    {
+                        _logger.Error("Bridge process exited before binding port");
+                        break;
+                    }
+                    try
+                    {
+                        using var udp = new System.Net.Sockets.UdpClient(Port);
+                        bridgeReady = true;
+                        break;
+                    }
+                    catch
+                    {
+                        // Port not bound yet
+                    }
+                }
+                _logger.Information(bridgeReady ? $"Bridge ready on port {Port}" : $"Bridge not ready on port {Port} after 15s");
             }
             catch (IOException exception)
             {
