@@ -3,8 +3,7 @@ name: Build and publish Docker image
 on:
   push:
     branches:
-      - dev
-      - dev
+      - main
   workflow_dispatch:
 
 permissions:
@@ -15,7 +14,9 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: ${{ fromJSON(github.ref_name == 'dev' && '["linux/arm64"]' || '["linux/arm64"]') }}
+        platform:
+          - linux/amd64
+          - linux/arm64
     runs-on: ${{ matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
 
     steps:
@@ -46,14 +47,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Tag branch image (dev only)
-        if: github.ref_name == 'dev'
-        run: |
-          docker buildx imagetools create -t ghcr.io/kotpasztet/apace:dev ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-arm64
-
   merge:
     needs: build
-    if: github.ref_name == 'dev'
     runs-on: ubuntu-latest
     steps:
       - name: Log in to GitHub Container Registry
@@ -63,21 +58,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/kotpasztet/apace
-          tags: |
-            type=ref,event=branch
-
       - name: Create and push multi-arch manifest
         run: |
-          set -e
-          SHA_TAG_AMD64="ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-amd64"
-          SHA_TAG_ARM64="ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-arm64"
-
-          for TAG in ${{ steps.meta.outputs.tags }}; do
-            echo "Creating manifest for $TAG"
-            docker buildx imagetools create -t $TAG $SHA_TAG_AMD64 $SHA_TAG_ARM64
-          done
+          docker buildx imagetools create \
+            -t ghcr.io/kotpasztet/apace:main \
+            ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-amd64 \
+            ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-arm64
