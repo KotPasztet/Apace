@@ -22,6 +22,7 @@ public sealed class SharedFabricServer : IDisposable
     private ConsoleProcess? _serverProcess;
     private MinecraftRconClient? _rcon;
     private bool _rconReady;
+    private bool _portReady;
     private readonly Lock _lock = new();
     private bool _started;
     private bool _disposed;
@@ -32,7 +33,7 @@ public sealed class SharedFabricServer : IDisposable
     public int RconPort { get; }
     public DirectoryInfo ServerWorkDir => _serverWorkDir;
     public bool IsRunning => _serverProcess is not null && !_serverProcess.Process.HasExited;
-    public bool IsReady => _rconReady;
+    public bool IsReady => _serverProcess is not null && !_serverProcess.Process.HasExited && _portReady;
 
     public SharedFabricServer(
         string javaCmd,
@@ -96,35 +97,58 @@ public sealed class SharedFabricServer : IDisposable
         _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute: true, redirect: false, openInNewWindow: true);
         await _serverProcess.ExecuteAsync(_serverWorkDir.FullName, ["-jar", _fabricJarName, "-nogui"]);
 
-        // Wait for server to be ready (Fabric takes 30-180s on first start, faster on subsequent)
-        _logger.Information("Waiting for Fabric server to be ready...");
-        _rcon = new MinecraftRconClient("127.0.0.1", RconPort, "apace", _logger);
+        // Wait for server to be ready — poll the game port instead of RCON
+        // Fabric takes 1-5 min on first start (world gen), 20-30s on subsequent
+        _logger.Information("Waiting for Fabric server on port {Port}...", ServerPort);
 
-        bool rconReady = false;
-        for (int attempt = 0; attempt < 60; attempt++) // up to 2 minutes
+        bool portReady = false;
+        for (int attempt = 0; attempt < 150; attempt++) // up to 5 minutes
         {
             await Task.Delay(2000);
-            if (await _rcon.ConnectAsync())
-            {
-                rconReady = true;
-                break;
-            }
             if (_serverProcess.Process.HasExited)
             {
                 _logger.Error("Fabric server exited during startup");
                 return;
             }
+            try
+            {
+                using var tcp = new System.Net.Sockets.TcpClient();
+                await tcp.ConnectAsync("127.0.0.1", ServerPort);
+                portReady = true;
+                break;
+            }
+            catch
+            {
+                // Server not listening yet
+            }
         }
 
-        if (!rconReady)
+        _portReady = portReady;
+
+        if (!portReady)
         {
-            _logger.Error("RCON connection failed after 2 minutes — server may not have RCON enabled");
+            _logger.Error("Fabric server port {Port} not reachable after 5 minutes", ServerPort);
+            return;
         }
+
+        // Now try RCON for dimension management (non-critical)
+        _rcon = new MinecraftRconClient("127.0.0.1", RconPort, "apace", _logger);
+        for (int attempt = 0; attempt < 15; attempt++)
+        {
+            await Task.Delay(1000);
+            if (await _rcon.ConnectAsync())
+            {
+                _rconReady = true;
+                break;
+            }
+        }
+
+        if (!_rconReady)
+            _logger.Warning("RCON not available — dimension teleport will use files only");
         else
-        {
-            _rconReady = true;
-            _logger.Information("Shared Fabric server ready — accepting buildplate dimensions");
-        }
+            _logger.Information("RCON connected — full dimension management available");
+
+        _logger.Information("Shared Fabric server ready — accepting buildplate dimensions");
     }
 
     /// <summary>
