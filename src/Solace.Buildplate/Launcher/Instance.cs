@@ -165,21 +165,25 @@ public sealed class Instance
                 return;
             }
 
-            try
+            // SetupServerFiles: skip if using shared server (files created via CreateBuildplateDimensionAsync)
+            if (_sharedServer is null)
             {
-                var serverWorkDir = await SetupServerFiles(serverData);
-                if (serverWorkDir is null)
+                try
                 {
-                    _logger.Error("Could not set up files for server");
+                    var serverWorkDir = await SetupServerFiles(serverData);
+                    if (serverWorkDir is null)
+                    {
+                        _logger.Error("Could not set up files for server");
+                        return;
+                    }
+
+                    _serverWorkDir = serverWorkDir;
+                }
+                catch (IOException exception)
+                {
+                    _logger.Error(exception, "Could not set up files for server");
                     return;
                 }
-
-                _serverWorkDir = serverWorkDir;
-            }
-            catch (IOException exception)
-            {
-                _logger.Error(exception, "Could not set up files for server");
-                return;
             }
 
             try

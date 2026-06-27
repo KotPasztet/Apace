@@ -94,11 +94,34 @@ public sealed class SharedFabricServer : IDisposable
         _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute: true, redirect: false, openInNewWindow: true);
         await _serverProcess.ExecuteAsync(_serverWorkDir.FullName, ["-jar", _fabricJarName, "-nogui"]);
 
-        // Wait for server to be ready, then connect RCON
-        await Task.Delay(5000); // Give server time to start
+        // Wait for server to be ready (Fabric takes 30-180s on first start, faster on subsequent)
+        _logger.Information("Waiting for Fabric server to be ready...");
         _rcon = new MinecraftRconClient("127.0.0.1", RconPort, "apace", _logger);
-        await _rcon.ConnectAsync();
-        _logger.Information("Shared Fabric server ready — accepting buildplate dimensions");
+
+        bool rconReady = false;
+        for (int attempt = 0; attempt < 60; attempt++) // up to 2 minutes
+        {
+            await Task.Delay(2000);
+            if (await _rcon.ConnectAsync())
+            {
+                rconReady = true;
+                break;
+            }
+            if (_serverProcess.Process.HasExited)
+            {
+                _logger.Error("Fabric server exited during startup");
+                return;
+            }
+        }
+
+        if (!rconReady)
+        {
+            _logger.Error("RCON connection failed after 2 minutes — server may not have RCON enabled");
+        }
+        else
+        {
+            _logger.Information("Shared Fabric server ready — accepting buildplate dimensions");
+        }
     }
 
     /// <summary>
