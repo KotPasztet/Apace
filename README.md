@@ -4,7 +4,6 @@
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"></a>
-  <a href="https://discord.gg/WHbaErNSJM"><img src="https://img.shields.io/badge/Discord-gray?style=flat-square" alt="Discord"></a>
   <img src="https://img.shields.io/github/stars/KotPasztet/Apace?style=flat-square" alt="GitHub Stars">
 </p>
 
@@ -38,7 +37,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | Tappables     | :white_check_mark: |                                                                                          |
 | Buildplates   | :white_check_mark: |                                                                                          |
 | Store         | :white_check_mark: | Tab titles do not load                                                                   |
-| Challenges    | :white_check_mark: | Daily challenge system (3 per player, deterministic rotation, progress tracking)         |
+| Challenges    | :construction: | Daily challenge system (3 per player, deterministic rotation, progress tracking)         |
 | Seasons       | :white_check_mark: | Seasonal content support                                                                 |
 | Adventures    | :white_check_mark: | Join responses, port reuse, instance lifecycle                                           |
 | Daily Rewards | :white_check_mark: | Daily login rewards with streak tracking                                                 |
@@ -49,59 +48,17 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 :construction: - Under Development
 :x: - Not Working
 
-## Installation
 
-For installation instructions, refer to [Installation.md](Installation.md)
+## Quick Start
 
-## Migrating from Solace
+```bash
+# Linux/macOS (one command)
+curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
 
-If you already have Solace running, copy your persistent data to Apace:
-
-```powershell
-# 1. Stop both servers first
-# 2. Copy data directories
-Copy-Item -Path "C:\path\to\Solace\launcher\Data\*" -Destination "C:\path\to\Apace\launcher\Data\" -Recurse
-Copy-Item -Path "C:\path\to\Solace\launcher\config.json" -Destination "C:\path\to\Apace\launcher\config.json"
-Copy-Item -Path "C:\path\to\Solace\staticdata\*" -Destination "C:\path\to\Apace\staticdata\" -Recurse
-
-# 3. Start Apace — accounts, buildplates, and settings are preserved
+# Windows (PowerShell as Administrator)
+iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
 ```
 
-> [!TIP]
-> The database (`app.db`) and `config.json` are fully compatible between Solace and Apace. Static data (resourcepacks, world templates) should also be copied over.
+After install: open http://localhost:5000, create an account, set your IP in Server Options, click Start.
 
-## Roadmap
-
-- **Single-server multi-world** — replace one-JVM-per-buildplate with shared Fabric server using multiple dimensions, eliminating cold starts and drastically reducing RAM usage
-- **World preloading & pooling** — keep idle instances warm so players join instantly
-- **Unified port routing** — serve all buildplates through a single port instead of one per instance
-
-## Common Errors & Troubleshooting
-
-### I cannot see the "Start Server" button when logged in
-
-**Cause:** Only the very first account created on the launcher is granted full administrative permissions by default. Subsequent accounts lack the necessary privileges to manage the server.
-
-**Solutions:**
-
-* **Option A (Grant Permissions):** Log into the original (first) account and use the Manage Users/Roles page to grant server permissions to your second account.
-* **Option B (Reset Database):** If you have lost access to the first account and need to start fresh, you can reset the user database.
-  * Navigate to: `launcher/Data/`
-  * **Delete** the `app.db` file.
-  * *Note: This will remove all existing accounts and allow you to register a new primary admin account.*
-
-### When I open the app, I get "Cannot connect to the network! ..."
-
-**Possible causes**:
-
-* Server is not running
-* Incorrect PC IP address
-* Firewall blocks the server
-* PC and phone are not on the same network
-
-### The app closes when I join a buildplate
-
-**Possible causes**:
-
-* The server took too long to start - quickly open the app and join the same buildplate again
-* You do not have Java 17 installed - check that the `JAVA_HOME` environment variable is set to Java 17, or that `java --version` prints java 17
+Full instructions: [Installation.md](Installation.md)
