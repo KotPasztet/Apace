@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 @using Serilog
+@using Solace.LauncherUI.Utils
 @attribute [Authorize(Policy = Permissions.EditServerOptions)]
 @rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
@@ -264,7 +265,7 @@
 
         try
         {
-            var (success, error) = await MojangResourcePackService.DownloadAndExtractAsync(
+            (bool success, string? error) = await Solace.LauncherUI.Utils.MojangResourcePackService.DownloadAndExtractAsync(
                 progress => { _downloadProgress = progress; InvokeAsync(StateHasChanged); });
 
             if (success)
