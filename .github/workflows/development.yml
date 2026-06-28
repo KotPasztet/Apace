@@ -49,15 +49,15 @@ jobs:
         run: |
           Compress-Archive `
             -Path "build/Release/framework-dependent-${{ matrix.os }}-${{ matrix.arch }}/*" `
-            -DestinationPath "Solace-Dev-${{ matrix.os }}-${{ matrix.arch }}.zip"
+            -DestinationPath "Apace-Dev-${{ matrix.os }}-${{ matrix.arch }}.zip"
 
       - name: Update Dev Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: dev-build
-          name: "Solace Development Build"
+          name: "Apace Development Build"
           prerelease: true
-          files: Solace-Dev-${{ matrix.os }}-${{ matrix.arch }}.zip
+          files: Apace-Dev-${{ matrix.os }}-${{ matrix.arch }}.zip
           generate_release_notes: true
           body: |
             ⚠️ **Warning:** This is a manually triggered developer snapshot. It may contain unfinished features or bugs.
@@ -66,4 +66,4 @@ jobs:
             **Commit SHA:** ${{ github.sha }}
             
             ---
-            ![Solace Banner](https://raw.githubusercontent.com/Earth-Restored/Solace/main/images/solace_banner.png)
+            ![Apace Banner](https://raw.githubusercontent.com/KotPasztet/Apace/main/images/Apace_Branding.png)

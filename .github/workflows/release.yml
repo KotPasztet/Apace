@@ -96,13 +96,13 @@ jobs:
         run: |
           Compress-Archive `
             -Path "build/Release/framework-dependent-${{ matrix.os }}-${{ matrix.arch }}/*" `
-            -DestinationPath "Solace-${{ matrix.os }}-${{ matrix.arch }}.zip"
+            -DestinationPath "Apace-${{ matrix.os }}-${{ matrix.arch }}.zip"
 
       - name: Stage artifacts
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path staging
-          Copy-Item "Solace-${{ matrix.os }}-${{ matrix.arch }}.zip" staging/
+          Copy-Item "Apace-${{ matrix.os }}-${{ matrix.arch }}.zip" staging/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -141,12 +141,12 @@ jobs:
             NOTES_JSON=$(gh api repos/$REPO/releases/generate-notes -f tag_name="$VERSION" -f target_commitish="main" -f previous_tag_name="$PREV_VERSION")
           fi
           GENERATED_NOTES=$(echo "$NOTES_JSON" | jq -r '.body')
-          RELEASE_BODY="## Solace ($VERSION)
+          RELEASE_BODY="## Apace ($VERSION)
 
           $GENERATED_NOTES
 
           ---
-          ![Solace Banner](https://raw.githubusercontent.com/Earth-Restored/Solace/main/images/solace_banner.png)"
+          ![Apace Banner](https://raw.githubusercontent.com/KotPasztet/Apace/main/images/Apace_Branding.png)"
           gh release create "$VERSION" artifacts/* \
             --title "$VERSION" \
             --notes "$RELEASE_BODY"
