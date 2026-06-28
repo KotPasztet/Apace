@@ -55,9 +55,16 @@
 
     @if (!_previewsEnabled)
     {
-        <a href="/Admin/ServerOptions" class="btn btn-outline-warning">
+        <a href="/Admin/ServerOptions?tab=data" class="btn btn-outline-warning">
             <i class="bi bi-eye me-1"></i> Enable Previews
         </a>
+    }
+
+    @if (ServerManager.Status != Solace.LauncherUI.ServerStatus.Online)
+    {
+        <div class="alert alert-info mb-0 py-1 px-3" style="font-size: 0.85rem;">
+            <i class="bi bi-info-circle me-1"></i> Server must be running for 3D buildplate previews.
+        </div>
     }
 </div>
 

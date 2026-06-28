@@ -453,6 +453,13 @@ public sealed class ServerManager : IDisposable
                 continue;
             }
 
+            // BuildplateLauncher: wait for shared server ready instead of starting duplicate
+            if (comp.Name == "Buildplate Launcher" && comp.Status is ServerStatus.Starting)
+            {
+                logger.Debug($"{comp.Name} is starting (waiting for shared server)...");
+                continue;
+            }
+
             comp.Status = ServerStatus.Starting;
             OnStatusChanged?.Invoke();
 

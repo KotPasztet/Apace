@@ -1,11 +1,13 @@
 @page "/Admin/ServerOptions"
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
+@using System.Web
 @using Serilog
 @using Solace.LauncherUI.Utils
 @attribute [Authorize(Policy = Permissions.EditServerOptions)]
 @rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
 
 <PageTitle>Server Options - Apace</PageTitle>
 
@@ -231,6 +233,12 @@
     {
         LoadFromSettings(await Settings.LoadAsync(Settings.DefaultPath));
         _resourcePackInstalled = MojangResourcePackService.IsInstalled;
+
+        // Check for ?tab= query parameter
+        var uri = new Uri(Navigation.Uri);
+        var tabParam = System.Web.HttpUtility.ParseQueryString(uri.Query).Get("tab");
+        if (!string.IsNullOrEmpty(tabParam))
+            activeTab = tabParam;
     }
 
     private async Task OnBuildplatePreviewToggled()
