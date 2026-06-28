@@ -176,6 +176,21 @@ public sealed class SharedFabricServer : IDisposable
                 }
             }
 
+            // Create dimension definition JSON so Fabric server can load this dimension
+            var datapackDir = Path.Combine(_serverWorkDir.FullName, "world", "datapacks", "apace");
+            var dimDefDir = Path.Combine(datapackDir, "data", "apace", "dimension");
+            Directory.CreateDirectory(dimDefDir);
+
+            var dimJson = "{\"type\":\"minecraft:overworld\",\"generator\":{\"type\":\"minecraft:flat\",\"settings\":{\"layers\":[],\"biome\":\"minecraft:the_void\"}}}";
+            await File.WriteAllTextAsync(Path.Combine(dimDefDir, dimId + ".json"), dimJson);
+
+            // Create pack.mcmeta
+            var mcmeta = "{\"pack\":{\"pack_format\":22,\"description\":\"Apace buildplate dimensions\"}}";
+            await File.WriteAllTextAsync(Path.Combine(datapackDir, "pack.mcmeta"), mcmeta);
+
+            // Reload datapacks so server picks up the new dimension
+            if (_rcon is not null) await _rcon.SendCommandAsync("reload");
+
             _dimensions[dimId] = new DimensionInfo(instanceId, buildplateId, playerId, dimId);
             _logger.Information("Buildplate dimension {DimId} created for instance {InstanceId}", dimId, instanceId);
             return dimId;
@@ -192,7 +207,7 @@ public sealed class SharedFabricServer : IDisposable
     public async Task<bool> SendPlayerToDimensionAsync(string playerId, string dimensionId)
     {
         if (_rcon is null) return false;
-        var result = await _rcon.SendCommandAsync($"tp {playerId} 0 5 0");
+        var result = await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run tp {playerId} 0 65 0");
         return result is not null;
     }
     public int DimensionCount => _dimensions.Count;
