@@ -136,6 +136,12 @@ public sealed class SharedFabricServer : IDisposable
 
         _portReady = portReady;
 
+        // Signal readiness to ServerManager via file
+        if (_portReady)
+        {
+            File.WriteAllText("/tmp/apace-server-ready", DateTime.UtcNow.ToString("O"));
+        }
+
         if (!portReady)
         {
             _logger.Error("Fabric server port {Port} not reachable after 5 minutes", ServerPort);
