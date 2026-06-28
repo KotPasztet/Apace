@@ -152,6 +152,14 @@ h1:focus {
     background-color: currentColor;
 }
 
+/* img elements should never get .bi mask treatment */
+img.bi, img.nav-icon {
+    background-color: transparent !important;
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
+    background-image: none !important;
+}
+
 .bi-plus-lg {
     mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGx1cy1sZyIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik04IDJhLjUuNSAwIDAgMSAuNS41djVoNWEuNS41IDAgMCAxIDAgMWgtNXY1YS41LjUgMCAwIDEtMSAwdi01aC01YS41LjUgMCAwIDEgMC0xaDV2LTVBLjUuNSAwIDAgMSA4IDIiLz4KPC9zdmc+");
 }
@@ -1195,11 +1203,19 @@ fieldset:disabled {
     border-color: #2a2a2a;
 }
 
-/* ============================================================
-   nav-pills / nav-tabs (log tabs, settings tabs)
-   ============================================================ */
+/* nav-pills / nav-tabs (log tabs, settings tabs) */
 
-.nav-pills .nav-link {
+.nav-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-pills .nav-link,
+.nav-pills button {
     padding: 8px 18px;
     color: #9a9ab0;
     background: #1a1a1a;
@@ -1211,13 +1227,16 @@ fieldset:disabled {
     white-space: nowrap;
     box-shadow: 0 3px 0 #0a0a0a;
     font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
 }
 
-.nav-pills .nav-link.active {
+.nav-pills .nav-link.active,
+.nav-pills button.active {
     background: linear-gradient(180deg, #7cb342, #558b2f) !important;
     color: #fff !important;
-    border-color: #33691e;
-    box-shadow: 0 3px 0 #1a3a0a;
+    border-color: #33691e !important;
+    box-shadow: 0 3px 0 #1a3a0a !important;
 }
 
 .nav-pills .nav-link.bg-light.text-dark {
