@@ -181,7 +181,8 @@ public sealed class SharedFabricServer : IDisposable
             var dimDefDir = Path.Combine(datapackDir, "data", "apace", "dimension");
             Directory.CreateDirectory(dimDefDir);
 
-            var dimJson = "{\"type\":\"minecraft:overworld\",\"generator\":{\"type\":\"minecraft:flat\",\"settings\":{\"layers\":[],\"biome\":\"minecraft:the_void\"}}}";
+            // Void dimension that preserves pre-generated buildplate chunks
+            var dimJson = "{\"type\":\"minecraft:overworld\",\"generator\":{\"type\":\"minecraft:noise\",\"settings\":{\"bedrock_roof_position\":-10,\"bedrock_floor_position\":-10,\"sea_level\":0,\"disable_mob_generation\":false,\"default_block\":{\"Name\":\"minecraft:air\"},\"default_fluid\":{\"Name\":\"minecraft:air\"},\"noise\":{\"min_y\":-64,\"height\":384,\"size_horizontal\":1,\"size_vertical\":1}}},\"biome_source\":{\"type\":\"minecraft:fixed\",\"biome\":\"minecraft:the_void\"}}";
             await File.WriteAllTextAsync(Path.Combine(dimDefDir, dimId + ".json"), dimJson);
 
             // Create pack.mcmeta
