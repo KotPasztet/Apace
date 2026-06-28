@@ -22,7 +22,7 @@ public sealed class SharedFabricServer : IDisposable
     private ConsoleProcess? _serverProcess;
     private MinecraftRconClient? _rcon;
     private bool _rconReady;
-    private bool _portReady;
+    private bool _rconReady;
     private readonly Lock _lock = new();
     private bool _started;
     private bool _disposed;
@@ -33,7 +33,7 @@ public sealed class SharedFabricServer : IDisposable
     public int RconPort { get; }
     public DirectoryInfo ServerWorkDir => _serverWorkDir;
     public bool IsRunning => _serverProcess is not null && !_serverProcess.Process.HasExited;
-    public bool IsReady => _serverProcess is not null && !_serverProcess.Process.HasExited && _portReady;
+    public bool IsReady => _serverProcess is not null && !_serverProcess.Process.HasExited && _rconReady;
 
     public SharedFabricServer(
         string javaCmd,
@@ -79,7 +79,8 @@ public sealed class SharedFabricServer : IDisposable
         sb.AppendLine("enable-command-block=true");
         sb.AppendLine(CultureInfo.InvariantCulture, $"server-port={ServerPort}");
         sb.AppendLine("gamemode=creative");
-        sb.AppendLine("level-type=default");
+        // Flat world for instant startup (no overworld generation)
+        sb.AppendLine("level-type=minecraft\:flat");
         sb.AppendLine("level-name=world");
         sb.AppendLine(CultureInfo.InvariantCulture, $"enable-rcon=true");
         sb.AppendLine(CultureInfo.InvariantCulture, $"rcon.port={RconPort}");
@@ -133,7 +134,7 @@ public sealed class SharedFabricServer : IDisposable
             }
         }
 
-        _portReady = portReady;
+        _rconReady = portReady;
 
         if (!portReady)
         {
