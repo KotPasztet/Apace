@@ -137,10 +137,73 @@
 
                 <div class="mb-3 form-check form-switch">
                     <InputCheckbox @bind-Value="SettingsModel.LauncherBuildplatePreview" class="form-check-input"
-                                   id="buildPreview" />
+                                   id="buildPreview" @onchange="OnBuildplatePreviewToggled" />
                     <label class="form-check-label" for="buildPreview">Enable Buildplate Preview in Launcher</label>
                     <ValidationMessage For="@(() => SettingsModel.LauncherBuildplatePreview)" />
                 </div>
+
+                @if (SettingsModel.LauncherBuildplatePreview && !_resourcePackInstalled)
+                {
+                    <div class="alert alert-info d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Resource pack required.</strong> The official Minecraft 1.20.4 assets are needed for buildplate previews.
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-2" @onclick="ShowResourcePackDialog" disabled="@_downloading">
+                                <i class="bi bi-download me-1"></i>Download from Mojang
+                            </button>
+                            <span class="text-muted" style="font-size: 0.85rem;">or place files manually in <code>staticdata/resourcepacks/java/minecraft/</code></span>
+                        </div>
+                    </div>
+
+                    @if (_downloading)
+                    {
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 style="width: @(_downloadProgress * 100)%"></div>
+                        </div>
+                        <small class="text-muted">Downloading client.jar and extracting assets... @((_downloadProgress * 100).ToString("F0"))%</small>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_resourcePackError))
+                    {
+                        <div class="alert alert-danger">@_resourcePackError</div>
+                    }
+                }
+
+                @if (_showResourcePackDialog)
+                {
+                    <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Mojang Resource Pack</h5>
+                                    <button type="button" class="btn-close" @onclick="HideResourcePackDialog"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>To use buildplate previews, the official Minecraft 1.20.4 resource pack is required.</p>
+                                    <p class="text-muted small">This downloads <code>client.jar</code> from Mojang's servers and extracts the <code>assets/minecraft/</code> folder. You must own a licensed copy of Minecraft: Java Edition to use these assets.</p>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="ownMinecraft" @bind="_ownsMinecraft" />
+                                        <label class="form-check-label" for="ownMinecraft">
+                                            <strong>I confirm I own a licensed copy of Minecraft: Java Edition</strong> and accept Mojang's 
+                                            <a href="https://www.minecraft.net/en-us/eula" target="_blank">EULA</a>.
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" @onclick="HideResourcePackDialog">
+                                        I'll provide my own files
+                                    </button>
+                                    <button type="button" class="btn btn-primary" @onclick="DownloadResourcePack" disabled="@(!_ownsMinecraft || _downloading)">
+                                        <i class="bi bi-download me-1"></i>Download & Install
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
 
@@ -152,6 +215,12 @@
 
 @code {
     private string activeTab = "network";
+    private bool _showResourcePackDialog;
+    private bool _ownsMinecraft;
+    private bool _downloading;
+    private double _downloadProgress;
+    private bool _resourcePackInstalled;
+    private string? _resourcePackError;
 
     // Using a wrapper or the class directly.
     // For validation, we ensure the properties have the Required attribute.
@@ -160,6 +229,62 @@
     protected override async Task OnInitializedAsync()
     {
         LoadFromSettings(await Settings.LoadAsync(Settings.DefaultPath));
+        _resourcePackInstalled = MojangResourcePackService.IsInstalled;
+    }
+
+    private async Task OnBuildplatePreviewToggled()
+    {
+        if (SettingsModel.LauncherBuildplatePreview && !MojangResourcePackService.IsInstalled)
+        {
+            _resourcePackInstalled = false;
+        }
+        else
+        {
+            _resourcePackInstalled = MojangResourcePackService.IsInstalled;
+        }
+    }
+
+    private void ShowResourcePackDialog()
+    {
+        _showResourcePackDialog = true;
+        _ownsMinecraft = false;
+    }
+
+    private void HideResourcePackDialog()
+    {
+        _showResourcePackDialog = false;
+    }
+
+    private async Task DownloadResourcePack()
+    {
+        _showResourcePackDialog = false;
+        _downloading = true;
+        _downloadProgress = 0;
+        _resourcePackError = null;
+
+        try
+        {
+            var (success, error) = await MojangResourcePackService.DownloadAndExtractAsync(
+                progress => { _downloadProgress = progress; InvokeAsync(StateHasChanged); });
+
+            if (success)
+            {
+                _resourcePackInstalled = true;
+            }
+            else
+            {
+                _resourcePackError = error ?? "Download failed";
+            }
+        }
+        catch (Exception ex)
+        {
+            _resourcePackError = ex.Message;
+        }
+        finally
+        {
+            _downloading = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private void LoadFromSettings(Settings source)
