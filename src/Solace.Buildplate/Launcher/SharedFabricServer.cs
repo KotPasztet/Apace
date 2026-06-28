@@ -22,6 +22,7 @@ public sealed class SharedFabricServer : IDisposable
     private ConsoleProcess? _serverProcess;
     private MinecraftRconClient? _rcon;
     private bool _rconReady;
+    private bool _portReady;
     private readonly Lock _lock = new();
     private bool _started;
     private bool _disposed;
