@@ -80,7 +80,7 @@ public sealed class SharedFabricServer : IDisposable
         sb.AppendLine(CultureInfo.InvariantCulture, $"server-port={ServerPort}");
         sb.AppendLine("gamemode=creative");
         // Flat world for instant startup (no overworld generation)
-        sb.AppendLine("level-type=minecraft\:flat");
+        sb.AppendLine("level-type=minecraft:flat");
         sb.AppendLine("level-name=world");
         sb.AppendLine(CultureInfo.InvariantCulture, $"enable-rcon=true");
         sb.AppendLine(CultureInfo.InvariantCulture, $"rcon.port={RconPort}");
