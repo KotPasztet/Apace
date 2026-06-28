@@ -66,3 +66,36 @@
     background: #2a2a2a !important;
     color: #e0e0e0 !important;
 }
+
+/* Prevent long log lines from expanding the UI */
+.log-terminal {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.log-content {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+.log-line {
+    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+}
+
+/* Fixed width log terminal — never expands UI */
+.log-terminal {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+}

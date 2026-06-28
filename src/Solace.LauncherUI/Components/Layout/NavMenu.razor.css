@@ -1,4 +1,4 @@
-/* Override stale bundle rules — scoped CSS wins over app.css */
+/* Override stale bundle rules */
 
 ::deep .nav-link {
     color: #b0b0b0 !important;
@@ -10,4 +10,21 @@
 
 ::deep a.active {
     color: #8bc34a !important;
+}
+
+/* Sidebar split: main links top, account/logout bottom */
+nav.h-100 {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+}
+
+.nav-main {
+    flex: 1;
+}
+
+.nav-bottom {
+    border-top: 3px solid #3a3a3a;
+    padding-top: 4px;
+    margin-top: 8px;
 }

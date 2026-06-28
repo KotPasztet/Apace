@@ -12,93 +12,101 @@
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
 <div class="nav-scrollable sidebar-nav" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <img class="nav-icon" src="/images/map_icon.png" alt="" aria-hidden="true" /> Home
-            </NavLink>
+    <nav class="nav flex-column h-100">
+        <div class="nav-main">
+            <div class="nav-item">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <img class="nav-icon" src="/images/map_icon.png" alt="" aria-hidden="true" /> Home
+                </NavLink>
+            </div>
+
+            <div class="nav-item">
+                <NavLink class="nav-link" href="ServerStatus">
+                    <img class="nav-icon" src="/images/health_icon.png" alt="" aria-hidden="true" /> Server Status
+                </NavLink>
+            </div>
+
+            <AuthorizeView>
+                <Authorized>
+                    @if (HasPermission(Permissions.EditServerOptions))
+                    {
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Admin/ServerOptions">
+                                <img class="nav-icon" src="/images/settings_icon.png" alt="" aria-hidden="true" /> Server Options
+                            </NavLink>
+                        </div>
+                    }
+
+                    @if (HasPermission(Permissions.ViewPlayers))
+                    {
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Admin/Players">
+                                <img class="nav-icon" src="/images/mob_of_me_icon.png" alt="" aria-hidden="true" /> Manage Players
+                            </NavLink>
+                        </div>
+                    }
+
+                    @if (HasPermission(Permissions.ViewBuildplates)){
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Buildplates">
+                                <img class="nav-icon" src="/images/buildplate_icon.png" alt="" aria-hidden="true" /> Buildplates
+                            </NavLink>
+                        </div>
+                    }
+
+                    @if (HasPermission(Permissions.ViewUsers))
+                    {
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Admin/Users">
+                                <img class="nav-icon" src="/images/sign_icon.png" alt="" aria-hidden="true" /> Manage Users
+                            </NavLink>
+                        </div>
+                    }
+
+                    @if (HasPermission(Permissions.EditRoles))
+                    {
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Admin/Roles">
+                                <img class="nav-icon" src="/images/locked_icon.png" alt="" aria-hidden="true" /> Manage Roles
+                            </NavLink>
+                        </div>
+                    }
+                </Authorized>
+            </AuthorizeView>
         </div>
 
-        <div class="nav-item">
-            <NavLink class="nav-link" href="ServerStatus">
-                <img class="nav-icon" src="/images/health_icon.png" alt="" aria-hidden="true" /> Server Status
-            </NavLink>
+        <div class="nav-bottom">
+            <AuthorizeView>
+                <Authorized>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="Account/Manage">
+                            <img class="nav-icon" src="/images/cookie_item.png" alt="" aria-hidden="true" /> Manage Account
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <form action="Account/Logout" method="post">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                            <button type="submit" class="nav-link">
+                                <img class="nav-icon" src="/images/sign_icon.png" alt="" aria-hidden="true" /> Logout
+                            </button>
+                        </form>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="Account/Register">
+                            <img class="nav-icon" src="/images/journal_icon.png" alt="" aria-hidden="true" /> Register
+                        </NavLink>
+                    </div>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="Account/Login">
+                            <img class="nav-icon" src="/images/paint_item.png" alt="" aria-hidden="true" /> Login
+                        </NavLink>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
-
-        <AuthorizeView>
-            <Authorized>
-                @if (HasPermission(Permissions.EditServerOptions))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="Admin/ServerOptions">
-                            <img class="nav-icon" src="/images/settings_icon.png" alt="" aria-hidden="true" /> Server Options
-                        </NavLink>
-                    </div>
-                }
-
-                @if (HasPermission(Permissions.ViewPlayers))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="Admin/Players">
-                            <img class="nav-icon" src="/images/mob_of_me_icon.png" alt="" aria-hidden="true" /> Manage Players
-                        </NavLink>
-                    </div>
-                }
-
-                @if (HasPermission(Permissions.ViewBuildplates)){
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="Buildplates">
-                            <img class="nav-icon" src="/images/buildplate_icon.png" alt="" aria-hidden="true" /> Buildplates
-                        </NavLink>
-                    </div>
-                }
-
-                @if (HasPermission(Permissions.ViewUsers))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="Admin/Users">
-                            <img class="nav-icon" src="/images/sign_icon.png" alt="" aria-hidden="true" /> Manage Users
-                        </NavLink>
-                    </div>
-                }
-
-                @if (HasPermission(Permissions.EditRoles))
-                {
-                    <div class="nav-item">
-                        <NavLink class="nav-link" href="Admin/Roles">
-                            <img class="nav-icon" src="/images/locked_icon.png" alt="" aria-hidden="true" /> Manage Roles
-                        </NavLink>
-                    </div>
-                }
-
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="Account/Manage">
-                        <img class="nav-icon" src="/images/cookie_item.png" alt="" aria-hidden="true" /> Manage Account
-                    </NavLink>
-                </div>
-                <div class="nav-item">
-                    <form action="Account/Logout" method="post">
-                        <AntiforgeryToken />
-                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link">
-                            <img class="nav-icon" src="/images/sign_icon.png" alt="" aria-hidden="true" /> Logout
-                        </button>
-                    </form>
-                </div>
-            </Authorized>
-            <NotAuthorized>
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <img class="nav-icon" src="/images/journal_icon.png" alt="" aria-hidden="true" /> Register
-                    </NavLink>
-                </div>
-                <div class="nav-item">
-                    <NavLink class="nav-link" href="Account/Login">
-                        <img class="nav-icon" src="/images/paint_item.png" alt="" aria-hidden="true" /> Login
-                    </NavLink>
-                </div>
-            </NotAuthorized>
-        </AuthorizeView>
     </nav>
 </div>
 

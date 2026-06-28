@@ -100,8 +100,8 @@
             <button class="btn btn-warning btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
                     disabled="@(IsButtonDisabled(Permissions.RestartServer) || !ServerManager.CanRestart)"
                     @onclick="() => RestartServer()">
-                <span style="font-size: 1.5rem;">↻</span>
-                <span style="font-size: 0.8rem;">Restart</span>
+                <span style="font-size: 1.5rem; display: inline-block; transform: scaleX(1.75); font-weight: 900; line-height: 1;">↺</span>
+                <span style="font-size: 0.8rem; font-weight: 700;">Restart</span>
             </button>
         </div>
         <div class="col">
