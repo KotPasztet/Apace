@@ -66,4 +66,4 @@ jobs:
             **Commit SHA:** ${{ github.sha }}
             
             ---
-            ![Apace Banner](https://raw.githubusercontent.com/KotPasztet/Apace/main/images/Apace_Banner.png)
+            ![Apace Banner](https://raw.githubusercontent.com/KotPasztet/Apace/main/images/Apace_Branding.png)

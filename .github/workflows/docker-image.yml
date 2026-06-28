@@ -3,7 +3,7 @@ name: Build and publish Docker image
 on:
   push:
     branches:
-      - dev
+      - main
   workflow_dispatch:
 
 permissions:
@@ -11,8 +11,13 @@ permissions:
   packages: write
 
 jobs:
-  docker:
-    runs-on: ubuntu-24.04-arm
+  build:
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+    runs-on: ${{ matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
 
     steps:
       - name: Checkout repository
@@ -31,13 +36,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push arm64 image
+      - name: Build and push ${{ matrix.platform }}
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: ghcr.io/kotpasztet/apace:dev
+          tags: ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/kotpasztet/apace:main \
+            ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-amd64 \
+            ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-arm64
