@@ -52,6 +52,13 @@
             <img class="nav-icon" src="/images/buildplate_icon.png" alt="" /> Import Buildplate(s)
         </a>
     }
+
+    @if (!_previewsEnabled)
+    {
+        <a href="/Admin/ServerOptions" class="btn btn-outline-warning">
+            <i class="bi bi-eye me-1"></i> Enable Previews
+        </a>
+    }
 </div>
 
 <div class="row gap-4">
@@ -255,6 +262,7 @@
     
     // Search and Pagination State
     private string _searchTerm = string.Empty;
+    private bool _previewsEnabled;
     private int _currentPage = 1;
     private int _pageSize = 8;
     private int _totalItems = 0;
@@ -273,6 +281,7 @@
         _user = authState.User;
 
         _resourcePackManager = await ResourcePackManagerSingleton.GetResourcePackManagerAsync();
+        _previewsEnabled = Settings.Instance.LauncherBuildplatePreview is true;
 
         await LoadBuildplates();
     }

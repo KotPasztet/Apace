@@ -411,40 +411,13 @@ nameof(IPv4) });
             if (LauncherBuildplatePreview)
             {
                 string resourcepackDir = Path.GetFullPath(Path.Combine(StaticDataPath ?? "", "resourcepacks", "java", "minecraft"));
-                string ErrorStringTemplate = $"Resource pack folder '{{0}}' does not exist, extract the *1.20.4* vanilla resource pack into '{resourcepackDir}'";
-                if (!Directory.Exists(resourcepackDir))
+                if (!Directory.Exists(resourcepackDir) ||
+                    !Directory.Exists(Path.Combine(resourcepackDir, "blockstates")) ||
+                    !Directory.Exists(Path.Combine(resourcepackDir, "models")) ||
+                    !Directory.Exists(Path.Combine(resourcepackDir, "textures")))
                 {
-                    yield return new ValidationResult(
-                        string.Format(ErrorStringTemplate, resourcepackDir),
-                        new[] { nameof(LauncherBuildplatePreview) }
-                    );
-                }
-
-                string blockstates = Path.Combine(resourcepackDir, "blockstates");
-                if (!Directory.Exists(blockstates))
-                {
-                    yield return new ValidationResult(
-                        string.Format(ErrorStringTemplate, blockstates),
-                        new[] { nameof(LauncherBuildplatePreview) }
-                    );
-                }
-
-                string models = Path.Combine(resourcepackDir, "models");
-                if (!Directory.Exists(models))
-                {
-                    yield return new ValidationResult(
-                        string.Format(ErrorStringTemplate, models),
-                        new[] { nameof(LauncherBuildplatePreview) }
-                    );
-                }
-
-                string textures = Path.Combine(resourcepackDir, "textures");
-                if (!Directory.Exists(textures))
-                {
-                    yield return new ValidationResult(
-                        string.Format(ErrorStringTemplate, textures),
-                        new[] { nameof(LauncherBuildplatePreview) }
-                    );
+                    // Only warn — don't block save. User can download after saving.
+                    Log.Warning("Buildplate preview enabled but resource pack not installed. Use 'Download from Mojang' button.");
                 }
             }
         }

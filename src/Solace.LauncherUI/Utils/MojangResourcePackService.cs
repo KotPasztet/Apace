@@ -47,19 +47,22 @@ public static class MojangResourcePackService
             var totalBytes = response.Content.Headers.ContentLength ?? -1;
             var downloadedBytes = 0L;
 
-            await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var fileStream = File.Create(jarPath);
-            var buffer = new byte[8192];
-
-            while (true)
+            // Download to temp file, then close before opening as ZIP
+            using (var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken))
+            using (var fileStream = File.Create(jarPath))
             {
-                var read = await contentStream.ReadAsync(buffer, cancellationToken);
-                if (read == 0) break;
-                await fileStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-                downloadedBytes += read;
-                if (totalBytes > 0)
-                    progressCallback?.Invoke((double)downloadedBytes / totalBytes);
-            }
+                var buffer = new byte[8192];
+                while (true)
+                {
+                    var read = await contentStream.ReadAsync(buffer, cancellationToken);
+                    if (read == 0) break;
+                    await fileStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                    downloadedBytes += read;
+                    if (totalBytes > 0)
+                        progressCallback?.Invoke((double)downloadedBytes / totalBytes);
+                }
+                await fileStream.FlushAsync(cancellationToken);
+            } // fileStream closed here — ZIP can now open it
 
             progressCallback?.Invoke(1.0);
             Log.Information("Downloaded client.jar ({Size} bytes)", downloadedBytes);
