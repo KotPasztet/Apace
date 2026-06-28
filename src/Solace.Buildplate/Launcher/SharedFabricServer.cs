@@ -87,6 +87,13 @@ public sealed class SharedFabricServer : IDisposable
         var dimsDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace");
         Directory.CreateDirectory(dimsDir);
 
+        // Pre-create datapack directory so dimensions can be registered at runtime
+        var datapackDir = Path.Combine(_serverWorkDir.FullName, "world", "datapacks", "apace");
+        var dimDefDir = Path.Combine(datapackDir, "data", "apace", "dimension");
+        Directory.CreateDirectory(dimDefDir);
+        var mcmeta = "{\"pack\":{\"pack_format\":22,\"description\":\"Apace buildplate dimensions\"}}";
+        await File.WriteAllTextAsync(Path.Combine(datapackDir, "pack.mcmeta"), mcmeta);
+
         // Start server with redirected output for panel logs
         _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute: false, redirect: true, openInNewWindow: false);
         _serverProcess.StandartTextReceived += (_, e) =>
