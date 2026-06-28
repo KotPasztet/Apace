@@ -84,15 +84,25 @@ public sealed class SharedFabricServer : IDisposable
         await File.WriteAllTextAsync(Path.Combine(_serverWorkDir.FullName, "server.properties"), sb.ToString());
         await File.WriteAllTextAsync(Path.Combine(_serverWorkDir.FullName, "eula.txt"), "eula=true");
 
-        var dimsDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace");
-        Directory.CreateDirectory(dimsDir);
-
-        // Pre-create datapack directory so dimensions can be registered at runtime
+        // Pre-create dimension definitions and datapack for buildplate dimensions
+        // Server loads these at startup — no runtime registration needed
         var datapackDir = Path.Combine(_serverWorkDir.FullName, "world", "datapacks", "apace");
         var dimDefDir = Path.Combine(datapackDir, "data", "apace", "dimension");
         Directory.CreateDirectory(dimDefDir);
         var mcmeta = "{\"pack\":{\"pack_format\":22,\"description\":\"Apace buildplate dimensions\"}}";
         await File.WriteAllTextAsync(Path.Combine(datapackDir, "pack.mcmeta"), mcmeta);
+
+        // Pre-create 50 void dimensions (bp_0 through bp_49)
+        var dimJson = "{\"type\":\"minecraft:overworld\",\"generator\":{\"type\":\"minecraft:noise\",\"settings\":{\"bedrock_roof_position\":-10,\"bedrock_floor_position\":-10,\"sea_level\":0,\"disable_mob_generation\":false,\"default_block\":{\"Name\":\"minecraft:air\"},\"default_fluid\":{\"Name\":\"minecraft:air\"},\"noise\":{\"min_y\":-64,\"height\":384,\"size_horizontal\":1,\"size_vertical\":1}}},\"biome_source\":{\"type\":\"minecraft:fixed\",\"biome\":\"minecraft:the_void\"}}";
+        for (int i = 0; i < 50; i++)
+        {
+            var dimDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace", $"bp_{i}");
+            Directory.CreateDirectory(dimDir);
+            Directory.CreateDirectory(Path.Combine(dimDir, "region"));
+            Directory.CreateDirectory(Path.Combine(dimDir, "entities"));
+            await File.WriteAllTextAsync(Path.Combine(dimDefDir, $"bp_{i}.json"), dimJson);
+        }
+        _logger.Information("Pre-created 50 buildplate dimensions");
 
         // Start server with redirected output for panel logs
         _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute: false, redirect: true, openInNewWindow: false);
@@ -159,7 +169,13 @@ public sealed class SharedFabricServer : IDisposable
         string instanceId, string? playerId, string buildplateId,
         byte[] serverData, bool survival, bool night)
     {
-        var dimId = $"bp_{instanceId.Replace("-", "")[..8]}";
+        // Use next available pre-created dimension slot
+        var dimId = $"bp_{_dimensions.Count}";
+        if (_dimensions.Count >= 50)
+        {
+            _logger.Error("All 50 buildplate dimensions are in use!");
+            return null;
+        }
         _logger.Information("CreateBuildplateDimensionAsync: dimId={DimId}, serverData={DataLen} bytes", dimId, serverData?.Length ?? 0);
 
         var dimDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace", dimId);
