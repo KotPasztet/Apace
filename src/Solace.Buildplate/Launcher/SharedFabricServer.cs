@@ -192,7 +192,7 @@ public sealed class SharedFabricServer : IDisposable
     public async Task<bool> SendPlayerToDimensionAsync(string playerId, string dimensionId)
     {
         if (_rcon is null) return false;
-        var result = await _rcon.SendCommandAsync($"tp {playerId} 0 65 0");
+        var result = await _rcon.SendCommandAsync($"tp {playerId} 0 5 0");
         return result is not null;
     }
     public int DimensionCount => _dimensions.Count;

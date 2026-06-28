@@ -1099,12 +1099,13 @@ public sealed class Instance
 
             if (_bridgeProcess is not null)
             {
+                var bridgeProcess = _bridgeProcess;
                 _logger.Information("Waiting for bridge to shut down");
                 await @lock.DisposeAsync();
-                await _bridgeProcess.StopAndWaitAsync();
-                var exitCode = _bridgeProcess.ExitCodeText;
+                await bridgeProcess.StopAndWaitAsync();
+                var exitCode = bridgeProcess.ExitCodeText;
                 @lock = await _subprocessLock.LockAsync(CancellationToken.None);
-                _bridgeProcess.Dispose();
+                bridgeProcess.Dispose();
                 _bridgeProcess = null;
                 _logger.Information($"Bridge has finished with exit code {exitCode}");
             }
