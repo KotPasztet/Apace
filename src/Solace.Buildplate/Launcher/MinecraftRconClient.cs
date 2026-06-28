@@ -58,7 +58,7 @@ public sealed class MinecraftRconClient : IDisposable
         await _stream!.WriteAsync(request);
         var response = await ReadPacketAsync();
         // RCON login: server echoes requestId on success, sends -1 on failure
-        return response is not null && response.RequestId == _requestId - 1;
+        return response is not null && response.RequestId == _requestId;
     }
 
     /// <summary>

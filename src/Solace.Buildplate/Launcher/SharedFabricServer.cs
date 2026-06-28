@@ -172,6 +172,13 @@ public sealed class SharedFabricServer : IDisposable
     }
 
     public void RemoveDimension(string dimensionId) => _dimensions.TryRemove(dimensionId, out _);
+
+    public async Task<bool> SendPlayerToDimensionAsync(string playerId, string dimensionId)
+    {
+        if (_rcon is null) return false;
+        var result = await _rcon.SendCommandAsync($"tp {playerId} 0 65 0");
+        return result is not null;
+    }
     public int DimensionCount => _dimensions.Count;
 
     public async Task StopAsync()

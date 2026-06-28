@@ -408,6 +408,19 @@ public sealed class Instance
                             if (_playerId is not null && !_hostPlayerConnected && playerConnectedRequest.Uuid == _playerId)
                             {
                                 _hostPlayerConnected = true;
+
+                                // Teleport host player to their buildplate dimension
+                                if (_sharedServer is not null && _sharedServer.IsReady)
+                                {
+                                    var dimId = $"bp_{InstanceId.Replace("-", "")[..8]}";
+                                    _ = _sharedServer.SendPlayerToDimensionAsync(_playerId, dimId).ContinueWith(t =>
+                                    {
+                                        if (t.Result)
+                                            _logger.Information("Player {PlayerId} teleported to dimension {DimId}", _playerId, dimId);
+                                        else
+                                            _logger.Warning("Failed to teleport player {PlayerId} to dimension {DimId}", _playerId, dimId);
+                                    });
+                                }
                             }
 
                             return playerConnectedResponse;
