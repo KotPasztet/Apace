@@ -23,6 +23,7 @@ public sealed class SharedFabricServer : IDisposable
     private bool _started;
     private bool _disposed;
     private bool _portReady;
+    private MinecraftRconClient? _rcon;
 
     private readonly ConcurrentDictionary<string, DimensionInfo> _dimensions = new();
 
@@ -129,6 +130,21 @@ public sealed class SharedFabricServer : IDisposable
         }
 
         File.WriteAllText("/tmp/apace-server-ready", DateTime.UtcNow.ToString("O"));
+
+        // Connect RCON for dimension teleport
+        _rcon = new MinecraftRconClient("127.0.0.1", RconPort, "apace", _logger);
+        for (int attempt = 0; attempt < 60; attempt++)
+        {
+            await Task.Delay(1000);
+            if (await _rcon.ConnectAsync())
+            {
+                _logger.Information("RCON connected — dimension teleport available");
+                break;
+            }
+            if (attempt == 0)
+                _logger.Information("Waiting for RCON...");
+        }
+
         _logger.Information("Shared Fabric server ready — accepting buildplate dimensions");
     }
 
