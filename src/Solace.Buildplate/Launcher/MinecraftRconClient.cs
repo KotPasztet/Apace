@@ -57,8 +57,8 @@ public sealed class MinecraftRconClient : IDisposable
         var request = BuildPacket(3, _password);
         await _stream!.WriteAsync(request);
         var response = await ReadPacketAsync();
-        // RCON: requestId -1 means auth failed. Type 2 means success.
-        return response is not null && response.RequestId != -1 && response.RequestId == _requestId - 1;
+        // RCON login: server echoes requestId on success, sends -1 on failure
+        return response is not null && response.RequestId == _requestId - 1;
     }
 
     /// <summary>
