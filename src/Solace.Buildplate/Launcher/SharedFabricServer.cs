@@ -8,7 +8,6 @@ namespace Solace.Buildplate.Launcher;
 
 /// <summary>
 /// One persistent Fabric server hosting all buildplates as dimensions.
-/// Uses RCON to manage dimensions — no Java plugin changes needed.
 /// </summary>
 public sealed class SharedFabricServer : IDisposable
 {
@@ -20,12 +19,10 @@ public sealed class SharedFabricServer : IDisposable
 
     private readonly DirectoryInfo _serverWorkDir;
     private ConsoleProcess? _serverProcess;
-    private MinecraftRconClient? _rcon;
-    private bool _portReady;
-    private bool _rconReady;
     private readonly Lock _lock = new();
     private bool _started;
     private bool _disposed;
+    private bool _portReady;
 
     private readonly ConcurrentDictionary<string, DimensionInfo> _dimensions = new();
 
@@ -33,7 +30,7 @@ public sealed class SharedFabricServer : IDisposable
     public int RconPort { get; }
     public DirectoryInfo ServerWorkDir => _serverWorkDir;
     public bool IsRunning => _serverProcess is not null && !_serverProcess.Process.HasExited;
-    public bool IsReady => _serverProcess is not null && !_serverProcess.Process.HasExited && _portReady;
+    public bool IsReady => _portReady;
 
     public SharedFabricServer(
         string javaCmd,
@@ -63,14 +60,11 @@ public sealed class SharedFabricServer : IDisposable
             _started = true;
         }
 
-        _logger.Information("Setting up shared Fabric server on port {Port} (RCON: {Rcon})", ServerPort, RconPort);
+        _logger.Information("Setting up shared Fabric server on port {Port}", ServerPort);
 
         _serverWorkDir.TryCreate();
-
-        // Copy server files from template
         CopyServerFiles();
 
-        // Create server.properties
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("online-mode=false");
         sb.AppendLine("enforce-secure-profile=false");
@@ -79,7 +73,6 @@ public sealed class SharedFabricServer : IDisposable
         sb.AppendLine("enable-command-block=true");
         sb.AppendLine(CultureInfo.InvariantCulture, $"server-port={ServerPort}");
         sb.AppendLine("gamemode=creative");
-        // Flat world for instant startup (no overworld generation)
         sb.AppendLine("level-type=minecraft:flat");
         sb.AppendLine("level-name=world");
         sb.AppendLine("enable-rcon=true");
@@ -90,11 +83,10 @@ public sealed class SharedFabricServer : IDisposable
         await File.WriteAllTextAsync(Path.Combine(_serverWorkDir.FullName, "server.properties"), sb.ToString());
         await File.WriteAllTextAsync(Path.Combine(_serverWorkDir.FullName, "eula.txt"), "eula=true");
 
-        // Pre-create dimension directories
         var dimsDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace");
         Directory.CreateDirectory(dimsDir);
 
-        // Start server with redirect to capture Minecraft output for panel logs
+        // Start server with redirected output for panel logs
         _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute: false, redirect: true, openInNewWindow: false);
         _serverProcess.StandartTextReceived += (_, e) =>
         {
@@ -108,12 +100,10 @@ public sealed class SharedFabricServer : IDisposable
         };
         await _serverProcess.ExecuteAsync(_serverWorkDir.FullName, ["-jar", _fabricJarName, "-nogui"]);
 
-        // Wait for server to be ready — poll the game port instead of RCON
-        // Fabric takes 1-5 min on first start (world gen), 20-30s on subsequent
+        // Wait for game port to be ready
         _logger.Information("Waiting for Fabric server on port {Port}...", ServerPort);
-
         bool portReady = false;
-        for (int attempt = 0; attempt < 150; attempt++) // up to 5 minutes
+        for (int attempt = 0; attempt < 150; attempt++)
         {
             await Task.Delay(2000);
             if (_serverProcess.Process.HasExited)
@@ -128,71 +118,34 @@ public sealed class SharedFabricServer : IDisposable
                 portReady = true;
                 break;
             }
-            catch
-            {
-                // Server not listening yet
-            }
+            catch { }
         }
 
         _portReady = portReady;
-
-        // Signal readiness to ServerManager via file
-        if (_portReady)
-        {
-            File.WriteAllText("/tmp/apace-server-ready", DateTime.UtcNow.ToString("O"));
-        }
-
-        if (!portReady)
+        if (!_portReady)
         {
             _logger.Error("Fabric server port {Port} not reachable after 5 minutes", ServerPort);
             return;
         }
 
-        // Now try RCON for dimension management (takes longer — starts after Done)
-        _rcon = new MinecraftRconClient("127.0.0.1", RconPort, "apace", _logger);
-        bool rconLoggedFailure = false;
-        for (int attempt = 0; attempt < 60; attempt++)
-        {
-            await Task.Delay(1000);
-            if (await _rcon.ConnectAsync())
-            {
-                _rconReady = true;
-                _logger.Information("RCON connected — full dimension management available");
-                break;
-            }
-            if (!rconLoggedFailure)
-            {
-                _logger.Information("Waiting for RCON (server still starting)...");
-                rconLoggedFailure = true;
-            }
-        }
-
-        if (!_rconReady)
-            _logger.Warning("RCON not available — dimension teleport will use files only");
-        else
-            _logger.Information("RCON connected — full dimension management available");
-
+        File.WriteAllText("/tmp/apace-server-ready", DateTime.UtcNow.ToString("O"));
         _logger.Information("Shared Fabric server ready — accepting buildplate dimensions");
     }
 
-    /// <summary>
-    /// Register a new buildplate dimension. Sets up world files and notifies server via RCON.
-    /// </summary>
     public async Task<string?> CreateBuildplateDimensionAsync(
         string instanceId, string? playerId, string buildplateId,
         byte[] serverData, bool survival, bool night)
     {
         var dimId = $"bp_{instanceId.Replace("-", "")[..8]}";
         _logger.Information("CreateBuildplateDimensionAsync: dimId={DimId}, serverData={DataLen} bytes", dimId, serverData?.Length ?? 0);
-        var dimDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace", dimId);
 
+        var dimDir = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace", dimId);
         try
         {
             Directory.CreateDirectory(dimDir);
             Directory.CreateDirectory(Path.Combine(dimDir, "region"));
             Directory.CreateDirectory(Path.Combine(dimDir, "entities"));
 
-            // Extract buildplate world data into dimension directory
             using (var ms = new MemoryStream(serverData))
             using (var zip = new System.IO.Compression.ZipArchive(ms))
             {
@@ -200,17 +153,15 @@ public sealed class SharedFabricServer : IDisposable
                 {
                     var destPath = Path.Combine(dimDir, entry.FullName);
                     var destParent = Path.GetDirectoryName(destPath);
-                    if (destParent is not null)
-                        Directory.CreateDirectory(destParent);
-                    using (var entryStream = entry.Open())
-                    using (var fileStream = File.Create(destPath))
-                        entryStream.CopyTo(fileStream);
+                    if (destParent is not null) Directory.CreateDirectory(destParent);
+                    using var entryStream = entry.Open();
+                    using var fileStream = File.Create(destPath);
+                    entryStream.CopyTo(fileStream);
                 }
             }
 
             _dimensions[dimId] = new DimensionInfo(instanceId, buildplateId, playerId, dimId);
             _logger.Information("Buildplate dimension {DimId} created for instance {InstanceId}", dimId, instanceId);
-
             return dimId;
         }
         catch (Exception ex)
@@ -220,27 +171,12 @@ public sealed class SharedFabricServer : IDisposable
         }
     }
 
-    /// <summary>
-    /// Teleport a player to their buildplate dimension.
-    /// </summary>
-    public async Task<bool> SendPlayerToDimensionAsync(string playerName, string dimensionId)
-    {
-        if (_rcon is null) return false;
-        var result = await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run tp {playerName} 0.5 65 0.5");
-        return result is not null;
-    }
-
-    public void RemoveDimension(string dimensionId)
-    {
-        _dimensions.TryRemove(dimensionId, out _);
-    }
-
+    public void RemoveDimension(string dimensionId) => _dimensions.TryRemove(dimensionId, out _);
     public int DimensionCount => _dimensions.Count;
 
     public async Task StopAsync()
     {
         lock (_lock) { if (_disposed) return; _disposed = true; }
-        _rcon?.Dispose();
         if (_serverProcess is not null && !_serverProcess.Process.HasExited)
         {
             await _serverProcess.StopAndWaitAsync();
@@ -249,20 +185,15 @@ public sealed class SharedFabricServer : IDisposable
         }
     }
 
-    public void Dispose() => _rcon?.Dispose();
+    public void Dispose() => _serverProcess?.Dispose();
 
     private void CopyServerFiles()
     {
-        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, _fabricJarName),
-            Path.Combine(_serverWorkDir.FullName, _fabricJarName), true);
-        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, ".fabric"),
-            Path.Combine(_serverWorkDir.FullName, ".fabric"));
-        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, "libraries"),
-            Path.Combine(_serverWorkDir.FullName, "libraries"));
-        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, "versions"),
-            Path.Combine(_serverWorkDir.FullName, "versions"));
-        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, "mods"),
-            Path.Combine(_serverWorkDir.FullName, "mods"));
+        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, _fabricJarName), Path.Combine(_serverWorkDir.FullName, _fabricJarName), true);
+        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, ".fabric"), Path.Combine(_serverWorkDir.FullName, ".fabric"));
+        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, "libraries"), Path.Combine(_serverWorkDir.FullName, "libraries"));
+        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, "versions"), Path.Combine(_serverWorkDir.FullName, "versions"));
+        CopyIfExists(Path.Combine(_serverTemplateDir.FullName, "mods"), Path.Combine(_serverWorkDir.FullName, "mods"));
     }
 
     private static void CopyIfExists(string src, string dst, bool isFile = false)
