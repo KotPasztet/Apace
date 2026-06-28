@@ -21,7 +21,7 @@ public sealed class SharedFabricServer : IDisposable
     private readonly DirectoryInfo _serverWorkDir;
     private ConsoleProcess? _serverProcess;
     private MinecraftRconClient? _rcon;
-    private bool _rconReady;
+    private bool _portReady;
     private bool _portReady;
     private readonly Lock _lock = new();
     private bool _started;
@@ -33,7 +33,7 @@ public sealed class SharedFabricServer : IDisposable
     public int RconPort { get; }
     public DirectoryInfo ServerWorkDir => _serverWorkDir;
     public bool IsRunning => _serverProcess is not null && !_serverProcess.Process.HasExited;
-    public bool IsReady => _serverProcess is not null && !_serverProcess.Process.HasExited && _rconReady;
+    public bool IsReady => _serverProcess is not null && !_serverProcess.Process.HasExited && _portReady;
 
     public SharedFabricServer(
         string javaCmd,
@@ -142,14 +142,15 @@ public sealed class SharedFabricServer : IDisposable
             return;
         }
 
-        // Now try RCON for dimension management (non-critical)
+        // Now try RCON for dimension management (takes longer — starts after Done)
         _rcon = new MinecraftRconClient("127.0.0.1", RconPort, "apace", _logger);
-        for (int attempt = 0; attempt < 15; attempt++)
+        for (int attempt = 0; attempt < 60; attempt++)
         {
             await Task.Delay(1000);
             if (await _rcon.ConnectAsync())
             {
                 _rconReady = true;
+                _logger.Information("RCON connected — full dimension management available");
                 break;
             }
         }
