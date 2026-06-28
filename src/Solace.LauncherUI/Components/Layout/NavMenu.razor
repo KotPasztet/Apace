@@ -1,27 +1,27 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
 @using Solace.LauncherUI.Utils
 @implements IDisposable
 
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthStateProvider
 
-<div class="top-row navbar navbar-dark">
+<div class="top-row navbar-dark sidebar-brand">
     <a href="/"><img class="navbar-brand" src="/banner.png" alt="Apace" /></a>
 </div>
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable sidebar-nav" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
+        <div class="nav-item">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <img class="nav-icon" src="/images/map_icon.png" alt="" aria-hidden="true" /> Home
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
+        <div class="nav-item">
             <NavLink class="nav-link" href="ServerStatus">
-                <span class="bi bi-cloud-check" aria-hidden="true"></span> Server Status
+                <img class="nav-icon" src="/images/health_icon.png" alt="" aria-hidden="true" /> Server Status
             </NavLink>
         </div>
 
@@ -29,72 +29,72 @@
             <Authorized>
                 @if (HasPermission(Permissions.EditServerOptions))
                 {
-                    <div class="nav-item px-3">
+                    <div class="nav-item">
                         <NavLink class="nav-link" href="Admin/ServerOptions">
-                            <span class="bi bi-gear" aria-hidden="true"></span> Server Options
+                            <img class="nav-icon" src="/images/settings_icon.png" alt="" aria-hidden="true" /> Server Options
                         </NavLink>
                     </div>
                 }
 
                 @if (HasPermission(Permissions.ViewPlayers))
                 {
-                    <div class="nav-item px-3">
+                    <div class="nav-item">
                         <NavLink class="nav-link" href="Admin/Players">
-                            <span class="bi bi-person-lines-fill" aria-hidden="true"></span> Manage Players
+                            <img class="nav-icon" src="/images/mob_of_me_icon.png" alt="" aria-hidden="true" /> Manage Players
                         </NavLink>
                     </div>
                 }
 
                 @if (HasPermission(Permissions.ViewBuildplates)){
-                    <div class="nav-item px-3">
+                    <div class="nav-item">
                         <NavLink class="nav-link" href="Buildplates">
-                            <span class="bi bi-boxes" aria-hidden="true"></span> Buildplates
+                            <img class="nav-icon" src="/images/buildplate_icon.png" alt="" aria-hidden="true" /> Buildplates
                         </NavLink>
                     </div>
                 }
 
                 @if (HasPermission(Permissions.ViewUsers))
                 {
-                    <div class="nav-item px-3">
+                    <div class="nav-item">
                         <NavLink class="nav-link" href="Admin/Users">
-                            <span class="bi bi-people-fill" aria-hidden="true"></span> Manage Users
+                            <img class="nav-icon" src="/images/sign_icon.png" alt="" aria-hidden="true" /> Manage Users
                         </NavLink>
                     </div>
                 }
 
                 @if (HasPermission(Permissions.EditRoles))
                 {
-                    <div class="nav-item px-3">
+                    <div class="nav-item">
                         <NavLink class="nav-link" href="Admin/Roles">
-                            <span class="bi bi-person-lock" aria-hidden="true"></span> Manage Roles
+                            <img class="nav-icon" src="/images/locked_icon.png" alt="" aria-hidden="true" /> Manage Roles
                         </NavLink>
                     </div>
                 }
 
-                <div class="nav-item px-3">
+                <div class="nav-item">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <img class="nav-icon" src="/images/cookie_item.png" alt="" aria-hidden="true" /> @context.User.Identity?.Name
                     </NavLink>
                 </div>
-                <div class="nav-item px-3">
+                <div class="nav-item">
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
                         <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                            <img class="nav-icon" src="/images/sign_icon.png" alt="" aria-hidden="true" /> Logout
                         </button>
                     </form>
                 </div>
             </Authorized>
             <NotAuthorized>
-                <div class="nav-item px-3">
+                <div class="nav-item">
                     <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                        <img class="nav-icon" src="/images/journal_icon.png" alt="" aria-hidden="true" /> Register
                     </NavLink>
                 </div>
-                <div class="nav-item px-3">
+                <div class="nav-item">
                     <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                        <img class="nav-icon" src="/images/paint_item.png" alt="" aria-hidden="true" /> Login
                     </NavLink>
                 </div>
             </NotAuthorized>

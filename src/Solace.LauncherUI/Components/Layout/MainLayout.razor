@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
 <div class="page">
     <div class="sidebar">
@@ -6,15 +6,15 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <button class="dark-mode-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
-                <span class="dmb-moon">🌙</span>
-                <span class="dmb-sun">☀️</span>
+        <div class="topbar">
+            <button class="theme-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
+                <span class="dmb-moon">☀ LIGHT</span>
+                <span class="dmb-sun">🌙 DARK</span>
             </button>
-            <a href="/About">About</a>
+            <a href="/About" class="topbar-link">About</a>
         </div>
 
-        <article class="content px-4">
+        <article class="content">
             @Body
         </article>
     </main>

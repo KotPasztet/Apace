@@ -30,172 +30,169 @@
 
 <PageTitle>Buildplates - Apace</PageTitle>
 
-<div class="container-fluid mt-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-        <div class="d-flex align-items-center">
-            <h2 class="mb-0">Buildplates</h2>
-            <span class="badge bg-secondary rounded-pill ms-2">
-                @(_totalBuildplateCount?.ToString() ?? "?")
-            </span>
-        </div>
-   
-        <div class="input-group" style="max-width: 400px;">
-            <input type="text" class="form-control" placeholder="Search by name..." @bind="_searchTerm"
-                   @bind:event="oninput" @onkeyup="HandleSearchKeyPress" />
-            <button class="btn btn-outline-secondary" type="button" @onclick="DoSearch">
-                <i class="bi bi-search"></i> Search
-            </button>
-        </div>
-
-        @if (HasPermission(Permissions.ManageBuildplates))
-        {
-            <a href="/Admin/ImportBuildplate" class="btn btn-primary fw-bold">
-                <i class="bi bi-plus-lg"></i> Import Buildplate(s)
-            </a>
-        }
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div class="d-flex align-items-center">
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">Buildplates</div>
+        <span class="badge bg-secondary-subtle ms-2">
+            @(_totalBuildplateCount?.ToString() ?? "?")
+        </span>
     </div>
 
-    <div class="row g-4">
-        @if (_buildplates == null || !_buildplates.Any())
-        {
-            <div class="col-12">
-                <div class="alert alert-info">
-                    @(string.IsNullOrWhiteSpace(_searchTerm)
-                        ? "No buildplates found. Try importing one!"
-                        : "No buildplates match your search.")
-                </div>
-            </div>
-        }
-        else
-        {
-            @foreach (var bp in _buildplates)
-            {
-                float scaleVal = 1f / bp.BlocksPerMeter;
-                string displayScale = scaleVal >= 1
-                ? $"1:{scaleVal:0.##}"
-                : $"{(1 / scaleVal):0.##}:1";
-
-                <div class="col-12 col-md-6 col-lg-4 col-xl-3" @key="bp.Id">
-                    <div class="card h-100 shadow-sm @(bp.IsBusy ? "opacity-50" : "")">
-                        <BuildplatePreview BuildplateId="@bp.Id" IsTemplate=true Size="@bp.Size"
-                                           BlocksPerMeter="@bp.BlocksPerMeter" IsNight="@bp.IsNight"
-                                           ResourcePackManager="@_resourcePackManager" />
-                        
-                        <div class="card-body">
-                            @if (!string.IsNullOrEmpty(bp.ErrorMessage))
-                            {
-                                <div class="alert alert-danger alert-dismissible fade show small py-2" role="alert">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    @bp.ErrorMessage
-                                    <button type="button" class="btn-close small" style="padding: 0.75rem"
-                                            @onclick="() => bp.ErrorMessage = null"></button>
-                                </div>
-                            }
-                            <div class="mb-3">
-                                <label class="form-label visually-hidden">Buildplate Name</label>
-                                <input type="text" minlength="1" maxlength="100" class="form-control fw-bold border-0 bg-light"
-                                       @bind="bp.Name" @bind:event="oninput"
-                                       disabled="@(!HasPermission(Permissions.ManageBuildplates) || bp.IsBusy)" />
-                            </div>
-
-                            <div class="row text-muted small">
-                                <div class="col-6 mb-2">
-                                    <span class="d-block fw-bold text-uppercase">Size</span>
-                                    <span>@(bp.Size)x@(bp.Size)</span>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <span class="d-block fw-bold text-uppercase">Blocks per meter</span>
-                                    <input type="number" min="1" max="100"
-                                           class="form-control form-control-sm border-0 bg-light" @bind="bp.BlocksPerMeter"
-                                           @bind:event="oninput"
-                                           disabled="@(!HasPermission(Permissions.ManageBuildplates) || bp.IsBusy)" />
-                                </div>
-                                <div class="col-12">
-                                    <span class="d-block fw-bold text-uppercase">Offset</span>
-                                    <span>@bp.Offset</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        @if (HasPermission(Permissions.ManageBuildplates))
-                        {
-                            <div class="card-footer bg-transparent border-top-0 pb-3 d-flex flex-column gap-2">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => RequestDelete(bp)"
-                                            disabled="@bp.IsBusy">
-                                        Delete
-                                    </button>
-
-                                    @if (bp.IsDirty || bp.IsSaving)
-                                    {
-                                        <button class="btn btn-success btn-sm fw-bold" @onclick="() => SaveBuildplate(bp)"
-                                                disabled="@bp.IsBusy">
-                                            @if (bp.IsSaving)
-                                            {
-                                                <span class="spinner-border spinner-border-sm me-1"></span>
-                                            }
-                                            Save
-                                        </button>
-                                    }
-                                </div>
-                            
-                                <button class="btn btn-outline-primary btn-sm w-100 fw-bold" @onclick="() => RegeneratePreview(bp)"
-                                        disabled="@bp.IsBusy">
-                                    @if (bp.IsRegeneratingPreview)
-                                    {
-                                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                        <span>Regenerating...</span>
-                                    }
-                                    else
-                                    {
-                                        <i class="bi bi-gear-fill me-1"></i>
-                                        <span>Regenerate In-Game Preview</span>
-                                    }
-                                </button>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-        }
+    <div class="input-group" style="max-width: 400px;">
+        <input type="text" class="form-control" placeholder="Search by name..." @bind="_searchTerm"
+               @bind:event="oninput" @onkeyup="HandleSearchKeyPress" />
+        <button class="btn btn-outline" type="button" @onclick="DoSearch">
+            ⌕ Search
+        </button>
     </div>
 
-    @if (TotalPages > 1)
+    @if (HasPermission(Permissions.ManageBuildplates))
     {
-        <div class="d-flex justify-content-center mt-5 mb-3">
-            <nav aria-label="Buildplate pagination">
-                <ul class="pagination">
-                    <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
-                        <button class="page-link" @onclick="PrevPage" tabindex="-1">Previous</button>
-                    </li>
-                    <li class="page-item disabled">
-                        <span class="page-link text-dark">Page @_currentPage of @TotalPages</span>
-                    </li>
-                    <li class="page-item @(_currentPage == TotalPages ? "disabled" : "")">
-                        <button class="page-link" @onclick="NextPage">Next</button>
-                    </li>
-                </ul>
-            </nav>
-        </div>
+        <a href="/Admin/ImportBuildplate" class="btn btn-primary">
+            <img class="nav-icon" src="/images/buildplate_icon.png" alt="" /> Import Buildplate(s)
+        </a>
     }
 </div>
 
+<div class="row gap-4">
+    @if (_buildplates == null || !_buildplates.Any())
+    {
+        <div class="col-12">
+            <div class="alert alert-info">
+                @(string.IsNullOrWhiteSpace(_searchTerm)
+                    ? "No buildplates found. Try importing one!"
+                    : "No buildplates match your search.")
+            </div>
+        </div>
+    }
+    else
+    {
+        @foreach (var bp in _buildplates)
+        {
+            float scaleVal = 1f / bp.BlocksPerMeter;
+            string displayScale = scaleVal >= 1
+            ? $"1:{scaleVal:0.##}"
+            : $"{(1 / scaleVal):0.##}:1";
+
+            <div class="col" style="min-width: 280px; max-width: 340px;" @key="bp.Id">
+                <div class="card h-100 @(bp.IsBusy ? "opacity-50" : "")">
+                    <BuildplatePreview BuildplateId="@bp.Id" IsTemplate=true Size="@bp.Size"
+                                       BlocksPerMeter="@bp.BlocksPerMeter" IsNight="@bp.IsNight"
+                                       ResourcePackManager="@_resourcePackManager" />
+
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(bp.ErrorMessage))
+                        {
+                            <div class="alert alert-danger py-2 small">
+                                ⚠ @bp.ErrorMessage
+                                <button type="button" class="btn-close" style="float: right;"
+                                        @onclick="() => bp.ErrorMessage = null"></button>
+                            </div>
+                        }
+                        <div class="mb-3">
+                            <label class="form-label visually-hidden">Buildplate Name</label>
+                            <input type="text" minlength="1" maxlength="100" class="form-control fw-bold"
+                                   @bind="bp.Name" @bind:event="oninput"
+                                   disabled="@(!HasPermission(Permissions.ManageBuildplates) || bp.IsBusy)" />
+                        </div>
+
+                        <div class="row text-muted small">
+                            <div class="col-6 mb-2">
+                                <span class="d-block fw-bold text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Size</span>
+                                <span>@(bp.Size)x@(bp.Size)</span>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <span class="d-block fw-bold text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Blocks per meter</span>
+                                <input type="number" min="1" max="100"
+                                       class="form-control" style="padding: 4px 8px;" @bind="bp.BlocksPerMeter"
+                                       @bind:event="oninput"
+                                       disabled="@(!HasPermission(Permissions.ManageBuildplates) || bp.IsBusy)" />
+                            </div>
+                            <div class="col-12">
+                                <span class="d-block fw-bold text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Offset</span>
+                                <span>@bp.Offset</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (HasPermission(Permissions.ManageBuildplates))
+                    {
+                        <div class="card-footer d-flex flex-column gap-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button class="btn btn-outline-danger btn-sm" @onclick="() => RequestDelete(bp)"
+                                        disabled="@bp.IsBusy">
+                                    Delete
+                                </button>
+
+                                @if (bp.IsDirty || bp.IsSaving)
+                                {
+                                    <button class="btn btn-success btn-sm" @onclick="() => SaveBuildplate(bp)"
+                                            disabled="@bp.IsBusy">
+                                        @if (bp.IsSaving)
+                                        {
+                                            <span class="spinner-border spinner-border-sm"></span>
+                                        }
+                                        Save
+                                    </button>
+                                }
+                            </div>
+
+                            <button class="btn btn-outline btn-sm w-100" @onclick="() => RegeneratePreview(bp)"
+                                    disabled="@bp.IsBusy">
+                                @if (bp.IsRegeneratingPreview)
+                                {
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                    <span>Regenerating...</span>
+                                }
+                                else
+                                {
+                                    <img class="nav-icon" src="/images/settings_icon.png" alt="" />
+                                    <span>Regenerate In-Game Preview</span>
+                                }
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@if (TotalPages > 1)
+{
+    <div class="d-flex justify-content-center mt-5 mb-3">
+        <nav aria-label="Buildplate pagination">
+            <ul class="pagination mb-0" style="display: flex; gap: 6px; list-style: none;">
+                <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="PrevPage" tabindex="-1">Previous</button>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Page @_currentPage of @TotalPages</span>
+                </li>
+                <li class="page-item @(_currentPage == TotalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="NextPage">Next</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+}
+
 @if (_showDeleteModal)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); position: fixed; inset: 0; z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px; margin: 10vh auto;">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Confirm Deletion</h5>
                     <button type="button" class="btn-close" @onclick="CancelDelete"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="padding: 20px;">
                     <p>Are you sure you want to delete <strong>@_bpToDelete?.Name</strong>?</p>
-                
-                    <div class="form-check form-switch mt-3">
-                        <input class="form-check-input" type="checkbox" id="removeTemplateCheckbox"
+
+                    <div class="form-switch mt-3">
+                        <input type="checkbox" id="removeTemplateCheckbox"
                                @bind="_removeTemplateFromPlayers" />
-                        <label class="form-check-label text-danger" for="removeTemplateToggle">
+                        <label style="color: #e57373;" for="removeTemplateToggle">
                             Also remove this template from all players inventories
                         </label>
                     </div>
@@ -207,7 +204,7 @@
                             style="min-width: 100px;">
                         @if (_isDeleting)
                         {
-                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span class="spinner-border spinner-border-sm"></span>
                             <span>Deleting...</span>
                         }
                         else
@@ -223,16 +220,16 @@
 
 @if (!string.IsNullOrEmpty(_deleteErrorMessage))
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); z-index: 1060;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-danger shadow-lg">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); position: fixed; inset: 0; z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px; margin: 10vh auto;">
+            <div class="modal-content" style="border-color: #6a2a2a;">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="bi bi-exclamation-octagon-fill me-2"></i>Deletion Failed</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseErrorModal"></button>
+                    <h5 class="modal-title">⚠ Deletion Failed</h5>
+                    <button type="button" class="btn-close" @onclick="CloseErrorModal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="padding: 20px;">
                     <p>An error occurred while trying to delete <strong>@_bpToDelete?.Name</strong>:</p>
-                    <div class="alert alert-light border small text-break">
+                    <div class="alert alert-light small" style="word-break: break-word;">
                         @_deleteErrorMessage
                     </div>
                     <p class="mb-0">Please try again or report the issue if it persists.</p>
@@ -240,7 +237,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CloseErrorModal">Close</button>
                     <button type="button" class="btn btn-danger" @onclick="ConfirmDelete">
-                        <i class="bi bi-arrow-clockwise me-1"></i> Retry
+                        ↻ Retry
                     </button>
                 </div>
             </div>
