@@ -161,11 +161,11 @@
 
     private string _activeTab = "Launcher";
     private ClaimsPrincipal? _user;
-
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
     private bool _eulaPending;
     private Timer? _eulaCheckTimer;
+    private Timer? _statusRefreshTimer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -185,6 +185,13 @@
                 await InvokeAsync(StateHasChanged);
             }
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+
+        // Refresh component statuses every 3s (BuildplateLauncher Starting → Online)
+        _statusRefreshTimer = new Timer(async _ =>
+        {
+            ServerManager.RefreshComponentStatuses();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -206,6 +213,7 @@
         LogService.OnLogReceived -= HandleUpdate;
         ServerManager.OnStatusChanged -= HandleUpdate;
         _eulaCheckTimer?.Dispose();
+        _statusRefreshTimer?.Dispose();
     }
 
     private async Task StartServer()
