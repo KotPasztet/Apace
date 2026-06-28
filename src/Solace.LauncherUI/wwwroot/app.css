@@ -1800,3 +1800,9 @@ html.dark .drop-zone.hovering {
         grid-template-columns: 1fr;
     }
 }
+
+/* Hide any .bi-*-nav-menu pseudo-icons from the old Blazor template
+   that have no actual icon definition — prevents gray square artifacts */
+[class*="-nav-menu"] {
+    display: none !important;
+}
