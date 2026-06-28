@@ -150,6 +150,7 @@ public sealed class SharedFabricServer : IDisposable
 
         // Now try RCON for dimension management (takes longer — starts after Done)
         _rcon = new MinecraftRconClient("127.0.0.1", RconPort, "apace", _logger);
+        bool rconLoggedFailure = false;
         for (int attempt = 0; attempt < 60; attempt++)
         {
             await Task.Delay(1000);
@@ -158,6 +159,11 @@ public sealed class SharedFabricServer : IDisposable
                 _rconReady = true;
                 _logger.Information("RCON connected — full dimension management available");
                 break;
+            }
+            if (!rconLoggedFailure)
+            {
+                _logger.Information("Waiting for RCON (server still starting)...");
+                rconLoggedFailure = true;
             }
         }
 

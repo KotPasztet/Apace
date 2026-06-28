@@ -38,7 +38,7 @@ public sealed class MinecraftRconClient : IDisposable
             // RCON handshake: type 3 = login
             if (!await AuthenticateAsync())
             {
-                _logger.Error("RCON authentication failed");
+                _logger.Debug("RCON authentication failed — server may still be starting");
                 return false;
             }
 
@@ -47,7 +47,7 @@ public sealed class MinecraftRconClient : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "RCON connection failed");
+            _logger.Debug(ex, "RCON not ready");
             return false;
         }
     }
@@ -57,7 +57,8 @@ public sealed class MinecraftRconClient : IDisposable
         var request = BuildPacket(3, _password);
         await _stream!.WriteAsync(request);
         var response = await ReadPacketAsync();
-        return response is not null && response.RequestId == _requestId - 1;
+        // RCON: requestId -1 means auth failed. Type 2 means success.
+        return response is not null && response.RequestId != -1 && response.RequestId == _requestId - 1;
     }
 
     /// <summary>
