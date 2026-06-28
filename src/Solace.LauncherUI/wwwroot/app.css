@@ -620,7 +620,7 @@ html.dark .dmb-sun { display: inline; }
     align-items: center;
     gap: 10px;
     padding: 12px 20px;
-    color: #b0b0b0;
+    color: #b0b0b0 !important;
     text-decoration: none;
     font-size: 0.82rem;
     font-weight: 700;
@@ -1478,14 +1478,14 @@ fieldset:disabled {
 }
 
 .log-content {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 0.78rem;
+    font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.65rem;
     line-height: 1.6;
     letter-spacing: normal;
 }
 
 .log-line {
-    color: #d0d0d0;
+    color: #e0e0e0;
     margin-bottom: 2px;
     display: block;
     white-space: pre-wrap;
@@ -1494,6 +1494,7 @@ fieldset:disabled {
 
 .log-time { color: #666; margin-right: 8px; }
 .log-level { font-weight: bold; margin-right: 4px; white-space: nowrap; }
+.log-msg { color: #e0e0e0; }
 
 .log-vrb, .log-VRB { color: #888; }
 .log-dbg, .log-DBG { color: #64b5f6; }

@@ -1,4 +1,38 @@
-/* Visuals for status dots / log terminal now live in
-   wwwroot/app.css (Minecraft theme, .status-dot / .log-terminal).
-   Left empty here intentionally so scoped CSS doesn't override
-   the global theme. */
+/* Override stale bundle rules — scoped CSS wins over app.css */
+
+.log-content {
+    font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    font-size: 0.65rem !important;
+    line-height: 1.6 !important;
+    letter-spacing: normal !important;
+}
+
+.log-line {
+    color: #e0e0e0 !important;
+    margin-bottom: 2px !important;
+    display: block !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: break-word !important;
+}
+
+.log-time {
+    color: #666 !important;
+    margin-right: 8px !important;
+}
+
+.log-level {
+    font-weight: 700 !important;
+    margin-right: 4px !important;
+    white-space: nowrap !important;
+}
+
+.log-msg {
+    color: #e0e0e0 !important;
+}
+
+.log-vrb { color: #888 !important; }
+.log-dbg { color: #64b5f6 !important; }
+.log-inf { color: #4caf50 !important; }
+.log-wrn { color: #ffb300 !important; }
+.log-err { color: #f44336 !important; }
+.log-ftl { color: #fff !important; background: #c62828 !important; padding: 0 4px !important; }

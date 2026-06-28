@@ -1,3 +1,13 @@
-/* Visuals now live in wwwroot/app.css (Minecraft theme).
-   Kept empty to avoid scoped-CSS rules (higher specificity)
-   overriding the global theme. */
+/* Override stale bundle rules — scoped CSS wins over app.css */
+
+::deep .nav-link {
+    color: #b0b0b0 !important;
+}
+
+::deep .nav-link:hover {
+    color: #8bc34a !important;
+}
+
+::deep a.active {
+    color: #8bc34a !important;
+}
