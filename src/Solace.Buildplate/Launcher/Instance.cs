@@ -64,6 +64,7 @@ public sealed class Instance
     private readonly SemaphoreSlim _threadStartedSemaphore = new SemaphoreSlim(1, 1);
     private readonly ILogger _logger;
     private readonly SharedFabricServer? _sharedServer;
+    private string? _dimensionId; // Set when dimension is created on shared server
 
     private Publisher? _publisher;
     private RequestSender? _requestSender;
@@ -241,6 +242,7 @@ public sealed class Instance
                     _logger.Information("Dimension result: dimId={DimId}", dimId ?? "NULL");
                     if (dimId is not null)
                     {
+                        _dimensionId = dimId;
                         _logger.Information("Buildplate dimension {DimId} ready, starting bridge", dimId);
                         await StartBridgeProcessAsync();
                         SendEventBusInstanceStatusNotification("ready");
@@ -257,7 +259,8 @@ public sealed class Instance
                             _bridgeProcess.Dispose();
                             _bridgeProcess = null;
                             _shuttingDown = true;
-                            _sharedServer.RemoveDimension(dimId);
+                            if (_dimensionId is not null)
+                                _sharedServer.RemoveDimension(_dimensionId);
                         }
                     }
                 }
@@ -412,13 +415,13 @@ public sealed class Instance
                                 // Teleport host player to their buildplate dimension
                                 if (_sharedServer is not null && _sharedServer.IsReady)
                                 {
-                                    var dimId = $"bp_{InstanceId.Replace("-", "")[..8]}";
-                                    _ = _sharedServer.SendPlayerToDimensionAsync(_playerId, dimId).ContinueWith(t =>
+                                    if (_dimensionId is not null)
+                                        _ = _sharedServer.SendPlayerToDimensionAsync(_playerId, _dimensionId).ContinueWith(t =>
                                     {
                                         if (t.Result)
-                                            _logger.Information("Player {PlayerId} teleported to dimension {DimId}", _playerId, dimId);
+                                            _logger.Information("Player {PlayerId} teleported to dimension {DimId}", _playerId, _dimensionId);
                                         else
-                                            _logger.Warning("Failed to teleport player {PlayerId} to dimension {DimId}", _playerId, dimId);
+                                            _logger.Warning("Failed to teleport player {PlayerId} to dimension {DimId}", _playerId, _dimensionId);
                                     });
                                 }
                             }
