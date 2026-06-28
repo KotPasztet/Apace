@@ -10,61 +10,32 @@ The easiest way to run Apace. Works on Windows, Linux, and macOS.
 - **macOS:** [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/)
 - **Linux:** `curl -fsSL https://get.docker.com | sh` (then `sudo usermod -aG docker $USER`, log out and back in)
 
-### 2. Create a folder for Apace
-
-```bash
-mkdir apace && cd apace
-```
-
-### 3. Download the compose file
+### 2. Run the auto-installer
 
 ```bash
 # Linux/macOS
-curl -O https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml -OutFile docker-compose.yml
-```
-
-### 4. Create persistent directories
-
-```bash
-# Linux/macOS
-sudo mkdir -p /opt/apace-persistent/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs}
-echo '{}' | sudo tee /opt/apace-persistent/config.json > /dev/null
+curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
 
 # Windows (PowerShell as Administrator)
-New-Item -ItemType Directory -Force -Path C:\apace-persistent\launcher-data, C:\apace-persistent\launcher-logs, C:\apace-persistent\data, C:\apace-persistent\dataprotection-keys, C:\apace-persistent\resourcepacks, C:\apace-persistent\server-template-dir, C:\apace-persistent\logs
-'{}' | Out-File -FilePath C:\apace-persistent\config.json -Encoding utf8
+iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
 ```
 
-> On Windows, also update `docker-compose.yml` — replace `/opt/apace-persistent/` with `C:/apace-persistent/` in all `volumes:` paths.
+After install: open http://localhost:5000, create an account, set your IP in Server Options, click Start.
 
-### 5. Start Apace
+---
 
-```bash
-docker compose up -d
-```
+## Download (no Docker)
 
-The image is pulled automatically from GitHub Container Registry. The server starts at:
+Pre-built binaries for each platform. Requires [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) and Java 17.
 
-- **Panel:** http://localhost:5000
-- **API:** http://localhost:1808
-- **Minecraft UDP:** port 19132
-
-### 6. Configure and start
-
-1. Open http://localhost:5000 in your browser
-2. Create an account (first account gets admin automatically)
-3. Go to **Server Options** → set your PC's IP address under "Network/IPv4 Address"
-4. Go to **Server Status** → click **Start All**
-5. Accept the Minecraft EULA when the button appears in the panel
-
-### Updating
-
-```bash
-docker compose pull && docker compose up -d
-```
+1. Go to [GitHub Releases](https://github.com/KotPasztet/Apace/releases/latest)
+2. Download the zip for your platform:
+   - `Apace-win-x64.zip` — Windows 64-bit
+   - `Apace-linux-x64.zip` — Linux 64-bit
+   - `Apace-linux-arm64.zip` — Raspberry Pi 64-bit
+3. Extract the zip
+4. Run: `pwsh ./run_launcher.ps1` (or `./run_launcher.ps1` on Linux/macOS)
+5. Open http://localhost:5000
 
 ---
 
