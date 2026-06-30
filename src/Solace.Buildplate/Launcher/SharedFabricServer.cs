@@ -23,7 +23,7 @@ public sealed class SharedFabricServer : IDisposable
     private readonly Lock _lock = new();
     private bool _started, _disposed, _portReady;
     private readonly ConcurrentDictionary<string, OffsetInfo> _offsets = new();
-    private int _nextX = 10240; // 20 regions from spawn (multiple of 512)
+    private int _nextX = 0; // X=0 — within ChunkManager range, data overwritten per-buildplate
 
     public int ServerPort { get; }
     public int RconPort { get; }
@@ -97,13 +97,12 @@ public sealed class SharedFabricServer : IDisposable
     {
         var slotId = $"bp_{_offsets.Count}";
         int offsetX = _nextX;
-        _nextX += 10240; // 20 region offset
+        _nextX = 0; // Keep X=0 — within ChunkManager range (FIXME: limit to 1 player at a time)
         _logger.Information("Buildplate {Slot} at overworld X={Offset} ({DataLen} bytes)", slotId, offsetX, serverData?.Length ?? 0);
 
         try
         {
-            // Rename region files to match the offset coordinates
-            int regionOffset = offsetX / 512; // 1 region = 512 blokow
+            // Extract to overworld at X=0 (within ChunkManager range)
             var worldDir = Path.Combine(_serverWorkDir.FullName, "world");
             Directory.CreateDirectory(worldDir);
             using (var ms = new MemoryStream(serverData))
@@ -112,21 +111,6 @@ public sealed class SharedFabricServer : IDisposable
                 foreach (var entry in zip.Entries)
                 {
                     var destPath = Path.Combine(worldDir, entry.FullName);
-                    
-                    // Rename region files: r.X.Z.mca → r.{X+offset}.{Z}.mca
-                    if (entry.FullName.StartsWith("region/r.") && entry.FullName.EndsWith(".mca"))
-                    {
-                        var dir = Path.GetDirectoryName(entry.FullName);
-                        var fileName = Path.GetFileNameWithoutExtension(entry.FullName); // r.X.Z
-                        var parts = fileName.Split('.');
-                        if (parts.Length >= 3 && int.TryParse(parts[1], out int rx) && int.TryParse(parts[2], out int rz))
-                        {
-                            var newName = $"r.{rx + regionOffset}.{rz}.mca";
-                            destPath = Path.Combine(worldDir, "region", newName);
-                            _logger.Debug("  Region {Old} → {New} (offset={Off})", entry.FullName, newName, regionOffset);
-                        }
-                    }
-
                     var parent = Path.GetDirectoryName(destPath);
                     if (parent is not null) Directory.CreateDirectory(parent);
                     using var es = entry.Open();
@@ -145,7 +129,6 @@ public sealed class SharedFabricServer : IDisposable
     {
         if (_rcon is null || !_offsets.TryGetValue(slotId, out var info)) return false;
         await Task.Delay(2000); // wait for player to join server
-        var r = await _rcon.SendCommandAsync($"tp {playerId} {info.OffsetX} 100 0");
         return r is not null;
     }
 
