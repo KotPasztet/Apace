@@ -145,7 +145,7 @@ public sealed class SharedFabricServer : IDisposable
     {
         if (_rcon is null || !_offsets.TryGetValue(slotId, out var info)) return false;
         await Task.Delay(2000); // wait for player to join server
-        var r = await _rcon.SendCommandAsync($"tp {playerId} {info.OffsetX} 5 0");
+        var r = await _rcon.SendCommandAsync($"tp {playerId} {info.OffsetX} 100 0");
         return r is not null;
     }
 
