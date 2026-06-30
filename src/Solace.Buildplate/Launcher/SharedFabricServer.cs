@@ -133,7 +133,12 @@ public sealed class SharedFabricServer : IDisposable
         if (_rcon is null) return false;
         // Player needs time to fully join the server before tp works
         await Task.Delay(2000);
-        // Force load chunks so buildplate blocks are visible
+        // Force fresh chunk load from disk (remove cached void chunks, re-add)
+        await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload remove 0 0");
+        await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload remove -1 0");
+        await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload remove 0 -1");
+        await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload remove -1 -1");
+        await Task.Delay(200);
         await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload add 0 0");
         await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload add -1 0");
         await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload add 0 -1");
