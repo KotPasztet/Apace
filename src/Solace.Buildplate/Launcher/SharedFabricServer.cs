@@ -131,12 +131,8 @@ public sealed class SharedFabricServer : IDisposable
     public async Task<bool> SendPlayerToDimensionAsync(string playerId, string dimensionId)
     {
         if (_rcon is null) return false;
-        // Force load chunks in the buildplate dimension before teleport
-        await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload add 0 0");
-        await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload add -1 0");
-        await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload add 0 -1");
-        await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run forceload add -1 -1");
-        // Teleport player to dimension center
+        // Player needs time to fully join the server before tp works
+        await Task.Delay(2000);
         var r = await _rcon.SendCommandAsync($"execute in apace:{dimensionId} run tp {playerId} 0 65 0");
         return r is not null;
     }
