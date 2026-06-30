@@ -127,9 +127,9 @@ public sealed class SharedFabricServer : IDisposable
 
     public async Task<bool> TeleportPlayerAsync(string playerId, string slotId)
     {
-        if (_rcon is null || !_offsets.TryGetValue(slotId, out var info)) return false;
-        await Task.Delay(2000); // wait for player to join server
-        return r is not null;
+        // No tp needed — player spawns at X=0 within ChunkManager range
+        await Task.CompletedTask;
+        return true;
     }
 
     public void RemoveOffset(string slotId) => _offsets.TryRemove(slotId, out _);
