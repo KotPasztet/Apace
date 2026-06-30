@@ -166,7 +166,7 @@ public sealed class Instance
                 return;
             }
 
-            // SetupServerFiles: skip if using shared server (files created via CreateBuildplateDimensionAsync)
+            // SetupServerFiles: skip if using shared server (files created via CreateBuildplateOffsetAsync)
             if (_sharedServer is null)
             {
                 try
@@ -237,8 +237,8 @@ public sealed class Instance
                 if (_sharedServer is not null)
                 {
                     _logger.Information("Creating buildplate dimension...");
-                    string? dimId = await _sharedServer.CreateBuildplateDimensionAsync(
-                        InstanceId, _playerId, _buildplateId, serverData, _survival, _night);
+                    string? dimId = await _sharedServer.CreateBuildplateOffsetAsync(
+                        InstanceId, _playerId, _buildplateId, serverData);
                     _logger.Information("Dimension result: dimId={DimId}", dimId ?? "NULL");
                     if (dimId is not null)
                     {
@@ -260,7 +260,7 @@ public sealed class Instance
                             _bridgeProcess = null;
                             _shuttingDown = true;
                             if (_dimensionId is not null)
-                                _sharedServer.RemoveDimension(_dimensionId);
+                                _sharedServer.RemoveOffset(_dimensionId);
                         }
                     }
                 }
@@ -416,7 +416,7 @@ public sealed class Instance
                                 if (_sharedServer is not null && _sharedServer.IsReady)
                                 {
                                     if (_dimensionId is not null)
-                                        _ = _sharedServer.SendPlayerToDimensionAsync(_playerId, _dimensionId).ContinueWith(t =>
+                                        _ = _sharedServer.TeleportPlayerAsync(_playerId, _dimensionId).ContinueWith(t =>
                                     {
                                         if (t.Result)
                                             _logger.Information("Player {PlayerId} teleported to dimension {DimId}", _playerId, _dimensionId);
