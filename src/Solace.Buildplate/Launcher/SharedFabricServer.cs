@@ -119,6 +119,21 @@ public sealed class SharedFabricServer : IDisposable
                 }
             }
             _offsets[slotId] = new OffsetInfo(instanceId, buildplateId, playerId, slotId, offsetX);
+
+            // Force server to unload and reload chunks (reads fresh from disk)
+            if (_rcon is not null)
+            {
+                await _rcon.SendCommandAsync("forceload remove -1 -1");
+                await _rcon.SendCommandAsync("forceload remove -1 0");
+                await _rcon.SendCommandAsync("forceload remove 0 -1");
+                await _rcon.SendCommandAsync("forceload remove 0 0");
+                await Task.Delay(1000);
+                await _rcon.SendCommandAsync("forceload add -1 -1");
+                await _rcon.SendCommandAsync("forceload add -1 0");
+                await _rcon.SendCommandAsync("forceload add 0 -1");
+                await _rcon.SendCommandAsync("forceload add 0 0");
+            }
+
             _logger.Information("Buildplate {Slot} ready at X={Offset}", slotId, offsetX);
             return slotId;
         }
