@@ -60,6 +60,10 @@ WORKDIR /app
 
 COPY --from=build /src/build/Release/framework-dependent-linux-arm64/ .
 
+# Replace fountain bridge JAR with patched version (ChunkManager HashMap fix)
+COPY server_jars/fountain-0.0.2-SNAPSHOT-jar-with-dependencies.jar /app/staticdata/server_jars/fountain-0.0.2-SNAPSHOT-jar-with-dependencies.jar
+RUN rm -f /app/staticdata/server_jars/fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar
+
 # Permissions + ApiServer wrapper.
 # If publish produced only ApiServer.dll, create /app/components/ApiServer
 # so the launcher validation passes and can start API server.
