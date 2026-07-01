@@ -142,6 +142,9 @@ public sealed class SharedFabricServer : IDisposable
             if (_rcon is not null)
             {
                 var rd = Path.Combine(tmpDir, "region");
+                _logger.Information("Region dir exists: {Exists}, files: {Files}",
+                    Directory.Exists(rd),
+                    Directory.Exists(rd) ? string.Join(", ", Directory.GetFiles(rd)) : "NONE");
                 if (Directory.Exists(rd))
                 {
                     int placed = await McaBlockPlacer.PlaceAsync(rd, _rcon, offsetX, 0);
