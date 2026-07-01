@@ -19,12 +19,11 @@ public static class McaBlockPlacer
         int count = 0;
         foreach (var mca in Directory.GetFiles(mcaDir, "r.*.*.mca"))
         {
-            if (count >= 500) break;
             var name = Path.GetFileNameWithoutExtension(mca);
             var parts = name.Split('.');
             if (parts.Length < 3 || !int.TryParse(parts[1], out int rx) || !int.TryParse(parts[2], out int rz))
                 continue;
-            count += await PlaceRegionAsync(mca, rcon, rx + offsetX / 512, rz + offsetZ / 512, 500 - count);
+            count += await PlaceRegionAsync(mca, rcon, rx + offsetX / 512, rz + offsetZ / 512, int.MaxValue);
         }
         return count;
     }

@@ -127,34 +127,63 @@ public sealed class SharedFabricServer : IDisposable
 
         try
         {
+            // Create a temp Fabric server to convert .dat → .mca region files
             var tmpDir = Path.Combine(Path.GetTempPath(), $"apace-bp-{Guid.NewGuid():N}");
             Directory.CreateDirectory(tmpDir);
+            var tmpServerDir = Path.Combine(tmpDir, "server");
+            Directory.CreateDirectory(tmpServerDir);
+
+            // Copy server template files
+            CopyIf(Path.Combine(_serverTemplateDir.FullName, _fabricJarName),
+                Path.Combine(tmpServerDir, _fabricJarName), true);
+            CopyIf(Path.Combine(_serverTemplateDir.FullName, ".fabric"),
+                Path.Combine(tmpServerDir, ".fabric"));
+            CopyIf(Path.Combine(_serverTemplateDir.FullName, "libraries"),
+                Path.Combine(tmpServerDir, "libraries"));
+            CopyIf(Path.Combine(_serverTemplateDir.FullName, "versions"),
+                Path.Combine(tmpServerDir, "versions"));
+            CopyIf(Path.Combine(_serverTemplateDir.FullName, "mods"),
+                Path.Combine(tmpServerDir, "mods"));
+
+            // Write server.properties for temp server
+            await File.WriteAllTextAsync(Path.Combine(tmpServerDir, "server.properties"),
+                "online-mode=false\nenforce-secure-profile=false\nlevel-type=flat\nlevel-name=world\nserver-port=25599\ngamemode=creative\nvienna-event-bus-address=" + _eventBusAddress + "\nvienna-event-bus-queue-name=temp_converter");
+            await File.WriteAllTextAsync(Path.Combine(tmpServerDir, "eula.txt"), "eula=true");
+
+            // Extract .dat files to temp server world
+            var worldDir = Path.Combine(tmpServerDir, "world");
+            Directory.CreateDirectory(worldDir);
             using (var ms = new MemoryStream(serverData))
             using (var zip = new System.IO.Compression.ZipArchive(ms))
                 foreach (var entry in zip.Entries)
                 {
-                    var dest = Path.Combine(tmpDir, entry.FullName);
+                    var dest = Path.Combine(worldDir, entry.FullName);
                     var p = Path.GetDirectoryName(dest);
                     if (p is not null) Directory.CreateDirectory(p);
                     using var es = entry.Open(); using var fs = File.Create(dest); es.CopyTo(fs);
                 }
 
+            // Start temp server (converts .dat → chunks)
+            _logger.Information("Starting temp server for .dat conversion...");
+            var tmpProc = new ConsoleProcess(_javaCmd, useShellExecute: true, redirect: false, openInNewWindow: false);
+            await tmpProc.ExecuteAsync(tmpServerDir, ["-jar", _fabricJarName, "-nogui"]);
+            await Task.Delay(15000); // Wait for server to generate chunks
+            await tmpProc.StopAndWaitAsync();
+            tmpProc.Dispose();
+
+            // Place blocks from generated .mca files
             if (_rcon is not null)
             {
-                var rd = Path.Combine(tmpDir, "region");
-                _logger.Information("Region dir exists: {Exists}, files: {Files}",
-                    Directory.Exists(rd),
-                    Directory.Exists(rd) ? string.Join(", ", Directory.GetFiles(rd)) : "NONE");
-                if (Directory.Exists(rd))
+                var regionDir = Path.Combine(worldDir, "region");
+                if (Directory.Exists(regionDir))
                 {
-                    int placed = await McaBlockPlacer.PlaceAsync(rd, _rcon, offsetX, 0);
+                    int placed = await McaBlockPlacer.PlaceAsync(regionDir, _rcon, offsetX, 0);
                     _logger.Information("Placed {Count} blocks via RCON", placed);
                 }
             }
 
             try { Directory.Delete(tmpDir, true); } catch { }
             _offsets[slotId] = new OffsetInfo(instanceId, buildplateId, playerId, slotId, offsetX);
-            _logger.Information("Buildplate {Slot} ready", slotId);
             return slotId;
         }
         catch (Exception ex) { _logger.Error(ex, "Failed"); return null; }
