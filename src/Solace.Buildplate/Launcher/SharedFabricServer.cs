@@ -61,6 +61,21 @@ public sealed class SharedFabricServer : IDisposable
         await File.WriteAllTextAsync(Path.Combine(_serverWorkDir.FullName, "eula.txt"), "eula=true");
         Directory.CreateDirectory(Path.Combine(_serverWorkDir.FullName, "world"));
 
+        // Pre-create 50 void dimensions with datapack (server loads them at startup)
+        var dpDir = Path.Combine(_serverWorkDir.FullName, "world", "datapacks", "apace");
+        var dimDefDir = Path.Combine(dpDir, "data", "apace", "dimension");
+        Directory.CreateDirectory(dimDefDir);
+        await File.WriteAllTextAsync(Path.Combine(dpDir, "pack.mcmeta"),
+            "{\"pack\":{\"pack_format\":22,\"description\":\"Apace\"}}");
+        var dimJson = "{\"type\":\"minecraft:overworld\",\"generator\":{\"type\":\"minecraft:flat\",\"settings\":{\"layers\":[{\"block\":\"minecraft:air\",\"height\":1}],\"biome\":\"minecraft:the_void\"}}}";
+        for (int i = 0; i < 50; i++)
+        {
+            var dd = Path.Combine(_serverWorkDir.FullName, "world", "dimensions", "apace", $"bp_{i}");
+            Directory.CreateDirectory(Path.Combine(dd, "region"));
+            Directory.CreateDirectory(Path.Combine(dd, "entities"));
+            await File.WriteAllTextAsync(Path.Combine(dimDefDir, $"bp_{i}.json"), dimJson);
+        }
+
         _serverProcess = new ConsoleProcess(_javaCmd, useShellExecute: false, redirect: true, openInNewWindow: false);
         _serverProcess.StandartTextReceived += (_, e) =>
         { if (!string.IsNullOrWhiteSpace(e.Data)) _logger.Information("[server] {Line}", e.Data); };
@@ -85,6 +100,14 @@ public sealed class SharedFabricServer : IDisposable
             if (await _rcon.ConnectAsync()) { _logger.Information("RCON connected"); break; }
             if (a == 0) _logger.Information("Waiting for RCON...");
         }
+
+        // Place test diamond blocks to verify dimensions work
+        if (_rcon is not null)
+        {
+            for (int i = 0; i < 3; i++)
+                await _rcon.SendCommandAsync($"execute in apace:bp_{i} run setblock 0 4 0 minecraft:diamond_block");
+        }
+
         _logger.Information("Shared server ready — accepting buildplates");
     }
 
