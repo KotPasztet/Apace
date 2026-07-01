@@ -117,70 +117,52 @@ public sealed class SharedFabricServer : IDisposable
     /// Place buildplate world data in overworld at next far offset.
     /// Server hasn't pre-generated chunks here → loads fresh from disk.
     /// </summary>
-    public async Task<string?> CreateBuildplateOffsetAsync(string instanceId, string? playerId,
+        public async Task<string?> CreateBuildplateOffsetAsync(string instanceId, string? playerId,
         string buildplateId, byte[] serverData)
     {
         var slotId = $"bp_{_offsets.Count}";
         int offsetX = _nextX;
-        _nextX += 10240; // Next buildplate 20 regions further
-        _logger.Information("Buildplate {Slot} at overworld X={Offset} ({DataLen} bytes)", slotId, offsetX, serverData?.Length ?? 0);
+        _nextX += 256;
+        _logger.Information("Buildplate {Slot} at X={Offset}", slotId, offsetX);
 
         try
         {
-            // Extract to overworld, renaming region files to match offset
-            int regionOffset = offsetX / 512;
-            var worldDir = Path.Combine(_serverWorkDir.FullName, "world");
-            Directory.CreateDirectory(worldDir);
+            var tmpDir = Path.Combine(Path.GetTempPath(), $"apace-bp-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tmpDir);
             using (var ms = new MemoryStream(serverData))
             using (var zip = new System.IO.Compression.ZipArchive(ms))
-            {
                 foreach (var entry in zip.Entries)
                 {
-                    var destPath = Path.Combine(worldDir, entry.FullName);
-                    
-                    // Rename region files to match offset coordinates
-                    if (entry.FullName.StartsWith("region/r.") && entry.FullName.EndsWith(".mca"))
-                    {
-                        var fileName = Path.GetFileNameWithoutExtension(entry.FullName);
-                        var parts = fileName.Split('.');
-                        if (parts.Length >= 3 && int.TryParse(parts[1], out int rx) && int.TryParse(parts[2], out int rz))
-                        {
-                            destPath = Path.Combine(worldDir, "region", $"r.{rx + regionOffset}.{rz}.mca");
-                        }
-                    }
-
-                    var parent = Path.GetDirectoryName(destPath);
-                    if (parent is not null) Directory.CreateDirectory(parent);
-                    using var es = entry.Open();
-                    using var fs = File.Create(destPath);
-                    es.CopyTo(fs);
+                    var dest = Path.Combine(tmpDir, entry.FullName);
+                    var p = Path.GetDirectoryName(dest);
+                    if (p is not null) Directory.CreateDirectory(p);
+                    using var es = entry.Open(); using var fs = File.Create(dest); es.CopyTo(fs);
                 }
-            }
-            _offsets[slotId] = new OffsetInfo(instanceId, buildplateId, playerId, slotId, offsetX);
 
-            // Clone blocks from staging area (overworld) to buildplate dimension
             if (_rcon is not null)
             {
-                await Task.Delay(2000); // let chunks settle
-                var r = await _rcon.SendCommandAsync(
-                    $"execute in apace:{slotId} run clone {offsetX} 0 0 {offsetX+256} 100 256 0 4 0");
-                // Second pass for underground blocks
-                await _rcon.SendCommandAsync(
-                    $"execute in apace:{slotId} run clone {offsetX} 0 0 {offsetX+256} 100 256 0 4 0 filtered minecraft:air");
+                var rd = Path.Combine(tmpDir, "region");
+                if (Directory.Exists(rd))
+                {
+                    int placed = await McaBlockPlacer.PlaceAsync(rd, _rcon, offsetX, 0);
+                    _logger.Information("Placed {Count} blocks via RCON", placed);
+                }
             }
 
-            _logger.Information("Buildplate {Slot} cloned to dimension", slotId);
+            try { Directory.Delete(tmpDir, true); } catch { }
+            _offsets[slotId] = new OffsetInfo(instanceId, buildplateId, playerId, slotId, offsetX);
+            _logger.Information("Buildplate {Slot} ready", slotId);
             return slotId;
         }
-        catch (Exception ex) { _logger.Error(ex, "Failed to place buildplate"); return null; }
+        catch (Exception ex) { _logger.Error(ex, "Failed"); return null; }
     }
 
-    public async Task<bool> TeleportPlayerAsync(string playerId, string slotId)
+public async Task<bool> TeleportPlayerAsync(string playerId, string slotId)
     {
         if (_rcon is null || !_offsets.TryGetValue(slotId, out var info)) return false;
         await Task.Delay(2000);
         // Teleport player directly to dimension with cloned buildplate
-        var r = await _rcon.SendCommandAsync($"execute in apace:{slotId} run tp {playerId} 0 65 0");
+        var r = await _rcon.SendCommandAsync($"tp {playerId} {info.OffsetX} 100 0");
         return r is not null;
     }
 
