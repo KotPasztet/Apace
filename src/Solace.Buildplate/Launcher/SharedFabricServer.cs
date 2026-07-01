@@ -101,11 +101,13 @@ public sealed class SharedFabricServer : IDisposable
             if (a == 0) _logger.Information("Waiting for RCON...");
         }
 
-        // Place test diamond blocks to verify dimensions work
+        // TEST: place diamond block in overworld and 3 dimensions
         if (_rcon is not null)
         {
+            await _rcon.SendCommandAsync("setblock 0 5 0 minecraft:diamond_block");
             for (int i = 0; i < 3; i++)
                 await _rcon.SendCommandAsync($"execute in apace:bp_{i} run setblock 0 4 0 minecraft:diamond_block");
+            _logger.Information("Test blocks placed");
         }
 
         _logger.Information("Shared server ready — accepting buildplates");
