@@ -133,19 +133,11 @@ public sealed class SharedFabricServer : IDisposable
             }
             _offsets[slotId] = new OffsetInfo(instanceId, buildplateId, playerId, slotId, offsetX);
 
-            // Force chunks to load from disk at the offset region (outside spawn chunks)
+            // Use Apace ChunkReload mod to force fresh chunk load from disk
             if (_rcon is not null)
             {
-                int rc = offsetX / 512; // region coordinate
-                await _rcon.SendCommandAsync($"forceload remove {rc} -1");
-                await _rcon.SendCommandAsync($"forceload remove {rc} 0");
-                await _rcon.SendCommandAsync($"forceload remove {rc+1} -1");
-                await _rcon.SendCommandAsync($"forceload remove {rc+1} 0");
-                await Task.Delay(500);
-                await _rcon.SendCommandAsync($"forceload add {rc} -1");
-                await _rcon.SendCommandAsync($"forceload add {rc} 0");
-                await _rcon.SendCommandAsync($"forceload add {rc+1} -1");
-                await _rcon.SendCommandAsync($"forceload add {rc+1} 0");
+                int rc = regionOffset;
+                await _rcon.SendCommandAsync($"apace-chunkreload {rc*512} 0 {(rc+1)*512} 512");
             }
 
             _logger.Information("Buildplate {Slot} ready at X={Offset}", slotId, offsetX);
