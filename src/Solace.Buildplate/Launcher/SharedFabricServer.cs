@@ -135,10 +135,7 @@ public sealed class SharedFabricServer : IDisposable
 
             // Use Apace ChunkReload mod to force fresh chunk load from disk
             if (_rcon is not null)
-            {
-                int rc = regionOffset;
-                await _rcon.SendCommandAsync($"apace-chunkreload {rc*512} 0 {(rc+1)*512} 512");
-            }
+                await _rcon.SendCommandAsync("apace-chunkreload");
 
             _logger.Information("Buildplate {Slot} ready at X={Offset}", slotId, offsetX);
             return slotId;
