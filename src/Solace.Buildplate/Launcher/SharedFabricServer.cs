@@ -156,11 +156,18 @@ public sealed class SharedFabricServer : IDisposable
             }
             _offsets[slotId] = new OffsetInfo(instanceId, buildplateId, playerId, slotId, offsetX);
 
-            // Use Apace ChunkReload mod to force fresh chunk load from disk
+            // Clone blocks from staging area (overworld) to buildplate dimension
             if (_rcon is not null)
-                await _rcon.SendCommandAsync("apace-chunkreload");
+            {
+                await Task.Delay(2000); // let chunks settle
+                var r = await _rcon.SendCommandAsync(
+                    $"execute in apace:{slotId} run clone {offsetX} 0 0 {offsetX+256} 100 256 0 4 0");
+                // Second pass for underground blocks
+                await _rcon.SendCommandAsync(
+                    $"execute in apace:{slotId} run clone {offsetX} 0 0 {offsetX+256} 100 256 0 4 0 filtered minecraft:air");
+            }
 
-            _logger.Information("Buildplate {Slot} ready at X={Offset}", slotId, offsetX);
+            _logger.Information("Buildplate {Slot} cloned to dimension", slotId);
             return slotId;
         }
         catch (Exception ex) { _logger.Error(ex, "Failed to place buildplate"); return null; }
@@ -169,8 +176,9 @@ public sealed class SharedFabricServer : IDisposable
     public async Task<bool> TeleportPlayerAsync(string playerId, string slotId)
     {
         if (_rcon is null || !_offsets.TryGetValue(slotId, out var info)) return false;
-        await Task.Delay(2000); // wait for player to fully join server
-        var r = await _rcon.SendCommandAsync($"tp {playerId} {info.OffsetX} 100 0");
+        await Task.Delay(2000);
+        // Teleport player directly to dimension with cloned buildplate
+        var r = await _rcon.SendCommandAsync($"execute in apace:{slotId} run tp {playerId} 0 65 0");
         return r is not null;
     }
 
