@@ -55,7 +55,7 @@ public static class McaBlockPlacer
 
                 using var ms = compType switch
                 {
-                    2 => new ZLibStream(new MemoryStream(chunkData), CompressionMode.Decompress),
+                    2 => (Stream)new ZLibStream(new MemoryStream(chunkData), CompressionMode.Decompress),
                     _ => new GZipStream(new MemoryStream(chunkData), CompressionMode.Decompress)
                 };
                 using var reader = new BinaryReader(ms);
