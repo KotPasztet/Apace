@@ -23,7 +23,7 @@ public sealed class SharedFabricServer : IDisposable
     private readonly Lock _lock = new();
     private bool _started, _disposed, _portReady;
     private readonly ConcurrentDictionary<string, OffsetInfo> _offsets = new();
-    private int _nextX = 0; // X=0 — within ChunkManager range, data overwritten per-buildplate
+    private int _nextX = 10240; // Far from spawn — outside spawn chunks (spawn = ~300 blocks, never unloaded)
 
     public int ServerPort { get; }
     public int RconPort { get; }
@@ -97,12 +97,13 @@ public sealed class SharedFabricServer : IDisposable
     {
         var slotId = $"bp_{_offsets.Count}";
         int offsetX = _nextX;
-        _nextX = 0; // Keep X=0 — within ChunkManager range (FIXME: limit to 1 player at a time)
+        _nextX += 10240; // Next buildplate 20 regions further
         _logger.Information("Buildplate {Slot} at overworld X={Offset} ({DataLen} bytes)", slotId, offsetX, serverData?.Length ?? 0);
 
         try
         {
-            // Extract to overworld at X=0 (within ChunkManager range)
+            // Extract to overworld, renaming region files to match offset
+            int regionOffset = offsetX / 512;
             var worldDir = Path.Combine(_serverWorkDir.FullName, "world");
             Directory.CreateDirectory(worldDir);
             using (var ms = new MemoryStream(serverData))
@@ -111,6 +112,18 @@ public sealed class SharedFabricServer : IDisposable
                 foreach (var entry in zip.Entries)
                 {
                     var destPath = Path.Combine(worldDir, entry.FullName);
+                    
+                    // Rename region files to match offset coordinates
+                    if (entry.FullName.StartsWith("region/r.") && entry.FullName.EndsWith(".mca"))
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension(entry.FullName);
+                        var parts = fileName.Split('.');
+                        if (parts.Length >= 3 && int.TryParse(parts[1], out int rx) && int.TryParse(parts[2], out int rz))
+                        {
+                            destPath = Path.Combine(worldDir, "region", $"r.{rx + regionOffset}.{rz}.mca");
+                        }
+                    }
+
                     var parent = Path.GetDirectoryName(destPath);
                     if (parent is not null) Directory.CreateDirectory(parent);
                     using var es = entry.Open();
@@ -120,18 +133,19 @@ public sealed class SharedFabricServer : IDisposable
             }
             _offsets[slotId] = new OffsetInfo(instanceId, buildplateId, playerId, slotId, offsetX);
 
-            // Force server to unload and reload chunks (reads fresh from disk)
+            // Force chunks to load from disk at the offset region (outside spawn chunks)
             if (_rcon is not null)
             {
-                await _rcon.SendCommandAsync("forceload remove -1 -1");
-                await _rcon.SendCommandAsync("forceload remove -1 0");
-                await _rcon.SendCommandAsync("forceload remove 0 -1");
-                await _rcon.SendCommandAsync("forceload remove 0 0");
-                await Task.Delay(1000);
-                await _rcon.SendCommandAsync("forceload add -1 -1");
-                await _rcon.SendCommandAsync("forceload add -1 0");
-                await _rcon.SendCommandAsync("forceload add 0 -1");
-                await _rcon.SendCommandAsync("forceload add 0 0");
+                int rc = offsetX / 512; // region coordinate
+                await _rcon.SendCommandAsync($"forceload remove {rc} -1");
+                await _rcon.SendCommandAsync($"forceload remove {rc} 0");
+                await _rcon.SendCommandAsync($"forceload remove {rc+1} -1");
+                await _rcon.SendCommandAsync($"forceload remove {rc+1} 0");
+                await Task.Delay(500);
+                await _rcon.SendCommandAsync($"forceload add {rc} -1");
+                await _rcon.SendCommandAsync($"forceload add {rc} 0");
+                await _rcon.SendCommandAsync($"forceload add {rc+1} -1");
+                await _rcon.SendCommandAsync($"forceload add {rc+1} 0");
             }
 
             _logger.Information("Buildplate {Slot} ready at X={Offset}", slotId, offsetX);
@@ -142,9 +156,10 @@ public sealed class SharedFabricServer : IDisposable
 
     public async Task<bool> TeleportPlayerAsync(string playerId, string slotId)
     {
-        // No tp needed — player spawns at X=0 within ChunkManager range
-        await Task.CompletedTask;
-        return true;
+        if (_rcon is null || !_offsets.TryGetValue(slotId, out var info)) return false;
+        await Task.Delay(2000); // wait for player to fully join server
+        var r = await _rcon.SendCommandAsync($"tp {playerId} {info.OffsetX} 100 0");
+        return r is not null;
     }
 
     public void RemoveOffset(string slotId) => _offsets.TryRemove(slotId, out _);
