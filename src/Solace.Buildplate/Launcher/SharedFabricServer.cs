@@ -165,9 +165,17 @@ public sealed class SharedFabricServer : IDisposable
 
             // Start temp server (converts .dat → chunks)
             _logger.Information("Starting temp server for .dat conversion...");
-            var tmpProc = new ConsoleProcess(_javaCmd, useShellExecute: true, redirect: false, openInNewWindow: false);
+            var tmpProc = new ConsoleProcess(_javaCmd, useShellExecute: false, redirect: true, openInNewWindow: false);
             await tmpProc.ExecuteAsync(tmpServerDir, ["-jar", _fabricJarName, "-nogui"]);
-            await Task.Delay(15000); // Wait for server to generate chunks
+            await Task.Delay(30000); // Wait 30s for server to fully start + generate chunks
+            _logger.Information("Temp server waited 30s, checking world...");
+            _logger.Information("World dir exists: {Exists}, region dir: {RegionExists}",
+                Directory.Exists(worldDir), Directory.Exists(Path.Combine(worldDir, "region")));
+            if (Directory.Exists(Path.Combine(worldDir, "region")))
+            {
+                var files = Directory.GetFiles(Path.Combine(worldDir, "region"));
+                _logger.Information("Region files ({Count}): {Files}", files.Length, string.Join(", ", files.Select(Path.GetFileName)));
+            }
             await tmpProc.StopAndWaitAsync();
             tmpProc.Dispose();
 
