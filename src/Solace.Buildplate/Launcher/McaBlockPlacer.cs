@@ -32,6 +32,7 @@ public static class McaBlockPlacer
     {
         var data = await File.ReadAllBytesAsync(path);
         int count = 0;
+        int chunksAttempted = 0, chunksSkipped = 0;
 
         for (int cz = 0; cz < 32 && count < remaining; cz++)
         {
@@ -41,17 +42,18 @@ public static class McaBlockPlacer
                 int offset = data[entry] << 16 | data[entry + 1] << 8 | data[entry + 2];
                 byte sectors = data[entry + 3];
                 if (offset == 0 || sectors == 0) continue;
-
+                
                 int cs = offset * 4096;
                 byte[] lenBytes = { data[cs + 3], data[cs + 2], data[cs + 1], data[cs] };
                 if (!BitConverter.IsLittleEndian) Array.Reverse(lenBytes);
                 int length = BitConverter.ToInt32(lenBytes, 0);
-                if (length <= 1 || length > sectors * 4096) continue;
+                if (length <= 1 || length > sectors * 4096) { chunksSkipped++; continue; }
 
                 byte compType = data[cs + 4];
                 byte[] chunkData = new byte[length - 1];
                 Array.Copy(data, cs + 5, chunkData, 0, length - 1);
 
+                chunksAttempted++;
                 using var ms = compType switch
                 {
                     2 => (Stream)new ZLibStream(new MemoryStream(chunkData), CompressionMode.Decompress),
@@ -62,6 +64,8 @@ public static class McaBlockPlacer
                 count += await PlaceChunkBlocks(reader, rcon, regionX * 32 + cx, regionZ * 32 + cz, remaining - count);
             }
         }
+        Serilog.Log.Information("McaBlock: {Path} — {Attempted} chunks, {Skipped} skipped, {Count} blocks",
+            Path.GetFileName(path), chunksAttempted, chunksSkipped, count);
         return count;
     }
 
