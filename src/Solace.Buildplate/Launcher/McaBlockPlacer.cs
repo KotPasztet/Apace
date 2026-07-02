@@ -34,6 +34,17 @@ public static class McaBlockPlacer
         int count = 0;
         int chunksAttempted = 0, chunksSkipped = 0;
 
+        // Dump first 20 header entries for debug
+        var headerInfo = new List<string>();
+        for (int i = 0; i < 20; i++)
+        {
+            int off = data[i*4] << 16 | data[i*4+1] << 8 | data[i*4+2];
+            int sec = data[i*4+3];
+            if (off != 0) headerInfo.Add($"#{i}:{off}/{sec}");
+        }
+        Serilog.Log.Information("McaHeader [{File}]: {Info}", Path.GetFileName(path),
+            headerInfo.Count > 0 ? string.Join(" ", headerInfo) : "ALL EMPTY");
+
         for (int cz = 0; cz < 32 && count < remaining; cz++)
         {
             for (int cx = 0; cx < 32 && count < remaining; cx++)
