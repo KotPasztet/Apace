@@ -86,7 +86,7 @@ pwsh ./run_launcher.ps1
 1. Download [MCE Patcher](https://github.com/Earth-Restored/Minecraft_Earth_Patcher/releases) (UI version)
 2. Obtain a Minecraft Earth APK (dump from your phone or find online)
 3. Open the patcher, select the APK
-4. Set **Locator Hostname/IP** to `YOUR_PC_IP:1808` (e.g. `192.168.1.5:1808`)
+4. Set **Locator Hostname/IP** to `YOUR_PC_IP:8080` (e.g. `192.168.1.5:8080`)
 5. Click **Patch** → install the patched APK on your phone
 6. Open the app and sign in with your panel account
 
@@ -94,7 +94,7 @@ pwsh ./run_launcher.ps1
 
 1. Install [Project Earth Patcher APK](https://archive.org/download/dev.projectearth.patcher-1.0/dev.projectearth.patcher-1.0.apk)
 2. Have a legal copy of Minecraft Earth installed
-3. Open patcher → Settings → set Locator Server to `http://YOUR_PC_IP:1808`
+3. Open patcher → Settings → set Locator Server to `http://YOUR_PC_IP:8080`
 4. Go back and start patching
 
 ### iOS
