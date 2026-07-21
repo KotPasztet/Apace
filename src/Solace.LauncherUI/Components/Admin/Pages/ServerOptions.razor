@@ -1,157 +1,229 @@
 @page "/Admin/ServerOptions"
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
+@using System.Web
 @using Serilog
+@using Solace.LauncherUI.Utils
 @attribute [Authorize(Policy = Permissions.EditServerOptions)]
 @rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
 
 <PageTitle>Server Options - Apace</PageTitle>
 
-<div class="container mt-4">
-    <h2>System Configuration</h2>
+<div class="section-title">
+    <img class="nav-icon" src="/images/settings_icon.png" alt="" /> System Configuration
+</div>
 
-    <EditForm Model="@SettingsModel" OnValidSubmit="HandleSave" FormName="SettingsForm">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" />
+<EditForm Model="@SettingsModel" OnValidSubmit="HandleSave" FormName="SettingsForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="alert alert-danger" />
 
-        <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link @(activeTab == "network" ? "active" : "")"
-                        @onclick='() => activeTab = "network"'>Network</button>
+    <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link @(activeTab == "network" ? "active" : "")"
+                    @onclick='() => activeTab = "network"'>Network</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(activeTab == "map" ? "active" : "")"
+                    @onclick='() => activeTab = "map"'>Map</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(activeTab == "database" ? "active" : "")"
+                    @onclick='() => activeTab = "database"'>Databases</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(activeTab == "data" ? "active" : "")" @onclick='() => activeTab = "data"'>Data
+                Handling</button>
             </li>
-            <li class="nav-item">
-                <button class="nav-link @(activeTab == "map" ? "active" : "")"
-                        @onclick='() => activeTab = "map"'>Map</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link @(activeTab == "database" ? "active" : "")"
-                        @onclick='() => activeTab = "database"'>Databases</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link @(activeTab == "data" ? "active" : "")" @onclick='() => activeTab = "data"'>Data
-                    Handling</button>
-                </li>
-            </ul>
+        </ul>
 
-            <div class="tab-content border border-top-0 p-4 bg-light">
-                @* --- Network Tab --- *@
-                <div class="tab-pane fade show @(activeTab == "network" ? "active" : "")">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">API Port</label>
-                            <InputNumber @bind-Value="SettingsModel.ApiPort" class="form-control" />
-                            <ValidationMessage For="@(() => SettingsModel.ApiPort)" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Event Bus Port</label>
-                            <InputNumber @bind-Value="SettingsModel.EventBusPort" class="form-control" />
-                            <ValidationMessage For="@(() => SettingsModel.EventBusPort)" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Object Store Port</label>
-                            <InputNumber @bind-Value="SettingsModel.ObjectStorePort" class="form-control" />
-                            <ValidationMessage For="@(() => SettingsModel.ObjectStorePort)" />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">PC Ipv4 Address or Hostname (without port)</label>
-                            <InputText @bind-Value="SettingsModel.IPv4" class="form-control" placeholder="192.168.x.x" />
-                            <ValidationMessage For="@(() => SettingsModel.IPv4)" />
-                        </div>
+        <div class="tab-content border border-top-0 p-4">
+            @* --- Network Tab --- *@
+            <div class="tab-pane fade show @(activeTab == "network" ? "active" : "")">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">API Port</label>
+                        <InputNumber @bind-Value="SettingsModel.ApiPort" class="form-control" />
+                        <ValidationMessage For="@(() => SettingsModel.ApiPort)" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Event Bus Port</label>
+                        <InputNumber @bind-Value="SettingsModel.EventBusPort" class="form-control" />
+                        <ValidationMessage For="@(() => SettingsModel.EventBusPort)" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Object Store Port</label>
+                        <InputNumber @bind-Value="SettingsModel.ObjectStorePort" class="form-control" />
+                        <ValidationMessage For="@(() => SettingsModel.ObjectStorePort)" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">PC Ipv4 Address or Hostname (without port)</label>
+                        <InputText @bind-Value="SettingsModel.IPv4" class="form-control" placeholder="192.168.x.x" />
+                        <ValidationMessage For="@(() => SettingsModel.IPv4)" />
                     </div>
                 </div>
+            </div>
 
-                @* --- Map Tab --- *@
-                <div class="tab-pane fade show @(activeTab == "map" ? "active" : "")">
-                    <div class="mb-3 form-check form-switch">
-                        <InputCheckbox @bind-Value="SettingsModel.EnableTileRendering" class="form-check-input"
-                                       id="enableRendering" />
-                        <label class="form-check-label" for="enableRendering">Enable Tile Rendering</label>
+            @* --- Map Tab --- *@
+            <div class="tab-pane fade show @(activeTab == "map" ? "active" : "")">
+                <div class="mb-3 form-check form-switch">
+                    <InputCheckbox @bind-Value="SettingsModel.EnableTileRendering" class="form-check-input"
+                                   id="enableRendering" />
+                    <label class="form-check-label" for="enableRendering">Enable Tile Rendering</label>
+                </div>
+
+                <fieldset disabled="@(!SettingsModel.EnableTileRendering)">
+                    <div class="mb-3">
+                        <label class="form-label">Tile Data Source</label>
+                        <InputSelect @bind-Value="SettingsModel.TileDataSource" class="form-select">
+                            @foreach (var source in Enum.GetValues<Settings.TileDataSourceE>())
+                            {
+                                <option value="@source">@source</option>
+                            }
+                        </InputSelect>
                     </div>
 
-                    <fieldset disabled="@(!SettingsModel.EnableTileRendering)">
+                    @if (SettingsModel.TileDataSource == Settings.TileDataSourceE.MapTiler)
+                    {
                         <div class="mb-3">
-                            <label class="form-label">Tile Data Source</label>
-                            <InputSelect @bind-Value="SettingsModel.TileDataSource" class="form-select">
-                                @foreach (var source in Enum.GetValues<Settings.TileDataSourceE>())
-                                {
-                                    <option value="@source">@source</option>
-                                }
-                            </InputSelect>
+                            <label class="form-label">MapTiler API Key</label>
+                            <InputText @bind-Value="SettingsModel.MapTilerApiKey" class="form-control" />
+                            <ValidationMessage For="@(() => SettingsModel.MapTilerApiKey)" />
                         </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Tile Database Connection String</label>
+                            <InputText @bind-Value="SettingsModel.TileDatabaseConnectionString" class="form-control" />
+                            <ValidationMessage For="@(() => SettingsModel.TileDatabaseConnectionString)" />
+                        </div>
+                    }
+                </fieldset>
+            </div>
 
-                        @if (SettingsModel.TileDataSource == Settings.TileDataSourceE.MapTiler)
-                        {
-                            <div class="mb-3">
-                                <label class="form-label">MapTiler API Key</label>
-                                <InputText @bind-Value="SettingsModel.MapTilerApiKey" class="form-control" />
-                                <ValidationMessage For="@(() => SettingsModel.MapTilerApiKey)" />
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="mb-3">
-                                <label class="form-label">Tile Database Connection String</label>
-                                <InputText @bind-Value="SettingsModel.TileDatabaseConnectionString" class="form-control" />
-                                <ValidationMessage For="@(() => SettingsModel.TileDatabaseConnectionString)" />
-                            </div>
-                        }
-                    </fieldset>
+            @* --- Database Tab --- *@
+            <div class="tab-pane fade show @(activeTab == "database" ? "active" : "")">
+                <div class="mb-3">
+                    <label class="form-label">Earth Database Connection String</label>
+                    <InputText @bind-Value="SettingsModel.EarthDatabaseConnectionString" class="form-control" />
+                    <ValidationMessage For="@(() => SettingsModel.EarthDatabaseConnectionString)" />
                 </div>
-
-                @* --- Database Tab --- *@
-                <div class="tab-pane fade show @(activeTab == "database" ? "active" : "")">
-                    <div class="mb-3">
-                        <label class="form-label">Earth Database Connection String</label>
-                        <InputText @bind-Value="SettingsModel.EarthDatabaseConnectionString" class="form-control" />
-                        <ValidationMessage For="@(() => SettingsModel.EarthDatabaseConnectionString)" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Live Database Connection String</label>
-                        <InputText @bind-Value="SettingsModel.LiveDatabaseConnectionString" class="form-control" />
-                        <ValidationMessage For="@(() => SettingsModel.LiveDatabaseConnectionString)" />
-                    </div>
-                </div>
-
-                @* --- Data Tab --- *@
-                <div class="tab-pane fade show @(activeTab == "data" ? "active" : "")">
-                    <div class="mb-3 form-check">
-                        <InputCheckbox @bind-Value="SettingsModel.GeneratePreviewOnImport" class="form-check-input"
-                                       id="genPreview" />
-                        <label class="form-check-label" for="genPreview">Generate Preview On Import</label>
-                    </div>
-                    <div class="mb-3 form-check">
-                        <InputCheckbox @bind-Value="SettingsModel.SkipFileChecks" class="form-check-input"
-                                       id="skipChecks" />
-                        <label class="form-check-label" for="skipChecks">Skip File Validation</label>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Static Data Path</label>
-                        <InputText @bind-Value="SettingsModel.StaticDataPath" class="form-control" />
-                        <ValidationMessage For="@(() => SettingsModel.StaticDataPath)" />
-                    </div>
-
-                    <hr />
-
-                    <div class="mb-3 form-check form-switch">
-                        <InputCheckbox @bind-Value="SettingsModel.LauncherBuildplatePreview" class="form-check-input"
-                                       id="buildPreview" />
-                        <label class="form-check-label" for="buildPreview">Enable Buildplate Preview in Launcher</label>
-                        <ValidationMessage For="@(() => SettingsModel.LauncherBuildplatePreview)" />
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label">Live Database Connection String</label>
+                    <InputText @bind-Value="SettingsModel.LiveDatabaseConnectionString" class="form-control" />
+                    <ValidationMessage For="@(() => SettingsModel.LiveDatabaseConnectionString)" />
                 </div>
             </div>
 
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">Save Settings</button>
-                <button type="button" class="btn btn-secondary" @onclick="ResetToDefault">Reset to Defaults</button>
+            @* --- Data Tab --- *@
+            <div class="tab-pane fade show @(activeTab == "data" ? "active" : "")">
+                <div class="mb-3 form-check">
+                    <InputCheckbox @bind-Value="SettingsModel.GeneratePreviewOnImport" class="form-check-input"
+                                   id="genPreview" />
+                    <label class="form-check-label" for="genPreview">Generate Preview On Import</label>
+                </div>
+                <div class="mb-3 form-check">
+                    <InputCheckbox @bind-Value="SettingsModel.SkipFileChecks" class="form-check-input"
+                                   id="skipChecks" />
+                    <label class="form-check-label" for="skipChecks">Skip File Validation</label>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Static Data Path</label>
+                    <InputText @bind-Value="SettingsModel.StaticDataPath" class="form-control" />
+                    <ValidationMessage For="@(() => SettingsModel.StaticDataPath)" />
+                </div>
+
+                <hr />
+
+                <div class="mb-3 form-check form-switch">
+                    <InputCheckbox @bind-Value="SettingsModel.LauncherBuildplatePreview" class="form-check-input"
+                                   id="buildPreview" @onchange="OnBuildplatePreviewToggled" />
+                    <label class="form-check-label" for="buildPreview">Enable Buildplate Preview in Launcher</label>
+                    <ValidationMessage For="@(() => SettingsModel.LauncherBuildplatePreview)" />
+                </div>
+
+                @if (SettingsModel.LauncherBuildplatePreview && !_resourcePackInstalled)
+                {
+                    <div class="alert alert-info d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Resource pack required.</strong> The official Minecraft 1.20.4 assets are needed for buildplate previews.
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-2" @onclick="ShowResourcePackDialog" disabled="@_downloading">
+                                <i class="bi bi-download me-1"></i>Download from Mojang
+                            </button>
+                            <span class="text-muted" style="font-size: 0.85rem;">or place files manually in <code>staticdata/resourcepacks/java/minecraft/</code></span>
+                        </div>
+                    </div>
+
+                    @if (_downloading)
+                    {
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 style="width: @(_downloadProgress * 100)%"></div>
+                        </div>
+                        <small class="text-muted">Downloading client.jar and extracting assets... @((_downloadProgress * 100).ToString("F0"))%</small>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_resourcePackError))
+                    {
+                        <div class="alert alert-danger">@_resourcePackError</div>
+                    }
+                }
+
+                @if (_showResourcePackDialog)
+                {
+                    <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Mojang Resource Pack</h5>
+                                    <button type="button" class="btn-close" @onclick="HideResourcePackDialog"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>To use buildplate previews, the official Minecraft 1.20.4 resource pack is required.</p>
+                                    <p class="text-muted small">This downloads <code>client.jar</code> from Mojang's servers and extracts the <code>assets/minecraft/</code> folder. You must own a licensed copy of Minecraft: Java Edition to use these assets.</p>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="ownMinecraft" @bind="_ownsMinecraft" />
+                                        <label class="form-check-label" for="ownMinecraft">
+                                            <strong>I confirm I own a licensed copy of Minecraft: Java Edition</strong> and accept Mojang's 
+                                            <a href="https://www.minecraft.net/en-us/eula" target="_blank">EULA</a>.
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" @onclick="HideResourcePackDialog">
+                                        I'll provide my own files
+                                    </button>
+                                    <button type="button" class="btn btn-primary" @onclick="DownloadResourcePack" disabled="@(!_ownsMinecraft || _downloading)">
+                                        <i class="bi bi-download me-1"></i>Download & Install
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
-        </EditForm>
-    </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+            <button type="button" class="btn btn-secondary" @onclick="ResetToDefault">Reset to Defaults</button>
+        </div>
+    </EditForm>
 
 @code {
     private string activeTab = "network";
+    private bool _showResourcePackDialog;
+    private bool _ownsMinecraft;
+    private bool _downloading;
+    private double _downloadProgress;
+    private bool _resourcePackInstalled;
+    private string? _resourcePackError;
 
     // Using a wrapper or the class directly.
     // For validation, we ensure the properties have the Required attribute.
@@ -160,6 +232,68 @@
     protected override async Task OnInitializedAsync()
     {
         LoadFromSettings(await Settings.LoadAsync(Settings.DefaultPath));
+        _resourcePackInstalled = MojangResourcePackService.IsInstalled;
+
+        // Check for ?tab= query parameter
+        var uri = new Uri(Navigation.Uri);
+        var tabParam = System.Web.HttpUtility.ParseQueryString(uri.Query).Get("tab");
+        if (!string.IsNullOrEmpty(tabParam))
+            activeTab = tabParam;
+    }
+
+    private async Task OnBuildplatePreviewToggled()
+    {
+        if (SettingsModel.LauncherBuildplatePreview && !MojangResourcePackService.IsInstalled)
+        {
+            _resourcePackInstalled = false;
+        }
+        else
+        {
+            _resourcePackInstalled = MojangResourcePackService.IsInstalled;
+        }
+    }
+
+    private void ShowResourcePackDialog()
+    {
+        _showResourcePackDialog = true;
+        _ownsMinecraft = false;
+    }
+
+    private void HideResourcePackDialog()
+    {
+        _showResourcePackDialog = false;
+    }
+
+    private async Task DownloadResourcePack()
+    {
+        _showResourcePackDialog = false;
+        _downloading = true;
+        _downloadProgress = 0;
+        _resourcePackError = null;
+
+        try
+        {
+            (bool success, string? error) = await Solace.LauncherUI.Utils.MojangResourcePackService.DownloadAndExtractAsync(
+                progress => { _downloadProgress = progress; InvokeAsync(StateHasChanged); });
+
+            if (success)
+            {
+                _resourcePackInstalled = true;
+            }
+            else
+            {
+                _resourcePackError = error ?? "Download failed";
+            }
+        }
+        catch (Exception ex)
+        {
+            _resourcePackError = ex.Message;
+        }
+        finally
+        {
+            _downloading = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private void LoadFromSettings(Settings source)
@@ -285,40 +419,13 @@ nameof(IPv4) });
             if (LauncherBuildplatePreview)
             {
                 string resourcepackDir = Path.GetFullPath(Path.Combine(StaticDataPath ?? "", "resourcepacks", "java", "minecraft"));
-                string ErrorStringTemplate = $"Resource pack folder '{{0}}' does not exist, extract the *1.20.4* vanilla resource pack into '{resourcepackDir}'";
-                if (!Directory.Exists(resourcepackDir))
+                if (!Directory.Exists(resourcepackDir) ||
+                    !Directory.Exists(Path.Combine(resourcepackDir, "blockstates")) ||
+                    !Directory.Exists(Path.Combine(resourcepackDir, "models")) ||
+                    !Directory.Exists(Path.Combine(resourcepackDir, "textures")))
                 {
-                    yield return new ValidationResult(
-                        string.Format(ErrorStringTemplate, resourcepackDir),
-                        new[] { nameof(LauncherBuildplatePreview) }
-                    );
-                }
-
-                string blockstates = Path.Combine(resourcepackDir, "blockstates");
-                if (!Directory.Exists(blockstates))
-                {
-                    yield return new ValidationResult(
-                        string.Format(ErrorStringTemplate, blockstates),
-                        new[] { nameof(LauncherBuildplatePreview) }
-                    );
-                }
-
-                string models = Path.Combine(resourcepackDir, "models");
-                if (!Directory.Exists(models))
-                {
-                    yield return new ValidationResult(
-                        string.Format(ErrorStringTemplate, models),
-                        new[] { nameof(LauncherBuildplatePreview) }
-                    );
-                }
-
-                string textures = Path.Combine(resourcepackDir, "textures");
-                if (!Directory.Exists(textures))
-                {
-                    yield return new ValidationResult(
-                        string.Format(ErrorStringTemplate, textures),
-                        new[] { nameof(LauncherBuildplatePreview) }
-                    );
+                    // Only warn — don't block save. User can download after saving.
+                    Log.Warning("Buildplate preview enabled but resource pack not installed. Use 'Download from Mojang' button.");
                 }
             }
         }

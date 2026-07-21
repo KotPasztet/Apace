@@ -31,139 +31,128 @@
     };
 </script>
 
-<div class="container-fluid py-3 px-2 px-md-4">
-    <div class="card shadow-sm border-0 mb-3">
-        <div class="card-body text-center">
-            <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.8rem;">System Status</h6>
-            <div class="d-flex align-items-center justify-content-center">
-                <div class="status-indicator @GetStatusClass(_currentStatus) me-3"></div>
-                <h2 class="mb-0 fw-bold">@_currentStatus.ToString().ToUpper()</h2>
+<div class="card mb-4">
+    <div class="card-body text-center">
+        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.7rem; letter-spacing: 2px;">System Status</h6>
+        <div class="d-flex align-items-center justify-content-center mt-2">
+            <div class="status-dot @GetStatusClass(_currentStatus) mr-2"></div>
+            <h2 class="display-4 mb-0" style="font-size: 1.8rem; border-bottom: none; padding-bottom: 0;">@_currentStatus.ToString().ToUpper()</h2>
+        </div>
+        <small class="text-muted mt-3 d-block">Last updated: @DateTime.Now.ToString("t")</small>
+    </div>
+</div>
+
+@if (_eulaPending)
+{
+    <div class="alert alert-warning">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <strong>Mojang EULA must be accepted</strong><br />
+                <small>The Minecraft server requires you to accept the End User License Agreement.</small>
             </div>
-            <small class="text-muted mt-2 d-block">Last updated: @DateTime.Now.ToString("t")</small>
+            <button class="btn btn-warning btn-sm" @onclick="AcceptEula">
+                ✓ Accept EULA
+            </button>
         </div>
     </div>
+}
 
-    @if (_eulaPending)
+<div class="section-title">Components</div>
+<div class="comp-grid mb-4">
+    @foreach (var comp in ServerManager.Components)
     {
-        <div class="alert alert-warning border-warning shadow-sm mb-3">
-            <div class="d-flex align-items-center justify-content-between">
+        <div class="comp-card">
+            <div class="comp-info">
+                <div class="status-dot @GetStatusClass(comp.Status)"></div>
                 <div>
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <strong>Mojang EULA must be accepted</strong><br/>
-                    <small class="text-muted">The Minecraft server requires you to accept the End User License Agreement.</small>
+                    <div class="comp-name">@comp.Name</div>
+                    <div class="comp-status">@comp.Status.ToString()</div>
                 </div>
-                <button class="btn btn-warning fw-bold" @onclick="AcceptEula">
-                    <i class="bi bi-check-lg me-1"></i>Accept EULA
-                </button>
             </div>
+
+            @if (comp.Status is LauncherUI.ServerStatus.Offline)
+            {
+                <button class="btn btn-success btn-sm" style="width: 34px; height: 34px; padding: 0; justify-content: center;"
+                        title="Start Component"
+                        disabled="@(IsButtonDisabled(Permissions.StartServer) || !ServerManager.CanStart || _currentStatus is LauncherUI.ServerStatus.Starting or LauncherUI.ServerStatus.Stopping)"
+                        @onclick="() => StartComponent(comp.ExeName)">
+                    ▶
+                </button>
+            }
         </div>
     }
+</div>
 
-    <div class="row g-3 mb-4">
-        @foreach (var comp in ServerManager.Components)
+@if (!IsButtonDisabled(Permissions.StartServer) || !IsButtonDisabled(Permissions.RestartServer) ||
+    !IsButtonDisabled(Permissions.StopServer))
+{
+    <div class="section-title mt-4">Controls</div>
+    <div class="row gap-2 mb-4">
+        <div class="col">
+            <button class="btn btn-success btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
+                    disabled="@(IsButtonDisabled(Permissions.StartServer) || !ServerManager.CanStart)"
+                    @onclick="() => StartServer()">
+                <span style="font-size: 1.5rem;">▶</span>
+                <span style="font-size: 0.8rem;">Start All</span>
+            </button>
+        </div>
+        <div class="col">
+            <button class="btn btn-warning btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
+                    disabled="@(IsButtonDisabled(Permissions.RestartServer) || !ServerManager.CanRestart)"
+                    @onclick="() => RestartServer()">
+                <span style="font-size: 1.5rem; font-weight: 900; line-height: 1;">↺</span>
+                <span style="font-size: 0.8rem; font-weight: 700;">Restart</span>
+            </button>
+        </div>
+        <div class="col">
+            <button class="btn btn-danger btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
+                    disabled="@(IsButtonDisabled(Permissions.StopServer) || !ServerManager.CanStop)"
+                    @onclick="() => StopServer()">
+                <span style="font-size: 1.5rem;">■</span>
+                <span style="font-size: 0.8rem;">Stop</span>
+            </button>
+        </div>
+        <div class="col-12 mt-2">
+            <button class="btn btn-outline-danger btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
+                    disabled="@IsButtonDisabled(Permissions.StopServer)" @onclick="() => KillAll()">
+                <span style="font-size: 1.5rem; font-weight: 900;">✕</span>
+                <span style="font-size: 0.8rem; font-weight: bold;">KILL ALL PROCESSES</span>
+            </button>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">▸ Live Logs</div>
+    <div class="card-body">
+        @if (HasPermission(Permissions.ViewServerLogs))
         {
-            <div class="col-12 col-sm-6 col-lg-4">
-            <div class="card border border-light-subtle shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center">
-                        <div class="status-indicator @GetStatusClass(comp.Status) me-3"></div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">@comp.Name</h6>
-                            <small class="text-muted">@comp.Status.ToString()</small>
-                        </div>
-                    </div>
+            <div class="nav-pills mb-3" style="overflow-x: auto;">
+                @foreach (var component in LogService.GetKnownComponents())
+                {
+                    <button class="@(_activeTab == component ? "active" : "")"
+                            @onclick="() => _activeTab = component">
+                        @component
+                    </button>
+                }
+            </div>
 
-                    @if (comp.Status is LauncherUI.ServerStatus.Offline)
+            <div class="log-terminal" @ref="_logContainerRef">
+                <div class="log-content">
+                    @foreach (var log in LogService.GetLogsFor(_activeTab))
                     {
-                        <button class="btn btn-sm btn-outline-success border-0" 
-                                title="Start Component"
-                                disabled="@(IsButtonDisabled(Permissions.StartServer) || !ServerManager.CanStart || _currentStatus is LauncherUI.ServerStatus.Starting or LauncherUI.ServerStatus.Stopping)"
-                                @onclick="() => StartComponent(comp.ExeName)">
-                            <i class="bi bi-play-fill fs-5"></i>
-                        </button>
+                        <div class="log-line"><span class="log-time">[@log.Timestamp.ToString("HH:mm:ss")]</span> <span class="log-level @GetLogLevelClass(log.Level)">[@GetShortLevel(log.Level)]</span> <span class="log-msg">@log.RenderedMessage</span></div>
                     }
                 </div>
             </div>
-        </div>
         }
-    </div>
-
-    @if (!IsButtonDisabled(Permissions.StartServer) || !IsButtonDisabled(Permissions.RestartServer) ||
-        !IsButtonDisabled(Permissions.StopServer))
-    {
-        <div class="row g-2 mb-4">
-            <div class="col-12 col-md-4">
-                <button class="btn btn-lg btn-success w-100 py-3 d-flex flex-column align-items-center"
-                        disabled="@(IsButtonDisabled(Permissions.StartServer) || !ServerManager.CanStart)"
-                        @onclick="() => StartServer()">
-                    <i class="bi bi-play-fill fs-2"></i>
-                    <span style="font-size: 0.9rem;">Start All</span>
-                </button>
+        else
+        {
+            <div class="alert alert-light text-center py-4">
+                <span style="font-size: 1.5rem;" class="d-block mb-2">🔒</span>
+                <span class="text-muted">Log access restricted</span>
             </div>
-            <div class="col-6 col-md-4">
-                <button class="btn btn-lg btn-warning w-100 py-3 d-flex flex-column align-items-center"
-                        disabled="@(IsButtonDisabled(Permissions.RestartServer) || !ServerManager.CanRestart)"
-                        @onclick="() => RestartServer()">
-                    <i class="bi bi-arrow-clockwise fs-2"></i>
-                    <span style="font-size: 0.9rem;">Restart</span>
-                </button>
-            </div>
-            <div class="col-6 col-md-4">
-                <button class="btn btn-lg btn-danger w-100 py-3 d-flex flex-column align-items-center"
-                        disabled="@(IsButtonDisabled(Permissions.StopServer) || !ServerManager.CanStop)"
-                        @onclick="() => StopServer()">
-                    <i class="bi bi-stop-fill fs-2"></i>
-                    <span style="font-size: 0.9rem;">Stop</span>
-                </button>
-            </div>
-            <div class="col-12 mt-2">
-                <button class="btn btn-lg btn-outline-danger w-100 py-3 d-flex flex-column align-items-center"
-                        disabled="@IsButtonDisabled(Permissions.StopServer)" @onclick="() => KillAll()">
-                    <i class="bi bi-x-circle-fill fs-2"></i>
-                    <span style="font-size: 0.9rem; font-weight: bold;">KILL ALL PROCESSES</span>
-                </button>
-            </div>
-        </div>
-    }
-
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-0 pt-3">
-            <h5 class="fw-bold"><i class="bi bi-terminal me-2"></i>Live Logs</h5>
-        </div>
-        <div class="card-body pt-0">
-            @if (HasPermission(Permissions.ViewServerLogs))
-            {
-                <div class="nav-scroller mb-3">
-                    <ul class="nav nav-pills flex-nowrap" style="overflow-x: auto; white-space: nowrap;">
-                        @foreach (var component in LogService.GetKnownComponents())
-                        {
-                            <li class="nav-item">
-                                <button class="nav-link py-2 me-2 @(_activeTab == component ? "active" : "bg-light text-dark")"
-                                        @onclick="() => _activeTab = component">
-                                    @component
-                                </button>
-                            </li>
-                        }
-                    </ul>
-                </div>
-
-                <div class="log-container" @ref="_logContainerRef">
-                    <div class="log-content">
-                        @foreach (var log in LogService.GetLogsFor(_activeTab))
-                        {
-                            <div class="log-line"><span class="log-time">[@log.Timestamp.ToString("HH:mm:ss")]</span> <span class="log-level @GetLogLevelClass(log.Level)">[@GetShortLevel(log.Level)]</span> <span class="log-msg">@log.RenderedMessage</span></div>
-                        }
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="alert alert-light border text-center py-4">
-                    <i class="bi bi-lock-fill text-muted fs-1 d-block mb-2"></i>
-                    <span class="text-muted">Log access restricted</span>
-                </div>
-            }
-        </div>
+        }
     </div>
 </div>
 
@@ -172,11 +161,11 @@
 
     private string _activeTab = "Launcher";
     private ClaimsPrincipal? _user;
-
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
     private bool _eulaPending;
     private Timer? _eulaCheckTimer;
+    private Timer? _statusRefreshTimer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -196,6 +185,13 @@
                 await InvokeAsync(StateHasChanged);
             }
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+
+        // Refresh component statuses every 3s (BuildplateLauncher Starting → Online)
+        _statusRefreshTimer = new Timer(async _ =>
+        {
+            ServerManager.RefreshComponentStatuses();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -217,6 +213,7 @@
         LogService.OnLogReceived -= HandleUpdate;
         ServerManager.OnStatusChanged -= HandleUpdate;
         _eulaCheckTimer?.Dispose();
+        _statusRefreshTimer?.Dispose();
     }
 
     private async Task StartServer()
@@ -249,7 +246,7 @@
 
     private bool HasPermission(string permission)
         => _user?.HasPermission(permission) ?? false;
-        
+
     private bool IsButtonDisabled(string permission)
         => !HasPermission(permission);
 

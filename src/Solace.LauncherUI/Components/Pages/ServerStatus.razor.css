@@ -1,97 +1,101 @@
-.status-indicator {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-}
-
-.status-online {
-    background-color: #2ecc71;
-    box-shadow: 0 0 12px rgba(46, 204, 113, 0.5);
-}
-
-.status-starting {
-    background-color: #f1c40f;
-    box-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
-}
-
-.status-stopping {
-    background-color: #f1c40f;
-    box-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
-}
-
-.status-offline {
-    background-color: #e74c3c;
-    box-shadow: 0 0 12px rgba(231, 76, 60, 0.5);
-}
-
-.log-container {
-    background: #121212;
-    border-radius: 8px;
-    padding: 12px;
-    height: 300px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
+/* Override stale bundle rules — scoped CSS wins over app.css */
 
 .log-content {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 0.8rem;
-    line-height: 1.4;
+    font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    font-size: 0.65rem !important;
+    line-height: 1.6 !important;
+    letter-spacing: normal !important;
 }
 
 .log-line {
-    color: #e0e0e0;
-    margin-bottom: 4px;
-    display: block;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
+    color: #e0e0e0 !important;
+    margin-bottom: 2px !important;
+    display: block !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: break-word !important;
 }
 
 .log-time {
-    color: #888;
-    margin-right: 4px;
+    color: #666 !important;
+    margin-right: 8px !important;
 }
 
 .log-level {
-    font-weight: bold;
-    margin-right: 4px;
-    white-space: nowrap;
+    font-weight: 700 !important;
+    margin-right: 4px !important;
+    white-space: nowrap !important;
 }
 
-.log-msg {}
-
-.log-vrb {
-    color: #8b949e;
+.log-msg {
+    color: #e0e0e0 !important;
 }
 
-.log-dbg {
-    color: #a5d6ff;
+.log-vrb { color: #888 !important; }
+.log-dbg { color: #64b5f6 !important; }
+.log-inf { color: #4caf50 !important; }
+.log-wrn { color: #ffb300 !important; }
+.log-err { color: #f44336 !important; }
+.log-ftl { color: #fff !important; background: #c62828 !important; padding: 0 4px !important; }
+
+/* Log tab buttons — plain <button> elements inside .nav-pills */
+.nav-pills button {
+    padding: 8px 18px !important;
+    color: #9a9ab0 !important;
+    background: #1a1a1a !important;
+    border: 2px solid #3a3a3a !important;
+    border-radius: 0 !important;
+    font-size: 0.65rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    white-space: nowrap !important;
+    box-shadow: 0 3px 0 #0a0a0a !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    transition: all 0.1s !important;
 }
 
-.log-inf {
-    color: #3fb950;
+.nav-pills button.active {
+    background: linear-gradient(180deg, #7cb342, #558b2f) !important;
+    color: #fff !important;
+    border-color: #33691e !important;
+    box-shadow: 0 3px 0 #1a3a0a !important;
 }
 
-.log-wrn {
-    color: #d29922;
+.nav-pills button:hover:not(.active) {
+    background: #2a2a2a !important;
+    color: #e0e0e0 !important;
 }
 
-.log-err {
-    color: #f85149;
+/* Prevent long log lines from expanding the UI */
+.log-terminal {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
-.log-ftl {
-    color: #ffffff;
-    background-color: #b31d28;
-    padding: 0 4px;
-    border-radius: 3px;
+.log-content {
+    min-width: 0 !important;
+    width: 100% !important;
 }
 
-.nav-scroller {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+.log-line {
+    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
 }
 
-.nav-scroller::-webkit-scrollbar {
-    display: none;
+/* Fixed width log terminal — never expands UI */
+.log-terminal {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
 }

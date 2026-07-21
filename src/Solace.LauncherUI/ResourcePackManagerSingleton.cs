@@ -36,10 +36,7 @@ internal static class ResourcePackManagerSingleton
                 {
                     resourcePackManager = await ResourcePackManager.LoadAllAsync(dir);
                     if (resourcePackManager.LoadedPackCount < 2)
-                    {
-                        Log.Warning($"Only loaded {resourcePackManager.LoadedPackCount} resourcepacks, make sure staticdata/resourcepacks/java contains minecraft/ and fountain/");
-                        resourcePackManager = null;
-                    }
+                        Log.Warning("Only loaded {Count} resourcepacks, some textures may be missing", resourcePackManager.LoadedPackCount);
                 }
                 else
                 {

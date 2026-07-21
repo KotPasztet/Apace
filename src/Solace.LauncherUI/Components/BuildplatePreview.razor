@@ -31,6 +31,14 @@
             <span class="visually-hidden">Loading 3D preview...</span>
         </div>
     }
+    else if (_previewDisabled)
+    {
+        <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+            <img src="/images/buildplate_icon.png" alt="Preview disabled" style="width: 64px; height: 64px; opacity: 0.5;" />
+            <span class="small mt-2">Preview disabled</span>
+            <span class="small text-secondary">Enable in Server Options → Data Handling</span>
+        </div>
+    }
     else if (_isPreviewFailed)
     {
         <div class="text-danger d-flex flex-column align-items-center">
@@ -85,6 +93,7 @@
     
     private bool _isPreviewLoading = true;
     private bool _isPreviewFailed = false;
+    private bool _previewDisabled = false;
     private string? _previewDataUri;
     private bool _isModelImported = false;
     private bool _isCurrentlyLoadingTask = false;
@@ -193,6 +202,7 @@
         if (Settings.Instance.LauncherBuildplatePreview is not true)
         {
             _isPreviewLoading = false;
+            _previewDisabled = true;
             return;
         }
 

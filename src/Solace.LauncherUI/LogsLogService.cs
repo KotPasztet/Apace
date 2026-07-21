@@ -56,7 +56,7 @@ public class LogsLogService : ILogEventSink
     {
         if (_logsByComponent.TryGetValue(componentName, out var queue))
         {
-            return [.. queue]; // Creates a safe snapshot for UI rendering
+            return [.. queue];
         }
 
         return [];
