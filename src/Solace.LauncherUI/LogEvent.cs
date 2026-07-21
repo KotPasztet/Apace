@@ -15,3 +15,4 @@ public sealed class LogEventProperties
 {
     public string? ComponentName { get; set; }
 }
+//testa

@@ -19,30 +19,20 @@
 
 <div class="import-container">
     <button class="btn-back-link" @onclick="GoBack" title="Back to Buildplates">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path fill-rule="evenodd"
-                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8" />
-        </svg>
-        <span>Back</span>
+        ← <span>Back</span>
     </button>
-    
-    <h2>Import Buildplate</h2>
-    <p>Upload your buildplates here.</p>
+
+    <div class="section-title" style="margin-top: 8px;">Import Buildplate</div>
+    <p class="text-muted">Upload your buildplates here.</p>
 
     <div class="drop-zone @(isHovering ? "hovering" : "")" @ondragenter="@(() => isHovering = true)"
          @ondragleave="@(() => isHovering = false)" @ondrop="@(() => isHovering = false)">
-        
+
         <InputFile OnChange="HandleFileSelection" multiple accept=".zip,.json" class="file-input"
                    disabled="@isImporting" />
-        
+
         <div class="drop-zone-content">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="upload-icon"
-                 viewBox="0 0 16 16">
-                <path
-                d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
-                <path
-                d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z" />
-            </svg>
+            <img class="upload-icon" src="/images/buildplate_icon.png" alt="" />
             <p><strong>Drag and drop</strong> your files here, or <strong>click to browse</strong></p>
             <p class="file-hint">Accepts .zip (Apace/Vienna) or .json (Project Earth)</p>
         </div>
@@ -60,14 +50,7 @@
                             @if (file.HasError && !isImporting)
                             {
                                 <button class="btn-retry" @onclick="() => RetryFile(file)" title="Retry upload">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor"
-                                         viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd"
-                                              d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
-                                        <path
-                                        d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
-                                    </svg>
-                                    Retry
+                                    ↻ Retry
                                 </button>
                             }
                             <button class="btn-remove" @onclick="() => RemoveFile(file)"
@@ -87,11 +70,11 @@
                     }
                     else if (file.IsProcessing)
                     {
-                        <span class="text-primary file-status">Importing...</span>
+                        <span class="file-status" style="color: #64b5f6;">Importing...</span>
                     }
                     else if (file.IsUploadedToTemp)
                     {
-                        <span class="text-info file-status">Ready to Import</span>
+                        <span class="file-status" style="color: #64b5f6;">Ready to Import</span>
                     }
                     else
                     {
@@ -109,7 +92,7 @@
                     disabled="@(isImporting || !selectedFiles.Any(f => f.IsUploadedToTemp && !f.HasError && !f.IsComplete))">
                 @(isImporting ? "Importing..." : "Import Buildplates")
             </button>
-            
+
             @if (!isImporting)
             {
                 <button class="btn btn-link" @onclick="GoBack">Cancel</button>
@@ -132,23 +115,6 @@
         </div>
     </div>
 }
-
-<style>
-    .file-input {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        cursor: pointer;
-        z-index: 10;
-    }
-    
-    .file-input:disabled {
-        cursor: not-allowed;
-    }
-</style>
 
 @code {
     private bool isHovering;

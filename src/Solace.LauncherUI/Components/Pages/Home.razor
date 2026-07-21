@@ -5,91 +5,104 @@
 
 <PageTitle>Home - Apace</PageTitle>
 
-<div class="container mt-5">
-    <div class="p-5 mb-4 bg-light rounded-3 border">
-        <div class="container-fluid py-5 text-center">
-            <h1 class="display-5 fw-bold">Apace Launcher</h1>
-            <p class="col-md-12 fs-4 text-muted">Manage, configure, and monitor your server.</p>
+<AuthorizeView>
+    <Authorized>
+        <div class="splash-hero">
+            <img src="/images/merl_avatar_widget.png" alt="Apace" />
+            <h1>Apace Launcher</h1>
+            <p class="lead mt-2">Manage, configure, and monitor your server.</p>
         </div>
-    </div>
 
-    <div class="row g-4 justify-content-center">
-        <AuthorizeView>
-            <Authorized>
-                <div class="col-md-8">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="bi bi-rocket-takeoff me-2"></i>Getting Started</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">Welcome back, <strong>@context.User.Identity?.Name</strong>! Here is how to get your server up and running:</p>
-                            
-                            <ul class="list-group list-group-flush">
-                                @if (HasPermission(context.User, Permissions.EditServerOptions))
-                                {
-                                    <li class="list-group-item d-flex align-items-center py-3">
-                                        <div class="bg-light rounded-circle p-2 me-3">
-                                            <span class="bi bi-gear-fill text-primary"></span>
-                                        </div>
-                                        <div>
-                                            <strong>Configure the environment</strong><br/>
-                                            <small class="text-muted">Head to <a href="Admin/ServerOptions" class="text-decoration-none">Server Options</a> to adjust your settings.</small>
-                                        </div>
-                                    </li>
-                                }
+        <div class="row g-4">
+            <div class="col-12 col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">⚙ Getting Started</div>
+                    <div class="card-body">
+                        <p style="font-size: 0.85rem;">Welcome back, <strong style="color:#8bc34a;">@context.User.Identity?.Name</strong>!</p>
 
+                        <ul class="list-group list-group-flush mt-3">
+                            @if (HasPermission(context.User, Permissions.EditServerOptions))
+                            {
                                 <li class="list-group-item d-flex align-items-center py-3">
-                                    <div class="bg-light rounded-circle p-2 me-3">
-                                        <span class="bi bi-play-circle-fill text-success"></span>
-                                    </div>
+                                    <img class="nav-icon me-3" src="/images/settings_icon.png" alt="" />
                                     <div>
-                                        <strong>Initialize the server</strong><br/>
-                                        <small class="text-muted">Once configured, visit <a href="ServerStatus" class="text-decoration-none">Server Status</a> to start the process.</small>
+                                        <strong>Configure the environment</strong><br />
+                                        <small class="text-muted">Head to <a href="Admin/ServerOptions">Server Options</a> to adjust your settings.</small>
                                     </div>
                                 </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </Authorized>
-            
-            <NotAuthorized>
-               <div class="col-md-6">
-                    <div class="card h-100 shadow-sm border-0">
-                        <div class="card-body p-4 d-flex flex-column">
-                            <div class="mb-3">
-                                <span class="badge bg-primary-soft text-primary p-2 px-3 rounded-pill mb-2">Access Control</span>
-                                <h3 class="fw-bold">Management Portal</h3>
-                            </div>
-                            <p class="text-muted flex-grow-1">Sign in to access administrative tools, manage buildplates, and configure server-side permissions.</p>
-                            <div class="d-grid gap-2 mt-4">
-                                <a href="Account/Login" class="btn btn-primary fw-bold py-2">Sign In</a>
-                                <a href="Account/Register" class="btn btn-outline-secondary py-2">Create Account</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                            }
 
-                <div class="col-md-6">
-                    <div class="card h-100 shadow-sm border-0">
-                        <div class="card-body p-4 d-flex flex-column">
-                            <div class="mb-3">
-                                <span class="badge bg-success-soft text-success p-2 px-3 rounded-pill mb-2">Live Monitoring</span>
-                                <h3 class="fw-bold">System Health</h3>
-                            </div>
-                            <p class="text-muted flex-grow-1">View the current operational status of the server.</p>
-                            <div class="mt-4">
-                                <a href="ServerStatus" class="btn btn-light w-100 py-2 border fw-semibold">
-                                    <i class="bi bi-cpu me-2"></i>View Infrastructure Status
-                                </a>
-                            </div>
+                            <li class="list-group-item d-flex align-items-center py-3">
+                                <img class="nav-icon me-3" src="/images/timer_icon.png" alt="" />
+                                <div>
+                                    <strong>Initialize the server</strong><br />
+                                    <small class="text-muted">Once configured, visit <a href="ServerStatus">Server Status</a> to start the process.</small>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">▸ System Health</div>
+                    <div class="card-body d-flex flex-column h-100">
+                        <p style="font-size: 0.85rem; color: #9a9ab0;" class="flex-grow-1">View the current operational status of the server.</p>
+                        <div class="mt-3">
+                            <a href="ServerStatus" class="btn btn-primary w-100 justify-content-center d-flex">
+                                <img class="nav-icon me-2" src="/images/health_icon.png" alt="" /> View Infrastructure Status
+                            </a>
                         </div>
                     </div>
                 </div>
-            </NotAuthorized>
-        </AuthorizeView>
-    </div>
-</div>
+            </div>
+        </div>
+    </Authorized>
+
+    <NotAuthorized>
+        <div class="splash-hero">
+            <img src="/images/merl_avatar_widget.png" alt="Apace" />
+            <h1>Apace Launcher</h1>
+            <p class="lead mt-2">Manage, configure, and monitor your server.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-md-6">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column h-100">
+                        <div class="mb-3">
+                            <span class="badge bg-info" style="font-size: 0.7rem;">Access Control</span>
+                            <h3 class="mt-2">Management Portal</h3>
+                        </div>
+                        <p class="text-muted flex-grow-1">Sign in to access administrative tools, manage buildplates, and configure server-side permissions.</p>
+                        <div class="d-flex flex-column gap-2 mt-4">
+                            <a href="Account/Login" class="btn btn-primary justify-content-center d-flex">Sign In</a>
+                            <a href="Account/Register" class="btn btn-outline justify-content-center d-flex">Create Account</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column h-100">
+                        <div class="mb-3">
+                            <span class="badge bg-success" style="font-size: 0.7rem;">Live Monitoring</span>
+                            <h3 class="mt-2">System Health</h3>
+                        </div>
+                        <p class="text-muted flex-grow-1">View the current operational status of the server.</p>
+                        <div class="mt-3">
+                            <a href="ServerStatus" class="btn btn-outline w-100 justify-content-center d-flex">
+                                <img class="nav-icon me-2" src="/images/health_icon.png" alt="" /> View Infrastructure Status
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private bool HasPermission(ClaimsPrincipal user, string permission)

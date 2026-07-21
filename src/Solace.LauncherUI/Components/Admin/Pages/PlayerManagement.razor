@@ -12,235 +12,147 @@
 
 <PageTitle>Player Management - Apace</PageTitle>
 
-<div class="container-fluid py-3 px-md-4">
-    <div class="row align-items-center mb-4">
-        <div class="col-12 col-md-6">
-            <h2 class="h3 mb-1"><i class="bi bi-people-fill me-2 text-primary"></i>Players</h2>
-            <p class="text-muted small">Manage accounts and player statistics</p>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+            <img class="nav-icon" src="/images/mob_of_me_icon.png" alt="" /> Players
         </div>
-        <div class="col-12 col-md-6 text-md-end">
-            <span class="badge bg-dark-subtle text-dark border p-2">
-                Total: @(_players?.Count ?? 0)
-            </span>
+        <p class="text-muted small mb-0 mt-1">Manage accounts and player statistics</p>
+    </div>
+    <span class="badge badge-subtle" style="font-size: 0.75rem; padding: 6px 12px;">
+        Total: @(_players?.Count ?? 0)
+    </span>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger">⚠ @_errorMessage</div>
+}
+
+@if (_players is null)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+}
+else if (!_players.Any())
+{
+    <div class="alert alert-info">No players found.</div>
+}
+else
+{
+    <!-- Desktop table -->
+    <div class="card d-none d-md-block">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>ID</th>
+                        <th>Level</th>
+                        <th>Rubies</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var player in _players)
+                    {
+                        <tr @key="player.Id">
+                            @if (_editingId == player.Id)
+                            {
+                                <td>
+                                    <input class="form-control form-control-sm" style="min-width: 160px;" @bind="_editUsername" />
+                                </td>
+                                <td><code style="font-size: 0.7rem;">@player.Id</code></td>
+                                <td>
+                                    <input type="number" min="1" class="form-control form-control-sm" style="width: 80px;" @bind="_editLevel" />
+                                </td>
+                                <td>
+                                    <input type="number" min="0" class="form-control form-control-sm" style="width: 100px;" @bind="_editTotalRubies" />
+                                </td>
+                                <td style="text-align: right;">
+                                    <button class="btn btn-success btn-sm" @onclick="() => SaveEditAsync(player)">Save</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="CancelEdit">Cancel</button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="fw-bold">@(player.Username ?? "—")</td>
+                                <td><code style="font-size: 0.7rem; color: #9a9ab0;">@player.Id</code></td>
+                                <td><span class="badge bg-primary">Lvl @player.Profile.Level</span></td>
+                                <td>
+                                    <span style="color: #e57373;">💎</span> @player.Profile.Rubies.Total
+                                </td>
+                                <td style="text-align: right;">
+                                    @if (HasPermission(Permissions.ManagePlayers))
+                                    {
+                                        <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-outline btn-sm" title="View Buildplates">
+                                            <img class="nav-icon" src="/images/buildplate_icon.png" alt="" />
+                                        </a>
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(player)">Edit</button>
+                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 
-    @if (_errorMessage is not null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-octagon-fill me-2"></i>@_errorMessage
-            <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
-        </div>
-    }
-
-    @if (_players is null && _errorMessage is null)
-    {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status"></div>
-            <div class="mt-2 text-muted">Loading player data...</div>
-        </div>
-    }
-    else if (_players is not null)
-    {
-        <div class="d-none d-md-block card shadow-sm border-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>User ID</th>
-                            <th>Username</th>
-                            <th class="text-center">Level</th>
-                            <th class="text-center">Rubies</th>
-                            @if (HasPermission(Permissions.ManagePlayers))
-                            {
-                                <th class="text-end pe-4">Actions</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var player in _players)
-                        {
-                            @if (_editingId == player.Id)
-                            {
-                                <tr class="table-warning">
-                                    <td><code class="text-primary small">@player.Id</code></td>
-                                    <td>
-                                        @if (player.Username is not null)
-                                        {
-                                            <input type="text" class="form-control form-control-sm" @bind="_editUsername"
-                                                   placeholder="Username" minlength="1" />
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted fst-italic">No Username</span>
-                                            <span class="badge rounded-pill bg-info text-dark ms-1" style="font-size: 0.75rem;">
-                                                Microsoft Account
-                                            </span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <input type="number" class="form-control form-control-sm text-center mx-auto"
-                                               style="max-width: 80px;" @bind="_editLevel" min="1" />
-                                    </td>
-                                    <td>
-                                        <div class="input-group input-group-sm mx-auto" style="max-width: 120px;">
-                                            <span class="input-group-text"><i class="bi bi-gem text-danger"></i></span>
-                                            <input type="number" class="form-control text-center" @bind="_editTotalRubies"
-                                                   min="0" />
-                                        </div>
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        <button class="btn btn-sm btn-success me-1" @onclick="() => SaveEditAsync(player)"><i
-                                            class="bi bi-check-lg"></i></button>
-                                            <button class="btn btn-sm btn-outline-secondary" @onclick="CancelEdit"><i
-                                                class="bi bi-x-lg"></i></button>
-                                            </td>
-                                        </tr>
-                                    }
-                            else
-                                    {
-                                        <tr>
-                                            <td><code class="text-primary small">@player.Id</code></td>
-                                            <td>
-                                                @if (string.IsNullOrEmpty(player.Username))
-                                                {
-                                                    <span class="text-muted fst-italic">No Username</span>
-                                                    <span class="badge rounded-pill bg-info text-dark ms-1" style="font-size: 0.75rem;">
-                                                        Microsoft Account
-                                                    </span>
-                                                }
-                                                else
-                                                {
-                                                    @player.Username
-                                                }
-                                            </td>
-                                            <td class="text-center"><span class="badge bg-info text-dark">Lv. @player.Profile.Level</span>
-                                            </td>
-                                            <td class="text-center text-danger fw-bold"
-                                                title="Purchased: @player.Profile.Rubies.Purchased | Earned: @player.Profile.Rubies.Earned">
-                                                <i class="bi bi-gem me-1"></i>@player.Profile.Rubies.Total
-                                            </td>
-                                            @if (HasPermission(Permissions.ManagePlayers))
-                                            {
-                                                <td class="text-end pe-4">
-                                                    <a href="/Admin/Players/@(player.Id)/Buildplates" class="btn btn-sm btn-outline-info"
-                                                           title="Buildplates">
-                                                        <i class="bi bi-boxes"></i>
-                                                    </a>
-                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(player)">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-danger"
-                                                            @onclick="() => DeletePlayerAsync(player.Id, player.Username)" title="Delete">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </td>
-                                            }
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="d-md-none">
-                    @foreach (var player in _players)
+    <!-- Mobile cards -->
+    <div class="d-md-none d-flex flex-column gap-3">
+        @foreach (var player in _players)
+        {
+            <div class="card" @key="player.Id">
+                <div class="card-body">
+                    @if (_editingId == player.Id)
                     {
-                        @if (_editingId == player.Id)
+                        <div class="mb-2">
+                            <label class="form-label">Username</label>
+                            <input class="form-control" @bind="_editUsername" />
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Level</label>
+                                <input type="number" min="1" class="form-control" @bind="_editLevel" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Rubies</label>
+                                <input type="number" min="0" class="form-control" @bind="_editTotalRubies" />
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm flex-grow-1" @onclick="() => SaveEditAsync(player)">Save</button>
+                            <button class="btn btn-secondary btn-sm flex-grow-1" @onclick="CancelEdit">Cancel</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="fw-bold">@(player.Username ?? "—")</div>
+                                <code style="font-size: 0.65rem; color: #9a9ab0;">@player.Id</code>
+                            </div>
+                            <span class="badge bg-primary">Lvl @player.Profile.Level</span>
+                        </div>
+                        <div class="mb-3" style="color: #e57373;">💎 @player.Profile.Rubies.Total Rubies</div>
+
+                        @if (HasPermission(Permissions.ManagePlayers))
                         {
-                            <div class="card mb-3 shadow-sm border-start border-warning border-4 bg-warning-subtle">
-                                <div class="card-body">
-                                    <div class="mb-1">
-                                        <small class="text-muted d-block">ID: @player.Id</small>
-                                    </div>
-                            
-                                    <div class="mb-2">
-                                        @if (player.Username is not null)
-                                        {
-                                            <label class="form-label small text-muted mb-0">Username</label>
-                                            <input type="text" class="form-control form-control-sm" @bind="_editUsername" placeholder="Username"
-                                                   minlength="1" />
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted fst-italic">No Username</span>
-                                            <span class="badge rounded-pill bg-info text-dark ms-1" style="font-size: 0.75rem;">
-                                                Microsoft Account
-                                            </span>
-                                        }
-                                    </div>
-                            
-                                    <div class="row mb-3">
-                                        <div class="col-6">
-                                            <label class="form-label small text-muted mb-0">Level</label>
-                                            <input type="number" class="form-control form-control-sm" @bind="_editLevel" min="1" />
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="form-label small text-muted mb-0">Rubies</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text"><i class="bi bi-gem text-danger"></i></span>
-                                                <input type="number" class="form-control" @bind="_editTotalRubies" min="0" />
-                                            </div>
-                                        </div>
-                                    </div>
-                            
-                                    <div class="d-flex justify-content-end gap-2 mt-3">
-                                        <button class="btn btn-sm btn-outline-secondary w-50" @onclick="CancelEdit"><i
-                                            class="bi bi-x-lg me-1"></i>Cancel</button>
-                                            <button class="btn btn-sm btn-success w-50" @onclick="() => SaveEditAsync(player)"><i
-                                                class="bi bi-check-lg me-1"></i>Save</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="card mb-3 shadow-sm border-start border-primary border-4">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <div class="text-truncate me-2">
-                                                    <small class="text-muted d-block">ID: @player.Id</small>
-                                                    @if (string.IsNullOrEmpty(player.Username))
-                                                    {
-                                                        <span class="text-muted fst-italic">No Username</span>
-                                                        <span class="badge rounded-pill bg-info text-dark ms-1" style="font-size: 0.75rem;">
-                                                            Microsoft Account
-                                                        </span>
-                                                    }
-                                                    else
-                                                    {
-                                                        @player.Username
-                                                    }
-                                                </div>
-                                                <div class="text-end">
-                                                    <span class="badge bg-info text-dark d-block mb-1">Lv. @player.Profile.Level</span>
-                                                    <span class="text-danger fw-bold small"><i class="bi bi-gem"></i>
-                                                        @player.Profile.Rubies.Total</span>
-                                                    </div>
-                                                </div>
-                                                @if (HasPermission(Permissions.ManagePlayers))
-                                                {
-                                                    <div class="text-end mt-2">
-                                                        <a href="/Admin/Players/@(player.Id)/Buildplates" class="btn btn-sm btn-outline-info w-100 mb-1">
-                                                            <i class="bi bi-boxes me-1"></i>Manage Buildplates
-                                                        </a>
-                                                        <button class="btn btn-sm btn-outline-primary w-100" @onclick="() => StartEdit(player)">
-                                                            <i class="bi bi-pencil me-1"></i>Edit Player
-                                                        </button>
-                                                        <button class="btn btn-sm btn-outline-danger w-100"
-                                                                @onclick="() => DeletePlayerAsync(player.Id, player.Username)">
-                                                            <i class="bi bi-trash me-1"></i>Delete
-                                                        </button>
-                                                    </div>
-                                                }
-                                            </div>
-                                        </div>
-                                    }
-                                }
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-outline btn-sm flex-grow-1">Buildplates</a>
+                                <button class="btn btn-outline-secondary btn-sm flex-grow-1" @onclick="() => StartEdit(player)">Edit</button>
+                                <button class="btn btn-outline-danger btn-sm flex-grow-1" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
                             </div>
                         }
-                    </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
 
 @code {
     private ClaimsPrincipal? _user;
