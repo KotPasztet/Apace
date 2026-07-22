@@ -66,6 +66,13 @@ foreach ($buildProfile in $profiles) {
 
     Copy-Item -Path "staticdata" -Destination "$publishDir/staticdata" -Recurse -Force
 
+    # Copy server JARs from repo root into the staticdata directory that the launcher reads at runtime.
+    # (The MSBuild copy targets in Solace.LauncherUI.csproj copy to $(PublishDir)/staticdata,
+    # but the launcher resolves StaticDataDir as ../staticdata relative to the exe — i.e. the
+    # parent publishDir/staticdata, not the launcher subdirectory.)
+    New-Item -ItemType Directory -Force -Path "$publishDir/staticdata/server_jars" | Out-Null
+    Copy-Item -Path "server_jars/*.jar" -Destination "$publishDir/staticdata/server_jars/" -Force
+
     $startScriptContent = @'
 #!/usr/bin/env pwsh
 $originalPath = Get-Location
