@@ -85,20 +85,12 @@ public sealed class ServerManager : IDisposable
             {
                 bool isRunning = ProcessUtils.GetProgramProcesses(comp.ExeName).Any();
 
-                // BuildplateLauncher: stay "Starting" until shared Fabric server is ready
-                if (comp.Name == "Buildplate Launcher" && isRunning && !File.Exists("/tmp/apace-server-ready"))
+                comp.Status = comp.Status switch
                 {
-                    comp.Status = ServerStatus.Starting;
-                }
-                else
-                {
-                    comp.Status = comp.Status switch
-                    {
-                        ServerStatus.Starting => isRunning ? ServerStatus.Online : ServerStatus.Starting,
-                        ServerStatus.Stopping => isRunning ? ServerStatus.Stopping : ServerStatus.Offline,
-                        _ => isRunning ? ServerStatus.Online : ServerStatus.Offline,
-                    };
-                }
+                    ServerStatus.Starting => isRunning ? ServerStatus.Online : ServerStatus.Starting,
+                    ServerStatus.Stopping => isRunning ? ServerStatus.Stopping : ServerStatus.Offline,
+                    _ => isRunning ? ServerStatus.Online : ServerStatus.Offline,
+                };
             }
 
             if (comp.Status is ServerStatus.Online && comp.IsEnabled(settings))
