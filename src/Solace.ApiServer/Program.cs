@@ -30,6 +30,7 @@ public static class Program
     internal static TappablesManager tappablesManager;
     internal static BuildplateInstancesManager buildplateInstancesManager;
     internal static Importer importer;
+    internal static int PlayableScale { get; private set; } = 4;
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private sealed class Options
@@ -55,6 +56,9 @@ public static class Program
 
         [Option("logger-url", Default = null, Required = false, HelpText = "Url to send logs to")]
         public string? LoggerUrl { get; set; }
+
+        [Option("playable-scale", Default = 4, Required = false, HelpText = "AR scale for playable buildplates and player adventures, in blocks per meter")]
+        public int PlayableScale { get; set; }
     }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
@@ -112,6 +116,8 @@ public static class Program
         {
             return 1;
         }
+
+        PlayableScale = Math.Clamp(options.PlayableScale, 1, 32);
 
         var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()
