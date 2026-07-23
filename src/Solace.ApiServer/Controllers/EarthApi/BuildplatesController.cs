@@ -819,7 +819,7 @@ internal sealed class BuildplatesController : SolaceControllerBase
             BuildplateInstancesManager.InstanceType.SHARED_BUILD => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.SHARED_BUILDPLATE_PLAY, Source.SHARED),
             BuildplateInstancesManager.InstanceType.SHARED_PLAY => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.SHARED_BUILDPLATE_PLAY, Source.SHARED),
             BuildplateInstancesManager.InstanceType.ENCOUNTER => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.ENCOUNTER, Source.ENCOUNTER),
-            BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.ENCOUNTER, Source.ENCOUNTER),
+            BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.PLAYER_ADVENTURE, Source.ENCOUNTER),
             _ => throw new UnreachableException(),
         };
 
