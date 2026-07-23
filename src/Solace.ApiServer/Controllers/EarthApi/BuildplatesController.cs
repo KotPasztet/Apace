@@ -819,7 +819,7 @@ internal sealed class BuildplatesController : SolaceControllerBase
             BuildplateInstancesManager.InstanceType.SHARED_BUILD => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.SHARED_BUILDPLATE_PLAY, Source.SHARED),
             BuildplateInstancesManager.InstanceType.SHARED_PLAY => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.SHARED_BUILDPLATE_PLAY, Source.SHARED),
             BuildplateInstancesManager.InstanceType.ENCOUNTER => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.ENCOUNTER, Source.ENCOUNTER),
-            BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.PLAYER_ADVENTURE, Source.ENCOUNTER),
+            BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.ENCOUNTER, Source.ENCOUNTER),
             _ => throw new UnreachableException(),
         };
 
@@ -921,7 +921,9 @@ internal sealed class BuildplatesController : SolaceControllerBase
                 "CK06Yzm2",    // TODO
                 new Dimension(size, size),
                 new Offset(0, offset, 0),
-                instanceInfo.Type is BuildplateInstancesManager.InstanceType.PLAY or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE
+                instanceInfo.Type is BuildplateInstancesManager.InstanceType.PLAY
+                    or BuildplateInstancesManager.InstanceType.ENCOUNTER
+                    or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE
                     ? Program.PlayableScale
                     : !fullsize ? scale : 1,
                 fullsize,
