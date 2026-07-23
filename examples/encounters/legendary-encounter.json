@@ -1,0 +1,7 @@
+{
+  "icon": "minecraft:adventure_crystal_legendary",
+  "rarity": "LEGENDARY",
+  "duration": 3600,
+  "adventureGroup": "legendary",
+  "spawnWeight": 1
+}

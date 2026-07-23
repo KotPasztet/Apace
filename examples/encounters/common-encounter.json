@@ -1,0 +1,7 @@
+{
+  "icon": "minecraft:adventure_crystal_common",
+  "rarity": "COMMON",
+  "duration": 900,
+  "adventureGroup": "common",
+  "spawnWeight": 50
+}
