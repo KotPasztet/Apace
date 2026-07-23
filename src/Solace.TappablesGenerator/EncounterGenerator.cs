@@ -8,7 +8,7 @@ namespace Solace.TappablesGenerator;
 public class EncounterGenerator
 {
     // TODO: make these configurable
-    private static readonly int CHANCE_PER_TILE = 4;
+    private static readonly int CHANCE_PER_TILE = 100;
     private static readonly long MIN_DELAY = 1 * 60 * 1000;
     private static readonly long MAX_DELAY = 2 * 60 * 1000;
 
@@ -46,7 +46,18 @@ public class EncounterGenerator
         {
             long spawnDelay = _random.NextInt64(MIN_DELAY, MAX_DELAY + 1);
 
-            EncountersConfig.EncounterConfig encounterConfig = _staticData.EncountersConfig.Encounters[_random.Next(0, _staticData.EncountersConfig.Encounters.Length)];
+            EncountersConfig.EncounterConfig? encounterConfig = PickEncounterConfig();
+            if (encounterConfig is null)
+            {
+                return [];
+            }
+
+            string? encounterBuildplateId = _staticData.AdventuresConfig.PickTemplateForFolder(encounterConfig.AdventureGroup, _random);
+            if (encounterBuildplateId is null)
+            {
+                Log.Warning("Encounter config references adventure group {AdventureGroup}, but that group has no buildplates", encounterConfig.AdventureGroup);
+                return [];
+            }
 
             Span<float> tileBounds = stackalloc float[4];
             GetTileBounds(tileX, tileY, tileBounds);
@@ -61,13 +72,34 @@ public class EncounterGenerator
                 encounterConfig.Duration * 1000,
                 encounterConfig.Icon,
                 Enum.Parse<Encounter.RarityE>(encounterConfig.Rarity.ToString()),
-                encounterConfig.EncounterBuildplateId
+                encounterBuildplateId
             );
 
             encounters.Add(encounter);
         }
 
         return [.. encounters];
+    }
+
+    private EncountersConfig.EncounterConfig? PickEncounterConfig()
+    {
+        int totalWeight = _staticData.EncountersConfig.Encounters.Sum(encounterConfig => encounterConfig.SpawnWeight);
+        if (totalWeight <= 0)
+        {
+            return null;
+        }
+
+        int roll = _random.Next(0, totalWeight);
+        foreach (EncountersConfig.EncounterConfig encounterConfig in _staticData.EncountersConfig.Encounters)
+        {
+            roll -= encounterConfig.SpawnWeight;
+            if (roll < 0)
+            {
+                return encounterConfig;
+            }
+        }
+
+        return _staticData.EncountersConfig.Encounters[^1];
     }
 
     private static void GetTileBounds(int tileX, int tileY, Span<float> dest)

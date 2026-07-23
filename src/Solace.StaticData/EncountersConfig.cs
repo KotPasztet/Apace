@@ -27,7 +27,16 @@ public sealed class EncountersConfig
 
                     Debug.Assert(encounter is not null);
 
-                    encounters.AddLast(encounter);
+                    if (string.IsNullOrWhiteSpace(encounter.AdventureGroup) || encounter.SpawnWeight <= 0)
+                    {
+                        continue;
+                    }
+
+                    encounters.AddLast(encounter with
+                    {
+                        AdventureGroup = encounter.AdventureGroup.Trim(),
+                        SpawnWeight = int.Max(0, encounter.SpawnWeight)
+                    });
                 }
             }
 
@@ -42,8 +51,9 @@ public sealed class EncountersConfig
     public record EncounterConfig(
         string Icon,
         EncounterConfig.RarityE Rarity,
-        string EncounterBuildplateId,
-        int Duration
+        int Duration,
+        string AdventureGroup,
+        int SpawnWeight
     )
     {
         [JsonConverter(typeof(JsonStringEnumConverter))]
