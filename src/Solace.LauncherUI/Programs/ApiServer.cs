@@ -36,6 +36,7 @@ internal static class ApiServer
             $"--objectstore=localhost:{settings.ObjectStorePort}",
             $"--logger-url={Program.LoggerAddress}",
             $"--dir={Program.StaticDataDir}",
+            $"--playable-scale={settings.PlayableScale}",
         ])
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),

@@ -1,0 +1,7 @@
+{
+  "icon": "minecraft:adventure_crystal_rare",
+  "rarity": "RARE",
+  "duration": 1800,
+  "adventureGroup": "rare",
+  "spawnWeight": 12
+}
