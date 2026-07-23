@@ -33,6 +33,10 @@
                     @onclick='() => activeTab = "database"'>Databases</button>
         </li>
         <li class="nav-item">
+            <button class="nav-link @(activeTab == "gameplay" ? "active" : "")"
+                    @onclick='() => activeTab = "gameplay"'>Gameplay</button>
+        </li>
+        <li class="nav-item">
             <button class="nav-link @(activeTab == "data" ? "active" : "")" @onclick='() => activeTab = "data"'>Data
                 Handling</button>
             </li>
@@ -114,6 +118,18 @@
                     <label class="form-label">Live Database Connection String</label>
                     <InputText @bind-Value="SettingsModel.LiveDatabaseConnectionString" class="form-control" />
                     <ValidationMessage For="@(() => SettingsModel.LiveDatabaseConnectionString)" />
+                </div>
+            </div>
+
+            @* --- Gameplay Tab --- *@
+            <div class="tab-pane fade show @(activeTab == "gameplay" ? "active" : "")">
+                <div class="mb-3">
+                    <label class="form-label">PlayableScale</label>
+                    <InputNumber @bind-Value="SettingsModel.PlayableScale" class="form-control" />
+                    <div class="form-text text-white fw-bold">
+                        Larger values make easier to traverse buildplates when in playmode or in adventure. You can use this if you just want to stay stationary inside a adventure
+                    </div>
+                    <ValidationMessage For="@(() => SettingsModel.PlayableScale)" />
                 </div>
             </div>
 
@@ -312,6 +328,7 @@
         SettingsModel.SkipFileChecks = source.SkipFileChecks ?? false;
         SettingsModel.StaticDataPath = source.StaticDataPath;
         SettingsModel.LauncherBuildplatePreview = source.LauncherBuildplatePreview ?? false;
+        SettingsModel.PlayableScale = source.PlayableScale ?? Settings.Default.PlayableScale;
     }
 
     private void HandleSave()
@@ -332,6 +349,7 @@
             SkipFileChecks = SettingsModel.SkipFileChecks,
             StaticDataPath = SettingsModel.StaticDataPath,
             LauncherBuildplatePreview = SettingsModel.LauncherBuildplatePreview,
+            PlayableScale = SettingsModel.PlayableScale,
         };
 
         Settings.Instance = settings;
@@ -391,6 +409,9 @@
         public string? StaticDataPath { get; set; }
 
         public bool LauncherBuildplatePreview { get; set; }
+
+        [Required, Range(1, 32, ErrorMessage = "PlayableScale must be between 1 and 32 blocks per meter.")]
+        public int? PlayableScale { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

@@ -921,7 +921,9 @@ internal sealed class BuildplatesController : SolaceControllerBase
                 "CK06Yzm2",    // TODO
                 new Dimension(size, size),
                 new Offset(0, offset, 0),
-                !fullsize ? scale : 1,
+                instanceInfo.Type is BuildplateInstancesManager.InstanceType.PLAY or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE
+                    ? Program.PlayableScale
+                    : !fullsize ? scale : 1,
                 fullsize,
                 gameplayMode,
                 SurfaceOrientation.HORIZONTAL,
