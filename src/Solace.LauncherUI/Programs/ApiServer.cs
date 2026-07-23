@@ -36,6 +36,7 @@ internal static class ApiServer
             $"--objectstore=localhost:{settings.ObjectStorePort}",
             $"--logger-url={Program.LoggerAddress}",
             $"--dir={Program.StaticDataDir}",
+            $"--adventure-blocks-per-meter={settings.AdventureBlocksPerMeter}",
         ])
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),

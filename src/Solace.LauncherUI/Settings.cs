@@ -29,6 +29,7 @@ public sealed class Settings
         SkipFileChecks = false,
         StaticDataPath = "../staticdata",
         LauncherBuildplatePreview = false,
+        AdventureBlocksPerMeter = 4,
     };
 
     public static Settings Instance { get; set; } = Default;
@@ -54,6 +55,7 @@ public sealed class Settings
     public string? StaticDataPath {get;set;}
 
     public bool? LauncherBuildplatePreview { get; set; }
+    public int? AdventureBlocksPerMeter { get; set; }
 
     public enum TileDataSourceE
     {
@@ -185,6 +187,12 @@ public sealed class Settings
         {
             Log.Warning($"StaticData path is invalid, using default: '{Default.StaticDataPath}'");
             settings.StaticDataPath = Default.StaticDataPath;
+        }
+
+        if (settings.AdventureBlocksPerMeter is not (>= 1 and <= 64))
+        {
+            Log.Warning($"Adventure blocks per meter is invalid, using default: '{Default.AdventureBlocksPerMeter}'");
+            settings.AdventureBlocksPerMeter = Default.AdventureBlocksPerMeter;
         }
 
         Log.Information("Loaded settings");

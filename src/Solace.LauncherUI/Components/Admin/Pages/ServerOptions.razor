@@ -33,6 +33,10 @@
                     @onclick='() => activeTab = "database"'>Databases</button>
         </li>
         <li class="nav-item">
+            <button class="nav-link @(activeTab == "gameplay" ? "active" : "")"
+                    @onclick='() => activeTab = "gameplay"'>Gameplay</button>
+        </li>
+        <li class="nav-item">
             <button class="nav-link @(activeTab == "data" ? "active" : "")" @onclick='() => activeTab = "data"'>Data
                 Handling</button>
             </li>
@@ -114,6 +118,19 @@
                     <label class="form-label">Live Database Connection String</label>
                     <InputText @bind-Value="SettingsModel.LiveDatabaseConnectionString" class="form-control" />
                     <ValidationMessage For="@(() => SettingsModel.LiveDatabaseConnectionString)" />
+                </div>
+            </div>
+
+            @* --- Gameplay Tab --- *@
+            <div class="tab-pane fade show @(activeTab == "gameplay" ? "active" : "")">
+                <div class="mb-3">
+                    <label class="form-label">Adventure AR Scale (Blocks per Meter)</label>
+                    <InputNumber @bind-Value="SettingsModel.AdventureBlocksPerMeter" class="form-control" />
+                    <div class="form-text">
+                        Larger values make adventures appear smaller. Use 1 for life-size; the default is 4.
+                        Changes take effect after restarting the server.
+                    </div>
+                    <ValidationMessage For="@(() => SettingsModel.AdventureBlocksPerMeter)" />
                 </div>
             </div>
 
@@ -312,6 +329,7 @@
         SettingsModel.SkipFileChecks = source.SkipFileChecks ?? false;
         SettingsModel.StaticDataPath = source.StaticDataPath;
         SettingsModel.LauncherBuildplatePreview = source.LauncherBuildplatePreview ?? false;
+        SettingsModel.AdventureBlocksPerMeter = source.AdventureBlocksPerMeter ?? Settings.Default.AdventureBlocksPerMeter;
     }
 
     private void HandleSave()
@@ -332,6 +350,7 @@
             SkipFileChecks = SettingsModel.SkipFileChecks,
             StaticDataPath = SettingsModel.StaticDataPath,
             LauncherBuildplatePreview = SettingsModel.LauncherBuildplatePreview,
+            AdventureBlocksPerMeter = SettingsModel.AdventureBlocksPerMeter,
         };
 
         Settings.Instance = settings;
@@ -391,6 +410,9 @@
         public string? StaticDataPath { get; set; }
 
         public bool LauncherBuildplatePreview { get; set; }
+
+        [Required, Range(1, 64, ErrorMessage = "Adventure AR scale must be between 1 and 64 blocks per meter.")]
+        public int? AdventureBlocksPerMeter { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
