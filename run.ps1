@@ -7,12 +7,12 @@ Write-Host "=== Apace Launcher ===" -ForegroundColor Cyan
 Write-Host ""
 
 $APACE_DIR = "$env:USERPROFILE\apace"
-$PERSISTENT = "C:\apace-persistent"
 
-# ─── Ensure persistent directories exist ───────────────────────────
-$dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs")
-foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path "$PERSISTENT\$d" | Out-Null }
-if (-not (Test-Path "$PERSISTENT\config.json")) { '{}' | Out-File -FilePath "$PERSISTENT\config.json" -Encoding utf8 }
+if (-not (Test-Path "$APACE_DIR\docker-compose.yml")) {
+    Write-Host "Apace is not installed. Run the installer first:" -ForegroundColor Red
+    Write-Host "  iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex"
+    exit 1
+}
 
 # ─── Ensure Docker is running ──────────────────────────────────────
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
@@ -55,36 +55,8 @@ Write-Host "Docker is running." -ForegroundColor Green
 # ─── Detect compose command ─────────────────────────────────────────
 $composeCmd = if (docker compose version 2>$null) { "docker compose" } else { "docker-compose" }
 
-# ─── Download compose file if missing ───────────────────────────────
-New-Item -ItemType Directory -Force -Path $APACE_DIR | Out-Null
+# ─── Start ──────────────────────────────────────────────────────────
 Set-Location $APACE_DIR
-if (-not (Test-Path "docker-compose.yml")) {
-    Write-Host "Downloading docker-compose.yml..."
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml" -OutFile "docker-compose.yml"
-
-    # Detect architecture and inject platform
-    $hostArch = (Get-WmiObject Win32_Processor).Architecture
-    $dockerPlatform = switch ($hostArch) {
-        9  { "linux/amd64" }
-        12 { "linux/arm64" }
-        default { $null }
-    }
-    if ($dockerPlatform) {
-        Write-Host "  Detected platform: $dockerPlatform"
-        $compose = Get-Content docker-compose.yml -Raw
-        $compose = $compose -replace '(?m)^(    image:.*\n)', "`$1    platform: $dockerPlatform`n"
-        $compose | Set-Content docker-compose.yml -NoNewline
-    }
-
-    $compose = Get-Content docker-compose.yml -Raw
-    $compose = $compose -replace '/opt/apace-persistent/', 'C:/apace-persistent/'
-    $compose | Set-Content docker-compose.yml -NoNewline
-}
-
-# ─── Pull and start ─────────────────────────────────────────────────
-Write-Host "Pulling latest Apace image..."
-Invoke-Expression "$composeCmd pull"
-Write-Host "Starting Apace..."
 Invoke-Expression "$composeCmd up -d"
 
 try {
