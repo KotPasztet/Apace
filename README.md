@@ -56,10 +56,10 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 One command, fully automatic. The script detects your CPU architecture, installs Docker if needed, pulls the correct image, and starts Apace.
 
 ```bash
-# Linux/macOS
 curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
+```
 
-# Windows (PowerShell as Administrator)
+```powershell
 iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
 ```
 
@@ -77,10 +77,10 @@ After install: open http://localhost:5000, create an account, set your IP in Ser
 After the initial install, use the quick-launch script to start Apace without re-downloading everything:
 
 ```bash
-# Linux/macOS
 curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/run.sh | bash
+```
 
-# Windows (PowerShell)
+```powershell
 iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/run.ps1 | iex
 ```
 
@@ -91,10 +91,10 @@ The quick-launch script: detects architecture, downloads `docker-compose.yml` on
 Pre-built binaries for each platform from GitHub Releases. Requires [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) and Java 17.
 
 ```bash
-# Linux/macOS — auto-downloads the right binary for your OS and CPU
 curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker
+```
 
-# Windows (PowerShell) — auto-downloads the right binary for your platform
+```powershell
 iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex -args '--no-docker'
 ```
 
