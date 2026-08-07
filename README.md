@@ -51,10 +51,6 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 
 ## Quick Start
 
-### Docker (recommended)
-
-One command, fully automatic. The script detects your CPU architecture, installs Docker if needed, pulls the correct image, and starts Apace.
-
 **Linux/macOS:**
 ```bash
 curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
@@ -65,45 +61,8 @@ curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | b
 iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
 ```
 
-**What the installer does:**
-1. Detects your CPU architecture (`x86_64` → `linux/amd64`, `aarch64` → `linux/arm64`)
-2. Auto-starts Docker if it's not running (Docker Desktop on Windows, `systemctl` on Linux)
-3. Downloads `docker-compose.yml` from this repo and injects `platform:` for native execution (no emulation)
-4. Pulls the multi-arch Docker image (`ghcr.io/kotpasztet/apace:main`)
-5. Starts the container — admin panel is available at **http://localhost:5000**
+Po instalacji otwórz http://localhost:5000, utwórz konto, ustaw IP w Server Options, kliknij Start.
 
-After install: open http://localhost:5000, create an account, set your IP in Server Options, click Start.
+Żeby później odpalić serwer ponownie: uruchom `run.sh` (Linux/macOS) lub `run.ps1` (Windows) z katalogu `~/apace`.
 
-### Subsequent runs (quick-launch)
-
-After the initial install, use the quick-launch script to start Apace without re-downloading everything:
-
-**Linux/macOS:**
-```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/run.sh | bash
-```
-
-**Windows:**
-```powershell
-iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/run.ps1 | iex
-```
-
-The quick-launch script: detects architecture, downloads `docker-compose.yml` only if missing, pulls the latest image, and starts containers.
-
-### Binary download (no Docker)
-
-Pre-built binaries for each platform from GitHub Releases. Requires [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) and Java 17.
-
-**Linux/macOS:**
-```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker
-```
-
-**Windows:**
-```powershell
-iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex -args '--no-docker'
-```
-
-The `--no-docker` installer calls the GitHub API to find the latest release, detects your OS and CPU architecture, downloads the correct zip automatically.
-
-Full instructions: [Installation.md](Installation.md)
+Pełna dokumentacja: [Installation.md](Installation.md)
