@@ -51,14 +51,60 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 
 ## Quick Start
 
+### Docker (recommended)
+
+One command, fully automatic. The script detects your CPU architecture, installs Docker if needed, pulls the correct image, and starts Apace.
+
 ```bash
-# Linux/macOS (one command)
+# Linux/macOS
 curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
 
 # Windows (PowerShell as Administrator)
 iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
 ```
 
+**What the installer does:**
+1. Detects your CPU architecture (`x86_64` → `linux/amd64`, `aarch64` → `linux/arm64`)
+2. Auto-starts Docker if it's not running (Docker Desktop on Windows, `systemctl` on Linux)
+3. Downloads `docker-compose.yml` from this repo and injects `platform:` for native execution (no emulation)
+4. Pulls the multi-arch Docker image (`ghcr.io/kotpasztet/apace:main`)
+5. Starts the container — admin panel is available at **http://localhost:5000**
+
 After install: open http://localhost:5000, create an account, set your IP in Server Options, click Start.
+
+### Subsequent runs (quick-launch)
+
+After the initial install, use the quick-launch script to start Apace without re-downloading everything:
+
+```bash
+# Linux/macOS
+curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/run.sh | bash
+
+# Windows (PowerShell)
+iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/run.ps1 | iex
+```
+
+The quick-launch script: detects architecture, downloads `docker-compose.yml` only if missing, pulls the latest image, and starts containers.
+
+### Binary download (no Docker)
+
+Pre-built binaries for each platform from GitHub Releases. Requires [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) and Java 17.
+
+```bash
+# Windows (PowerShell) — auto-downloads the right binary for your platform
+iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex -args '--no-docker'
+
+# Linux/macOS — manual download from Releases
+# 1. Go to https://github.com/KotPasztet/Apace/releases/latest
+# 2. Download the zip for your platform:
+#    - Apace-win-x64.zip   — Windows 64-bit
+#    - Apace-linux-x64.zip  — Linux 64-bit (x86_64)
+#    - Apace-linux-arm64.zip — Linux ARM64 (Raspberry Pi)
+#    - Apace-osx-x64.zip    — macOS Intel
+#    - Apace-osx-arm64.zip  — macOS Apple Silicon
+# 3. Extract and run: pwsh ./run_launcher.ps1
+```
+
+The Windows `--no-docker` installer calls the GitHub API to find the latest release, picks the `win-x64` asset, downloads and extracts it automatically.
 
 Full instructions: [Installation.md](Installation.md)
