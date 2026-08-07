@@ -47,11 +47,38 @@ if ($Mode -eq "--no-docker") {
         exit 1
     }
 
-    $dockerRunning = docker info 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Docker is not running! Start Docker Desktop first." -ForegroundColor Red
+    # Try up to 30 s for Docker to be responsive
+    $dockerOk = $false
+    for ($i = 0; $i -lt 10; $i++) {
+        docker info 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            $dockerOk = $true
+            break
+        }
+        if ($i -eq 0) {
+            Write-Host "Docker is not running. Attempting to start Docker Desktop..." -ForegroundColor Yellow
+            $dockerPaths = @(
+                "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe",
+                "${env:LocalAppData}\Docker\Docker Desktop.exe"
+            )
+            foreach ($p in $dockerPaths) {
+                if (Test-Path $p) {
+                    Start-Process -FilePath $p -WindowStyle Hidden
+                    break
+                }
+            }
+            # Also try starting the Docker Engine service
+            Start-Service -Name "docker" -ErrorAction SilentlyContinue
+        }
+        Start-Sleep -Seconds 5
+    }
+
+    if (-not $dockerOk) {
+        Write-Host "Docker failed to start!" -ForegroundColor Red
+        Write-Host "Start Docker Desktop manually and re-run this script." -ForegroundColor Yellow
         exit 1
     }
+    Write-Host "Docker is running." -ForegroundColor Green
 
     $APACE_DIR = "$env:USERPROFILE\apace"
     $PERSISTENT = "C:\apace-persistent"
