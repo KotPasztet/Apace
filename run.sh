@@ -14,14 +14,12 @@ echo -e "${BLD}=== Apace Launcher ===${RST}"
 echo ""
 
 APACE_DIR="$HOME/apace"
-PERSISTENT="/opt/apace-persistent"
 
-# ─── Ensure persistent directories exist ───────────────────────────
-sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs} 2>/dev/null || true
-if [ ! -f "$PERSISTENT/config.json" ]; then
-    echo '{}' | sudo tee "$PERSISTENT/config.json" > /dev/null 2>/dev/null || true
+if [ ! -d "$APACE_DIR" ] || [ ! -f "$APACE_DIR/docker-compose.yml" ]; then
+    echo -e "${RED}Apace is not installed. Run the installer first:${RST}"
+    echo "  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash"
+    exit 1
 fi
-sudo chown -R 1654:1654 "$PERSISTENT" 2>/dev/null || sudo chmod -R 777 "$PERSISTENT" 2>/dev/null || true
 
 # ─── Detect Docker access ───────────────────────────────────────────
 DOCKER="docker"
@@ -50,30 +48,7 @@ else
     COMPOSE="$DOCKER-compose"
 fi
 
-# ─── Detect architecture ─────────────────────────────────────────────
-HOST_ARCH=$(uname -m)
-case "$HOST_ARCH" in
-    x86_64|amd64)   DOCKER_PLATFORM="linux/amd64" ;;
-    aarch64|arm64)  DOCKER_PLATFORM="linux/arm64" ;;
-    *)              DOCKER_PLATFORM="" ;;
-esac
-
-# ─── Download compose file if missing ───────────────────────────────
-mkdir -p "$APACE_DIR"
 cd "$APACE_DIR"
-if [ ! -f docker-compose.yml ]; then
-    echo "Downloading docker-compose.yml..."
-    curl -sSLO https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml
-    if [ -n "$DOCKER_PLATFORM" ]; then
-        echo -e "  Detected platform: ${BLD}$DOCKER_PLATFORM${RST}"
-        sed -i "/^    image:/a\    platform: $DOCKER_PLATFORM" docker-compose.yml
-    fi
-fi
-
-# ─── Pull and start ─────────────────────────────────────────────────
-echo "Pulling latest Apace image..."
-$COMPOSE pull
-echo "Starting Apace..."
 $COMPOSE up -d
 
 IP=$(hostname -I 2>/dev/null | awk '{print $1}')
