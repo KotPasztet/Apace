@@ -61,8 +61,8 @@ curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | b
 iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
 ```
 
-Po instalacji otwórz http://localhost:5000, utwórz konto, ustaw IP w Server Options, kliknij Start.
+After install, open http://localhost:5000, create an account, set your IP in Server Options, click Start.
 
-Żeby później odpalić serwer ponownie: uruchom `run.sh` (Linux/macOS) lub `run.ps1` (Windows) z katalogu `~/apace`.
+To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Windows) from the `~/apace` directory.
 
-Pełna dokumentacja: [Installation.md](Installation.md)
+Full instructions: [Installation.md](Installation.md)
