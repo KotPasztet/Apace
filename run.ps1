@@ -61,6 +61,21 @@ Set-Location $APACE_DIR
 if (-not (Test-Path "docker-compose.yml")) {
     Write-Host "Downloading docker-compose.yml..."
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml" -OutFile "docker-compose.yml"
+
+    # Detect architecture and inject platform
+    $hostArch = (Get-WmiObject Win32_Processor).Architecture
+    $dockerPlatform = switch ($hostArch) {
+        9  { "linux/amd64" }
+        12 { "linux/arm64" }
+        default { $null }
+    }
+    if ($dockerPlatform) {
+        Write-Host "  Detected platform: $dockerPlatform"
+        $compose = Get-Content docker-compose.yml -Raw
+        $compose = $compose -replace '(?m)^(    image:.*\n)', "`$1    platform: $dockerPlatform`n"
+        $compose | Set-Content docker-compose.yml -NoNewline
+    }
+
     $compose = Get-Content docker-compose.yml -Raw
     $compose = $compose -replace '/opt/apace-persistent/', 'C:/apace-persistent/'
     $compose | Set-Content docker-compose.yml -NoNewline

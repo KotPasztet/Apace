@@ -1,6 +1,20 @@
 # ─── Stage 1: Build ───────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
+ARG TARGETARCH
+# TARGETARCH is injected by docker buildx. Map to our RID suffixes.
+# Also detect at runtime for non-buildkit builds.
+RUN set -eux; \
+    if [ -z "$TARGETARCH" ]; then \
+        TARGETARCH=$(uname -m); \
+    fi; \
+    case "$TARGETARCH" in \
+        amd64|x86_64) RID=linux-x64; PWARCH=x64 ;; \
+        arm64|aarch64) RID=linux-arm64; PWARCH=arm64 ;; \
+        *) echo "Unsupported: $TARGETARCH"; exit 1 ;; \
+    esac; \
+    echo "RID=$RID PWARCH=$PWARCH" > /tmp/arch.env
+
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -9,14 +23,16 @@ RUN apt-get update && apt-get install -y \
     openjdk-17-jre \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PowerShell for arm64
-RUN mkdir -p /opt/microsoft/powershell/7 \
+# Install PowerShell for the target architecture
+RUN set -eux; \
+    . /tmp/arch.env; \
+    mkdir -p /opt/microsoft/powershell/7 \
     && cd /opt/microsoft/powershell/7 \
-    && wget -q https://github.com/PowerShell/PowerShell/releases/download/v7.6.1/powershell-7.6.1-linux-arm64.tar.gz \
-    && tar zxf powershell-7.6.1-linux-arm64.tar.gz \
+    && wget -q "https://github.com/PowerShell/PowerShell/releases/download/v7.6.1/powershell-7.6.1-linux-${PWARCH}.tar.gz" \
+    && tar zxf "powershell-7.6.1-linux-${PWARCH}.tar.gz" \
     && chmod +x pwsh \
     && ln -sf /opt/microsoft/powershell/7/pwsh /usr/local/bin/pwsh \
-    && rm powershell-7.6.1-linux-arm64.tar.gz
+    && rm "powershell-7.6.1-linux-${PWARCH}.tar.gz"
 
 WORKDIR /src
 
@@ -24,22 +40,39 @@ COPY . .
 
 # Do NOT run git submodule update here.
 # Coolify / GitHub Actions should clone repo with submodules before Docker build.
-RUN pwsh ./publish.ps1 -profiles framework-dependent-linux-arm64
+RUN set -eux; \
+    . /tmp/arch.env; \
+    pwsh ./publish.ps1 -profiles "framework-dependent-${RID}"
 
 # Hard fail if ApiServer did not publish.
 # This prevents pushing/deploying a broken image without the API server.
 RUN set -eux; \
+    . /tmp/arch.env; \
     echo "Checking build output after publish.ps1..."; \
-    find /src/build/Release/framework-dependent-linux-arm64 -maxdepth 4 \
+    find "/src/build/Release/framework-dependent-${RID}" -maxdepth 4 \
         \( -name "ApiServer" -o -name "ApiServer.dll" -o -name "ApiServer.runtimeconfig.json" -o -name "ApiServer.deps.json" \) \
         -exec ls -lah {} \; ; \
-    test -f /src/build/Release/framework-dependent-linux-arm64/components/ApiServer.dll; \
-    test -f /src/build/Release/framework-dependent-linux-arm64/components/ApiServer.runtimeconfig.json; \
-    test -f /src/build/Release/framework-dependent-linux-arm64/components/ApiServer.deps.json
+    test -f "/src/build/Release/framework-dependent-${RID}/components/ApiServer.dll"; \
+    test -f "/src/build/Release/framework-dependent-${RID}/components/ApiServer.runtimeconfig.json"; \
+    test -f "/src/build/Release/framework-dependent-${RID}/components/ApiServer.deps.json"; \
+    ln -sfn "framework-dependent-${RID}" /src/build/Release/latest
 
 
 # ─── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+
+ARG TARGETARCH
+
+RUN set -eux; \
+    if [ -z "$TARGETARCH" ]; then \
+        TARGETARCH=$(uname -m); \
+    fi; \
+    case "$TARGETARCH" in \
+        amd64|x86_64) RID=linux-x64; PWARCH=x64 ;; \
+        arm64|aarch64) RID=linux-arm64; PWARCH=arm64 ;; \
+        *) echo "Unsupported: $TARGETARCH"; exit 1 ;; \
+    esac; \
+    echo "RID=$RID PWARCH=$PWARCH" > /tmp/arch.env
 
 RUN apt-get update && apt-get install -y \
     openjdk-17-jre \
@@ -47,18 +80,20 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PowerShell for arm64
-RUN mkdir -p /opt/microsoft/powershell/7 \
+# Install PowerShell for the target architecture
+RUN set -eux; \
+    . /tmp/arch.env; \
+    mkdir -p /opt/microsoft/powershell/7 \
     && cd /opt/microsoft/powershell/7 \
-    && wget -q https://github.com/PowerShell/PowerShell/releases/download/v7.6.1/powershell-7.6.1-linux-arm64.tar.gz \
-    && tar zxf powershell-7.6.1-linux-arm64.tar.gz \
+    && wget -q "https://github.com/PowerShell/PowerShell/releases/download/v7.6.1/powershell-7.6.1-linux-${PWARCH}.tar.gz" \
+    && tar zxf "powershell-7.6.1-linux-${PWARCH}.tar.gz" \
     && chmod +x pwsh \
     && ln -sf /opt/microsoft/powershell/7/pwsh /usr/local/bin/pwsh \
-    && rm powershell-7.6.1-linux-arm64.tar.gz
+    && rm "powershell-7.6.1-linux-${PWARCH}.tar.gz"
 
 WORKDIR /app
 
-COPY --from=build /src/build/Release/framework-dependent-linux-arm64/ .
+COPY --from=build /src/build/Release/latest/ .
 
 # Permissions + ApiServer wrapper.
 # If publish produced only ApiServer.dll, create /app/components/ApiServer

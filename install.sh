@@ -106,6 +106,18 @@ else
 
     curl -sSLO https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml
 
+    # Detect architecture and inject platform into docker-compose.yml
+    HOST_ARCH=$(uname -m)
+    case "$HOST_ARCH" in
+        x86_64|amd64)   DOCKER_PLATFORM="linux/amd64" ;;
+        aarch64|arm64)  DOCKER_PLATFORM="linux/arm64" ;;
+        *)              DOCKER_PLATFORM="" ;;  # unknown — let Docker decide
+    esac
+    if [ -n "$DOCKER_PLATFORM" ]; then
+        echo -e "  Detected platform: ${BLD}$DOCKER_PLATFORM${RST}"
+        sed -i "/^    image:/a\    platform: $DOCKER_PLATFORM" docker-compose.yml
+    fi
+
     PERSISTENT="/opt/apace-persistent"
     sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs}
     if [ ! -f "$PERSISTENT/config.json" ]; then

@@ -50,12 +50,24 @@ else
     COMPOSE="$DOCKER-compose"
 fi
 
+# ─── Detect architecture ─────────────────────────────────────────────
+HOST_ARCH=$(uname -m)
+case "$HOST_ARCH" in
+    x86_64|amd64)   DOCKER_PLATFORM="linux/amd64" ;;
+    aarch64|arm64)  DOCKER_PLATFORM="linux/arm64" ;;
+    *)              DOCKER_PLATFORM="" ;;
+esac
+
 # ─── Download compose file if missing ───────────────────────────────
 mkdir -p "$APACE_DIR"
 cd "$APACE_DIR"
 if [ ! -f docker-compose.yml ]; then
     echo "Downloading docker-compose.yml..."
     curl -sSLO https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml
+    if [ -n "$DOCKER_PLATFORM" ]; then
+        echo -e "  Detected platform: ${BLD}$DOCKER_PLATFORM${RST}"
+        sed -i "/^    image:/a\    platform: $DOCKER_PLATFORM" docker-compose.yml
+    fi
 fi
 
 # ─── Pull and start ─────────────────────────────────────────────────
