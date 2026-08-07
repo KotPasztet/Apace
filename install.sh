@@ -76,16 +76,29 @@ else
         sudo systemctl enable --now docker 2>/dev/null || true
         sudo usermod -aG docker "$USER" 2>/dev/null || true
         echo -e "${GRN}Docker installed.${RST}"
-        echo -e "${YLW}You may need to log out and back in.${RST}"
         echo ""
     fi
 
-    if ! docker info &>/dev/null; then
-        echo -e "${RED}Docker is not running!${RST}"
-        echo -e "${YLW}sudo systemctl start docker    (Linux)${RST}"
-        echo -e "${YLW}Open Docker Desktop           (macOS)${RST}"
-        exit 1
+    # Use sudo docker to avoid "docker group not active yet" issues
+    DOCKER="docker"
+    if ! docker info &>/dev/null 2>&1; then
+        if sudo docker info &>/dev/null 2>&1; then
+            DOCKER="sudo docker"
+        else
+            echo -e "${YLW}Docker is not running. Starting automatically...${RST}"
+            if command -v systemctl &>/dev/null; then
+                sudo systemctl start docker 2>/dev/null || true
+                sleep 3
+            fi
+            if ! sudo docker info &>/dev/null 2>&1; then
+                echo -e "${RED}Docker failed to start!${RST}"
+                echo -e "${YLW}Try manually: sudo systemctl start docker${RST}"
+                exit 1
+            fi
+            DOCKER="sudo docker"
+        fi
     fi
+    echo -e "${GRN}Docker is running.${RST}"
 
     APACE_DIR="$HOME/apace"
     mkdir -p "$APACE_DIR"
@@ -100,10 +113,10 @@ else
     fi
     sudo chown -R 1654:1654 "$PERSISTENT" 2>/dev/null || sudo chmod -R 777 "$PERSISTENT" 2>/dev/null
 
-    if docker compose version &>/dev/null 2>&1; then
-        COMPOSE="docker compose"
+    if $DOCKER compose version &>/dev/null 2>&1; then
+        COMPOSE="$DOCKER compose"
     else
-        COMPOSE="docker-compose"
+        COMPOSE="$DOCKER-compose"
     fi
 
     echo "Pulling Apace image..."
