@@ -91,20 +91,13 @@ The quick-launch script: detects architecture, downloads `docker-compose.yml` on
 Pre-built binaries for each platform from GitHub Releases. Requires [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) and Java 17.
 
 ```bash
+# Linux/macOS — auto-downloads the right binary for your OS and CPU
+curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker
+
 # Windows (PowerShell) — auto-downloads the right binary for your platform
 iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex -args '--no-docker'
-
-# Linux/macOS — manual download from Releases
-# 1. Go to https://github.com/KotPasztet/Apace/releases/latest
-# 2. Download the zip for your platform:
-#    - Apace-win-x64.zip   — Windows 64-bit
-#    - Apace-linux-x64.zip  — Linux 64-bit (x86_64)
-#    - Apace-linux-arm64.zip — Linux ARM64 (Raspberry Pi)
-#    - Apace-osx-x64.zip    — macOS Intel
-#    - Apace-osx-arm64.zip  — macOS Apple Silicon
-# 3. Extract and run: pwsh ./run_launcher.ps1
 ```
 
-The Windows `--no-docker` installer calls the GitHub API to find the latest release, picks the `win-x64` asset, downloads and extracts it automatically.
+The `--no-docker` installer calls the GitHub API to find the latest release, detects your OS and CPU architecture, downloads the correct zip automatically.
 
 Full instructions: [Installation.md](Installation.md)

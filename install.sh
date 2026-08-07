@@ -22,7 +22,11 @@ if [ "$MODE" = "--no-docker" ]; then
     echo "Downloading latest Apace release..."
 
     # Detect OS and arch
-    OS="linux"
+    case "$(uname -s)" in
+        Darwin) OS="osx" ;;
+        Linux)  OS="linux" ;;
+        *) echo -e "${RED}Unsupported OS: $(uname -s)${RST}"; exit 1 ;;
+    esac
     ARCH=$(uname -m)
     case "$ARCH" in
         x86_64|amd64) ARCH="x64" ;;
