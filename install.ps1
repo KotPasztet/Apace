@@ -88,6 +88,21 @@ if ($Mode -eq "--no-docker") {
     Write-Host "Downloading docker-compose.yml..."
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml" -OutFile "docker-compose.yml"
 
+    # Detect architecture and inject platform
+    $hostArch = (Get-WmiObject Win32_Processor).Architecture
+    # 9 = x64/AMD64, 12 = ARM64
+    $dockerPlatform = switch ($hostArch) {
+        9  { "linux/amd64" }
+        12 { "linux/arm64" }
+        default { $null }
+    }
+    if ($dockerPlatform) {
+        Write-Host "  Detected platform: $dockerPlatform"
+        $compose = Get-Content docker-compose.yml -Raw
+        $compose = $compose -replace '(?m)^(    image:.*\n)', "`$1    platform: $dockerPlatform`n"
+        $compose | Set-Content docker-compose.yml -NoNewline
+    }
+
     Write-Host "Setting up persistent storage..."
     $dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs")
     foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path "$PERSISTENT\$d" | Out-Null }
