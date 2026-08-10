@@ -73,6 +73,14 @@ foreach ($buildProfile in $profiles) {
     New-Item -ItemType Directory -Force -Path "$publishDir/staticdata/server_jars" | Out-Null
     Copy-Item -Path "server_jars/*.jar" -Destination "$publishDir/staticdata/server_jars/" -Force
 
+    # Copy Fabric mods into server_template_dir so they are baked into the Docker image.
+    # (At runtime the volume mount at /opt/apace-persistent/server-template-dir overrides this,
+    # but having them in the image means no manual SCP is needed for first deploy.)
+    if (Test-Path "mods") {
+        New-Item -ItemType Directory -Force -Path "$publishDir/staticdata/server_template_dir/mods" | Out-Null
+        Copy-Item -Path "mods/*.jar" -Destination "$publishDir/staticdata/server_template_dir/mods/" -Force
+    }
+
     $startScriptContent = @'
 #!/usr/bin/env pwsh
 $originalPath = Get-Location
