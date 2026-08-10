@@ -55,6 +55,8 @@ RUN set -eux; \
     test -f "/src/build/Release/framework-dependent-${RID}/components/ApiServer.dll"; \
     test -f "/src/build/Release/framework-dependent-${RID}/components/ApiServer.runtimeconfig.json"; \
     test -f "/src/build/Release/framework-dependent-${RID}/components/ApiServer.deps.json"; \
+    test -f "/src/build/Release/framework-dependent-${RID}/launcher/Launcher"; \
+    test -f "/src/build/Release/framework-dependent-${RID}/launcher/Launcher.dll"; \
     ln -sfn "framework-dependent-${RID}" /src/build/Release/latest
 
 
@@ -101,7 +103,10 @@ COPY --from=build /src/build/Release/latest/ .
 RUN set -eux; \
     chmod +x ./run_launcher.ps1 2>/dev/null || true; \
     chmod -R +x ./components/ 2>/dev/null || true; \
-    chmod +x ./launcher/Launcher 2>/dev/null || true; \
+    echo "Checking Launcher binary..."; \
+    test -f /app/launcher/Launcher; \
+    chmod +x /app/launcher/Launcher; \
+    test -f /app/launcher/Launcher.dll; \
     echo "Checking ApiServer runtime output..."; \
     ls -lah /app/components | grep -E 'ApiServer|Solace.ApiServer' || true; \
     test -f /app/components/ApiServer.dll; \

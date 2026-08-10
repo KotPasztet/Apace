@@ -15,12 +15,12 @@
   </ItemGroup>
 
   <!-- Copy server JARs to staticdata on build/publish -->
-  <Target Name="CopyServerJars" AfterTargets="Build" Condition="!Exists('$(OutDir)staticdata\server_jars\fountain-0.0.2-SNAPSHOT-jar-with-dependencies.jar')">
+  <Target Name="CopyServerJars" AfterTargets="Build" Condition="!Exists('$(OutDir)staticdata\server_jars\fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar')">
     <MakeDir Directories="$(OutDir)staticdata\server_jars" />
     <Copy SourceFiles="..\..\server_jars\buildplate-connector-plugin-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
           DestinationFolder="$(OutDir)staticdata\server_jars"
           SkipUnchangedFiles="true" />
-    <Copy SourceFiles="..\..\server_jars\fountain-0.0.2-SNAPSHOT-jar-with-dependencies.jar"
+    <Copy SourceFiles="..\..\server_jars\fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
           DestinationFolder="$(OutDir)staticdata\server_jars"
           SkipUnchangedFiles="true" />
   </Target>
@@ -31,7 +31,7 @@
     <Copy SourceFiles="..\..\server_jars\buildplate-connector-plugin-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
           DestinationFolder="$(PublishDir)staticdata\server_jars"
           SkipUnchangedFiles="true" />
-    <Copy SourceFiles="..\..\server_jars\fountain-0.0.2-SNAPSHOT-jar-with-dependencies.jar"
+    <Copy SourceFiles="..\..\server_jars\fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
           DestinationFolder="$(PublishDir)staticdata\server_jars"
           SkipUnchangedFiles="true" />
   </Target>
