@@ -1,3 +1,15 @@
+# Apace — v2 dimension-based architecture.
+#
+# One persistent Fabric server + one persistent bridge are now shared by ALL game
+# instances. A game instance is a *dimension* inside the single persistent Fabric
+# server (managed via createInstance/destroyInstance on the event bus), not a
+# separate JVM process as in v1.
+#
+# The ports below are therefore SHARED services, not per-instance ports:
+#   - 5000      public HTTP API (ASP.NET Core)
+#   - 1808      launcher UI / dashboard
+#   - 5532      event bus (TCP, orchestrator <-> ViennaConnectorPlugin)
+#   - 19132/udp the SINGLE shared bridge Bedrock port (all instances connect here)
 services:
   apace:
     image: ghcr.io/kotpasztet/apace:main
@@ -6,10 +18,10 @@ services:
     restart: unless-stopped
 
     ports:
-      - "5000:5000"
-      - "1808:1808"
-      - "5532:5532"
-      - "19132:19132/udp"
+      - "5000:5000"        # public HTTP API
+      - "1808:1808"        # launcher UI / dashboard
+      - "5532:5532"        # event bus (TCP)
+      - "19132:19132/udp"  # single shared bridge Bedrock port (all instances)
 
     volumes:
       - /opt/apace-persistent/launcher-data:/app/launcher/Data
@@ -20,6 +32,8 @@ services:
       - /opt/apace-persistent/resourcepacks:/app/staticdata/resourcepacks
       - /opt/apace-persistent/server-template-dir:/app/staticdata/server_template_dir
       - /opt/apace-persistent/logs:/app/logs
+      # persistent data for the single shared Fabric server (all dimensions/worlds)
+      - /opt/apace-persistent/fabric-data:/app/launcher/persistent_fabric
 
     environment:
       - DOTNET_SYSTEM_NET_DISABLEIPV6=1
@@ -32,4 +46,5 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2g
+          # one shared Fabric server now hosts all instances, so give it more headroom
+          memory: 4g
