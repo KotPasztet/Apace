@@ -20,6 +20,7 @@ services:
       - /opt/apace-persistent/resourcepacks:/app/staticdata/resourcepacks
       - /opt/apace-persistent/server-template-dir:/app/staticdata/server_template_dir
       - /opt/apace-persistent/logs:/app/logs
+      - /opt/apace-persistent/fabric-data:/app/launcher/persistent_fabric
 
     environment:
       - DOTNET_SYSTEM_NET_DISABLEIPV6=1
@@ -32,4 +33,4 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2g
+          memory: 4g

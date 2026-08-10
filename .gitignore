@@ -485,5 +485,8 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Java source repos (built separately, JARs copied to server_jars/)
+repos/
+
 # Vim temporary swap files
 *.swp
