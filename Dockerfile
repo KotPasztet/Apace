@@ -97,6 +97,18 @@ WORKDIR /app
 
 COPY --from=build /src/build/Release/latest/ .
 
+# Seed entrypoint script (runs before the pwsh launcher)
+COPY scripts/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Save baked-in mods to a backup location.
+# At runtime volume mounts override /app/staticdata/server_template_dir/,
+# so we stash mods in /app/defaults/mods/ and the entrypoint seeds them
+# into the volume-mounted directory on every container start.
+RUN if [ -d /app/staticdata/server_template_dir/mods ]; then \
+        cp -r /app/staticdata/server_template_dir/mods /app/defaults/mods; \
+    fi
+
 # Permissions + ApiServer wrapper.
 # If publish produced only ApiServer.dll, create /app/components/ApiServer
 # so the launcher validation passes and can start API server.
@@ -143,4 +155,4 @@ EXPOSE 5000 1808 5532 19132/udp
 
 VOLUME ["/app/launcher/Data"]
 
-ENTRYPOINT ["pwsh", "./run_launcher.ps1"]
+ENTRYPOINT ["/app/entrypoint.sh"]
