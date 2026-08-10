@@ -1,4 +1,4 @@
-﻿using CommandLine;
+using CommandLine;
 using Serilog;
 using System.Diagnostics;
 using Solace.Common;
@@ -27,6 +27,8 @@ internal static class Program
         public string FabricJarName { get; set; }
         [Option("connectorPluginJar", Required = true, HelpText = "Fountain connector plugin JAR")]
         public string ConnectorPluginJar { get; set; }
+        [Option("persistentFabricDir", Default = "./persistent_fabric", Required = false, HelpText = "Working directory for the persistent Fabric server")]
+        public string PersistentFabricDir { get; set; }
 
         [Option("dir", Default = "./staticdata", Required = false, HelpText = "Static data path")]
         public string StaticDataPath { get; set; }
@@ -108,8 +110,30 @@ internal static class Program
         Log.Information("Connected to event bus");
 
         string javaCmd = JavaLocator.Locate();
-        var starter = new Starter(eventBusClient, options.EventBusConnectionString, options.PublicAddress, javaCmd, options.BridgeJar, options.ServerTemplateDir, options.FabricJarName, options.ConnectorPluginJar);
-        var instanceManager = await InstanceManager.CreateAsync(eventBusClient, starter);
+
+        var serverTemplateDir = new DirectoryInfo(options.ServerTemplateDir);
+        var fountainBridgeJar = new FileInfo(options.BridgeJar);
+        var connectorPluginJar = new FileInfo(options.ConnectorPluginJar);
+
+        var persistentProcessManager = new PersistentProcessManager(
+            javaCmd,
+            options.FabricJarName,
+            serverTemplateDir,
+            options.PersistentFabricDir,
+            fountainBridgeJar,
+            connectorPluginJar,
+            options.EventBusConnectionString,
+            options.PublicAddress
+        );
+
+        Log.Information("Starting persistent Fabric server");
+        await persistentProcessManager.StartFabricAsync();
+
+        Log.Information("Starting persistent bridge");
+        await persistentProcessManager.StartBridgeAsync();
+
+        var starter = new Starter(eventBusClient, options.EventBusConnectionString, options.PublicAddress);
+        var instanceManager = await InstanceManager.CreateAsync(eventBusClient, starter, options.PublicAddress);
 
         Console.CancelKeyPress += (sender, e) =>
         {
@@ -127,5 +151,12 @@ internal static class Program
         {
             Thread.Sleep(1000);
         }
+
+        // This code only runs when the infinite loop above is broken (e.g. by external means)
+#pragma warning disable CS0162 // Unreachable code detected
+        Log.Information("Shutting down persistent processes");
+        await persistentProcessManager.StopAllAsync();
+        Log.CloseAndFlush();
+#pragma warning restore CS0162 // Unreachable code detected
     }
 }

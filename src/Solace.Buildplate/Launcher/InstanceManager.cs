@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+using System.Collections.Concurrent;
+using System.Text.Json.Serialization;
 using Serilog;
 using Solace.Buildplate.Connector.Model;
 using Solace.Buildplate.Model;
@@ -11,12 +12,13 @@ namespace Solace.Buildplate.Launcher;
 public sealed class InstanceManager
 {
     private readonly Starter _starter;
-
     private readonly Publisher _publisher;
+    private readonly string _publicAddress;
+
     private RequestHandler _requestHandler = null!;
-    private int _runningInstanceCount;
     private bool _shuttingDown;
     private readonly Lock _lock = new Lock();
+    private readonly ConcurrentDictionary<string, Instance> _activeInstances = new();
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     private enum InstanceType
@@ -48,18 +50,18 @@ public sealed class InstanceManager
         InstanceType Type
     );
 
-    public InstanceManager(Starter starter, Publisher publisher)
+    public InstanceManager(Starter starter, Publisher publisher, string publicAddress)
     {
         _starter = starter;
-
         _publisher = publisher;
+        _publicAddress = publicAddress;
     }
 
-    public static async Task<InstanceManager> CreateAsync(EventBusClient eventBusClient, Starter starter)
+    public static async Task<InstanceManager> CreateAsync(EventBusClient eventBusClient, Starter starter, string publicAddress)
     {
         var publisher = await eventBusClient.AddPublisherAsync();
 
-        var instanceManager = new InstanceManager(starter, publisher);
+        var instanceManager = new InstanceManager(starter, publisher, publicAddress);
 
         instanceManager._requestHandler = await eventBusClient.AddRequestHandlerAsync("buildplates", new RequestHandlerLister(
             async request =>
@@ -73,7 +75,6 @@ public sealed class InstanceManager
                         return null;
                     }
 
-                    instanceManager._runningInstanceCount += 1;
                     instanceManager._lock.Exit();
 
                     StartRequest startRequest;
@@ -169,13 +170,15 @@ public sealed class InstanceManager
                         return null;
                     }
 
+                    instanceManager._activeInstances[instanceId] = instance;
+
                     instanceManager.SendEventBusMessage("started", Json.Serialize(new StartNotification(
                         instanceId,
                         startRequest.PlayerId,
                         startRequest.EncounterId,
                         startRequest.BuildplateId,
-                        instance.PublicAddress,
-                        instance.Port,
+                        instanceManager._publicAddress,
+                        Starter.BRIDGE_PORT,
                         startRequest.Type
                     )));
 
@@ -192,9 +195,7 @@ public sealed class InstanceManager
                             Log.Error(ex, "Failed to send stopped message");
                         }
 
-                        instanceManager._lock.Enter();
-                        instanceManager._runningInstanceCount -= 1;
-                        instanceManager._lock.Exit();
+                        instanceManager._activeInstances.TryRemove(instanceId, out _);
                     }).Forget();
 
                     return instanceId;
@@ -253,18 +254,18 @@ public sealed class InstanceManager
 
         _lock.Enter();
         _shuttingDown = true;
-        Log.Information($"Shutdown signal received, no new buildplate instances will be started, waiting for {_runningInstanceCount} instances to finish");
-        while (_runningInstanceCount > 0)
+        Log.Information($"Shutdown signal received, no new buildplate instances will be started, waiting for {_activeInstances.Count} instances to finish");
+        while (!_activeInstances.IsEmpty)
         {
-            int runningInstanceCount = _runningInstanceCount;
+            int activeInstanceCount = _activeInstances.Count;
             _lock.Exit();
 
             await Task.Delay(1000);
 
             _lock.Enter();
-            if (_runningInstanceCount != runningInstanceCount)
+            if (_activeInstances.Count != activeInstanceCount)
             {
-                Log.Information($"Waiting for {runningInstanceCount} instances to finish");
+                Log.Information($"Waiting for {_activeInstances.Count} instances to finish");
             }
         }
 
