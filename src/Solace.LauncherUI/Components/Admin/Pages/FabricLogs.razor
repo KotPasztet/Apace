@@ -1,0 +1,300 @@
+@page "/Admin/FabricLogs"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using System.Text.RegularExpressions
+@using Solace.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.ViewFabricLogs)]
+@implements IDisposable
+@inject IConfiguration Configuration
+@inject IJSRuntime JS
+
+<PageTitle>Fabric Server Logs - Apace</PageTitle>
+
+<script>
+    window.initFabricLogScroller = (container) => {
+        if (!container) return;
+
+        container.scrollTop = container.scrollHeight;
+
+        let isScrolledToBottom = true;
+
+        container.addEventListener('scroll', () => {
+            isScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 10;
+        });
+
+        const observer = new MutationObserver(() => {
+            if (isScrolledToBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+
+        observer.observe(container, { childList: true, subtree: true });
+    };
+</script>
+
+<div class="card mb-4">
+    <div class="card-body text-center">
+        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.7rem; letter-spacing: 2px;">Fabric Server</h6>
+        <div class="d-flex align-items-center justify-content-center mt-2">
+            <div class="status-dot @(_logFileExists ? "status-online" : "status-offline") mr-2"></div>
+            <h2 class="display-4 mb-0" style="font-size: 1.8rem; border-bottom: none; padding-bottom: 0;">@(_logFileExists ? "LOGGING" : "NO LOG FILE")</h2>
+        </div>
+        <small class="text-muted mt-3 d-block">@_logFilePath</small>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <span>▸ Fabric Server Logs</span>
+        <div>
+            <button class="btn btn-sm btn-secondary" @onclick="RefreshLogs" title="Reload entire log file">↺ Refresh</button>
+            <button class="btn btn-sm btn-secondary ms-2" @onclick="CopyLogs" title="Copy visible log content to clipboard">📋 Copy</button>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (_errorMessage is not null)
+        {
+            <div class="alert alert-warning text-center py-4">
+                <span style="font-size: 1.5rem;" class="d-block mb-2">⚠️</span>
+                <span class="text-muted" style="white-space: pre-wrap;">@_errorMessage</span>
+            </div>
+        }
+        else if (!_lines.Any())
+        {
+            <div class="alert alert-light text-center py-4">
+                <span style="font-size: 1.5rem;" class="d-block mb-2">📄</span>
+                <span class="text-muted">Fabric server log is empty — waiting for output...</span>
+            </div>
+        }
+        else
+        {
+            <div class="log-terminal" @ref="_logContainerRef">
+                <div class="log-content">
+                    @foreach (var (timestamp, threadLevel, message, levelClass) in _lines)
+                    {
+                        <div class="log-line"><span class="log-time">[@timestamp]</span> <span class="log-level @levelClass">[@threadLevel]</span> <span class="log-msg">@message</span></div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Regex for Minecraft log format: [HH:MM:SS] [Thread/LEVEL]: Message
+    private static readonly Regex LogLinePattern = new(
+        @"^\[(\d{2}:\d{2}:\d{2})\]\s+\[([^\]]+)\]:\s*(.*)$",
+        RegexOptions.Compiled);
+
+    private const int MaxDisplayLines = 5000;
+
+    private ElementReference _logContainerRef;
+    private bool _scrollerInitialized;
+    private string? _errorMessage;
+    private bool _logFileExists;
+    private string _logFilePath = "";
+    private readonly List<(string timestamp, string threadLevel, string message, string levelClass)> _lines = [];
+    private long _lastFilePosition;
+    private long _lastFileSize = -1;
+    private PeriodicTimer? _pollTimer;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _logFilePath = ResolveLogPath();
+        _cts = new CancellationTokenSource();
+
+        await LoadFullFileAsync();
+
+        // Start background polling every 3 seconds
+        _ = PollLoopAsync(_cts.Token);
+    }
+
+    private string ResolveLogPath()
+    {
+        var configured = Configuration.GetValue<string>("FabricLogs:LogPath");
+        if (!string.IsNullOrWhiteSpace(configured))
+            return configured;
+
+        // Default: persistent_fabric/logs/latest.log relative to ProgramsDir
+        // ProgramsDir = ../components/, Fabric work dir = ./persistent_fabric
+        return Path.GetFullPath(Path.Combine(
+            Program.ProgramsDir, "persistent_fabric", "logs", "latest.log"));
+    }
+
+    private async Task LoadFullFileAsync()
+    {
+        try
+        {
+            if (!File.Exists(_logFilePath))
+            {
+                _logFileExists = false;
+                _errorMessage = $"Log file not found:\n{_logFilePath}\n\nFabric server may not be running, or the path is misconfigured.\nSet FabricLogs:LogPath in appsettings.json to override.";
+                _lines.Clear();
+                return;
+            }
+
+            _logFileExists = true;
+            _errorMessage = null;
+            var fileInfo = new FileInfo(_logFilePath);
+
+            // Detect file rotation or truncation: if file is smaller, reset position
+            if (fileInfo.Length < _lastFilePosition)
+            {
+                _lastFilePosition = 0;
+            }
+            _lastFileSize = fileInfo.Length;
+
+            if (fileInfo.Length == 0)
+            {
+                _lines.Clear();
+                _lastFilePosition = 0;
+                return;
+            }
+
+            using var stream = new FileStream(_logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+            if (_lastFilePosition == 0)
+            {
+                // Full read: load last MaxDisplayLines
+                _lines.Clear();
+                var allLines = new List<string>();
+                using var reader = new StreamReader(stream);
+                while (await reader.ReadLineAsync() is { } line)
+                {
+                    allLines.Add(line);
+                }
+
+                var toDisplay = allLines.Count > MaxDisplayLines
+                    ? allLines.GetRange(allLines.Count - MaxDisplayLines, MaxDisplayLines)
+                    : allLines;
+
+                foreach (var line in toDisplay)
+                {
+                    _lines.Add(ParseLine(line));
+                }
+                _lastFilePosition = stream.Length;
+            }
+            else
+            {
+                // Incremental read: only new bytes since last position
+                stream.Seek(_lastFilePosition, SeekOrigin.Begin);
+                using var reader = new StreamReader(stream);
+                while (await reader.ReadLineAsync() is { } line)
+                {
+                    _lines.Add(ParseLine(line));
+                }
+                _lastFilePosition = stream.Position;
+            }
+
+            // Trim overflow
+            while (_lines.Count > MaxDisplayLines)
+            {
+                _lines.RemoveAt(0);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error reading log file: {ex.Message}";
+        }
+    }
+
+    private static (string timestamp, string threadLevel, string message, string levelClass) ParseLine(string line)
+    {
+        var match = LogLinePattern.Match(line);
+        if (match.Success)
+        {
+            var timestamp = match.Groups[1].Value;
+            var threadLevel = match.Groups[2].Value;
+            var message = match.Groups[3].Value;
+            var levelClass = GetMinecraftLevelClass(threadLevel);
+            return (timestamp, threadLevel, message, levelClass);
+        }
+
+        // Non-matching line: stack trace continuation, multi-line output, etc.
+        return ("--:--:--", "", line, "");
+    }
+
+    private static string GetMinecraftLevelClass(string threadLevel)
+    {
+        if (threadLevel.Contains("ERROR", StringComparison.OrdinalIgnoreCase))
+            return "log-err";
+        if (threadLevel.Contains("WARN", StringComparison.OrdinalIgnoreCase))
+            return "log-wrn";
+        if (threadLevel.Contains("FATAL", StringComparison.OrdinalIgnoreCase))
+            return "log-ftl";
+        if (threadLevel.Contains("DEBUG", StringComparison.OrdinalIgnoreCase))
+            return "log-dbg";
+        if (threadLevel.Contains("INFO", StringComparison.OrdinalIgnoreCase))
+            return "log-inf";
+        if (threadLevel.Contains("TRACE", StringComparison.OrdinalIgnoreCase))
+            return "log-vrb";
+        return "";
+    }
+
+    private async Task PollLoopAsync(CancellationToken ct)
+    {
+        _pollTimer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        try
+        {
+            while (await _pollTimer.WaitForNextTickAsync(ct))
+            {
+                var currentSize = GetFileSize();
+                if (currentSize != _lastFileSize)
+                {
+                    await LoadFullFileAsync();
+                }
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal shutdown
+        }
+    }
+
+    private long GetFileSize()
+    {
+        try
+        {
+            return File.Exists(_logFilePath) ? new FileInfo(_logFilePath).Length : -1;
+        }
+        catch
+        {
+            return -1;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_lines.Count > 0 && !_scrollerInitialized)
+        {
+            await JS.InvokeVoidAsync("initFabricLogScroller", _logContainerRef);
+            _scrollerInitialized = true;
+        }
+    }
+
+    private async Task RefreshLogs()
+    {
+        _lastFilePosition = 0;
+        _lastFileSize = -1;
+        _scrollerInitialized = false;
+        await LoadFullFileAsync();
+    }
+
+    private async Task CopyLogs()
+    {
+        var text = string.Join("\n", _lines.Select(l =>
+            string.IsNullOrEmpty(l.threadLevel)
+                ? l.message
+                : $"[{l.timestamp}] [{l.threadLevel}]: {l.message}"));
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _pollTimer?.Dispose();
+    }
+}

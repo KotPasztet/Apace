@@ -15,6 +15,8 @@ internal static class Permissions
     public const string EditServerOptions = "server.options.edit";
     [PermissionInfo("Server", "View the logs of the server")]
     public const string ViewServerLogs = "server.view.logs";
+    [PermissionInfo("Server", "View Fabric server logs")]
+    public const string ViewFabricLogs = "server.view.fabric_logs";
 
     [PermissionInfo("Users", "Manage roles - add, edit, delete")]
     public const string EditRoles = "user.role.edit";

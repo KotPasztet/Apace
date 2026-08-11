@@ -28,6 +28,15 @@
 
             <AuthorizeView>
                 <Authorized>
+                    @if (HasPermission(Permissions.ViewFabricLogs))
+                    {
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Admin/FabricLogs">
+                                <img class="nav-icon" src="/images/journal_icon.png" alt="" aria-hidden="true" /> Fabric Logs
+                            </NavLink>
+                        </div>
+                    }
+
                     @if (HasPermission(Permissions.EditServerOptions))
                     {
                         <div class="nav-item">
