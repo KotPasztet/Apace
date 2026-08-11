@@ -103,6 +103,7 @@ COPY --from=build /src/build/Release/latest/ .
 # We stash them in /app/defaults/mods/ and the entrypoint seeds them
 # into the volume-mounted directory on every container start.
 RUN if [ -d /app/staticdata/server_template_dir/mods ]; then \
+        mkdir -p /app/defaults && \
         cp -r /app/staticdata/server_template_dir/mods /app/defaults/mods; \
     fi
 
