@@ -97,17 +97,37 @@ WORKDIR /app
 
 COPY --from=build /src/build/Release/latest/ .
 
-# Seed entrypoint script (runs before the pwsh launcher)
-COPY scripts/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-
-# Save baked-in mods to a backup location.
-# At runtime volume mounts override /app/staticdata/server_template_dir/,
-# so we stash mods in /app/defaults/mods/ and the entrypoint seeds them
+# Save baked-in mods to a backup location so they survive volume mounts.
+# At runtime, volume mounts (like Coolify's server-template-dir) override
+# the baked-in /app/staticdata/server_template_dir, making mods invisible.
+# We stash them in /app/defaults/mods/ and the entrypoint seeds them
 # into the volume-mounted directory on every container start.
 RUN if [ -d /app/staticdata/server_template_dir/mods ]; then \
         cp -r /app/staticdata/server_template_dir/mods /app/defaults/mods; \
     fi
+
+# Generate entrypoint inline (no external file — avoids COPY failures).
+# Seeds Fabric mods from /app/defaults/mods/ into the volume-mounted
+# /app/staticdata/server_template_dir/mods/ on first deploy, then
+# launches the main application.
+RUN printf '%s\n' \
+        '#!/bin/sh' \
+        'set -eu' \
+        '' \
+        'SRC_MODS="/app/defaults/mods"' \
+        'DST_MODS="/app/staticdata/server_template_dir/mods"' \
+        '' \
+        'if [ -d "$SRC_MODS" ] && [ -f "$SRC_MODS/fountain-0.0.1.jar" ]; then' \
+        '    if [ ! -f "$DST_MODS/fountain-0.0.1.jar" ]; then' \
+        '        echo "entrypoint: seeding Fabric mods into server_template_dir..."' \
+        '        mkdir -p "$DST_MODS"' \
+        '        cp -v "$SRC_MODS"/*.jar "$DST_MODS/"' \
+        '    fi' \
+        'fi' \
+        '' \
+        'exec pwsh /app/run_launcher.ps1' \
+        > /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh
 
 # Permissions + ApiServer wrapper.
 # If publish produced only ApiServer.dll, create /app/components/ApiServer
