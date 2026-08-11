@@ -72,6 +72,7 @@ public partial class Program
             })
             .AddIdentityCookies();
 
+        builder.Services.AddScoped<IClaimsTransformation, PermissionClaimsTransformation>();
         builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
