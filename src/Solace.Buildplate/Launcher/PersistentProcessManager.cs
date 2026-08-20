@@ -36,6 +36,8 @@ public sealed class PersistentProcessManager
 
     private readonly ILogger _logger;
 
+    private readonly ILogger _javaLogger;
+
     private ConsoleProcess? _fabricProcess;
     private ConsoleProcess? _bridgeProcess;
     private bool _shuttingDown;
@@ -72,6 +74,12 @@ public sealed class PersistentProcessManager
         ));
 
         _logger = Log.Logger.ForContext("Component", nameof(PersistentProcessManager));
+
+        // Logs the stdout/stderr of the Fabric server and bridge Java processes
+        // under a separate component name so they show up as the "Java Server"
+        // tab in the web UI live logs. ForContext overrides the global
+        // ComponentName enrichment property ("BuildplateLauncher").
+        _javaLogger = Log.Logger.ForContext("ComponentName", "Java Server");
     }
 
     public async Task StartFabricAsync()
@@ -199,7 +207,8 @@ public sealed class PersistentProcessManager
 
             try
             {
-                _fabricProcess = new ConsoleProcess(_javaCmd, useShellExecute: true, redirect: false, openInNewWindow: true);
+                _fabricProcess = new ConsoleProcess(_javaCmd, useShellExecute: false, redirect: true, openInNewWindow: false);
+                AttachJavaOutputLogging(_fabricProcess, "Fabric");
                 await _fabricProcess.ExecuteAsync(workDir.FullName, [$"-Dfountain.control.port={CONTROL_CHANNEL_PORT.ToString(CultureInfo.InvariantCulture)}", "-jar", _fabricJarName, "-nogui"]);
 
                 _logger.Information($"Persistent Fabric server process started, PID {_fabricProcess.Id}");
@@ -245,7 +254,8 @@ public sealed class PersistentProcessManager
 
             try
             {
-                _bridgeProcess = new ConsoleProcess(_javaCmd, useShellExecute: true, redirect: false, openInNewWindow: true);
+                _bridgeProcess = new ConsoleProcess(_javaCmd, useShellExecute: false, redirect: true, openInNewWindow: false);
+                AttachJavaOutputLogging(_bridgeProcess, "Bridge");
                 _bridgeProcess.ProcessExited += (sender, e) =>
                 {
                     Task.Run(async () =>
@@ -282,6 +292,29 @@ public sealed class PersistentProcessManager
                 _logger.Error(exception, "Could not start persistent bridge process");
             }
         }
+    }
+
+    /// <summary>
+    /// Redirects the stdout/stderr of a Java subprocess into the "Java Server"
+    /// log component so it is visible in the web UI live logs.
+    /// </summary>
+    private void AttachJavaOutputLogging(ConsoleProcess process, string prefix)
+    {
+        _javaLogger.Information("[{Prefix}] Capturing Java process output", prefix);
+        process.StandartTextReceived += (sender, e) => LogJavaLine(prefix, e.Data);
+        process.ErrorTextReceived += (sender, e) => LogJavaLine(prefix, e.Data);
+    }
+
+    private void LogJavaLine(string prefix, string? line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return;
+        }
+
+        // Java log lines are already formatted (timestamp, level, logger
+        // name), so they are passed through as-is at information level.
+        _javaLogger.Information("[{Prefix}] {Line}", prefix, line.TrimEnd());
     }
 
     public async Task StopAllAsync()

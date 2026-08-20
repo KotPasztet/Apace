@@ -81,6 +81,16 @@
             }
         </div>
     }
+
+    <div class="comp-card">
+        <div class="comp-info">
+            <div class="status-dot @(_javaServerOnline ? "status-online" : "status-offline")"></div>
+            <div>
+                <div class="comp-name">Java Server</div>
+                <div class="comp-status">@(_javaServerOnline ? "Online" : "Offline")</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @if (!IsButtonDisabled(Permissions.StartServer) || !IsButtonDisabled(Permissions.RestartServer) ||
@@ -164,6 +174,7 @@
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
     private bool _eulaPending;
+    private bool _javaServerOnline;
     private Timer? _eulaCheckTimer;
     private Timer? _statusRefreshTimer;
 
@@ -190,8 +201,16 @@
         _statusRefreshTimer = new Timer(async _ =>
         {
             ServerManager.RefreshComponentStatuses();
+            RefreshJavaServerStatus();
             await InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
+    }
+
+    private void RefreshJavaServerStatus()
+    {
+        // The persistent Fabric server and bridge are plain "java" processes
+        // managed by the Buildplate Launcher (PersistentProcessManager).
+        _javaServerOnline = ProcessUtils.GetProgramProcesses("java").Any();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
