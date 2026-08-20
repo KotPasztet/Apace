@@ -20,6 +20,7 @@ public sealed class PersistentProcessManager
     public const string PERSISTENT_QUEUE_NAME = "buildplate_persistent";
 #pragma warning restore CA1707
     private const int BRIDGE_PORT = 19132;
+    private const int CONTROL_CHANNEL_PORT = 25564;
     private const string PERSISTENT_BRIDGE_DIR_NAME = "vienna-buildplate-persistent-bridge";
 
     private readonly string _javaCmd;
@@ -66,7 +67,8 @@ public sealed class PersistentProcessManager
         _connectorPluginArgString = Json.Serialize(new ConnectorPluginArg(
             eventBusConnectionString,
             PERSISTENT_QUEUE_NAME,
-            InventoryType.SYNCED
+            InventoryType.SYNCED,
+            $"127.0.0.1:{CONTROL_CHANNEL_PORT.ToString(CultureInfo.InvariantCulture)}"
         ));
 
         _logger = Log.Logger.ForContext("Component", nameof(PersistentProcessManager));
@@ -198,7 +200,7 @@ public sealed class PersistentProcessManager
             try
             {
                 _fabricProcess = new ConsoleProcess(_javaCmd, useShellExecute: true, redirect: false, openInNewWindow: true);
-                await _fabricProcess.ExecuteAsync(workDir.FullName, ["-jar", _fabricJarName, "-nogui"]);
+                await _fabricProcess.ExecuteAsync(workDir.FullName, [$"-Dfountain.control.port={CONTROL_CHANNEL_PORT.ToString(CultureInfo.InvariantCulture)}", "-jar", _fabricJarName, "-nogui"]);
 
                 _logger.Information($"Persistent Fabric server process started, PID {_fabricProcess.Id}");
             }
