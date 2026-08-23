@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Text.Json.Serialization;
 using Serilog;
 using Solace.Buildplate.Connector.Model;
@@ -49,6 +50,11 @@ public sealed class InstanceManager
         int Port,
         InstanceType Type
     );
+
+    // Response to the connector plugin's playerLogin request (see
+    // ViennaConnectorPlugin.PlayerLoginResponse): accepted + the instance the
+    // player should be routed to.
+    private sealed record PlayerLoginResponse(bool Accepted, string? InstanceId);
 
     public InstanceManager(Starter starter, Publisher publisher, string publicAddress)
     {
@@ -199,6 +205,39 @@ public sealed class InstanceManager
                     }).Forget();
 
                     return instanceId;
+                }
+                else if (request.Type is "playerLogin")
+                {
+                    // Sent by the persistent bridge's connector plugin when a Bedrock
+                    // player logs in: resolve which buildplate instance (dimension on
+                    // the persistent Fabric server) the player belongs to. Payload is
+                    // a plain JSON string with the player id.
+                    string? playerId;
+                    try
+                    {
+                        playerId = Json.Deserialize<string>(request.Data);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Warning(exception, "Bad playerLogin request");
+                        return null;
+                    }
+                    if (string.IsNullOrEmpty(playerId))
+                    {
+                        return null;
+                    }
+
+                    lock (instanceManager._lock)
+                    {
+                        Instance? instance = instanceManager._activeInstances.Values.FirstOrDefault(instance => instance.PlayerId == playerId);
+                        if (instance is null)
+                        {
+                            Log.Information($"playerLogin for player {playerId}: no active instance, rejecting");
+                            return Json.Serialize(new PlayerLoginResponse(false, null));
+                        }
+                        Log.Information($"playerLogin for player {playerId}: routing to instance {instance.InstanceId}");
+                        return Json.Serialize(new PlayerLoginResponse(true, instance.InstanceId));
+                    }
                 }
                 else if (request.Type is "preview")
                 {
