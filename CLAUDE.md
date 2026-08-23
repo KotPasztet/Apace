@@ -115,4 +115,9 @@ there have caused bugs more than once (see Gotchas).
   `RegistryOps` (server registries), not plain `JsonOps`, or registry
   references like `"settings": "minecraft:overworld"` fail with
   `Not a JSON object`.
+- Access widener in a Fountain submod must be declared **both** ways:
+  `loom { accessWidenerPath = ... }` in build.gradle (compile time) AND
+  `"accessWidener"` in that submod's `fabric.mod.json` (runtime). Missing the
+  latter compiles fine but throws `IllegalAccessError` at runtime on the first
+  widened field access.
 - GitHub push needs credentials (token); if push fails, ask the user.
