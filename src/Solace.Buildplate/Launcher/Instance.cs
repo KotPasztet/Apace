@@ -36,6 +36,7 @@ public sealed class Instance
     private readonly string _buildplateId;
     private readonly BuildplateSource _buildplateSource;
     public readonly string InstanceId;
+    public string? PlayerId => _playerId;
     private readonly bool _survival;
     private readonly bool _night;
     private readonly bool _saveEnabled;
