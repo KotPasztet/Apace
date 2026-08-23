@@ -120,4 +120,12 @@ there have caused bugs more than once (see Gotchas).
   `"accessWidener"` in that submod's `fabric.mod.json` (runtime). Missing the
   latter compiles fine but throws `IllegalAccessError` at runtime on the first
   widened field access.
+- Fountain-bridge's `bedrock-connection` pulls the **split**
+  `com.nukkitx.fastutil` artifacts, which lack classes the Bedrock codecs need
+  (e.g. `LongList` → `NoClassDefFoundError` on the first client packet). The
+  full `it.unimi.dsi:fastutil` dependency in Fountain-bridge/pom.xml fixes
+  this — don't remove it.
+- Vienna repo (`repos/Vienna`, branch `apace-v2`) pushes to
+  `Project-Genoa/Vienna` for which the KotPasztet token has no write access —
+  commits stay local there; deployment flows through the JARs in `server_jars/`.
 - GitHub push needs credentials (token); if push fails, ask the user.
