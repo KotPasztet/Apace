@@ -84,10 +84,10 @@
 
     <div class="comp-card">
         <div class="comp-info">
-            <div class="status-dot @(_javaServerOnline ? "status-online" : "status-offline")"></div>
+            <div class="status-dot @(_javaServerOnline ? "status-online" : _javaServerStarting ? "status-starting" : "status-offline")"></div>
             <div>
                 <div class="comp-name">Java Server</div>
-                <div class="comp-status">@(_javaServerOnline ? "Online" : "Offline")</div>
+                <div class="comp-status">@(_javaServerOnline ? "Online" : _javaServerStarting ? "Starting" : "Offline")</div>
             </div>
         </div>
     </div>
@@ -167,7 +167,12 @@
 </div>
 
 @code {
-    private Solace.LauncherUI.ServerStatus _currentStatus => ServerManager.Status;
+    // The system stays in Starting while the Fabric server is still booting,
+    // even after all launcher components report Online (the java process being
+    // up only means the server is loading — see RefreshJavaServerStatus).
+    private Solace.LauncherUI.ServerStatus _currentStatus => _javaServerStarting && ServerManager.Status is LauncherUI.ServerStatus.Online or LauncherUI.ServerStatus.PartiallyOnline
+        ? LauncherUI.ServerStatus.Starting
+        : ServerManager.Status;
 
     private string _activeTab = "Launcher";
     private ClaimsPrincipal? _user;
@@ -175,6 +180,7 @@
     private bool _scrollerInitialized;
     private bool _eulaPending;
     private bool _javaServerOnline;
+    private bool _javaServerStarting;
     private Timer? _eulaCheckTimer;
     private Timer? _statusRefreshTimer;
 
@@ -210,7 +216,34 @@
     {
         // The persistent Fabric server and bridge are plain "java" processes
         // managed by the Buildplate Launcher (PersistentProcessManager).
-        _javaServerOnline = ProcessUtils.GetProgramProcesses("java").Any();
+        bool javaRunning = ProcessUtils.GetProgramProcesses("java").Any();
+        if (!javaRunning)
+        {
+            _javaServerOnline = false;
+            _javaServerStarting = false;
+            return;
+        }
+
+        // A running java process only means the server is booting. The Fabric
+        // server is only usable once it prints its "Done ... For help" banner,
+        // so stay in Starting until that line appears in the Java Server logs.
+        // Each new capture session ("Capturing Java process output") resets the
+        // readiness marker so a restart goes back to Starting.
+        bool ready = false;
+        foreach (var logEvent in LogService.GetLogsFor("Java Server"))
+        {
+            if (logEvent.RenderedMessage.Contains("Capturing Java process output"))
+            {
+                ready = false;
+            }
+            else if (logEvent.RenderedMessage.Contains("For help, type"))
+            {
+                ready = true;
+            }
+        }
+
+        _javaServerOnline = ready;
+        _javaServerStarting = !ready;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
