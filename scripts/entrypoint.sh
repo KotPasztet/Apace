@@ -1,18 +1,26 @@
 #!/bin/sh
 set -eu
 
-# ── Seed defaults into volume-mounted directories ──────────────────────────────
+# ── Sync defaults into volume-mounted directories ──────────────────────────────
 # Coolify / Docker volumes override the baked-in files in the image.
-# Each volume mount needs manual seeding: if the target is missing, copy it
-# from the baked-in default so first deploy works without manual SCP.
+# Mods must be SYNCED, not just seeded on first deploy: a bind mount shadows
+# image content, so a mod updated in a new image would otherwise never replace
+# the stale copy inside the volume (this exact bug shipped an old Fountain mod
+# without the control channel). Changed jars are overwritten on every start.
 
 SRC_MODS="/app/defaults/mods"
 DST_MODS="/app/staticdata/server_template_dir/mods"
 
-if [ -d "$SRC_MODS" ] && [ ! -f "$DST_MODS/fountain-0.0.1.jar" ]; then
-    echo "entrypoint: seeding Fabric mods into server_template_dir..."
+if [ -d "$SRC_MODS" ]; then
     mkdir -p "$DST_MODS"
-    cp -v "$SRC_MODS"/*.jar "$DST_MODS/" 2>&1
+    for jar in "$SRC_MODS"/*.jar; do
+        [ -f "$jar" ] || continue
+        name="$(basename "$jar")"
+        if [ ! -f "$DST_MODS/$name" ] || ! cmp -s "$jar" "$DST_MODS/$name"; then
+            echo "entrypoint: updating mod $name in server_template_dir..."
+            cp -f "$jar" "$DST_MODS/$name"
+        fi
+    done
 fi
 
 # ── Launch ─────────────────────────────────────────────────────────────────────
