@@ -124,7 +124,9 @@ there have caused bugs more than once (see Gotchas).
   `com.nukkitx.fastutil` artifacts, which lack classes the Bedrock codecs need
   (e.g. `LongList` → `NoClassDefFoundError` on the first client packet). The
   full `it.unimi.dsi:fastutil` dependency in Fountain-bridge/pom.xml fixes
-  this — don't remove it.
+  this — don't remove it. Same story with `com.nukkitx:natives`
+  (`Zlib` references `com.nukkitx.natives.util.Natives` directly but the dep
+  is optional upstream): both must stay in Fountain-bridge/pom.xml.
 - Vienna repo (`repos/Vienna`, branch `apace-v2`) pushes to
   `Project-Genoa/Vienna` for which the KotPasztet token has no write access —
   commits stay local there; deployment flows through the JARs in `server_jars/`.
