@@ -108,9 +108,11 @@ RUN if [ -d /app/staticdata/server_template_dir/mods ]; then \
     fi
 
 # Generate entrypoint inline (no external file — avoids COPY failures).
-# Seeds Fabric mods from /app/defaults/mods/ into the volume-mounted
-# /app/staticdata/server_template_dir/mods/ on first deploy, then
-# launches the main application.
+# Syncs Fabric mods from /app/defaults/mods/ into the volume-mounted
+# /app/staticdata/server_template_dir/mods/ on every container start:
+# a bind mount shadows image content, so mods updated in a new image must
+# be copied over (and overwrite) the stale copies inside the volume,
+# otherwise the persistent Fabric server keeps running the old mod.
 RUN printf '%s\n' \
         '#!/bin/sh' \
         'set -eu' \
@@ -118,12 +120,16 @@ RUN printf '%s\n' \
         'SRC_MODS="/app/defaults/mods"' \
         'DST_MODS="/app/staticdata/server_template_dir/mods"' \
         '' \
-        'if [ -d "$SRC_MODS" ] && [ -f "$SRC_MODS/fountain-0.0.1.jar" ]; then' \
-        '    if [ ! -f "$DST_MODS/fountain-0.0.1.jar" ]; then' \
-        '        echo "entrypoint: seeding Fabric mods into server_template_dir..."' \
-        '        mkdir -p "$DST_MODS"' \
-        '        cp -v "$SRC_MODS"/*.jar "$DST_MODS/"' \
-        '    fi' \
+        'if [ -d "$SRC_MODS" ]; then' \
+        '    mkdir -p "$DST_MODS"' \
+        '    for jar in "$SRC_MODS"/*.jar; do' \
+        '        [ -f "$jar" ] || continue' \
+        '        name="$(basename "$jar")"' \
+        '        if [ ! -f "$DST_MODS/$name" ] || ! cmp -s "$jar" "$DST_MODS/$name"; then' \
+        '            echo "entrypoint: updating mod $name in server_template_dir..."' \
+        '            cp -f "$jar" "$DST_MODS/$name"' \
+        '        fi' \
+        '    done' \
         'fi' \
         '' \
         'exec pwsh /app/run_launcher.ps1' \
