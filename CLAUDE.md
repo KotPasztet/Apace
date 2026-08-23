@@ -51,8 +51,9 @@ created dimensions (multiworld). No new server JVM per instance (that was v1).
 ## Building
 
 ```bash
-# Fountain mod → artifact copied into Apace/mods/fountain-0.0.1.jar
-cd repos/Fountain-fabric && ./gradlew :fountain-core:build
+# Fountain mod → copy build/libs/fountain-0.0.1.jar into Apace/mods/
+# (both fountain-0.0.1.jar and fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar)
+cd repos/Fountain-fabric && ./gradlew build
 
 # Vienna connector plugin → Apace/server_jars/buildplate-connector-plugin-*.jar
 cd repos/Vienna/buildplate/connector-plugin && ../../mvnw package
@@ -106,5 +107,12 @@ there have caused bugs more than once (see Gotchas).
   (double cleanup), not the root cause.
 - Fountain mod JAR is a Fabric jar-in-jar: classes live inside
   `META-INF/jars/fountain-core-0.0.1.jar` — check nested JAR contents, not the
-  outer one, when verifying what's deployed.
+  outer one, when verifying what's deployed. Note: published JARs use
+  **intermediary** mappings, so Minecraft class names appear as `class_XXXX`
+  (e.g. `RegistryOps` = `class_6903`), not Yarn names — plain `strings` won't
+  find e.g. "RegistryOps".
+- Generator settings JSON sent over the control channel must be parsed with
+  `RegistryOps` (server registries), not plain `JsonOps`, or registry
+  references like `"settings": "minecraft:overworld"` fail with
+  `Not a JSON object`.
 - GitHub push needs credentials (token); if push fails, ask the user.
