@@ -4,6 +4,7 @@ using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Channels;
+using Serilog;
 
 namespace Solace.ObjectStore.Client;
 
@@ -76,10 +77,10 @@ public sealed class ObjectStoreClient : IAsyncDisposable
     public async Task<bool> DeleteAsync(string id)
     {
         var result = await EnqueueCommand(CommandType.Delete, id);
-        return (bool)result!;
+        return result is true;
     }
 
-    private Task<object?> EnqueueCommand(CommandType type, object data)
+    private async Task<object?> EnqueueCommand(CommandType type, object data)
     {
         var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -88,7 +89,15 @@ public sealed class ObjectStoreClient : IAsyncDisposable
             tcs.SetException(new ObjectDisposedException(nameof(ObjectStoreClient)));
         }
 
-        return tcs.Task;
+        try
+        {
+            return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(60));
+        }
+        catch (TimeoutException)
+        {
+            Log.Error($"ObjectStore command {type} (data {data}) timed out after 60s");
+            return null;
+        }
     }
 
     private async Task ProcessConnectionAsync()

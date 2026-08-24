@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Serilog;
 
 namespace Solace.EventBus.Client;
 
@@ -69,7 +70,15 @@ public sealed class RequestSender : IAsyncDisposable
             _lock.Release();
         }
 
-        return await tcs.Task;
+        try
+        {
+            return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(90));
+        }
+        catch (TimeoutException)
+        {
+            Log.Error($"Event bus request {type} to queue {queueName} timed out after 90s");
+            return null;
+        }
     }
 
     public async Task FlushAsync()
