@@ -59,8 +59,12 @@ public sealed class ServerManager : IDisposable
 
     private CancellationTokenSource? _operationTokenSource;
 
-    public ServerManager()
+    private readonly LogsLogService _logsLogService;
+
+    public ServerManager(LogsLogService logsLogService)
     {
+        _logsLogService = logsLogService;
+
         Components =
         [
             new("Event Bus", EventBusServer.ExeName, EventBusServer.Run),
@@ -509,7 +513,79 @@ public sealed class ServerManager : IDisposable
 
         if (!error)
         {
+            await WaitForJavaServerReadyAsync(logger, cancellationToken);
             logger.Information("All required programs have (most likely) running successfully");
+        }
+    }
+
+    private bool IsJavaServerReady()
+    {
+        // The persistent Fabric server and bridge are plain "java" processes
+        // managed by the Buildplate Launcher. A running java process only means
+        // the server is booting; it is ready once its "Done ... For help" banner
+        // appears in the Java Server logs. Each new capture session ("Capturing
+        // Java process output") resets the marker so a restart goes back to
+        // not-ready. Mirrors the heuristic on the Server Status page.
+        if (!ProcessUtils.GetProgramProcesses("java").Any())
+        {
+            return false;
+        }
+
+        bool ready = false;
+        foreach (var logEvent in _logsLogService.GetLogsFor("Java Server"))
+        {
+            if (logEvent.RenderedMessage?.Contains("Capturing Java process output") == true)
+            {
+                ready = false;
+            }
+            else if (logEvent.RenderedMessage?.Contains("For help, type") == true)
+            {
+                ready = true;
+            }
+        }
+
+        return ready;
+    }
+
+    private async Task WaitForJavaServerReadyAsync(Serilog.ILogger logger, CancellationToken cancellationToken)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var lastProgressLog = TimeSpan.Zero;
+        bool sawJavaProcess = false;
+
+        while (true)
+        {
+            if (IsJavaServerReady())
+            {
+                return;
+            }
+
+            if (!sawJavaProcess && ProcessUtils.GetProgramProcesses("java").Any())
+            {
+                sawJavaProcess = true;
+            }
+
+            // If the java process never even spawned within the first 60 s,
+            // there is nothing to wait for.
+            if (!sawJavaProcess && stopwatch.Elapsed >= TimeSpan.FromSeconds(60))
+            {
+                logger.Warning("Java server process did not start, not waiting for it to become ready");
+                return;
+            }
+
+            if (stopwatch.Elapsed >= TimeSpan.FromSeconds(300))
+            {
+                logger.Warning("Timed out waiting for Java server to become ready");
+                return;
+            }
+
+            if (stopwatch.Elapsed - lastProgressLog >= TimeSpan.FromSeconds(15))
+            {
+                logger.Debug("Still waiting for Java server to finish starting");
+                lastProgressLog = stopwatch.Elapsed;
+            }
+
+            await Task.Delay(1000, cancellationToken);
         }
     }
 

@@ -151,7 +151,7 @@
                 <div class="log-content">
                     @foreach (var log in LogService.GetLogsFor(_activeTab))
                     {
-                        <div class="log-line"><span class="log-time">[@log.Timestamp.ToString("HH:mm:ss")]</span> <span class="log-level @GetLogLevelClass(log.Level)">[@GetShortLevel(log.Level)]</span> <span class="log-msg">@log.RenderedMessage</span></div>
+                        <div class="log-line"><span class="log-time">[@FormatTimestamp(log.Timestamp)]</span> <span class="log-level @GetLogLevelClass(log.Level)">[@GetShortLevel(log.Level)]</span> <span class="log-msg">@log.RenderedMessage</span></div>
                     }
                 </div>
             </div>
@@ -185,6 +185,7 @@
     private bool _javaServerStarting;
     private Timer? _eulaCheckTimer;
     private Timer? _statusRefreshTimer;
+    private TimeZoneInfo? _userTimeZone;
 
     protected override async Task OnInitializedAsync()
     {
@@ -250,12 +251,39 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // The page is statically prerendered, so JS interop is only available
+        // once the circuit exists — resolve the browser time zone here instead
+        // of in OnInitializedAsync.
+        if (firstRender && _userTimeZone is null)
+        {
+            _userTimeZone = await GetUserTimeZoneAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+
         if (HasPermission(Permissions.ViewServerLogs) && !_scrollerInitialized)
         {
             await JS.InvokeVoidAsync("initLogScroller", _logContainerRef);
             _scrollerInitialized = true;
         }
     }
+
+    private async Task<TimeZoneInfo> GetUserTimeZoneAsync()
+    {
+        var tzId = await JS.InvokeAsync<string>("eval", "Intl.DateTimeFormat().resolvedOptions().timeZone");
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(tzId);
+        }
+        catch
+        {
+            return TimeZoneInfo.Local;
+        }
+    }
+
+    private string FormatTimestamp(DateTime utc)
+        => _userTimeZone is null
+            ? utc.ToString("HH:mm:ss")
+            : TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), _userTimeZone).ToString("HH:mm:ss");
 
     private async void HandleUpdate()
     {
