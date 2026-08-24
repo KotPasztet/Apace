@@ -486,6 +486,7 @@ public sealed class ServerManager : IDisposable
             OnStatusChanged?.Invoke();
         }
 
+        await WaitForJavaServerReadyAsync(logger, cancellationToken);
         logger.Information("Waiting for programs to stabilize");
         await Task.Delay(7500, cancellationToken);
 
@@ -513,7 +514,6 @@ public sealed class ServerManager : IDisposable
 
         if (!error)
         {
-            await WaitForJavaServerReadyAsync(logger, cancellationToken);
             logger.Information("All required programs have (most likely) running successfully");
         }
     }
