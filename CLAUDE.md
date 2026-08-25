@@ -130,4 +130,17 @@ there have caused bugs more than once (see Gotchas).
 - Vienna repo (`repos/Vienna`, branch `apace-v2`) pushes to
   `Project-Genoa/Vienna` for which the KotPasztet token has no write access —
   commits stay local there; deployment flows through the JARs in `server_jars/`.
+- `PipeWriter.WriteAsync` does NOT flush — every request/response written over
+  TCP (ObjectStore client/server, anything pipe-based) must be followed by
+  `FlushAsync`, or the peer deadlocks waiting for a message that never leaves
+  the buffer. Symptom: process alive, no error, request times out (ObjectStore
+  GET/DEL had exactly this bug; STORE worked because it flushed).
+- The Vienna Fabric mod (`vienna-0.0.1.jar`, no sources in the workspace — it
+  lives only in the VPS volume) sends player-data requests (findPlayer,
+  getInitialPlayerState, playerDead, getInventory) to the queue named by
+  `vienna-event-bus-queue-name`. In the persistent setup that queue is
+  `buildplate_persistent`, so ViennaConnectorPlugin must answer/forward them
+  itself: bare-playerId requests must be re-wrapped in
+  `{instanceId, request}` before forwarding to the ApiServer's `buildplates`
+  queue.
 - GitHub push needs credentials (token); if push fails, ask the user.
