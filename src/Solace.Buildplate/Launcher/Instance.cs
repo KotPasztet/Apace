@@ -114,6 +114,8 @@ public sealed class Instance
 
             _logger.Information("Loading buildplate data");
 
+            _logger.Information("Sending buildplate load request to event bus");
+
             BuildplateLoadResponse? buildplateLoadResponse = _buildplateSource switch
             {
                 BuildplateSource.PLAYER => await SendEventBusRequestRaw<BuildplateLoadResponse>("load", new BuildplateLoadRequest(_playerId!, _buildplateId), true),
@@ -121,6 +123,8 @@ public sealed class Instance
                 BuildplateSource.ENCOUNTER => await SendEventBusRequestRaw<BuildplateLoadResponse>("loadEncounter", new EncounterBuildplateLoadRequest(_buildplateId), true),
                 _ => throw new UnreachableException(),
             };
+
+            _logger.Information("Buildplate load response received: {Result}", buildplateLoadResponse is null ? "null" : "ok");
 
             Debug.Assert(buildplateLoadResponse is not null);
 

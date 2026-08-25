@@ -220,10 +220,13 @@ public sealed class BuildplateInstanceRequestHandler
 
     private async Task<BuildplateLoadResponse?> HandleLoad(string playerId, string buildplateId)
     {
+        Log.Information("HandleLoad: loading buildplate {BuildplateId} for player {PlayerId}", playerId, buildplateId);
+
         EarthDB.Results results = await new EarthDB.Query(false)
             .Get("buildplates", playerId, typeof(Buildplates))
             .ExecuteAsync(_earthDB);
         Buildplates buildplates = results.Get<Buildplates>("buildplates");
+        Log.Information("HandleLoad: database done for {BuildplateId}", buildplateId);
 
         Buildplates.Buildplate? buildplate = buildplates.GetBuildplate(buildplateId);
         if (buildplate is null)
@@ -231,7 +234,9 @@ public sealed class BuildplateInstanceRequestHandler
             return null;
         }
 
+        Log.Information("HandleLoad: fetching object store data {ObjectId}", buildplate.ServerDataObjectId);
         byte[]? serverData = await _objectStoreClient.GetAsync(buildplate.ServerDataObjectId);
+        Log.Information("HandleLoad: object store done ({Bytes} bytes)", serverData?.Length.ToString() ?? "null");
         if (serverData is null)
         {
             Log.Error($"Data object {buildplate.ServerDataObjectId} for buildplate {buildplateId} could not be loaded from object store");
