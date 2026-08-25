@@ -117,6 +117,7 @@ public sealed partial class NetworkServer : IDisposable
                             {
                                 await WriteMessageAsync(writer, $"OK {data.Length}");
                                 await writer.WriteAsync(data);
+                                await writer.FlushAsync();
                             }
                             else
                             {

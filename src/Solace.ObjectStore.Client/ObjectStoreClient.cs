@@ -145,9 +145,11 @@ public sealed class ObjectStoreClient : IAsyncDisposable
                 break;
             case CommandType.Get:
                 await writer.WriteAsync(Encoding.ASCII.GetBytes($"GET {(string)command.Data}\n"), _cts.Token);
+                await writer.FlushAsync(_cts.Token);
                 break;
             case CommandType.Delete:
                 await writer.WriteAsync(Encoding.ASCII.GetBytes($"DEL {(string)command.Data}\n"), _cts.Token);
+                await writer.FlushAsync(_cts.Token);
                 break;
         }
     }
