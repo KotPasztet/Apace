@@ -362,15 +362,19 @@ public sealed partial class Server : IDisposable
 
             var request = new RequestHandler.RequestR(timestamp, type, data);
 
+            int index = 0;
             foreach (RequestHandler requestHandler in requestHandlers)
             {
+                Log.Information("Routing request {Type} on queue {QueueName} to handler {Index} of {Total}", type, queueName, index, requestHandlers.Count);
                 TaskCompletionSource<string?> tcs = requestHandler.Request(request);
                 string? response = await tcs.Task.ConfigureAwait(false);
+                Log.Information("Handler {Index} responded to {Type} on {QueueName}: {Result}", index, type, queueName, response is null ? "null" : "response");
 
                 if (response is not null)
                 {
                     return response;
                 }
+                index++;
             }
 
             return null;
