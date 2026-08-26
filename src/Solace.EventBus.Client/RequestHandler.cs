@@ -1,4 +1,5 @@
-﻿using Solace.Common.Utils;
+﻿using Serilog;
+using Solace.Common.Utils;
 
 namespace Solace.EventBus.Client;
 
@@ -101,7 +102,9 @@ public sealed class RequestHandler
     {
         try
         {
+            Log.Information("Request received: {Type} on queue {QueueName}", type, _queueName);
             string? response = await _handler.OnRequestAsync(new RequestHandlerRequest(timestamp, type, data));
+            Log.Information("Request handled: {Type}", type);
 
             if (!_closed)
             {
