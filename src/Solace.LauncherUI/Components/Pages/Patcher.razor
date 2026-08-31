@@ -254,6 +254,10 @@
                                 </div>
                             </div>
                         }
+                        <div class="form-check mt-2">
+                            <input type="checkbox" class="form-check-input" id="advChangeIcon" @bind="changeIcon" />
+                            <label class="form-check-label" for="advChangeIcon">Change app icon (uses the Apace icon)</label>
+                        </div>
                     </div>
 
                     <div class="adv-section">
@@ -432,6 +436,10 @@
                                 </div>
                             </div>
                         }
+                        <div class="form-check mt-2">
+                            <input type="checkbox" class="form-check-input" id="iosChangeIcon" @bind="iosChangeIcon" />
+                            <label class="form-check-label" for="iosChangeIcon">Change app icon (uses the Apace icon)</label>
+                        </div>
                     </div>
 
                     <div class="adv-section">
@@ -676,7 +684,8 @@
     private string appName = "Apace";
     private string appNameShort = "Apace";
     private bool changePackageName = true;
-    private string packageName = "com.github.earth_restored";
+    private string packageName = "com.kotpasztet.apace";
+    private bool changeIcon = true;
     private bool singleDomain = true;
     private PatchProtocol authProtocol = PatchProtocol.Http;
     private string authHostname = string.Empty;
@@ -702,6 +711,7 @@
     private bool iosDisableSpeedLimit;
     private bool iosChangeAppName = true;
     private string iosAppName = "Apace";
+    private bool iosChangeIcon = true;
     private bool iosRemoveDrm = true;
     private bool iosForceWebView = true;
     private bool iosForceInteractive = true;
@@ -999,6 +1009,7 @@
             AppNameShort = appNameShort,
             ChangePackageName = true,
             PackageName = packageName,
+            ChangeIcon = true,
             LoginServerSingleDomainMode = true,
             LoginServerProtocol = mode == PatchMode.Auto ? PatchProtocol.Http : authProtocol,
             LoginServerHostname = mode == PatchMode.Auto ? ApaceAddress : authHostname,
@@ -1035,6 +1046,7 @@
             AppNameShort = appNameShort,
             ChangePackageName = changePackageName,
             PackageName = packageName,
+            ChangeIcon = changeIcon,
             LoginServerSingleDomainMode = singleDomain,
             LoginServerProtocol = authProtocol,
             LoginServerHostname = authHostname,
@@ -1064,6 +1076,7 @@
             DisableSpeedLimit = false,
             ChangeAppName = true,
             AppName = iosAppName,
+            ChangeIcon = true,
             RemoveDrm = true,
             ChangeLoginServerAddress = true,
             ChangeXalAuthAddress = true,
@@ -1099,6 +1112,7 @@
             DisableSpeedLimit = false,
             ChangeAppName = true,
             AppName = iosAppName,
+            ChangeIcon = true,
             RemoveDrm = true,
             ChangeLoginServerAddress = false,
             ChangeXalAuthAddress = false,
@@ -1132,6 +1146,7 @@
             DisableSpeedLimit = iosDisableSpeedLimit,
             ChangeAppName = iosChangeAppName,
             AppName = iosAppName,
+            ChangeIcon = iosChangeIcon,
             RemoveDrm = iosRemoveDrm,
             ChangeLoginServerAddress = iosUseCustomAuth,
             ChangeXalAuthAddress = iosChangeXal,

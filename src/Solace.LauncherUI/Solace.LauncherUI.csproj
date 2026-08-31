@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <None Update="Data\app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <!-- Default Apace icon used by the client patcher -->
+    <None Include="..\..\images\Apace_Favicon.png" Link="images\Apace_Favicon.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Copy server JARs to staticdata on build/publish -->
