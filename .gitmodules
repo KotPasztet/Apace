@@ -3,4 +3,4 @@
 	url = https://github.com/Earth-Restored/Solace.StaticData
 [submodule "repos/Minecraft_Earth_Patcher"]
 	path = repos/Minecraft_Earth_Patcher
-	url = https://github.com/Earth-Restored/Minecraft_Earth_Patcher
+	url = https://github.com/KotPasztet/Minecraft_Earth_Patcher.git
