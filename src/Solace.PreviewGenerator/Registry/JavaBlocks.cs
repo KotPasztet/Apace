@@ -54,6 +54,7 @@ public static class JavaBlocks
         DataFile.Load(Path.Combine(staticData, "registry", "blocks_java.json"), jToken =>
         {
             var jArray = (JsonArray)jToken;
+            HashSet<string> unmappedBlocks = [];
 
             foreach (var _element in jArray)
             {
@@ -81,14 +82,21 @@ public static class JavaBlocks
                 }
                 catch (BedrockMappingFailException ex)
                 {
-                    Log.Warning($"Cannot find Bedrock block for Java block {name}: {ex.Message}");
+                    unmappedBlocks.Add(name);
+                    Log.Debug($"Cannot find Bedrock block for Java block {name}: {ex.Message}");
                 }
+            }
+
+            if (unmappedBlocks.Count > 0)
+            {
+                Log.Warning("{Count} vanilla Java blocks have no Bedrock mapping: {Blocks}", unmappedBlocks.Count, string.Join(", ", unmappedBlocks));
             }
         });
 
         DataFile.Load(Path.Combine(staticData, "registry", "blocks_java_nonvanilla.json"), jToken =>
         {
             var jArray = (JsonArray)jToken;
+            HashSet<string> unmappedBlocks = [];
 
             foreach (var _element in jArray)
             {
@@ -122,7 +130,8 @@ public static class JavaBlocks
                     }
                     catch (BedrockMappingFailException ex)
                     {
-                        Log.Warning($"Cannot find Bedrock block for Java block {name}: {ex.Message}");
+                        unmappedBlocks.Add(name);
+                        Log.Debug($"Cannot find Bedrock block for Java block {name}: {ex.Message}");
                     }
                 }
 
@@ -130,6 +139,11 @@ public static class JavaBlocks
                 {
                     Log.Warning($"Duplicate Java non-vanilla block name {baseName}");
                 }
+            }
+
+            if (unmappedBlocks.Count > 0)
+            {
+                Log.Warning("{Count} non-vanilla Java blocks have no Bedrock mapping: {Blocks}", unmappedBlocks.Count, string.Join(", ", unmappedBlocks));
             }
         });
     }
