@@ -10,13 +10,8 @@ namespace Solace.PreviewGenerator;
 
 internal sealed class Chunk
 {
-    public static Chunk? Read(CompoundTag? chunkTag)
+    public static Chunk? Read(CompoundTag chunkTag)
     {
-        if (chunkTag is null)
-        {
-            return null; // chunk not present in the server data, rendered as air
-        }
-
         try
         {
             return new Chunk(chunkTag);
