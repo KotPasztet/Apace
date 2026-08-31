@@ -28,6 +28,9 @@ public sealed class PatcherService
 
     public static string WorkDir => Path.Combine(BaseDir, "work");
 
+    /// <summary>Default Apace icon shipped with the panel (images/Apace_Favicon.png).</summary>
+    public static string DefaultIconPath => Path.Combine(AppContext.BaseDirectory, "images", "Apace_Favicon.png");
+
     public IReadOnlyList<PatchJob> Jobs
     {
         get
@@ -177,6 +180,7 @@ public sealed class PatcherService
             InApk = job.InputPath,
             OutApk = Path.Combine(job.WorkDir, BuildOutputFileName(request)),
             ResourcePack = request.ResourcePackPath,
+            IconPath = a.ChangeIcon ? ResolveIconPath(job) : null,
             DecodedDir = Path.Combine(job.WorkDir, "decoded"),
             AndroidOSVersion = a.AndroidVersion,
             Patches = GetAndroidPatches(a),
@@ -198,6 +202,8 @@ public sealed class PatcherService
             }
         }
 
+        var iconPath = a.ChangeIcon ? ResolveIconPath(job) : null;
+
         var options = new IpaProcessor.Options
         {
             Autonomous = true,
@@ -209,6 +215,8 @@ public sealed class PatcherService
             LocatorProtocol = (int)a.LocatorProtocol,
             LocatorHostname = a.LocatorHostname,
             AppName = a.AppName,
+            ChangeIcon = iconPath is not null,
+            IconPath = iconPath ?? "",
             ChangeLocatorAddress = a.ChangeLocatorAddress,
             ChangeXalAuthAddress = a.ChangeLoginServerAddress && a.ChangeXalAuthAddress,
             ForceInAppWebView = a.ChangeLoginServerAddress && a.ForceInAppWebView,
@@ -477,6 +485,17 @@ public sealed class PatcherService
 
         // keep the patch definitions in sync with the build
         U.CopyDir(sourcePatches, targetPatches, overwrite: true);
+    }
+
+    private static string? ResolveIconPath(PatchJob job)
+    {
+        if (!File.Exists(DefaultIconPath))
+        {
+            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [WRN] Apace icon not found at '{DefaultIconPath}' - the app icon will not be changed.");
+            return null;
+        }
+
+        return DefaultIconPath;
     }
 
     private static bool IsJavaAvailable()

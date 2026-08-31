@@ -47,6 +47,9 @@ public sealed record AndroidRequest
     public required bool ChangePackageName { get; init; }
     public required string PackageName { get; init; }
 
+    /// <summary>True: the Apace icon replaces the launcher icon. Null icon path -> panel default.</summary>
+    public required bool ChangeIcon { get; init; }
+
     public required bool LoginServerSingleDomainMode { get; init; }
     public required PatchProtocol LoginServerProtocol { get; init; }
     public required string LoginServerHostname { get; init; }
@@ -79,6 +82,9 @@ public sealed record IosRequest
 
     public required bool ChangeAppName { get; init; }
     public required string AppName { get; init; }
+
+    /// <summary>True: the Apace icon replaces the launcher icon. Null icon path -> panel default.</summary>
+    public required bool ChangeIcon { get; init; }
 
     public required bool RemoveDrm { get; init; }
 
