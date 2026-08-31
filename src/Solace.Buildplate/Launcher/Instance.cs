@@ -670,19 +670,12 @@ public sealed class Instance
     {
         _logger.Information("Cleaning up runtime directory");
 
-        if (!_baseDir.Exists)
-        {
-            _logger.Debug("Runtime directory already absent, skipping cleanup");
-            return;
-        }
-
         try
         {
-            _baseDir.Delete(recursive: true);
-        }
-        catch (DirectoryNotFoundException)
-        {
-            _logger.Debug("Runtime directory not found during cleanup (likely already removed)");
+            if (_baseDir.Exists)
+            {
+                _baseDir.Delete(recursive: true);
+            }
         }
         catch (Exception exception)
         {
@@ -720,7 +713,7 @@ public sealed class Instance
                     long duration = shutdownTime - currentTime;
                     if (duration > 0)
                     {
-                        _logger.Information("Server will shut down in {Duration} milliseconds", duration);
+                        _logger.Information("Server will shut down in {} milliseconds", duration);
                         await Task.Delay(checked((int)(duration > 2000 ? (duration / 2) : duration)));
                     }
 
