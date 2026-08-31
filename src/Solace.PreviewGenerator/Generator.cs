@@ -20,7 +20,14 @@ public static class Generator
         {
             for (int chunkZ = -CHUNK_RADIUS; chunkZ < CHUNK_RADIUS; chunkZ++)
             {
-                var chunk = Chunk.Read(serverDataZip.GetChunkNBT(chunkX, chunkZ));
+                var chunkTag = serverDataZip.GetChunkNBT(chunkX, chunkZ);
+                if (chunkTag is null)
+                {
+                    // chunk not present in the server data (e.g. missing region file), rendered as air
+                    continue;
+                }
+
+                var chunk = Chunk.Read(chunkTag);
                 if (chunk is null)
                 {
                     Log.Error($"Could not convert chunk {chunkX}, {chunkZ}");
