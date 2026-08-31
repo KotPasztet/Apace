@@ -1,14 +1,14 @@
-﻿using Serilog;
+﻿using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.WebUtilities;
+using Serilog;
 using Solace.Common;
-using Solace.DB;
 using Solace.EventBus.Client;
-using Solace.ObjectStore.Client;
 
 namespace Solace.ApiServer.Utils;
 
 internal static class TileUtils
 {
-    private static EarthDB db => Program.DB;
     private static EventBusClient eventBus => Program.eventBus;
     private static readonly byte[] EmptyTilePng = Convert.FromBase64String(
         "iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAABOklEQVR4nO3SMQ0AAAwCoNm/9HI83BLIOQmtnpnZB4CjEwABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEgABEoAB1XQB3P+pKnEAAAAASUVORK5CYII=");
@@ -16,19 +16,108 @@ internal static class TileUtils
     private static RequestSender? _requestSender;
     private static readonly SemaphoreSlim _requestSenderLock = new(1, 1);
 
-    public static async Task<bool> TryWriteTile(int tileX, int tileY, Stream dest, CancellationToken cancellationToken)
-    {
-        if (await TryWriteRenderedTile(tileX, tileY, dest, cancellationToken))
-        {
-            return true;
-        }
+    // In-memory cache of rendered tiles. Map data comes from a read-only OSM planet
+    // database (or the external Maptiler API), so rendered tiles are immutable and are
+    // cached without expiry. Only fallback (render failure) entries expire, so a tile
+    // that failed to render while the renderer was unavailable is retried later.
+    private static readonly ConcurrentDictionary<long, CachedTile> TileCache = new();
+    private static long _cacheClock;
+    private const int MaxCachedTiles = 512;
+    private static readonly TimeSpan FallbackTileTtl = TimeSpan.FromMinutes(10);
 
-        Log.Warning("Serving fallback tile {TileX},{TileY}", tileX, tileY);
-        await dest.WriteAsync(EmptyTilePng, cancellationToken);
-        return true;
+    public readonly record struct CachedTileHit(string ETag, byte[] Png);
+
+    private sealed class CachedTile
+    {
+        public required string ETag { get; init; }
+        public required byte[] Png { get; init; }
+        public required bool IsFallback { get; init; }
+        public required DateTimeOffset StoredAt { get; init; }
+        public long LastUsed;
     }
 
-    private static async Task<bool> TryWriteRenderedTile(int tileX, int tileY, Stream dest, CancellationToken cancellationToken)
+    /// <summary>
+    /// Gets a tile from the in-memory cache without any I/O (no event bus, no renderer).
+    /// Returns null when the tile has not been rendered yet (or its fallback entry expired).
+    /// </summary>
+    public static CachedTileHit? LookupCachedTile(int tileX, int tileY)
+    {
+        long key = ToCacheKey(tileX, tileY);
+
+        if (!TileCache.TryGetValue(key, out CachedTile? cached) || IsExpired(cached))
+        {
+            TileCache.TryRemove(key, out _);
+            return null;
+        }
+
+        Touch(cached);
+        return new CachedTileHit(cached.ETag, cached.Png);
+    }
+
+    /// <summary>
+    /// Gets a tile PNG and its ETag, rendering it over the event bus on a cache miss.
+    /// Both rendered tiles and fallback (empty) tiles end up in the cache.
+    /// </summary>
+    public static async Task<(string ETag, byte[] Png)> GetTileAsync(int tileX, int tileY, CancellationToken cancellationToken)
+    {
+        CachedTileHit? hit = LookupCachedTile(tileX, tileY);
+        if (hit is not null)
+        {
+            return (hit.Value.ETag, hit.Value.Png);
+        }
+
+        byte[]? tilePng = await TryRenderTile(tileX, tileY, cancellationToken);
+        bool isFallback = tilePng is null;
+        if (isFallback)
+        {
+            Log.Warning("Serving fallback tile {TileX},{TileY}", tileX, tileY);
+            tilePng = EmptyTilePng;
+        }
+
+        var entry = new CachedTile
+        {
+            ETag = ComputeETag(tilePng),
+            Png = tilePng,
+            IsFallback = isFallback,
+            StoredAt = DateTimeOffset.UtcNow,
+            LastUsed = Interlocked.Increment(ref _cacheClock),
+        };
+
+        TileCache[ToCacheKey(tileX, tileY)] = entry;
+        TrimCache();
+
+        return (entry.ETag, entry.Png);
+    }
+
+    private static bool IsExpired(CachedTile cached)
+        => cached.IsFallback && DateTimeOffset.UtcNow - cached.StoredAt > FallbackTileTtl;
+
+    private static void Touch(CachedTile cached)
+        => cached.LastUsed = Interlocked.Increment(ref _cacheClock);
+
+    private static void TrimCache()
+    {
+        int excess = TileCache.Count - MaxCachedTiles;
+        if (excess <= 0)
+        {
+            return;
+        }
+
+        foreach (var victim in TileCache.OrderBy(static entry => entry.Value.LastUsed).Take(excess))
+        {
+            TileCache.TryRemove(victim.Key, out _);
+        }
+    }
+
+    private static string ComputeETag(byte[] png)
+    {
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - ok for etag
+        byte[] hash = SHA1.HashData(png);
+#pragma warning restore CA5350
+        return $"\"{WebEncoders.Base64UrlEncode(hash)}\"";
+    }
+
+    private static async Task<byte[]?> TryRenderTile(int tileX, int tileY, CancellationToken cancellationToken)
     {
         string? response;
 
@@ -43,7 +132,7 @@ internal static class TileUtils
             {
                 Log.Warning("Tile render timed out for tile {TileX},{TileY}", tileX, tileY);
                 await ResetRequestSenderAsync();
-                return false;
+                return null;
             }
 
             response = await responseTask;
@@ -52,7 +141,7 @@ internal static class TileUtils
         {
             Log.Warning(ex, "Tile render request failed for tile {TileX},{TileY}", tileX, tileY);
             await ResetRequestSenderAsync();
-            return false;
+            return null;
         }
         finally
         {
@@ -62,19 +151,17 @@ internal static class TileUtils
         if (string.IsNullOrWhiteSpace(response))
         {
             Log.Warning("Tile renderer returned no data for tile {TileX},{TileY}", tileX, tileY);
-            return false;
+            return null;
         }
 
         try
         {
-            byte[] tilePng = Convert.FromBase64String(response);
-            await dest.WriteAsync(tilePng, cancellationToken);
-            return true;
+            return Convert.FromBase64String(response);
         }
         catch (FormatException ex)
         {
             Log.Warning(ex, "Tile renderer returned invalid base64 for tile {TileX},{TileY}", tileX, tileY);
-            return false;
+            return null;
         }
     }
 
@@ -95,22 +182,8 @@ internal static class TileUtils
         _requestSender = null;
     }
 
-    private static async Task<bool> TryWriteTileFromObject(string tileObjectId, Stream dest, ObjectStoreClient objectStoreClient, CancellationToken cancellationToken)
-    {
-        byte[]? tilePng = await objectStoreClient.GetAsync(tileObjectId);
-
-        if (tilePng is null)
-        {
-            return false;
-        }
-
-        await dest.WriteAsync(tilePng, cancellationToken);
-
-        return true;
-    }
-
-    private static ulong ToDbPos(int tileX, int tileY)
-        => unchecked((ulong)((long)tileX | ((long)tileY << 32)));
+    private static long ToCacheKey(int tileX, int tileY)
+        => unchecked((long)tileX | ((long)tileY << 32));
 
     private sealed record RenderTileRequest(int TileX, int TileY, int Zoom);
 }
