@@ -37,13 +37,19 @@
                 <button type="button" class="mode-card @(mode == PatchMode.Auto ? "selected" : "")"
                         @onclick="() => SelectMode(PatchMode.Auto)">
                     <span class="mode-name">Auto</span>
-                    <span class="mode-desc">Everything is derived from your current Apace configuration. Nothing to type in.</span>
+                    <span class="mode-desc">Everything is derived from your Apace configuration. Just drop the file.</span>
                 </button>
                 <button type="button" class="mode-card @(mode == PatchMode.Simple ? "selected" : "")"
                         @onclick="() => SelectMode(PatchMode.Simple)">
                     <span class="mode-name">Simple</span>
-                    <span class="mode-desc">Just like Auto, but you can override the server addresses.</span>
+                    <span class="mode-desc">Auto defaults, but you can override the server addresses.</span>
                 </button>
+                <button type="button" class="mode-card @(mode == PatchMode.Advanced ? "selected" : "")"
+                        @onclick="() => SelectMode(PatchMode.Advanced)">
+                    <span class="mode-name">Advanced</span>
+                    <span class="mode-desc">Every option of the original patcher, like the desktop app.</span>
+                </button>
+            </div>
 
             <div class="drop-zone @(isHovering ? "hovering" : "")" @ondragenter="@(() => isHovering = true)"
                  @ondragleave="@(() => isHovering = false)" @ondrop="@(() => isHovering = false)">
@@ -82,32 +88,17 @@
                                 <span class="file-status text-success">Original file verified</span>
                             }
                             <button type="button" class="btn-remove" @onclick="RemoveUploadedFile" title="Remove file">✕</button>
-
-            @* ---- Auto mode ---- *@
-            @if (mode == PatchMode.Auto)
-            {
-                <div class="info-card mt-3">
-                    <div class="info-card-title">Derived from your Apace configuration</div>
-                    <div class="info-card-row">
-                        <span class="text-muted">API server (locator):</span>
-                        <code>http://@ApaceAddress</code>
-                    </div>
-                    <div class="info-card-row">
-                        <span class="text-muted">Login server:</span>
-                        <code>http://@ApaceAddress</code>
-                        <span class="text-muted">@if (platform == PatchPlatform.Android)
-                        {<text>(single-domain mode, all services)</text>}
-                        else
-                        {<text>(XAL, PlayFab, XboxAB, Xbox Live)</text>}</span>
-                    </div>
-                    <div class="info-card-row">
-                        <span class="text-muted">App name:</span>
-                        <code>Apace</code>
+                        </div>
                     </div>
                 </div>
+            }
+
+            @* ---- Auto: nothing to configure (an APK additionally needs the phone's Android version) ---- *@
+            @if (mode == PatchMode.Auto)
+            {
                 @if (platform == PatchPlatform.Android)
                 {
-                    <div class="row g-3 mt-1">
+                    <div class="row g-3 mt-3">
                         <div class="col-md-4">
                             <label class="form-label">Phone's Android version</label>
                             <select class="form-select" @bind="androidVersion">
@@ -122,69 +113,69 @@
             }
             else if (mode == PatchMode.Simple)
             {
-                <div class="row g-3 mt-1">
-                    <div class="col-md-3">
-                        <label class="form-label">API protocol</label>
-                        <select class="form-select" @bind="locatorProtocol">
-                            <option value="@((int)PatchProtocol.Http)">Http</option>
-                            <option value="@((int)PatchProtocol.Https)">Https</option>
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">API server address (hostname:port)</label>
-                        <input class="form-control" placeholder="192.168.x.x:8080" @bind="locatorHostname" />
-                    </div>
+                <div class="adv-section">
+                    <h3>Server addresses</h3>
                     @if (platform == PatchPlatform.Android)
                     {
-                        <div class="col-md-4">
-                            <label class="form-label">Phone's Android version</label>
-                            <select class="form-select" @bind="androidVersion">
-                                @foreach (var v in new[] { 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })
-                                {
-                                    <option value="@v">Android @v</option>
-                                }
-                            </select>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">API protocol</label>
+                                <select class="form-select" @bind="locatorProtocol">
+                                    <option value="@((int)PatchProtocol.Http)">Http</option>
+                                    <option value="@((int)PatchProtocol.Https)">Https</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">API server address</label>
+                                <input class="form-control" placeholder="@ApaceAddress" @bind="locatorHostname" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Phone's Android version</label>
+                                <select class="form-select" @bind="androidVersion">
+                                    @foreach (var v in new[] { 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })
+                                    {
+                                        <option value="@v">Android @v</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Login protocol</label>
+                                <select class="form-select" @bind="authProtocol">
+                                    <option value="@((int)PatchProtocol.Http)">Http</option>
+                                    <option value="@((int)PatchProtocol.Https)">Https</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Login server address (single-domain)</label>
+                                <input class="form-control" placeholder="@ApaceAddress" @bind="authHostname" />
+                            </div>
                         </div>
                     }
-                    @if (platform == PatchPlatform.Android)
+                    else
                     {
-                        <div class="col-md-3">
-                            <label class="form-label">Login protocol</label>
-                            <select class="form-select" @bind="authProtocol">
-                                <option value="@((int)PatchProtocol.Http)">Http</option>
-                                <option value="@((int)PatchProtocol.Https)">Https</option>
-                            </select>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">API protocol</label>
+                                <select class="form-select" @bind="iosLocatorProtocol">
+                                    <option value="@((int)PatchProtocol.Http)">Http</option>
+                                    <option value="@((int)PatchProtocol.Https)">Https</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">API server address</label>
+                                <input class="form-control" placeholder="@ApaceAddress" @bind="iosLocatorHostname" />
+                            </div>
                         </div>
-                        <div class="col-md-5">
-                            <label class="form-label">Login server address (hostname:port)</label>
-                            <input class="form-control" placeholder="192.168.x.x:8080" @bind="authHostname" />
-                        </div>
+                        <p class="text-muted" style="font-size: 0.75rem;">
+                            The official Microsoft login is kept - only the game API address is redirected.
+                        </p>
                     }
                 </div>
-                @if (platform == PatchPlatform.Ios)
-                {
-                    <p class="text-muted mt-2 mb-0" style="font-size: 0.75rem;">
-                        Simple mode keeps the official Microsoft login and only redirects the game API to your server.
-                        Use Advanced mode to route the login through Apace as well.
-                    </p>
-                }
             }
-
-                        </div>
-                    </div>
-                </div>
-            }
-
-                <button type="button" class="mode-card @(mode == PatchMode.Advanced ? "selected" : "")"
-                        @onclick="() => SelectMode(PatchMode.Advanced)">
-                    <span class="mode-name">Advanced</span>
-                    <span class="mode-desc">Full control over every patch option, like the desktop patcher.</span>
-                </button>
-            </div>
-
-            else
+            else if (mode == PatchMode.Advanced)
             {
-                @* ---- Advanced mode ---- *@
                 @if (platform == PatchPlatform.Android)
                 {
                     <div class="adv-section">
@@ -205,7 +196,7 @@
                                 </div>
                                 <div class="col-md-5">
                                     <label class="form-label">Address (hostname:port)</label>
-                                    <input class="form-control" placeholder="192.168.x.x:8080" @bind="locatorHostname" />
+                                    <input class="form-control" placeholder="@ApaceAddress" @bind="locatorHostname" />
                                 </div>
                             </div>
                         }
@@ -230,60 +221,29 @@
                             <label class="form-check-label" for="advMsaSig">Disable MSA login signature validation</label>
                         </div>
                     </div>
-                }
-                else
-                {
-                    <div class="adv-section">
-                        <h3>Locator (game API)</h3>
-                        <div class="mb-2 form-check form-switch">
-                            <input type="checkbox" class="form-check-input" id="iosChangeLocator" @bind="iosChangeLocator" />
-                            <label class="form-check-label" for="iosChangeLocator">Redirect locator address</label>
-                        </div>
-                        @if (iosChangeLocator)
-                        {
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Protocol</label>
-                                    <select class="form-select" @bind="iosLocatorProtocol">
-                                        <option value="@((int)PatchProtocol.Http)">Http</option>
-                                        <option value="@((int)PatchProtocol.Https)">Https</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label">Address (hostname:port)</label>
-                                    <input class="form-control" placeholder="192.168.x.x:8080" @bind="iosLocatorHostname" />
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
 
-
-                @* ---- Advanced: platform-specific identity & login ---- *@
-                @if (platform == PatchPlatform.Android)
-                {
                     <div class="adv-section">
                         <h3>Identity</h3>
-                        <div class="mb-2 form-check form-switch">
+                        <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="advChangeAppName" @bind="changeAppName" />
                             <label class="form-check-label" for="advChangeAppName">Change app name</label>
                         </div>
                         @if (changeAppName)
                         {
                             <div class="row g-3">
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">App name</label>
                                     <input class="form-control" @bind="appName" />
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Short name</label>
                                     <input class="form-control" @bind="appNameShort" />
                                 </div>
                             </div>
                         }
-                        <div class="mt-2 mb-2 form-check form-switch">
-                            <input type="checkbox" class="form-check-input" id="advChangePackage" @bind="changePackageName" />
-                            <label class="form-check-label" for="advChangePackage">Change package name</label>
+                        <div class="form-check mt-2">
+                            <input type="checkbox" class="form-check-input" id="advChangePackageName" @bind="changePackageName" />
+                            <label class="form-check-label" for="advChangePackageName">Change package name</label>
                         </div>
                         @if (changePackageName)
                         {
@@ -295,47 +255,7 @@
                             </div>
                         }
                     </div>
-                }
-                else
-                {
-                    <div class="adv-section">
-                        <h3>Behavior &amp; identity</h3>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="iosSunset" @bind="iosDisableSunset" />
-                            <label class="form-check-label" for="iosSunset">Disable sunset time check</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="iosSpeed" @bind="iosDisableSpeedLimit" />
-                            <label class="form-check-label" for="iosSpeed">Disable moving-too-fast speed limit</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="iosDrm" @bind="iosRemoveDrm" />
-                            <label class="form-check-label" for="iosDrm">Remove DRM and code signature</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="iosInteractive" @bind="iosForceInteractive" />
-                            <label class="form-check-label" for="iosInteractive">Force interactive sign-in</label>
-                        </div>
-                        <div class="mt-2 mb-2 form-check form-switch">
-                            <input type="checkbox" class="form-check-input" id="iosChangeAppName" @bind="iosChangeAppName" />
-                            <label class="form-check-label" for="iosChangeAppName">Change app name</label>
-                        </div>
-                        @if (iosChangeAppName)
-                        {
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">App name</label>
-                                    <input class="form-control" @bind="iosAppName" />
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
 
-
-                @* ---- Advanced: Android login server ---- *@
-                @if (platform == PatchPlatform.Android)
-                {
                     <div class="adv-section">
                         <h3>Login server</h3>
                         <div class="mb-2 form-check form-switch">
@@ -354,7 +274,7 @@
                                 </div>
                                 <div class="col-md-5">
                                     <label class="form-label">Address (IP or hostname, with port)</label>
-                                    <input class="form-control" placeholder="192.168.x.x:8080" @bind="authHostname" />
+                                    <input class="form-control" placeholder="@ApaceAddress" @bind="authHostname" />
                                 </div>
                             </div>
                             <div class="mt-2">
@@ -376,7 +296,6 @@
                                 </div>
                             </div>
                         }
-
                         else
                         {
                             <p class="text-muted" style="font-size: 0.75rem;">
@@ -433,7 +352,6 @@
                         }
                     </div>
 
-
                     <div class="adv-section">
                         <h3>Build</h3>
                         <div class="row g-3 align-items-end">
@@ -460,7 +378,64 @@
                 else
                 {
                     <div class="adv-section">
-                        <h3>Login server (XAL / PlayFab / Xbox)</h3>
+                        <h3>Locator (game API)</h3>
+                        <div class="mb-2 form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="iosChangeLocator" @bind="iosChangeLocator" />
+                            <label class="form-check-label" for="iosChangeLocator">Redirect locator address</label>
+                        </div>
+                        @if (iosChangeLocator)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Protocol</label>
+                                    <select class="form-select" @bind="iosLocatorProtocol">
+                                        <option value="@((int)PatchProtocol.Http)">Http</option>
+                                        <option value="@((int)PatchProtocol.Https)">Https</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Address (hostname:port)</label>
+                                    <input class="form-control" placeholder="@ApaceAddress" @bind="iosLocatorHostname" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="adv-section">
+                        <h3>Behavior &amp; identity</h3>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="iosSunset" @bind="iosDisableSunset" />
+                            <label class="form-check-label" for="iosSunset">Disable sunset time check</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="iosSpeed" @bind="iosDisableSpeedLimit" />
+                            <label class="form-check-label" for="iosSpeed">Disable speed limit</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="iosDrm" @bind="iosRemoveDrm" />
+                            <label class="form-check-label" for="iosDrm">Remove DRM</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="iosInteractive" @bind="iosForceInteractive" />
+                            <label class="form-check-label" for="iosInteractive">Force interactive sign-in</label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input type="checkbox" class="form-check-input" id="iosChangeAppName" @bind="iosChangeAppName" />
+                            <label class="form-check-label" for="iosChangeAppName">Change app name</label>
+                        </div>
+                        @if (iosChangeAppName)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">App name</label>
+                                    <input class="form-control" @bind="iosAppName" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="adv-section">
+                        <h3>Login server</h3>
                         <div class="mb-2 form-check form-switch">
                             <input type="checkbox" class="form-check-input" id="iosUseCustomAuth" @bind="iosUseCustomAuth" />
                             <label class="form-check-label" for="iosUseCustomAuth">Redirect login services to a custom server</label>
@@ -503,20 +478,82 @@
                                     </div>
                                     <div class="col-md-5">
                                         <label class="form-label">Address (IP or hostname, with port)</label>
-                                        <input class="form-control" placeholder="192.168.x.x:8080" @bind="iosAuthHostname" />
+                                        <input class="form-control" placeholder="@ApaceAddress" @bind="iosAuthHostname" />
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted" style="font-size: 0.75rem;">
+                                    Multi-domain mode uses real domain names (no IPs) - e.g. mapped via VPN/DNS to your server.
+                                </p>
+                                <div class="row g-3">
+                                    <div class="col-md-2">
+                                        <label class="form-label">XAL</label>
+                                        <select class="form-select" @bind="iosXalProtocol">
+                                            <option value="@((int)PatchProtocol.Http)">Http</option>
+                                            <option value="@((int)PatchProtocol.Https)">Https</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <input class="form-control" placeholder="xal.example.com" @bind="iosXalHostname" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">PlayFab</label>
+                                        <select class="form-select" @bind="iosPlayfabProtocol">
+                                            <option value="@((int)PatchProtocol.Http)">Http</option>
+                                            <option value="@((int)PatchProtocol.Https)">Https</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <input class="form-control" placeholder="playfab.example.com" @bind="iosPlayfabHostname" />
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-1">
+                                    <div class="col-md-2">
+                                        <label class="form-label">XboxAB</label>
+                                        <select class="form-select" @bind="iosXboxAbProtocol">
+                                            <option value="@((int)PatchProtocol.Http)">Http</option>
+                                            <option value="@((int)PatchProtocol.Https)">Https</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <input class="form-control" placeholder="xboxab.example.com" @bind="iosXboxAbHostname" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Xbox Live</label>
+                                        <select class="form-select" @bind="iosXboxLiveProtocol">
+                                            <option value="@((int)PatchProtocol.Http)">Http</option>
+                                            <option value="@((int)PatchProtocol.Https)">Https</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <input class="form-control" placeholder="xboxlive.example.com" @bind="iosXboxLiveHostname" />
                                     </div>
                                 </div>
                             }
                         }
                     </div>
                 }
-
+            }
 
             <div class="button-group mt-4">
                 <button type="button" class="btn btn-primary" @onclick="StartGeneration"
                         disabled="@(isUploading || uploadedPath is null)">
                     Generate patched @(platform == PatchPlatform.Android ? "APK" : "IPA")
                 </button>
+                <span class="file-status text-muted">
+                    @switch (mode)
+                    {
+                        case PatchMode.Auto: <text>Auto: everything derived from your Apace configuration.</text> break;
+                        case PatchMode.Simple: <text>Simple: Auto defaults with your address overrides.</text> break;
+                        case PatchMode.Advanced: <text>Advanced: full control, like the desktop patcher.</text> break;
+                    }
+                </span>
             </div>
         </div>
 
@@ -604,8 +641,6 @@
         </div>
     </div>
 }
-
-
 @code {
     private const long MaxInputSize = 3L * 1024 * 1024 * 1024; // 3 GB
 
