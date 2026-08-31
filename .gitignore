@@ -486,7 +486,10 @@ $RECYCLE.BIN/
 *.lnk
 
 # Java source repos (built separately, JARs copied to server_jars/)
-repos/
+# (Minecraft_Earth_Patcher is a git submodule referenced directly by the build)
+repos/*
+!repos/Minecraft_Earth_Patcher
+!repos/Minecraft_Earth_Patcher/**
 
 # Vim temporary swap files
 *.swp

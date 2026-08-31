@@ -63,6 +63,15 @@
                         </div>
                     }
 
+                    @if (HasPermission(Permissions.UsePatcher))
+                    {
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Patcher">
+                                <img class="nav-icon" src="/images/paint_item.png" alt="" aria-hidden="true" /> Client Patcher
+                            </NavLink>
+                        </div>
+                    }
+
                     @if (HasPermission(Permissions.ViewUsers))
                     {
                         <div class="nav-item">
