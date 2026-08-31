@@ -21,7 +21,10 @@ public sealed class ObjectStoreClient : IAsyncDisposable
         }
     }
 
-    private const int MaxConcurrentCommands = 32;
+    // Tile-map loading at startup can issue hundreds of parallel GETs that each take several seconds.
+    // A semaphore of 32 starved critical paths (e.g. buildplate load) past their timeout.
+    // Connections are per-command and local, so a high limit is cheap.
+    private const int MaxConcurrentCommands = 256;
 
     private readonly string _host;
     private readonly int _port;
