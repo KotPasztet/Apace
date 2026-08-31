@@ -486,7 +486,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # Java source repos (built separately, JARs copied to server_jars/)
-# (Minecraft_Earth_Patcher is a git submodule referenced directly by the build)
+# (Minecraft_Earth_Patcher is vendored directly in this repo)
 repos/*
 !repos/Minecraft_Earth_Patcher
 !repos/Minecraft_Earth_Patcher/**

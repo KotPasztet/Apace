@@ -1,0 +1,13 @@
+{
+    "Prerequisites":
+    [
+    ],
+    "VariablesUsed":
+    [
+        "app_name",
+        "app_name_short"
+    ],
+    "BinaryVariables":
+    [
+    ]
+}

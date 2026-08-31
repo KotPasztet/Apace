@@ -1,0 +1,22 @@
+--- a/smali/com/microsoft/onlineid/internal/Applications.smali
++++ b/smali/com/microsoft/onlineid/internal/Applications.smali
+@@ -43,7 +43,9 @@
+ 
+     move-result-object v1
+ 
+-    invoke-virtual {v1, p1}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    const-string/jumbo v0, "com.mojang.minecraftearth"
++
++    invoke-virtual {v1, v0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+ 
+     move-result-object v1
+ 
+@@ -53,6 +55,8 @@
+ 
+     move-result-object v1
+ 
++    const-string/jumbo v0, "H62DKCBHJP6WXXIV7RBFOGOL4NAK4E6Y"
++
+     invoke-virtual {v1, v0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+ 
+     move-result-object v1

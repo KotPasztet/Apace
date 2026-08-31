@@ -1,0 +1,950 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:vm="clr-namespace:MCEPatcher.UI.ViewModels" mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="600" x:Class="MCEPatcher.UI.Views.MainView" x:DataType="vm:MainViewModel">
+	<Design.DataContext>
+		<vm:MainViewModel/>
+	</Design.DataContext>
+	<UserControl.Styles>
+		<Style Selector="Button.tab">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="16,6"/>
+			<Setter Property="FontSize" Value="14"/>
+			<Setter Property="Margin" Value="0"/>
+		</Style>
+	</UserControl.Styles>
+
+	<Grid HorizontalAlignment="Stretch" RowDefinitions="1*, 5*, 1*">
+		<Label Grid.Row="0" FontSize="40" VerticalAlignment="Center" HorizontalAlignment="Center">Minecraft Earth Patcher</Label>
+
+		<Grid Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Top">
+			<Grid RowDefinitions="Auto,*">
+				<StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+					<StackPanel Margin="0,0,5,0">
+						<Button Content="Android" Click="SelectAndroid" Classes="tab"/>
+						<Rectangle Height="2" Fill="{DynamicResource SystemControlHighlightAccentBrush}" IsVisible="{Binding IsAndroidSelected}"/>
+					</StackPanel>
+					<StackPanel>
+						<Button Content="iOS" Click="SelectIos" Classes="tab"/>
+						<Rectangle Height="2" Fill="{DynamicResource SystemControlHighlightAccentBrush}" IsVisible="{Binding IsIosSelected}"/>
+					</StackPanel>
+				</StackPanel>
+				<ScrollViewer Grid.Row="1" IsVisible="{Binding IsAndroidSelected}" AllowAutoHide="False">
+					<StackPanel VerticalAlignment="Top" Margin="0 0 0 20">
+
+						<Grid HorizontalAlignment="Center" Margin="0 0 0 15">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="Auto"/>
+								<ColumnDefinition Width="Auto"/>
+							</Grid.ColumnDefinitions>
+							<TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding ApkFile}" Margin="0, 0, 10, 0"/>
+							<Button Grid.Column="1" Click="PickApkFile">Select</Button>
+						</Grid>
+
+						<Grid HorizontalAlignment="Center" Margin="0 0 0 15">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="Auto"/>
+								<ColumnDefinition Width="Auto"/>
+							</Grid.ColumnDefinitions>
+							<TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding ResourcePackFile}" Margin="0, 0, 10, 0"/>
+							<Button Grid.Column="1" Click="PickResourcePackFile">Select</Button>
+						</Grid>
+
+							<Grid HorizontalAlignment="Center" Margin="0 0 0 15">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding IconFile}" Margin="0, 0, 10, 0"/>
+								<Button Grid.Column="1" Click="PickIconFile">Select</Button>
+							</Grid>
+
+						<ToggleSwitch IsChecked="{Binding IsSimpleMode}" OffContent="Custom Mode" OnContent="Simple Mode" HorizontalAlignment="Center" Margin="0 0 0 15"/>
+
+						<StackPanel IsVisible="{Binding IsSimpleMode}">
+							<Border BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+								<StackPanel HorizontalAlignment="Center" Margin="10">
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Locator Protocol:</Label>
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding LocatorProtocol}">
+											<ComboBoxItem>Http</ComboBoxItem>
+											<TextBlock FontSize="1">
+												<Run FontSize="14">Http</Run>
+												<Run FontSize="14" FontWeight="Bold">s</Run>
+											</TextBlock>
+										</ComboBox>
+									</Grid>
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Locator Address:</Label>
+										<TextBox Text="{Binding LocatorHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+									</Grid>
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Auth Server Protocol:</Label>
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding LoginServerProtocol}">
+											<ComboBoxItem>Http</ComboBoxItem>
+											<ComboBoxItem>
+												<TextBlock FontSize="1">
+													<Run FontSize="14">Http</Run>
+													<Run FontSize="14" FontWeight="Bold">s</Run>
+												</TextBlock>
+											</ComboBoxItem>
+										</ComboBox>
+									</Grid>
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Auth Server Address:</Label>
+										<TextBox Text="{Binding LoginServerHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Android Version:</Label>
+										<NumericUpDown Grid.Column="1" Value="{Binding AndroidVersion}" Minimum="7" FormatString="0" MaxWidth="200"/>
+									</Grid>
+								</StackPanel>
+							</Border>
+						</StackPanel>
+
+						<StackPanel IsVisible="{Binding !IsSimpleMode}">
+							<Grid HorizontalAlignment="Center">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change locator address</Label>
+								<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeLocatorAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+							</Grid>
+
+							<Border IsVisible="{Binding ChangeLocatorAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+								<StackPanel HorizontalAlignment="Center" Margin="10">
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding LocatorProtocol}">
+											<ComboBoxItem>Http</ComboBoxItem>
+											<TextBlock FontSize="1">
+												<Run FontSize="14">Http</Run>
+												<Run FontSize="14" FontWeight="Bold">s</Run>
+											</TextBlock>
+										</ComboBox>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Hostname/IP:</Label>
+										<TextBox Text="{Binding LocatorHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+									</Grid>
+								</StackPanel>
+							</Border>
+
+							<StackPanel Width="370">
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+									</Grid.ColumnDefinitions>
+									<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Disable sunset time check</Label>
+									<ToggleSwitch Grid.Column="1" IsChecked="{Binding DisableSunsetTimeCheck}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+								</Grid>
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+									</Grid.ColumnDefinitions>
+									<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Disable license check</Label>
+									<ToggleSwitch Grid.Column="1" IsChecked="{Binding DisableLicenseCheck}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+								</Grid>
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+									</Grid.ColumnDefinitions>
+									<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Disable Telemetry</Label>
+									<ToggleSwitch Grid.Column="1" IsChecked="{Binding DisableTelemetry}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+								</Grid>
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+									</Grid.ColumnDefinitions>
+									<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Disable msa login signature validation</Label>
+									<ToggleSwitch Grid.Column="1" IsChecked="{Binding DisableMsaLoginSignatureValidation}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+								</Grid>
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+									</Grid.ColumnDefinitions>
+									<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change app name</Label>
+									<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeAppName}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+								</Grid>
+
+								<Border IsVisible="{Binding ChangeAppName}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+									<StackPanel HorizontalAlignment="Center" Margin="10">
+										<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center">App name:</Label>
+											<TextBox Text="{Binding AppName}" Grid.Column="1" MaxLength="50" TextWrapping="Wrap" MaxWidth="200"/>
+										</Grid>
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center">Short app name:</Label>
+											<TextBox Text="{Binding AppNameShort}" Grid.Column="1" MaxLength="20" TextWrapping="Wrap" MaxWidth="200"/>
+										</Grid>
+									</StackPanel>
+								</Border>
+
+								<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !ChangeAppName}"/>
+
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+									</Grid.ColumnDefinitions>
+									<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change package name</Label>
+									<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangePackageName}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+								</Grid>
+
+								<Border IsVisible="{Binding ChangePackageName}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+									<StackPanel HorizontalAlignment="Center" Margin="10">
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center">Package name/id:</Label>
+											<TextBox Text="{Binding PackageName}" Grid.Column="1" MaxLength="50" TextWrapping="Wrap" MaxWidth="200"/>
+										</Grid>
+									</StackPanel>
+								</Border>
+
+								<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !ChangePackageName}"/>
+
+							<Grid HorizontalAlignment="Center">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change app icon</Label>
+								<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeIcon}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+							</Grid>
+
+								<Border BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+									<StackPanel HorizontalAlignment="Center" Margin="10">
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center">Android version:</Label>
+											<NumericUpDown Value="{Binding AndroidVersion}" Minimum="7" FormatString="0" Grid.Column="1" MaxWidth="200"/>
+										</Grid>
+									</StackPanel>
+								</Border>
+
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto"/>
+										<ColumnDefinition Width="Auto"/>
+									</Grid.ColumnDefinitions>
+									<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Login server single domain mode</Label>
+									<ToggleSwitch Grid.Column="1" IsChecked="{Binding LoginServerSingleDomainMode}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+								</Grid>
+
+								<Border IsVisible="{Binding LoginServerSingleDomainMode}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+									<StackPanel HorizontalAlignment="Center" Margin="10">
+										<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+											<ComboBox Grid.Column="1" SelectedIndex="{Binding LoginServerProtocol}">
+												<ComboBoxItem>Http</ComboBoxItem>
+												<TextBlock FontSize="1">
+													<Run FontSize="14">Http</Run>
+													<Run FontSize="14" FontWeight="Bold">s</Run>
+												</TextBlock>
+											</ComboBox>
+										</Grid>
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center">Hostname/IP:</Label>
+											<TextBox Text="{Binding LoginServerHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+										</Grid>
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change MSA login service address</Label>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeMSALoginServiceAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+										</Grid>
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change PlayFab API address</Label>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangePlayfabApiAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+										</Grid>
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change XboxAB address</Label>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeXboxABAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+										</Grid>
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change Xbox live address</Label>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeXboxLiveAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+										</Grid>
+									</StackPanel>
+								</Border>
+
+								<Border IsVisible="{Binding !LoginServerSingleDomainMode}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="370" Padding="10">
+									<StackPanel>
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change MSA login service address</Label>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeMSALoginServiceAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+										</Grid>
+										<Border IsVisible="{Binding ChangeMSALoginServiceAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+											<StackPanel HorizontalAlignment="Center" Margin="10">
+												<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+													<ComboBox Grid.Column="1" SelectedIndex="{Binding MSALoginServiceProtocol}">
+														<ComboBoxItem>Http</ComboBoxItem>
+														<TextBlock FontSize="1">
+															<Run FontSize="14">Http</Run>
+															<Run FontSize="14" FontWeight="Bold">s</Run>
+														</TextBlock>
+													</ComboBox>
+												</Grid>
+												<Grid HorizontalAlignment="Center">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<Grid.RowDefinitions>
+														<RowDefinition Height="Auto"/>
+														<RowDefinition Height="Auto"/>
+													</Grid.RowDefinitions>
+													<Label Grid.Column="0" VerticalAlignment="Center">Hostname:</Label>
+													<TextBox Text="{Binding MSALoginServiceHostname}" Grid.Column="1" PlaceholderText="mce.com" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+													<TextBlock Text="Use hostname only, not IP" Grid.Row="1" Grid.ColumnSpan="2" FontSize="10" Opacity="0.6" HorizontalAlignment="Right"/>
+												</Grid>
+											</StackPanel>
+										</Border>
+										<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !ChangeMSALoginServiceAddress}"/>
+
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change PlayFab API address</Label>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangePlayfabApiAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+										</Grid>
+										<Border IsVisible="{Binding ChangePlayfabApiAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+											<StackPanel HorizontalAlignment="Center" Margin="10">
+												<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+													<ComboBox Grid.Column="1" SelectedIndex="{Binding PlayfabApiProtocol}">
+														<ComboBoxItem>Http</ComboBoxItem>
+														<TextBlock FontSize="1">
+															<Run FontSize="14">Http</Run>
+															<Run FontSize="14" FontWeight="Bold">s</Run>
+														</TextBlock>
+													</ComboBox>
+												</Grid>
+												<Grid HorizontalAlignment="Center">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<Grid.RowDefinitions>
+														<RowDefinition Height="Auto"/>
+														<RowDefinition Height="Auto"/>
+													</Grid.RowDefinitions>
+													<Label Grid.Column="0" VerticalAlignment="Center">Hostname:</Label>
+													<TextBox Text="{Binding PlayfabApiHostname}" Grid.Column="1" PlaceholderText="mce.com" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+													<TextBlock Text="Use hostname only, not IP" Grid.Row="1" Grid.ColumnSpan="2" FontSize="10" Opacity="0.6" HorizontalAlignment="Right"/>
+												</Grid>
+											</StackPanel>
+										</Border>
+										<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !ChangePlayfabApiAddress}"/>
+
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change XboxAB address</Label>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeXboxABAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+										</Grid>
+										<Border IsVisible="{Binding ChangeXboxABAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+											<StackPanel HorizontalAlignment="Center" Margin="10">
+												<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+													<ComboBox Grid.Column="1" SelectedIndex="{Binding XboxABProtocol}">
+														<ComboBoxItem>Http</ComboBoxItem>
+														<TextBlock FontSize="1">
+															<Run FontSize="14">Http</Run>
+															<Run FontSize="14" FontWeight="Bold">s</Run>
+														</TextBlock>
+													</ComboBox>
+												</Grid>
+												<Grid HorizontalAlignment="Center">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<Grid.RowDefinitions>
+														<RowDefinition Height="Auto"/>
+														<RowDefinition Height="Auto"/>
+													</Grid.RowDefinitions>
+													<Label Grid.Column="0" VerticalAlignment="Center">Hostname:</Label>
+													<TextBox Text="{Binding XboxABHostname}" Grid.Column="1" PlaceholderText="mce.com" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+													<TextBlock Text="Use hostname only, not IP" Grid.Row="1" Grid.ColumnSpan="2" FontSize="10" Opacity="0.6" HorizontalAlignment="Right"/>
+												</Grid>
+											</StackPanel>
+										</Border>
+										<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !ChangeXboxABAddress}"/>
+
+										<Grid HorizontalAlignment="Center">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change Xbox live address</Label>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding ChangeXboxLiveAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+										</Grid>
+										<Border IsVisible="{Binding ChangeXboxLiveAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+											<StackPanel HorizontalAlignment="Center" Margin="10">
+												<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+													<ComboBox Grid.Column="1" SelectedIndex="{Binding XboxLiveProtocol}">
+														<ComboBoxItem>Http</ComboBoxItem>
+														<TextBlock FontSize="1">
+															<Run FontSize="14">Http</Run>
+															<Run FontSize="14" FontWeight="Bold">s</Run>
+														</TextBlock>
+													</ComboBox>
+												</Grid>
+												<Grid HorizontalAlignment="Center">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<Grid.RowDefinitions>
+														<RowDefinition Height="Auto"/>
+														<RowDefinition Height="Auto"/>
+													</Grid.RowDefinitions>
+													<Label Grid.Column="0" VerticalAlignment="Center">Hostname:</Label>
+													<TextBox Text="{Binding XboxLiveHostname}" Grid.Column="1" PlaceholderText="mce.com" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+													<TextBlock Text="Use hostname only, not IP" Grid.Row="1" Grid.ColumnSpan="2" FontSize="10" Opacity="0.6" HorizontalAlignment="Right"/>
+												</Grid>
+											</StackPanel>
+										</Border>
+										<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !ChangeXboxLiveAddress}"/>
+									</StackPanel>
+								</Border>
+							</StackPanel>
+						</StackPanel>
+
+					</StackPanel>
+				</ScrollViewer>
+				<ScrollViewer Grid.Row="1" IsVisible="{Binding IsIosSelected}" AllowAutoHide="False">
+					<StackPanel VerticalAlignment="Top" Margin="0 0 0 60">
+						<Grid HorizontalAlignment="Center" Margin="0 0 0 15">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="Auto"/>
+								<ColumnDefinition Width="Auto"/>
+							</Grid.ColumnDefinitions>
+							<TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding IpaFile}" Margin="0, 0, 10, 0"/>
+							<Button Grid.Column="1" Click="PickIpaFile">Select</Button>
+						</Grid>
+
+						<ToggleSwitch IsChecked="{Binding IosIsSimpleMode}" OffContent="Custom Mode" OnContent="Simple Mode" HorizontalAlignment="Center" Margin="0 0 0 15"/>
+
+						<StackPanel IsVisible="{Binding IosIsSimpleMode}">
+							<Border BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+								<StackPanel HorizontalAlignment="Center" Margin="10">
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Locator Protocol:</Label>
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding IosLocatorProtocol}">
+											<ComboBoxItem>Http</ComboBoxItem>
+											<TextBlock FontSize="1">
+												<Run FontSize="14">Http</Run>
+												<Run FontSize="14" FontWeight="Bold">s</Run>
+											</TextBlock>
+										</ComboBox>
+									</Grid>
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Locator Address:</Label>
+										<TextBox Text="{Binding IosLocatorHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+									</Grid>
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Use Custom Auth Server</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosUseCustomAuthServer}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<StackPanel IsVisible="{Binding IosUseCustomAuthServer}">
+										<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center">Auth Server Protocol:</Label>
+											<ComboBox Grid.Column="1" SelectedIndex="{Binding IosProtocol}">
+												<ComboBoxItem>Http</ComboBoxItem>
+												<TextBlock FontSize="1">
+													<Run FontSize="14">Http</Run>
+													<Run FontSize="14" FontWeight="Bold">s</Run>
+												</TextBlock>
+											</ComboBox>
+										</Grid>
+										<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="Auto"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Label Grid.Column="0" VerticalAlignment="Center">Auth Server Address:</Label>
+											<TextBox Text="{Binding IosHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+										</Grid>
+									</StackPanel>
+								</StackPanel>
+							</Border>
+						</StackPanel>
+
+						<StackPanel IsVisible="{Binding !IosIsSimpleMode}">
+							<Grid HorizontalAlignment="Center">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change locator address</Label>
+								<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeLocatorAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+							</Grid>
+
+							<Border IsVisible="{Binding IosChangeLocatorAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+								<StackPanel HorizontalAlignment="Center" Margin="10">
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding IosLocatorProtocol}">
+											<ComboBoxItem>Http</ComboBoxItem>
+											<TextBlock FontSize="1">
+												<Run FontSize="14">Http</Run>
+												<Run FontSize="14" FontWeight="Bold">s</Run>
+											</TextBlock>
+										</ComboBox>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Hostname/IP:</Label>
+										<TextBox Text="{Binding IosLocatorHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+									</Grid>
+								</StackPanel>
+							</Border>
+
+							<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !IosChangeLocatorAddress}"/>
+
+							<Grid HorizontalAlignment="Center">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Disable sunset time check</Label>
+								<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosDisableSunsetTimeCheck}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+							</Grid>
+
+							<Grid HorizontalAlignment="Center">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change app name</Label>
+								<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeAppName}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+							</Grid>
+
+							<Border IsVisible="{Binding IosChangeAppName}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+								<StackPanel HorizontalAlignment="Center" Margin="10">
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">App name:</Label>
+										<TextBox Text="{Binding IosAppName}" Grid.Column="1" PlaceholderText="Solace" MaxLength="50" TextWrapping="Wrap" MaxWidth="200"/>
+									</Grid>
+								</StackPanel>
+							</Border>
+
+							<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !IosChangeAppName}"/>
+
+							<Grid HorizontalAlignment="Center">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change app icon</Label>
+								<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeIcon}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+							</Grid>
+
+							<Grid HorizontalAlignment="Center">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Remove DRM and code signature</Label>
+								<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosRemoveDrm}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+							</Grid>
+
+							<Grid HorizontalAlignment="Center" Margin="0 10 0 0">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Login server single domain mode</Label>
+								<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosLoginServerSingleDomainMode}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+							</Grid>
+
+							<Border IsVisible="{Binding IosLoginServerSingleDomainMode}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="370" Padding="10" Margin="0 5 0 0">
+								<StackPanel HorizontalAlignment="Center">
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Auth Server Protocol:</Label>
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding IosProtocol}">
+											<ComboBoxItem>Http</ComboBoxItem>
+											<TextBlock FontSize="1">
+												<Run FontSize="14">Http</Run>
+												<Run FontSize="14" FontWeight="Bold">s</Run>
+											</TextBlock>
+										</ComboBox>
+									</Grid>
+									<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center">Hostname/IP:</Label>
+										<TextBox Text="{Binding IosHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change Xal auth address</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeXalAuthAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Force in-app web view sign-in</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosForceInAppWebView}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Force interactive sign-in prompt</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosForceInteractiveSignIn}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change PlayFab API address</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangePlayfabApiAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change XboxAB address</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeXboxABAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change Xbox live address</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeXboxLiveAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+								</StackPanel>
+							</Border>
+
+							<Border IsVisible="{Binding !IosLoginServerSingleDomainMode}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="370" Padding="10" Margin="0 5 0 0">
+								<StackPanel HorizontalAlignment="Center">
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change Xal auth address</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeXalAuthAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Border IsVisible="{Binding IosChangeXalAuthAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+										<StackPanel HorizontalAlignment="Center" Margin="10">
+											<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<ColumnDefinition Width="Auto"/>
+												</Grid.ColumnDefinitions>
+												<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+												<ComboBox Grid.Column="1" SelectedIndex="{Binding IosXalProtocol}">
+													<ComboBoxItem>Http</ComboBoxItem>
+													<TextBlock FontSize="1">
+														<Run FontSize="14">Http</Run>
+														<Run FontSize="14" FontWeight="Bold">s</Run>
+													</TextBlock>
+												</ComboBox>
+											</Grid>
+											<Grid HorizontalAlignment="Center">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<ColumnDefinition Width="Auto"/>
+												</Grid.ColumnDefinitions>
+												<Label Grid.Column="0" VerticalAlignment="Center">Hostname/IP:</Label>
+												<TextBox Text="{Binding IosXalHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+											</Grid>
+										</StackPanel>
+									</Border>
+									<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !IosChangeXalAuthAddress}"/>
+
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Force in-app web view sign-in</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosForceInAppWebView}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Force interactive sign-in prompt</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosForceInteractiveSignIn}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change PlayFab API address</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangePlayfabApiAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Border IsVisible="{Binding IosChangePlayfabApiAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+										<StackPanel HorizontalAlignment="Center" Margin="10">
+											<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<ColumnDefinition Width="Auto"/>
+												</Grid.ColumnDefinitions>
+												<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+												<ComboBox Grid.Column="1" SelectedIndex="{Binding IosPlayfabApiProtocol}">
+													<ComboBoxItem>Http</ComboBoxItem>
+													<TextBlock FontSize="1">
+														<Run FontSize="14">Http</Run>
+														<Run FontSize="14" FontWeight="Bold">s</Run>
+													</TextBlock>
+												</ComboBox>
+											</Grid>
+											<Grid HorizontalAlignment="Center">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<ColumnDefinition Width="Auto"/>
+												</Grid.ColumnDefinitions>
+												<Label Grid.Column="0" VerticalAlignment="Center">Hostname/IP:</Label>
+												<TextBox Text="{Binding IosPlayfabApiHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+											</Grid>
+										</StackPanel>
+									</Border>
+									<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !IosChangePlayfabApiAddress}"/>
+
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change XboxAB address</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeXboxABAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Border IsVisible="{Binding IosChangeXboxABAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+										<StackPanel HorizontalAlignment="Center" Margin="10">
+											<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<ColumnDefinition Width="Auto"/>
+												</Grid.ColumnDefinitions>
+												<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+												<ComboBox Grid.Column="1" SelectedIndex="{Binding IosXboxABProtocol}">
+													<ComboBoxItem>Http</ComboBoxItem>
+													<TextBlock FontSize="1">
+														<Run FontSize="14">Http</Run>
+														<Run FontSize="14" FontWeight="Bold">s</Run>
+													</TextBlock>
+												</ComboBox>
+											</Grid>
+											<Grid HorizontalAlignment="Center">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<ColumnDefinition Width="Auto"/>
+												</Grid.ColumnDefinitions>
+												<Label Grid.Column="0" VerticalAlignment="Center">Hostname/IP:</Label>
+												<TextBox Text="{Binding IosXboxABHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+											</Grid>
+										</StackPanel>
+									</Border>
+									<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !IosChangeXboxABAddress}"/>
+
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Change Xbox live address</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosChangeXboxLiveAddress}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+									<Border IsVisible="{Binding IosChangeXboxLiveAddress}" BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="350">
+										<StackPanel HorizontalAlignment="Center" Margin="10">
+											<Grid HorizontalAlignment="Center" Margin="0 0 0 10">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<ColumnDefinition Width="Auto"/>
+												</Grid.ColumnDefinitions>
+												<Label Grid.Column="0" VerticalAlignment="Center">Protocol:</Label>
+												<ComboBox Grid.Column="1" SelectedIndex="{Binding IosXboxLiveProtocol}">
+													<ComboBoxItem>Http</ComboBoxItem>
+													<TextBlock FontSize="1">
+														<Run FontSize="14">Http</Run>
+														<Run FontSize="14" FontWeight="Bold">s</Run>
+													</TextBlock>
+												</ComboBox>
+											</Grid>
+											<Grid HorizontalAlignment="Center">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="Auto"/>
+													<ColumnDefinition Width="Auto"/>
+												</Grid.ColumnDefinitions>
+												<Label Grid.Column="0" VerticalAlignment="Center">Hostname/IP:</Label>
+												<TextBox Text="{Binding IosXboxLiveHostname}" Grid.Column="1" PlaceholderText="192.168.x.x:x" MaxLength="100" TextWrapping="Wrap" MaxWidth="200"/>
+											</Grid>
+										</StackPanel>
+									</Border>
+									<Rectangle Width="350" Height="0.5" Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,5" IsVisible="{Binding !IosChangeXboxLiveAddress}"/>
+								</StackPanel>
+							</Border>
+
+							<Border BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseHighBrush}" CornerRadius="7" Width="370" Padding="10" Margin="0 10 0 0">
+								<StackPanel HorizontalAlignment="Center">
+									<TextBlock Text="Gameplay (Experimental)" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" Margin="0 0 0 5"/>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="Auto"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<Label Grid.Column="0" VerticalAlignment="Center" Margin="10">Disable moving-too-fast speed limit</Label>
+										<ToggleSwitch Grid.Column="1" IsChecked="{Binding IosDisableSpeedLimit}" OffContent="No" OnContent="Yes"></ToggleSwitch>
+									</Grid>
+								</StackPanel>
+							</Border>
+						</StackPanel>
+					</StackPanel>
+				</ScrollViewer>
+			</Grid>
+		</Grid>
+
+		<Button Margin="10" Click="Patch" HorizontalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="30" Grid.Row="2">Patch</Button>
+		<TextBlock Grid.Row="2" Text="{Binding AssemblyVersion, StringFormat='v{0}'}" FontSize="12" Foreground="Gray" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10"/>
+	</Grid>
+</UserControl>

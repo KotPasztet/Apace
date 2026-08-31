@@ -1,0 +1,13 @@
+--- a/smali/com/googleplay/licensing/LicenseChecker.smali
++++ b/smali/com/googleplay/licensing/LicenseChecker.smali
+@@ -631,9 +631,7 @@
+     :try_start_0
+     iget-object v1, p0, Lcom/googleplay/licensing/LicenseChecker;->mPolicy:Lcom/googleplay/licensing/Policy;
+ 
+-    invoke-interface {v1}, Lcom/googleplay/licensing/Policy;->allowAccess()Z
+-
+-    move-result v1
++    const/4 v1, 0x1
+ 
+     if-eqz v1, :cond_0
+ 

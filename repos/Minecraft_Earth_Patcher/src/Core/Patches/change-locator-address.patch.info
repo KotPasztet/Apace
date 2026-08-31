@@ -1,0 +1,22 @@
+{
+    "Prerequisites":
+    [
+        {
+            "Type": "Basic",
+            "RequiredPatch": "extend-libgenoa"
+        }
+    ],
+    "VariablesUsed":
+    [
+        "locatorprotocol",
+        "locatorhostname"
+    ],
+    "BinaryVariables":
+    [
+        {
+            "File": "lib/arm64-v8a/libgenoa.so",
+            "HexAddress": "0x07000300",
+            "TemplateString": "${locatorprotocol}${locatorhostname}"
+        }
+    ]
+}
