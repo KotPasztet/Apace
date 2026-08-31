@@ -44,6 +44,7 @@ public sealed class EarthDB : IDisposable
         {
             using var connection = new SqliteConnection("Data Source=" + connectionString);
             connection.Open();
+            ApplyPragmas(connection, readOnly: false);
             using (var command = new SqliteCommand($"CREATE TABLE IF NOT EXISTS {ObjectsTable} (type STRING NOT NULL, id STRING NOT NULL, value STRING NOT NULL, version INTEGER NOT NULL, PRIMARY KEY (type, id))", connection) { CommandTimeout = TRANSACTION_TIMEOUT })
             {
                 command.ExecuteNonQuery();
@@ -84,6 +85,7 @@ public sealed class EarthDB : IDisposable
         };
         var connection = new SqliteConnection(csb.ConnectionString);
         connection.Open();
+        ApplyPragmas(connection, readOnly: !write);
         return connection;
     }
 
@@ -98,6 +100,7 @@ public sealed class EarthDB : IDisposable
             };
             var connection = new SqliteConnection(csb.ConnectionString);
             connection.Open();
+            ApplyPragmas(connection, readOnly: !write);
             var transaction = connection.BeginTransaction(/*!write*//*false*/);
             transactions.Add(transaction);
             return transaction;
@@ -106,6 +109,19 @@ public sealed class EarthDB : IDisposable
         {
             throw new DatabaseException(ex);
         }
+    }
+
+    private static void ApplyPragmas(SqliteConnection connection, bool readOnly)
+    {
+        // journal_mode=WAL is persistent (stored in the database file header) and needs
+        // write access to set; on a read-only connection it would fail, so only
+        // busy_timeout (a per-connection setting) is applied there. Reads on a WAL
+        // database still need busy_timeout to wait out writer checkpoints.
+        using var command = connection.CreateCommand();
+        command.CommandText = readOnly
+            ? "PRAGMA busy_timeout=5000;"
+            : "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL;";
+        command.ExecuteNonQuery();
     }
 
     internal void ExecuteCommand(bool write, Action<SqliteCommand> action)
