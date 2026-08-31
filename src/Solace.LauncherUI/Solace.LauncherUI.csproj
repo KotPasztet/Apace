@@ -48,7 +48,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Net.Codecrete.QrCodeGenerator" Version="2.1.0" />
-    <PackageReference Include="Serilog" Version="4.3.1" />
+    <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
@@ -59,6 +59,7 @@
     <ProjectReference Include="../Solace.Common/Solace.Common.csproj" />
     <ProjectReference Include="../Solace.DB/Solace.DB.csproj" />
     <ProjectReference Include="../Solace.ObjectStore.Client/Solace.ObjectStore.Client.csproj" />
+    <ProjectReference Include="../../repos/Minecraft_Earth_Patcher/src/Core/MCEPatcher.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -7,6 +7,9 @@
     <Project Path="src/Solace.KillHelper/Solace.KillHelper.csproj" />
     <Project Path="src/Solace.LauncherUI/Solace.LauncherUI.csproj" />
   </Folder>
+  <Folder Name="/repos/">
+    <Project Path="repos/Minecraft_Earth_Patcher/src/Core/MCEPatcher.Core.csproj" />
+  </Folder>
   <Project Path="src/Solace.ApiServer/Solace.ApiServer.csproj">
   </Project>
   <Project Path="src/Solace.Buildplate/Solace.Buildplate.csproj">

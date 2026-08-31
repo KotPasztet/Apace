@@ -40,6 +40,9 @@ internal static class Permissions
     [PermissionInfo("Buildplates", "Manage buildplates - import, edit, delete")]
     public const string ManageBuildplates = "buildplate.manage";
 
+    [PermissionInfo("Patcher", "Generate patched Minecraft Earth clients (APK/IPA)")]
+    public const string UsePatcher = "patcher.use";
+
     public static readonly ImmutableArray<string> All;
     public static readonly ImmutableArray<PermissionDescriptor> AllWithInfo;
 

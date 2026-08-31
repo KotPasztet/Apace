@@ -1,0 +1,402 @@
+/* Client Patcher page — mirrors the Apace Minecraft theme
+   (dark #141414 backdrop, #8bc34a greens, square corners). */
+
+.patcher-container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    color: #d0d0d0;
+}
+
+/* ---------- Mode selector cards ---------- */
+
+.mode-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.mode-card {
+    flex: 1 1 180px;
+    background: #141414;
+    border: 3px solid #3a3a3a;
+    padding: 14px 16px;
+    text-align: left;
+    cursor: pointer;
+    color: #b0b0b0;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mode-card:hover {
+    border-color: #4a5d23;
+    color: #d0d0d0;
+    background: #1a1a1a;
+}
+
+.mode-card.selected {
+    border-color: #8bc34a;
+    background: rgba(139, 195, 74, 0.08);
+    color: #e0e0e0;
+    box-shadow: 0 4px 0 #0a0a0a;
+}
+
+.mode-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: inherit;
+}
+
+.mode-card.selected .mode-name {
+    color: #8bc34a;
+}
+
+.mode-desc {
+    font-size: 0.72rem;
+    color: #9a9ab0;
+    line-height: 1.4;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+/* ---------- Upload drop zone (same look as the buildplate importer) ---------- */
+
+.drop-zone {
+    position: relative;
+    border: 3px dashed #4a5d23;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.drop-zone.hovering {
+    background-color: rgba(139, 195, 74, 0.08);
+    border-color: #8bc34a;
+    transform: scale(1.01);
+}
+
+.drop-zone-content {
+    pointer-events: none;
+}
+
+.file-hint {
+    color: #9a9ab0;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.file-input:disabled {
+    cursor: not-allowed;
+}
+
+.file-item {
+    background: #141414;
+    border: 2px solid #2a2a2a;
+    padding: 0.75rem 1rem;
+}
+
+.file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.file-name {
+    font-weight: 700;
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.file-status {
+    font-size: 0.75rem;
+    color: #9a9ab0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progress-bar-container {
+    height: 8px;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6b8e23, #8bc34a);
+    transition: width 0.2s ease;
+}
+
+.btn-remove {
+    background: none;
+    border: none;
+    color: #e57373;
+    font-size: 1.1rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.25rem;
+}
+
+.text-success {
+    color: #81c784;
+}
+
+.text-danger {
+    color: #e57373;
+}
+
+.text-warning {
+    color: #ffb74d;
+}
+
+.mt-3 {
+    margin-top: 1rem;
+}
+
+/* ---------- Auto mode info card ---------- */
+
+.info-card {
+    background: #141414;
+    border: 3px solid #4a5d23;
+    padding: 1rem 1.25rem;
+}
+
+.info-card-title {
+    color: #81c784;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+
+.info-card-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.8rem;
+    padding: 3px 0;
+}
+
+/* ---------- Advanced sections ---------- */
+
+.adv-section {
+    border-top: 2px solid #2a2a2a;
+    padding-top: 14px;
+    margin-top: 18px;
+}
+
+.adv-section h3 {
+    font-size: 0.85rem;
+    color: #81c784;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+}
+
+.adv-section .form-check-label {
+    font-size: 0.78rem;
+    color: #d0d0d0;
+}
+
+.form-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #9a9ab0;
+}
+
+/* ---------- Recent jobs ---------- */
+
+.jobs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.job-item {
+    background: #141414;
+    border: 2px solid #2a2a2a;
+    padding: 0.6rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.job-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.job-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    word-break: break-all;
+}
+
+.job-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+/* ---------- Active job panel ---------- */
+
+.job-panel {
+    background: #1a1a1a;
+    border: 3px solid #3a3a3a;
+    box-shadow: 0 6px 0 #0a0a0a, 0 8px 20px rgba(0, 0, 0, 0.4);
+    padding: 1.5rem;
+}
+
+.job-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.log-terminal {
+    background: #0a0a0a;
+    border: 2px solid #2a2a2a;
+    min-height: 220px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 12px 14px;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    letter-spacing: normal;
+    text-transform: none;
+    color: #9ab06a;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.log-line {
+    padding-bottom: 2px;
+}
+
+/* ---------- Dialog ---------- */
+
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+}
+
+.dialog-card {
+    background: #1a1a1a;
+    border: 3px solid #3a3a3a;
+    box-shadow: 0 8px 0 #0a0a0a, 0 12px 30px rgba(0, 0, 0, 0.5);
+    padding: 2rem;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    color: #d0d0d0;
+}
+
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* ---------- Alternate (html.dark) theme ---------- */
+
+html.dark .mode-card {
+    background: #1c2613;
+    border-color: #5a6a3a;
+    color: #cfd8be;
+}
+
+html.dark .mode-card.selected {
+    border-color: #d4ff7a;
+    background: rgba(212, 255, 122, 0.1);
+    color: #eef0e6;
+}
+
+html.dark .mode-card.selected .mode-name {
+    color: #d4ff7a;
+}
+
+html.dark .drop-zone {
+    border-color: #8aa84a;
+}
+
+html.dark .drop-zone.hovering {
+    background-color: rgba(212, 255, 122, 0.08);
+    border-color: #d4ff7a;
+}
+
+html.dark .file-item,
+html.dark .job-item {
+    background: #1c2613;
+    border-color: #5a6a3a;
+}
+
+html.dark .info-card {
+    background: #1c2613;
+    border-color: #8aa84a;
+}
+
+html.dark .adv-section {
+    border-color: #5a6a3a;
+}
+
+html.dark .job-panel,
+html.dark .dialog-card {
+    background: #38492a;
+    border-color: #5a6a3a;
+    color: #eef0e6;
+}
+
+html.dark .file-hint,
+html.dark .file-status,
+html.dark .mode-desc {
+    color: #b7c79e;
+}
+

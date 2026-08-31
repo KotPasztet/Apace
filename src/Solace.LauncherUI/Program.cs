@@ -17,6 +17,7 @@ using Solace.DB;
 using Solace.LauncherUI.Components;
 using Solace.LauncherUI.Components.Account;
 using Solace.LauncherUI.Data;
+using Solace.LauncherUI.Patcher;
 using Solace.LauncherUI.Utils;
 using Solace.ObjectStore.Client;
 
@@ -48,6 +49,7 @@ public partial class Program
             .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
             .WriteTo.File("logs/launcher/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, fileSizeLimitBytes: 8338607, outputTemplate: "{Timestamp:HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}", formatProvider: CultureInfo.InvariantCulture)
             .WriteTo.LogsLogSink(logsLogService)
+            .WriteTo.Sink(PatchLogSink.Instance)
             .MinimumLevel.Debug()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
@@ -57,6 +59,7 @@ public partial class Program
         Log.Logger = log;
 
         builder.Services.AddSingleton<ServerManager>();
+        builder.Services.AddSingleton<PatcherService>();
 
         // Add services to the container.
         builder.Services.AddRazorComponents()

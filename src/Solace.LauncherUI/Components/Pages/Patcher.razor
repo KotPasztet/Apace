@@ -1,0 +1,1175 @@
+@page "/Patcher"
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using System.Buffers
+@using System.Security.Cryptography
+@using MCEPatcher.Core
+@using Solace.LauncherUI.Patcher
+@attribute [Authorize(Policy = Permissions.UsePatcher)]
+@rendermode InteractiveServer
+@inject PatcherService PatcherService
+
+<PageTitle>Client Patcher - Apace</PageTitle>
+
+<div class="patcher-container">
+    <div class="section-title">
+        <img class="nav-icon" src="/images/paint_item.png" alt="" aria-hidden="true" /> Client Patcher
+    </div>
+    <p class="section-subtitle">
+        Generate a patched Minecraft Earth client (APK/IPA) that connects to your Apace server.
+    </p>
+
+    @if (ActiveJob is null)
+    {
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+                <button type="button" class="nav-link @(platform == PatchPlatform.Android ? "active" : "")"
+                        @onclick="() => platform = PatchPlatform.Android">Android (APK)</button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link @(platform == PatchPlatform.Ios ? "active" : "")"
+                        @onclick="() => platform = PatchPlatform.Ios">iOS (IPA)</button>
+            </li>
+        </ul>
+
+        <div class="tab-content border border-top-0 p-4">
+            <div class="mode-cards">
+                <button type="button" class="mode-card @(mode == PatchMode.Auto ? "selected" : "")"
+                        @onclick="() => SelectMode(PatchMode.Auto)">
+                    <span class="mode-name">Auto</span>
+                    <span class="mode-desc">Everything is derived from your current Apace configuration. Nothing to type in.</span>
+                </button>
+                <button type="button" class="mode-card @(mode == PatchMode.Simple ? "selected" : "")"
+                        @onclick="() => SelectMode(PatchMode.Simple)">
+                    <span class="mode-name">Simple</span>
+                    <span class="mode-desc">Just like Auto, but you can override the server addresses.</span>
+                </button>
+
+            <div class="drop-zone @(isHovering ? "hovering" : "")" @ondragenter="@(() => isHovering = true)"
+                 @ondragleave="@(() => isHovering = false)" @ondrop="@(() => isHovering = false)">
+                <InputFile OnChange="HandleFileSelection" accept="@(platform == PatchPlatform.Android ? ".apk" : ".ipa")"
+                           class="file-input" disabled="@isUploading" />
+                <div class="drop-zone-content">
+                    <p><strong>Drag and drop</strong> your original Minecraft Earth @(platform == PatchPlatform.Android ? "APK" : "IPA") here, or <strong>click to browse</strong></p>
+                    <p class="file-hint">The unmodified client file, dumped from your device</p>
+                </div>
+            </div>
+
+            @if (isUploading)
+            {
+                <div class="file-item mt-3">
+                    <div class="file-header">
+                        <span class="file-name">@uploadName</span>
+                        <span class="file-status" style="color: #64b5f6;">Uploading... @(Math.Round(uploadPct))%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: @uploadPct%"></div>
+                    </div>
+                </div>
+            }
+            else if (uploadedPath is not null)
+            {
+                <div class="file-item mt-3">
+                    <div class="file-header">
+                        <span class="file-name">@uploadedName (@FormatBytes(uploadBytes))</span>
+                        <div class="file-actions">
+                            @if (hashMismatch)
+                            {
+                                <span class="file-status text-warning">Unrecognized file - patching may fail</span>
+                            }
+                            else if (hashVerified)
+                            {
+                                <span class="file-status text-success">Original file verified</span>
+                            }
+                            <button type="button" class="btn-remove" @onclick="RemoveUploadedFile" title="Remove file">✕</button>
+
+            @* ---- Auto mode ---- *@
+            @if (mode == PatchMode.Auto)
+            {
+                <div class="info-card mt-3">
+                    <div class="info-card-title">Derived from your Apace configuration</div>
+                    <div class="info-card-row">
+                        <span class="text-muted">API server (locator):</span>
+                        <code>http://@ApaceAddress</code>
+                    </div>
+                    <div class="info-card-row">
+                        <span class="text-muted">Login server:</span>
+                        <code>http://@ApaceAddress</code>
+                        <span class="text-muted">@if (platform == PatchPlatform.Android)
+                        {<text>(single-domain mode, all services)</text>}
+                        else
+                        {<text>(XAL, PlayFab, XboxAB, Xbox Live)</text>}</span>
+                    </div>
+                    <div class="info-card-row">
+                        <span class="text-muted">App name:</span>
+                        <code>Apace</code>
+                    </div>
+                </div>
+                @if (platform == PatchPlatform.Android)
+                {
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label">Phone's Android version</label>
+                            <select class="form-select" @bind="androidVersion">
+                                @foreach (var v in new[] { 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })
+                                {
+                                    <option value="@v">Android @v</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                }
+            }
+            else if (mode == PatchMode.Simple)
+            {
+                <div class="row g-3 mt-1">
+                    <div class="col-md-3">
+                        <label class="form-label">API protocol</label>
+                        <select class="form-select" @bind="locatorProtocol">
+                            <option value="@((int)PatchProtocol.Http)">Http</option>
+                            <option value="@((int)PatchProtocol.Https)">Https</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">API server address (hostname:port)</label>
+                        <input class="form-control" placeholder="192.168.x.x:8080" @bind="locatorHostname" />
+                    </div>
+                    @if (platform == PatchPlatform.Android)
+                    {
+                        <div class="col-md-4">
+                            <label class="form-label">Phone's Android version</label>
+                            <select class="form-select" @bind="androidVersion">
+                                @foreach (var v in new[] { 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })
+                                {
+                                    <option value="@v">Android @v</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (platform == PatchPlatform.Android)
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label">Login protocol</label>
+                            <select class="form-select" @bind="authProtocol">
+                                <option value="@((int)PatchProtocol.Http)">Http</option>
+                                <option value="@((int)PatchProtocol.Https)">Https</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Login server address (hostname:port)</label>
+                            <input class="form-control" placeholder="192.168.x.x:8080" @bind="authHostname" />
+                        </div>
+                    }
+                </div>
+                @if (platform == PatchPlatform.Ios)
+                {
+                    <p class="text-muted mt-2 mb-0" style="font-size: 0.75rem;">
+                        Simple mode keeps the official Microsoft login and only redirects the game API to your server.
+                        Use Advanced mode to route the login through Apace as well.
+                    </p>
+                }
+            }
+
+                        </div>
+                    </div>
+                </div>
+            }
+
+                <button type="button" class="mode-card @(mode == PatchMode.Advanced ? "selected" : "")"
+                        @onclick="() => SelectMode(PatchMode.Advanced)">
+                    <span class="mode-name">Advanced</span>
+                    <span class="mode-desc">Full control over every patch option, like the desktop patcher.</span>
+                </button>
+            </div>
+
+            else
+            {
+                @* ---- Advanced mode ---- *@
+                @if (platform == PatchPlatform.Android)
+                {
+                    <div class="adv-section">
+                        <h3>Locator (game API)</h3>
+                        <div class="mb-2 form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="advChangeLocator" @bind="changeLocator" />
+                            <label class="form-check-label" for="advChangeLocator">Redirect locator address</label>
+                        </div>
+                        @if (changeLocator)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Protocol</label>
+                                    <select class="form-select" @bind="locatorProtocol">
+                                        <option value="@((int)PatchProtocol.Http)">Http</option>
+                                        <option value="@((int)PatchProtocol.Https)">Https</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Address (hostname:port)</label>
+                                    <input class="form-control" placeholder="192.168.x.x:8080" @bind="locatorHostname" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="adv-section">
+                        <h3>Behavior</h3>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="advSunset" @bind="disableSunset" />
+                            <label class="form-check-label" for="advSunset">Disable sunset time check</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="advLicense" @bind="disableLicense" />
+                            <label class="form-check-label" for="advLicense">Disable license check</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="advTelemetry" @bind="disableTelemetry" />
+                            <label class="form-check-label" for="advTelemetry">Disable telemetry</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="advMsaSig" @bind="disableMsaSig" />
+                            <label class="form-check-label" for="advMsaSig">Disable MSA login signature validation</label>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="adv-section">
+                        <h3>Locator (game API)</h3>
+                        <div class="mb-2 form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="iosChangeLocator" @bind="iosChangeLocator" />
+                            <label class="form-check-label" for="iosChangeLocator">Redirect locator address</label>
+                        </div>
+                        @if (iosChangeLocator)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Protocol</label>
+                                    <select class="form-select" @bind="iosLocatorProtocol">
+                                        <option value="@((int)PatchProtocol.Http)">Http</option>
+                                        <option value="@((int)PatchProtocol.Https)">Https</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Address (hostname:port)</label>
+                                    <input class="form-control" placeholder="192.168.x.x:8080" @bind="iosLocatorHostname" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+
+                @* ---- Advanced: platform-specific identity & login ---- *@
+                @if (platform == PatchPlatform.Android)
+                {
+                    <div class="adv-section">
+                        <h3>Identity</h3>
+                        <div class="mb-2 form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="advChangeAppName" @bind="changeAppName" />
+                            <label class="form-check-label" for="advChangeAppName">Change app name</label>
+                        </div>
+                        @if (changeAppName)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">App name</label>
+                                    <input class="form-control" @bind="appName" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Short name</label>
+                                    <input class="form-control" @bind="appNameShort" />
+                                </div>
+                            </div>
+                        }
+                        <div class="mt-2 mb-2 form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="advChangePackage" @bind="changePackageName" />
+                            <label class="form-check-label" for="advChangePackage">Change package name</label>
+                        </div>
+                        @if (changePackageName)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Package name</label>
+                                    <input class="form-control" @bind="packageName" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="adv-section">
+                        <h3>Behavior &amp; identity</h3>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="iosSunset" @bind="iosDisableSunset" />
+                            <label class="form-check-label" for="iosSunset">Disable sunset time check</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="iosSpeed" @bind="iosDisableSpeedLimit" />
+                            <label class="form-check-label" for="iosSpeed">Disable moving-too-fast speed limit</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="iosDrm" @bind="iosRemoveDrm" />
+                            <label class="form-check-label" for="iosDrm">Remove DRM and code signature</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="iosInteractive" @bind="iosForceInteractive" />
+                            <label class="form-check-label" for="iosInteractive">Force interactive sign-in</label>
+                        </div>
+                        <div class="mt-2 mb-2 form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="iosChangeAppName" @bind="iosChangeAppName" />
+                            <label class="form-check-label" for="iosChangeAppName">Change app name</label>
+                        </div>
+                        @if (iosChangeAppName)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">App name</label>
+                                    <input class="form-control" @bind="iosAppName" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+
+                @* ---- Advanced: Android login server ---- *@
+                @if (platform == PatchPlatform.Android)
+                {
+                    <div class="adv-section">
+                        <h3>Login server</h3>
+                        <div class="mb-2 form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="advSingleDomain" @bind="singleDomain" />
+                            <label class="form-check-label" for="advSingleDomain">Single-domain mode (all login services on one address)</label>
+                        </div>
+                        @if (singleDomain)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Protocol</label>
+                                    <select class="form-select" @bind="authProtocol">
+                                        <option value="@((int)PatchProtocol.Http)">Http</option>
+                                        <option value="@((int)PatchProtocol.Https)">Https</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Address (IP or hostname, with port)</label>
+                                    <input class="form-control" placeholder="192.168.x.x:8080" @bind="authHostname" />
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="advChangeMsa" @bind="changeMsa" />
+                                    <label class="form-check-label" for="advChangeMsa">Redirect MSA login (live.com)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="advChangePlayfab" @bind="changePlayfab" />
+                                    <label class="form-check-label" for="advChangePlayfab">Redirect PlayFab API</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="advChangeXboxAb" @bind="changeXboxAb" />
+                                    <label class="form-check-label" for="advChangeXboxAb">Redirect XboxAB</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="advChangeXboxLive" @bind="changeXboxLive" />
+                                    <label class="form-check-label" for="advChangeXboxLive">Redirect Xbox Live</label>
+                                </div>
+                            </div>
+                        }
+
+                        else
+                        {
+                            <p class="text-muted" style="font-size: 0.75rem;">
+                                Multi-domain mode uses real domain names (no IPs) - e.g. mapped via VPN/DNS to your server.
+                            </p>
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label">MSA</label>
+                                    <select class="form-select" @bind="msaProtocol">
+                                        <option value="@((int)PatchProtocol.Http)">Http</option>
+                                        <option value="@((int)PatchProtocol.Https)">Https</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <input class="form-control" placeholder="live.example.com" @bind="msaHostname" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">PlayFab</label>
+                                    <select class="form-select" @bind="playfabProtocol">
+                                        <option value="@((int)PatchProtocol.Http)">Http</option>
+                                        <option value="@((int)PatchProtocol.Https)">Https</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <input class="form-control" placeholder="playfab.example.com" @bind="playfabHostname" />
+                                </div>
+                            </div>
+                            <div class="row g-3 mt-1">
+                                <div class="col-md-2">
+                                    <label class="form-label">XboxAB</label>
+                                    <select class="form-select" @bind="xboxAbProtocol">
+                                        <option value="@((int)PatchProtocol.Http)">Http</option>
+                                        <option value="@((int)PatchProtocol.Https)">Https</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <input class="form-control" placeholder="xboxab.example.com" @bind="xboxAbHostname" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Xbox Live</label>
+                                    <select class="form-select" @bind="xboxLiveProtocol">
+                                        <option value="@((int)PatchProtocol.Http)">Http</option>
+                                        <option value="@((int)PatchProtocol.Https)">Https</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <input class="form-control" placeholder="xboxlive.example.com" @bind="xboxLiveHostname" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+
+                    <div class="adv-section">
+                        <h3>Build</h3>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Phone's Android version</label>
+                                <select class="form-select" @bind="androidVersion">
+                                    @foreach (var v in new[] { 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })
+                                    {
+                                        <option value="@v">Android @v</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Resource pack (optional, replaces the in-game resources)</label>
+                                <InputFile OnChange="HandleResourcePackSelection" accept=".zip" class="form-control" />
+                                @if (resourcePackPath is not null)
+                                {
+                                    <span class="file-status text-success">@resourcePackName</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="adv-section">
+                        <h3>Login server (XAL / PlayFab / Xbox)</h3>
+                        <div class="mb-2 form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="iosUseCustomAuth" @bind="iosUseCustomAuth" />
+                            <label class="form-check-label" for="iosUseCustomAuth">Redirect login services to a custom server</label>
+                        </div>
+                        @if (iosUseCustomAuth)
+                        {
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="iosChangeXal" @bind="iosChangeXal" />
+                                <label class="form-check-label" for="iosChangeXal">Redirect XAL auth</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="iosChangePlayfab" @bind="iosChangePlayfab" />
+                                <label class="form-check-label" for="iosChangePlayfab">Redirect PlayFab API</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="iosChangeXboxAb" @bind="iosChangeXboxAb" />
+                                <label class="form-check-label" for="iosChangeXboxAb">Redirect XboxAB</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="iosChangeXboxLive" @bind="iosChangeXboxLive" />
+                                <label class="form-check-label" for="iosChangeXboxLive">Redirect Xbox Live</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="iosWebView" @bind="iosForceWebView" />
+                                <label class="form-check-label" for="iosWebView">Force in-app WebView for sign-in</label>
+                            </div>
+                            <div class="mt-2 mb-2 form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="iosSingleDomain" @bind="iosSingleDomain" />
+                                <label class="form-check-label" for="iosSingleDomain">Single-domain mode (all login services on one address)</label>
+                            </div>
+                            @if (iosSingleDomain)
+                            {
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Protocol</label>
+                                        <select class="form-select" @bind="iosAuthProtocol">
+                                            <option value="@((int)PatchProtocol.Http)">Http</option>
+                                            <option value="@((int)PatchProtocol.Https)">Https</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label">Address (IP or hostname, with port)</label>
+                                        <input class="form-control" placeholder="192.168.x.x:8080" @bind="iosAuthHostname" />
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+
+
+            <div class="button-group mt-4">
+                <button type="button" class="btn btn-primary" @onclick="StartGeneration"
+                        disabled="@(isUploading || uploadedPath is null)">
+                    Generate patched @(platform == PatchPlatform.Android ? "APK" : "IPA")
+                </button>
+            </div>
+        </div>
+
+        @* ---------------- Recent jobs ---------------- *@
+        @if (PatcherService.Jobs.Count > 0)
+        {
+            <div class="section-title" style="margin-top: 24px; font-size: 1rem;">Recent jobs</div>
+            <div class="jobs-list">
+                @foreach (var job in PatcherService.Jobs)
+                {
+                    <div class="job-item">
+                        <div class="job-info">
+                            <span class="job-name">@job.InputFileName</span>
+                            <span class="badge @JobBadgeClass(job)">@job.Mode / @(job.Platform == PatchPlatform.Android ? "Android" : "iOS")</span>
+                        </div>
+                        <div class="job-status">
+                            @switch (job.Status)
+                            {
+                                case PatchJobStatus.Queued: <span class="file-status text-muted">Queued</span> break;
+                                case PatchJobStatus.Running: <span class="file-status" style="color: #64b5f6;">Running...</span> break;
+                                case PatchJobStatus.Succeeded:
+                                    <a class="btn btn-sm btn-primary" href="/api/patcher/download/@job.Id">Download</a>
+                                    break;
+                                case PatchJobStatus.Failed: <span class="file-status text-danger" title="@job.Error">Failed</span> break;
+                            }
+                            <button type="button" class="btn btn-sm btn-link" @onclick="() => ViewJob(job.Id)">Details</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        @* ---------------- Active job / result view ---------------- *@
+        <div class="job-panel">
+            <div class="job-panel-header">
+                <div class="job-info">
+                    <span class="job-name">@ActiveJob.InputFileName</span>
+                    <span class="badge @JobBadgeClass(ActiveJob)">@ActiveJob.Mode / @(ActiveJob.Platform == PatchPlatform.Android ? "Android" : "iOS")</span>
+                </div>
+                @switch (ActiveJob.Status)
+                {
+                    case PatchJobStatus.Queued: <span class="text-muted">Waiting for a free patch slot...</span> break;
+                    case PatchJobStatus.Running:
+                        <span><span class="spinner-border spinner-border-sm" role="status"></span> Patching...</span>
+                        break;
+                    case PatchJobStatus.Succeeded: <span class="text-success">Patching finished</span> break;
+                    case PatchJobStatus.Failed: <span class="text-danger">Patching failed</span> break;
+                }
+            </div>
+
+            <div class="log-terminal mt-3">
+                @foreach (var line in logSnapshot)
+                {
+                    <div class="log-line">@line</div>
+                }
+            </div>
+
+            <div class="button-group mt-3">
+                @if (ActiveJob.Status == PatchJobStatus.Succeeded)
+                {
+                    <a class="btn btn-primary" href="/api/patcher/download/@ActiveJob.Id">Download @ActiveJob.OutputFileName</a>
+                }
+                @if (ActiveJob.IsFinished)
+                {
+                    <button type="button" class="btn btn-secondary" @onclick="CloseJobView">New patch</button>
+                }
+                @if (ActiveJob.Error is not null)
+                {
+                    <span class="text-danger">@ActiveJob.Error</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (showDialog)
+{
+    <div class="dialog-overlay">
+        <div class="dialog-card">
+            <h3 class="@(isSuccess ? "text-success" : "text-danger")">@(isSuccess ? "Success" : "Error")</h3>
+            <p>@dialogMessage</p>
+            <button type="button" class="btn @(isSuccess ? "btn-primary" : "btn-secondary")" @onclick="CloseDialog">Close</button>
+        </div>
+    </div>
+}
+
+
+@code {
+    private const long MaxInputSize = 3L * 1024 * 1024 * 1024; // 3 GB
+
+    private PatchPlatform platform = PatchPlatform.Android;
+    private PatchMode mode = PatchMode.Auto;
+
+    // upload state
+    private bool isHovering;
+    private bool isUploading;
+    private string uploadName = string.Empty;
+    private long uploadBytes;
+    private double uploadPct;
+    private string? uploadedPath;
+    private string uploadedName = string.Empty;
+    private bool hashVerified;
+    private bool hashMismatch;
+    private CancellationTokenSource? uploadCts;
+
+    // resource pack (Android, advanced)
+    private string? resourcePackPath;
+    private string resourcePackName = string.Empty;
+
+    // android fields
+    private int androidVersion = 14;
+    private bool changeLocator = true;
+    private PatchProtocol locatorProtocol = PatchProtocol.Http;
+    private string locatorHostname = string.Empty;
+    private bool disableSunset = true;
+    private bool disableLicense = true;
+    private bool disableTelemetry = true;
+    private bool disableMsaSig = true;
+    private bool changeAppName = true;
+    private string appName = "Apace";
+    private string appNameShort = "Apace";
+    private bool changePackageName = true;
+    private string packageName = "com.github.earth_restored";
+    private bool singleDomain = true;
+    private PatchProtocol authProtocol = PatchProtocol.Http;
+    private string authHostname = string.Empty;
+    private bool changeMsa;
+    private PatchProtocol msaProtocol = PatchProtocol.Https;
+    private string msaHostname = "live.com";
+    private bool changePlayfab;
+    private PatchProtocol playfabProtocol = PatchProtocol.Https;
+    private string playfabHostname = "playfabapi.com";
+    private bool changeXboxAb;
+    private PatchProtocol xboxAbProtocol = PatchProtocol.Https;
+    private string xboxAbHostname = "xboxab.com";
+    private bool changeXboxLive;
+    private PatchProtocol xboxLiveProtocol = PatchProtocol.Https;
+    private string xboxLiveHostname = "xboxlive.com";
+
+
+    // ios fields
+    private bool iosChangeLocator = true;
+    private PatchProtocol iosLocatorProtocol = PatchProtocol.Http;
+    private string iosLocatorHostname = string.Empty;
+    private bool iosDisableSunset = true;
+    private bool iosDisableSpeedLimit;
+    private bool iosChangeAppName = true;
+    private string iosAppName = "Apace";
+    private bool iosRemoveDrm = true;
+    private bool iosForceWebView = true;
+    private bool iosForceInteractive = true;
+    private bool iosUseCustomAuth;
+    private bool iosChangeXal = true;
+    private bool iosChangePlayfab = true;
+    private bool iosChangeXboxAb = true;
+    private bool iosChangeXboxLive = true;
+    private bool iosSingleDomain = true;
+    private PatchProtocol iosAuthProtocol = PatchProtocol.Http;
+    private string iosAuthHostname = string.Empty;
+    private PatchProtocol iosXalProtocol = PatchProtocol.Http;
+    private string iosXalHostname = string.Empty;
+    private PatchProtocol iosPlayfabProtocol = PatchProtocol.Http;
+    private string iosPlayfabHostname = string.Empty;
+    private PatchProtocol iosXboxAbProtocol = PatchProtocol.Http;
+    private string iosXboxAbHostname = string.Empty;
+    private PatchProtocol iosXboxLiveProtocol = PatchProtocol.Http;
+    private string iosXboxLiveHostname = string.Empty;
+
+    // job view
+    private string? activeJobId;
+    private IReadOnlyList<string> logSnapshot = [];
+    private Timer? pollTimer;
+    private bool polling;
+
+    // dialog
+    private bool showDialog;
+    private bool isSuccess;
+    private string dialogMessage = string.Empty;
+
+    private PatchJob? ActiveJob => activeJobId is null ? null : PatcherService.GetJob(activeJobId);
+
+    private string ApaceAddress => $"{Settings.Instance.IPv4}:{Settings.Instance.ApiPort}";
+
+    protected override void OnInitialized()
+    {
+        locatorHostname = ApaceAddress;
+        authHostname = ApaceAddress;
+        iosLocatorHostname = ApaceAddress;
+        iosAuthHostname = ApaceAddress;
+
+        pollTimer = new Timer(_ => _ = PollAsync(), null, 500, 500);
+    }
+
+    private async Task PollAsync()
+    {
+        if (polling)
+        {
+            return;
+        }
+
+        polling = true;
+
+        try
+        {
+            if (ActiveJob is { } job)
+            {
+                logSnapshot = job.GetLogSnapshot();
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+        }
+        finally
+        {
+            polling = false;
+        }
+    }
+
+    private void SelectMode(PatchMode newMode)
+    {
+        mode = newMode;
+    }
+
+
+    private async void HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        var expected = platform == PatchPlatform.Android ? ".apk" : ".ipa";
+
+        if (extension != expected)
+        {
+            ShowDialog(false, $"Invalid file - a {expected} file is required for {(platform == PatchPlatform.Android ? "Android" : "iOS")}.");
+            return;
+        }
+
+        RemoveUploadedFile();
+
+        isUploading = true;
+        uploadName = file.Name;
+        uploadBytes = 0;
+        uploadPct = 0;
+        hashVerified = false;
+        hashMismatch = false;
+        uploadCts = new CancellationTokenSource();
+
+        var uploadDir = Path.Combine(PatcherService.BaseDir, "uploads");
+        Directory.CreateDirectory(uploadDir);
+        var targetPath = Path.Combine(uploadDir, $"{Guid.NewGuid():N}{extension}");
+
+        try
+        {
+            await using var fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            await using var stream = file.OpenReadStream(MaxInputSize, uploadCts.Token);
+
+            var buffer = ArrayPool<byte>.Shared.Rent(81920);
+            using var hasher = SHA256.Create();
+
+            try
+            {
+                int bytesRead;
+                while ((bytesRead = await stream.ReadAsync(buffer, uploadCts.Token)) != 0)
+                {
+                    hasher.TransformBlock(buffer, 0, bytesRead, null, 0);
+                    await fs.WriteAsync(buffer.AsMemory(0, bytesRead), uploadCts.Token);
+
+                    uploadBytes += bytesRead;
+                    uploadPct = file.Size == 0 ? 100 : 100.0 * uploadBytes / file.Size;
+
+                    await InvokeAsync(StateHasChanged);
+                }
+
+                hasher.TransformFinalBlock([], 0, 0);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            var hash = Convert.ToHexString(hasher.Hash!);
+
+            hashVerified = platform == PatchPlatform.Android
+                ? hash == ApkProcessor.ApkHash
+                : hash == IpaProcessor.IpaHash;
+            hashMismatch = !hashVerified;
+
+            uploadedPath = targetPath;
+            uploadedName = file.Name;
+        }
+        catch (OperationCanceledException)
+        {
+            TryDelete(targetPath);
+        }
+        catch (Exception ex)
+        {
+            ShowDialog(false, $"Upload failed: {ex.Message}");
+            TryDelete(targetPath);
+        }
+        finally
+        {
+            isUploading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+
+    private async void HandleResourcePackSelection(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (Path.GetExtension(file.Name).ToLowerInvariant() != ".zip")
+        {
+            ShowDialog(false, "Invalid file - the resource pack must be a .zip file.");
+            return;
+        }
+
+        if (resourcePackPath is not null)
+        {
+            TryDelete(resourcePackPath);
+        }
+
+        var uploadDir = Path.Combine(PatcherService.BaseDir, "uploads");
+        Directory.CreateDirectory(uploadDir);
+        var targetPath = Path.Combine(uploadDir, $"{Guid.NewGuid():N}.zip");
+
+        try
+        {
+            await using var fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            await using var stream = file.OpenReadStream(MaxInputSize, CancellationToken.None);
+            await stream.CopyToAsync(fs);
+
+            resourcePackPath = targetPath;
+            resourcePackName = file.Name;
+        }
+        catch (Exception ex)
+        {
+            ShowDialog(false, $"Upload failed: {ex.Message}");
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void RemoveUploadedFile()
+    {
+        uploadCts?.Cancel();
+        uploadCts?.Dispose();
+        uploadCts = null;
+
+        if (uploadedPath is not null)
+        {
+            TryDelete(uploadedPath);
+        }
+
+        uploadedPath = null;
+        uploadedName = string.Empty;
+        uploadBytes = 0;
+        uploadPct = 0;
+        hashVerified = false;
+        hashMismatch = false;
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch
+        {
+        }
+    }
+
+    private void StartGeneration()
+    {
+        if (uploadedPath is null)
+        {
+            ShowDialog(false, $"Upload the original Minecraft Earth {(platform == PatchPlatform.Android ? "APK" : "IPA")} first.");
+            return;
+        }
+
+        try
+        {
+            var request = BuildRequest();
+            var job = PatcherService.CreateJob(request);
+
+            activeJobId = job.Id;
+            logSnapshot = [];
+        }
+        catch (Exception ex)
+        {
+            ShowDialog(false, ex.Message);
+        }
+    }
+
+
+    private PatchRequest BuildRequest()
+    {
+        var request = new PatchRequest
+        {
+            Mode = mode,
+            Platform = platform,
+            InputPath = uploadedPath!,
+            InputFileName = uploadedName,
+            OutputBaseName = "Apace",
+            ResourcePackPath = platform == PatchPlatform.Android && mode == PatchMode.Advanced ? resourcePackPath : null,
+        };
+
+        if (platform == PatchPlatform.Android)
+        {
+            request = request with
+            {
+                Android = mode == PatchMode.Advanced ? BuildAndroidAdvanced() : BuildAndroidDefaults(),
+            };
+        }
+        else
+        {
+            request = request with
+            {
+                Ios = mode == PatchMode.Advanced ? BuildIosAdvanced() : (mode == PatchMode.Auto ? BuildIosAuto() : BuildIosSimple()),
+            };
+        }
+
+        return request;
+    }
+
+    /// <summary>Auto + Simple: the patcher's simple defaults; Auto fills the addresses from the Apace settings.</summary>
+    private AndroidRequest BuildAndroidDefaults()
+    {
+        return new AndroidRequest
+        {
+            AndroidVersion = androidVersion,
+            ChangeLocatorAddress = true,
+            LocatorProtocol = mode == PatchMode.Auto ? PatchProtocol.Http : locatorProtocol,
+            LocatorHostname = mode == PatchMode.Auto ? ApaceAddress : locatorHostname,
+            DisableSunsetTimeCheck = true,
+            DisableLicenseCheck = true,
+            DisableTelemetry = true,
+            DisableMsaLoginSignatureValidation = true,
+            ChangeAppName = true,
+            AppName = appName,
+            AppNameShort = appNameShort,
+            ChangePackageName = true,
+            PackageName = packageName,
+            LoginServerSingleDomainMode = true,
+            LoginServerProtocol = mode == PatchMode.Auto ? PatchProtocol.Http : authProtocol,
+            LoginServerHostname = mode == PatchMode.Auto ? ApaceAddress : authHostname,
+            ChangeMsaLoginServiceAddress = true,
+            ChangePlayfabApiAddress = true,
+            ChangeXboxAbAddress = true,
+            ChangeXboxLiveAddress = true,
+            MsaLoginServiceProtocol = PatchProtocol.Https,
+            MsaLoginServiceHostname = string.Empty,
+            PlayfabApiProtocol = PatchProtocol.Https,
+            PlayfabApiHostname = string.Empty,
+            XboxAbProtocol = PatchProtocol.Https,
+            XboxAbHostname = string.Empty,
+            XboxLiveProtocol = PatchProtocol.Https,
+            XboxLiveHostname = string.Empty,
+        };
+    }
+
+
+    private AndroidRequest BuildAndroidAdvanced()
+    {
+        return new AndroidRequest
+        {
+            AndroidVersion = androidVersion,
+            ChangeLocatorAddress = changeLocator,
+            LocatorProtocol = locatorProtocol,
+            LocatorHostname = locatorHostname,
+            DisableSunsetTimeCheck = disableSunset,
+            DisableLicenseCheck = disableLicense,
+            DisableTelemetry = disableTelemetry,
+            DisableMsaLoginSignatureValidation = disableMsaSig,
+            ChangeAppName = changeAppName,
+            AppName = appName,
+            AppNameShort = appNameShort,
+            ChangePackageName = changePackageName,
+            PackageName = packageName,
+            LoginServerSingleDomainMode = singleDomain,
+            LoginServerProtocol = authProtocol,
+            LoginServerHostname = authHostname,
+            ChangeMsaLoginServiceAddress = changeMsa,
+            MsaLoginServiceProtocol = msaProtocol,
+            MsaLoginServiceHostname = msaHostname,
+            ChangePlayfabApiAddress = changePlayfab,
+            PlayfabApiProtocol = playfabProtocol,
+            PlayfabApiHostname = playfabHostname,
+            ChangeXboxAbAddress = changeXboxAb,
+            XboxAbProtocol = xboxAbProtocol,
+            XboxAbHostname = xboxAbHostname,
+            ChangeXboxLiveAddress = changeXboxLive,
+            XboxLiveProtocol = xboxLiveProtocol,
+            XboxLiveHostname = xboxLiveHostname,
+        };
+    }
+
+    private IosRequest BuildIosAuto()
+    {
+        return new IosRequest
+        {
+            ChangeLocatorAddress = true,
+            LocatorProtocol = PatchProtocol.Http,
+            LocatorHostname = ApaceAddress,
+            DisableSunsetTimeCheck = true,
+            DisableSpeedLimit = false,
+            ChangeAppName = true,
+            AppName = iosAppName,
+            RemoveDrm = true,
+            ChangeLoginServerAddress = true,
+            ChangeXalAuthAddress = true,
+            ChangePlayfabApiAddress = true,
+            ChangeXboxAbAddress = true,
+            ChangeXboxLiveAddress = true,
+            ForceInAppWebView = true,
+            ForceInteractiveSignIn = true,
+            LoginServerSingleDomainMode = true,
+            LoginServerProtocol = PatchProtocol.Http,
+            LoginServerHostname = ApaceAddress,
+            XalProtocol = PatchProtocol.Http,
+            XalHostname = string.Empty,
+            PlayfabApiProtocol = PatchProtocol.Http,
+            PlayfabApiHostname = string.Empty,
+            XboxAbProtocol = PatchProtocol.Http,
+            XboxAbHostname = string.Empty,
+            XboxLiveProtocol = PatchProtocol.Http,
+            XboxLiveHostname = string.Empty,
+        };
+    }
+
+
+    /// <summary>iOS simple mode mirrors the desktop patcher: only the locator is redirected, official login is kept.</summary>
+    private IosRequest BuildIosSimple()
+    {
+        return new IosRequest
+        {
+            ChangeLocatorAddress = true,
+            LocatorProtocol = iosLocatorProtocol,
+            LocatorHostname = iosLocatorHostname,
+            DisableSunsetTimeCheck = true,
+            DisableSpeedLimit = false,
+            ChangeAppName = true,
+            AppName = iosAppName,
+            RemoveDrm = true,
+            ChangeLoginServerAddress = false,
+            ChangeXalAuthAddress = false,
+            ChangePlayfabApiAddress = false,
+            ChangeXboxAbAddress = false,
+            ChangeXboxLiveAddress = false,
+            ForceInAppWebView = false,
+            ForceInteractiveSignIn = true,
+            LoginServerSingleDomainMode = true,
+            LoginServerProtocol = PatchProtocol.Http,
+            LoginServerHostname = string.Empty,
+            XalProtocol = PatchProtocol.Http,
+            XalHostname = string.Empty,
+            PlayfabApiProtocol = PatchProtocol.Http,
+            PlayfabApiHostname = string.Empty,
+            XboxAbProtocol = PatchProtocol.Http,
+            XboxAbHostname = string.Empty,
+            XboxLiveProtocol = PatchProtocol.Http,
+            XboxLiveHostname = string.Empty,
+        };
+    }
+
+    private IosRequest BuildIosAdvanced()
+    {
+        return new IosRequest
+        {
+            ChangeLocatorAddress = iosChangeLocator,
+            LocatorProtocol = iosLocatorProtocol,
+            LocatorHostname = iosLocatorHostname,
+            DisableSunsetTimeCheck = iosDisableSunset,
+            DisableSpeedLimit = iosDisableSpeedLimit,
+            ChangeAppName = iosChangeAppName,
+            AppName = iosAppName,
+            RemoveDrm = iosRemoveDrm,
+            ChangeLoginServerAddress = iosUseCustomAuth,
+            ChangeXalAuthAddress = iosChangeXal,
+            ChangePlayfabApiAddress = iosChangePlayfab,
+            ChangeXboxAbAddress = iosChangeXboxAb,
+            ChangeXboxLiveAddress = iosChangeXboxLive,
+            ForceInAppWebView = iosForceWebView,
+            ForceInteractiveSignIn = iosForceInteractive,
+            LoginServerSingleDomainMode = iosSingleDomain,
+            LoginServerProtocol = iosAuthProtocol,
+            LoginServerHostname = iosAuthHostname,
+            XalProtocol = iosXalProtocol,
+            XalHostname = iosXalHostname,
+            PlayfabApiProtocol = iosPlayfabProtocol,
+            PlayfabApiHostname = iosPlayfabHostname,
+            XboxAbProtocol = iosXboxAbProtocol,
+            XboxAbHostname = iosXboxAbHostname,
+            XboxLiveProtocol = iosXboxLiveProtocol,
+            XboxLiveHostname = iosXboxLiveHostname,
+        };
+    }
+
+
+    private void ViewJob(string jobId)
+    {
+        activeJobId = jobId;
+        logSnapshot = PatcherService.GetJob(jobId)?.GetLogSnapshot() ?? [];
+    }
+
+    private void CloseJobView()
+    {
+        activeJobId = null;
+        logSnapshot = [];
+        RemoveUploadedFile();
+    }
+
+    private string JobBadgeClass(PatchJob job)
+        => job.Status switch
+        {
+            PatchJobStatus.Succeeded => "bg-success",
+            PatchJobStatus.Failed => "bg-danger",
+            PatchJobStatus.Running => "bg-primary",
+            _ => "bg-secondary",
+        };
+
+    private static string FormatBytes(long bytes)
+        => bytes >= 1024 * 1024 * 1024 ? $"{bytes / (double)(1024 * 1024 * 1024):F2} GB"
+           : bytes >= 1024 * 1024 ? $"{bytes / (double)(1024 * 1024):F1} MB"
+           : $"{bytes / 1024.0:F0} KB";
+
+    private void ShowDialog(bool success, string message)
+    {
+        isSuccess = success;
+        dialogMessage = message;
+        showDialog = true;
+    }
+
+    private void CloseDialog()
+    {
+        showDialog = false;
+    }
+
+    public void Dispose()
+    {
+        pollTimer?.Dispose();
+        uploadCts?.Cancel();
+        uploadCts?.Dispose();
+
+        // orphaned uploads (never turned into a job) should not linger on disk
+        if (uploadedPath is not null)
+        {
+            TryDelete(uploadedPath);
+        }
+    }
+}
+
