@@ -1,0 +1,29 @@
+{
+    "Prerequisites":
+    [
+        {
+            "Type": "Basic",
+            "RequiredPatch": "extend-libgenoa"
+        },
+        {
+            "Type": "Conditional",
+            "RequiredPatch": "allow-http",
+            "VariableName": "xboxabprotocol",
+            "VariableValue": "http",
+            "Equality": "StartsWith"
+        }
+    ],
+    "VariablesUsed":
+    [
+        "xboxabprotocol",
+        "xboxabhostname"
+    ],
+    "BinaryVariables":
+    [
+        {
+            "File": "lib/arm64-v8a/libgenoa.so",
+            "HexAddress": "0x07000280",
+            "TemplateString": "${xboxabprotocol}www.${xboxabhostname}"
+        }
+    ]
+}

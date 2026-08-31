@@ -1,0 +1,11 @@
+--- a/smali/com/microsoft/onlineid/sts/response/parsers/SignatureValidator.smali
++++ b/smali/com/microsoft/onlineid/sts/response/parsers/SignatureValidator.smali
+@@ -407,6 +407,8 @@
+         }
+     .end annotation
+ 
++    return-void
++
+     .prologue
+     const/4 v10, 0x2
+ 

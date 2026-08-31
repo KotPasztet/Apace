@@ -1,0 +1,12 @@
+{
+    "Prerequisites":
+    [
+    ],
+    "VariablesUsed":
+    [
+        "package_name"
+    ],
+    "BinaryVariables":
+    [
+    ]
+}

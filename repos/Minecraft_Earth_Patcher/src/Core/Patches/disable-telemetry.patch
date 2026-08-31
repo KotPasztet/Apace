@@ -1,0 +1,122 @@
+--- a/smali/com/microsoft/appcenter/channel/DefaultChannel.smali
++++ b/smali/com/microsoft/appcenter/channel/DefaultChannel.smali
+@@ -1104,7 +1104,8 @@
+ 
+     invoke-direct {v4, p0, p1, p4}, Lcom/microsoft/appcenter/channel/DefaultChannel$2;-><init>(Lcom/microsoft/appcenter/channel/DefaultChannel;Lcom/microsoft/appcenter/channel/DefaultChannel$GroupState;Ljava/lang/String;)V
+ 
+-    invoke-interface {v1, v2, v3, v0, v4}, Lcom/microsoft/appcenter/ingestion/Ingestion;->sendAsync(Ljava/lang/String;Ljava/util/UUID;Lcom/microsoft/appcenter/ingestion/models/LogContainer;Lcom/microsoft/appcenter/http/ServiceCallback;)Lcom/microsoft/appcenter/http/ServiceCall;
++    const/4 v3, 0x0
++    invoke-interface {v4, v3}, Lcom/microsoft/appcenter/http/ServiceCallback;->onCallSucceeded(Lcom/microsoft/appcenter/http/HttpResponse;)V
+ 
+     .line 560
+     iget-object v1, p0, Lcom/microsoft/appcenter/channel/DefaultChannel;->mAppCenterHandler:Landroid/os/Handler;
+--- a/smali/com/microsoft/xbox/idp/interop/Interop.smali
++++ b/smali/com/microsoft/xbox/idp/interop/Interop.smali
+@@ -196,9 +196,6 @@
+ 
+     invoke-virtual {v1, v2}, Lcom/microsoft/cll/android/AndroidCll;->setDebugVerbosity(Lcom/microsoft/cll/android/Verbosity;)V
+ 
+-    .line 196
+-    invoke-virtual {v1}, Lcom/microsoft/cll/android/AndroidCll;->start()V
+-
+     .line 198
+     .end local v0    # "callback":Lcom/microsoft/xbox/idp/interop/CLLCallback;
+     .end local v1    # "cll":Lcom/microsoft/cll/android/AndroidCll;
+@@ -788,8 +785,6 @@
+ 
+     move-object v2, p2
+ 
+-    invoke-virtual/range {v0 .. v8}, Lcom/microsoft/cll/android/AndroidCll;->log(Ljava/lang/String;Ljava/lang/String;Lcom/microsoft/cll/android/EventEnums$Latency;Lcom/microsoft/cll/android/EventEnums$Persistence;Ljava/util/EnumSet;DLjava/util/List;)V
+-
+     goto :goto_0
+ .end method
+ 
+--- a/smali/com/microsoft/xbox/idp/telemetry/helpers/UTCTelemetry.smali
++++ b/smali/com/microsoft/xbox/idp/telemetry/helpers/UTCTelemetry.smali
+@@ -37,7 +37,6 @@
+ 
+     move-result-object v1
+ 
+-    invoke-virtual {v1, p0}, Lcom/microsoft/cll/android/AndroidCll;->log(LMicrosoft/Telemetry/Base;)V
+     :try_end_0
+     .catch Ljava/lang/NullPointerException; {:try_start_0 .. :try_end_0} :catch_0
+ 
+--- a/smali/com/mojang/minecraftpe/MainActivity.smali
++++ b/smali/com/mojang/minecraftpe/MainActivity.smali
+@@ -4896,7 +4896,12 @@
+ .method native isAndroidTrial()Z
+ .end method
+ 
+-.method native isBrazeEnabled()Z
++.method public isBrazeEnabled()Z
++    .locals 1
++
++    const/4 v0, 0x0
++
++    return v0
+ .end method
+ 
+ .method protected isDemo()Z
+@@ -5874,53 +5879,6 @@
+ 
+     invoke-direct {p0, v5}, Lcom/mojang/minecraftpe/MainActivity;->setIsForeground(Ljava/lang/Boolean;)V
+ 
+-    .line 505
+-    new-instance v1, Lcom/mojang/minecraftpe/MainActivity$1;
+-
+-    invoke-direct {v1, p0}, Lcom/mojang/minecraftpe/MainActivity$1;-><init>(Lcom/mojang/minecraftpe/MainActivity;)V
+-
+-    .line 531
+-    .local v1, "conversionListener":Lcom/appsflyer/AppsFlyerConversionListener;
+-    invoke-static {}, Lcom/appsflyer/AppsFlyerLib;->getInstance()Lcom/appsflyer/AppsFlyerLib;
+-
+-    move-result-object v5
+-
+-    const-string/jumbo v7, "jBHFfePzvJhHdfvijAcLoQ"
+-
+-    invoke-virtual {p0}, Lcom/mojang/minecraftpe/MainActivity;->getApplicationContext()Landroid/content/Context;
+-
+-    move-result-object v8
+-
+-    invoke-virtual {v5, v7, v1, v8}, Lcom/appsflyer/AppsFlyerLib;->init(Ljava/lang/String;Lcom/appsflyer/AppsFlyerConversionListener;Landroid/content/Context;)Lcom/appsflyer/AppsFlyerLib;
+-
+-    .line 532
+-    invoke-static {}, Lcom/appsflyer/AppsFlyerLib;->getInstance()Lcom/appsflyer/AppsFlyerLib;
+-
+-    move-result-object v5
+-
+-    invoke-virtual {p0}, Lcom/mojang/minecraftpe/MainActivity;->getApplication()Landroid/app/Application;
+-
+-    move-result-object v7
+-
+-    invoke-virtual {v5, v7}, Lcom/appsflyer/AppsFlyerLib;->startTracking(Landroid/content/Context;)V
+-
+-    .line 533
+-    invoke-static {}, Lcom/appsflyer/AppsFlyerLib;->getInstance()Lcom/appsflyer/AppsFlyerLib;
+-
+-    move-result-object v5
+-
+-    invoke-virtual {p0}, Lcom/mojang/minecraftpe/MainActivity;->getApplicationContext()Landroid/content/Context;
+-
+-    move-result-object v7
+-
+-    invoke-virtual {v5, v7}, Lcom/appsflyer/AppsFlyerLib;->getAppsFlyerUID(Landroid/content/Context;)Ljava/lang/String;
+-
+-    move-result-object v0
+-
+-    .line 534
+-    .local v0, "appsFlyerId":Ljava/lang/String;
+-    invoke-virtual {p0, v0}, Lcom/mojang/minecraftpe/MainActivity;->nativeHandleAppsFlyerInitialized(Ljava/lang/String;)V
+-
+     .line 537
+     new-instance v5, Ljava/lang/Thread;
+ 
+@@ -5957,8 +5915,6 @@
+     return-void
+ 
+     .line 496
+-    .end local v0    # "appsFlyerId":Ljava/lang/String;
+-    .end local v1    # "conversionListener":Lcom/appsflyer/AppsFlyerConversionListener;
+     :catch_0
+     move-exception v3
+ 

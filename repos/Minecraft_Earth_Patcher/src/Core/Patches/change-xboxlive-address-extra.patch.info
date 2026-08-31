@@ -1,0 +1,34 @@
+{
+    "Prerequisites":
+    [
+        {
+            "Type": "Basic",
+            "RequiredPatch": "extend-libgenoa"
+        },
+        {
+            "Type": "Conditional",
+            "RequiredPatch": "allow-http",
+            "VariableName": "xboxliveprotocol",
+            "VariableValue": "http",
+            "Equality": "StartsWith"
+        }
+    ],
+    "VariablesUsed":
+    [
+        "xboxliveprotocol",
+        "xboxlivehostname"
+    ],
+    "BinaryVariables":
+    [
+        {
+            "File": "lib/arm64-v8a/libgenoa.so",
+            "HexAddress": "0x07000180",
+            "TemplateString": "${xboxliveprotocol}profile.${xboxlivehostname}"
+        },
+        {
+            "File": "lib/arm64-v8a/libgenoa.so",
+            "HexAddress": "0x07000200",
+            "TemplateString": "${xboxliveprotocol}minecraft-wallet.commerce.gameservices.${xboxlivehostname}/"
+        }
+    ]
+}

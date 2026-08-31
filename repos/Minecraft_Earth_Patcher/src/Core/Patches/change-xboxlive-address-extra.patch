@@ -1,0 +1,331 @@
+--- a/lib/arm64-v8a/libgenoa.so.hexdump
++++ b/lib/arm64-v8a/libgenoa.so.hexdump
+@@ -1009266,6 +1009266,6 @@
+-00f66710  f6 03 13 aa e0 03 1a 32  7f fe 05 a9 df 0e 05 f8  |.......2........|
+-00f66720  48 7e fe 97 a9 0d 02 d0  29 d5 26 91 28 0b 02 d0  |H~......).&.(...|
+-00f66730  24 85 40 ad 22 c1 c2 3c  23 01 c0 3d 00 8d c1 3d  |$.@."..<#..=...=|
+-00f66740  60 32 00 f9 02 c0 82 3c  04 84 00 ad 03 00 80 3d  |`2.....<.......=|
+-00f66750  1f f0 00 39 e0 03 15 aa  e1 03 16 aa e2 03 14 aa  |...9............|
+-00f66760  c0 02 80 3d 4b 07 fe 97  f6 03 13 aa e0 07 1c 32  |...=K..........2|
++00f66710  76 42 01 91 c0 04 03 d0  00 00 08 91 09 44 40 b8  |vB...........D@.|
++00f66720  28 00 80 d2 c0 0a 00 f9  c8 02 00 f9 c9 06 00 f9  |(...............|
++00f66730  1f 20 03 d5 1f 20 03 d5  1f 20 03 d5 1f 20 03 d5  |. ... ... ... ..|
++00f66740  1f 20 03 d5 1f 20 03 d5  1f 20 03 d5 1f 20 03 d5  |. ... ... ... ..|
++00f66750  1f 20 03 d5 1f 20 03 d5  1f 20 03 d5 1f 20 03 d5  |. ... ... ... ..|
++00f66760  1f 20 03 d5 1f 20 03 d5  f6 03 13 aa e0 07 1c 32  |. ... .........2|
+@@ -1617294,4 +1617294,4 @@
+-018ad8d0  e0 03 1b 32 db 61 d9 97  49 c2 01 b0 28 c1 01 d0  |...2.a..I...(...|
+-018ad8e0  29 05 17 91 00 3d c1 3d  21 c1 c0 3c 22 01 c0 3d  |)....=.=!..<"..=|
+-018ad8f0  e0 83 00 f9 e0 3f 80 3d  01 c0 80 3c 02 00 80 3d  |.....?.=...<...=|
+-018ad900  1f 70 00 39 e8 a3 00 91  e0 03 17 aa 42 ed dd 97  |.p.9........B...|
++018ad8d0  80 ba 02 f0 00 00 06 91  09 44 40 b8 28 00 80 d2  |.........D@.(...|
++018ad8e0  1f 20 03 d5 1f 20 03 d5  1f 20 03 d5 1f 20 03 d5  |. ... ... ... ..|
++018ad8f0  e0 83 00 f9 e8 7b 00 f9  e9 7f 00 f9 1f 20 03 d5  |.....{....... ..|
++018ad900  1f 20 03 d5 e8 a3 00 91  e0 03 17 aa 42 ed dd 97  |. ..........B...|
+@@ -1617314 +1617314 @@
+-018ada10  e8 c3 43 39 48 fb 07 36  e0 83 40 f9 79 f0 d8 97  |..C9H..6..@.y...|
++018ada10  e8 c3 43 39 48 fb 07 36  e0 83 40 f9 1f 20 03 d5  |..C9H..6..@.. ..|
+@@ -7340057,16 +7340057,16 @@
+-07000180  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000190  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-070001a0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-070001b0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-070001c0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-070001d0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-070001e0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-070001f0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000200  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000210  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000220  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000230  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000240  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000250  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000260  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+-07000270  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
++07000180  31 00 00 00 24 7b 78 62  6f 78 6c 69 76 65 70 72  |1...${xboxlivepr|
++07000190  6f 74 6f 63 6f 6c 7d 3a  2f 2f 70 72 6f 66 69 6c  |otocol}://profil|
++070001a0  65 2e 24 7b 78 62 6f 78  6c 69 76 65 68 6f 73 74  |e.${xboxlivehost|
++070001b0  6e 61 6d 65 7d 00 00 00  00 00 00 00 00 00 00 00  |name}...........|
++070001c0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
++070001d0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
++070001e0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
++070001f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
++07000200  51 00 00 00 24 7b 78 62  6f 78 6c 69 76 65 70 72  |Q...${xboxlivepr|
++07000210  6f 74 6f 63 6f 6c 7d 3a  2f 2f 6d 69 6e 65 63 72  |otocol}://minecr|
++07000220  61 66 74 2d 77 61 6c 6c  65 74 2e 63 6f 6d 6d 65  |aft-wallet.comme|
++07000230  72 63 65 2e 67 61 6d 65  73 65 72 76 69 63 65 73  |rce.gameservices|
++07000240  2e 24 7b 78 62 6f 78 6c  69 76 65 68 6f 73 74 6e  |.${xboxlivehostn|
++07000250  61 6d 65 7d 2f 00 00 00  00 00 00 00 00 00 00 00  |ame}/...........|
++07000260  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
++07000270  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+--- a/smali/com/microsoft/xbox/idp/services/EndpointsProd.smali
++++ b/smali/com/microsoft/xbox/idp/services/EndpointsProd.smali
+@@ -24,7 +24,7 @@
+ 
+     .prologue
+     .line 14
+-    const-string/jumbo v0, "https://accounts.xboxlive.com"
++    const-string/jumbo v0, "${xboxliveprotocol}accounts.${xboxlivehostname}"
+ 
+     return-object v0
+ .end method
+@@ -34,7 +34,7 @@
+ 
+     .prologue
+     .line 29
+-    const-string/jumbo v0, "https://privacy.xboxlive.com"
++    const-string/jumbo v0, "${xboxliveprotocol}privacy.${xboxlivehostname}"
+ 
+     return-object v0
+ .end method
+@@ -44,7 +44,7 @@
+ 
+     .prologue
+     .line 9
+-    const-string/jumbo v0, "https://profile.xboxlive.com"
++    const-string/jumbo v0, "${xboxliveprotocol}profile.${xboxlivehostname}"
+ 
+     return-object v0
+ .end method
+@@ -54,7 +54,7 @@
+ 
+     .prologue
+     .line 19
+-    const-string/jumbo v0, "https://accountstroubleshooter.xboxlive.com"
++    const-string/jumbo v0, "${xboxliveprotocol}accountstroubleshooter.${xboxlivehostname}"
+ 
+     return-object v0
+ .end method
+@@ -64,7 +64,7 @@
+ 
+     .prologue
+     .line 24
+-    const-string/jumbo v0, "https://user.mgt.xboxlive.com"
++    const-string/jumbo v0, "${xboxliveprotocol}user.mgt.${xboxlivehostname}"
+ 
+     return-object v0
+ .end method
+diff --git a/smali/com/microsoft/xbox/toolkit/network/XboxLiveEnvironment.smali b/smali/com/microsoft/xbox/toolkit/network/XboxLiveEnvironment.smali
+index fcc53b9..e2c7dd3 100644
+--- a/smali/com/microsoft/xbox/toolkit/network/XboxLiveEnvironment.smali
++++ b/smali/com/microsoft/xbox/toolkit/network/XboxLiveEnvironment.smali
+@@ -112,7 +112,7 @@
+     return-object v0
+ 
+     :pswitch_2
+-    const-string/jumbo v0, "https://social.xboxlive.com/users/xuid(%s)/people/identityshared/xuids?method=add"
++    const-string/jumbo v0, "${xboxliveprotocol}social.${xboxlivehostname}/users/xuid(%s)/people/identityshared/xuids?method=add"
+ 
+     goto :goto_0
+ 
+@@ -143,7 +143,7 @@
+ 
+     .prologue
+     .line 171
+-    const-string/jumbo v0, "https://settings.xboxlive.com/settings/feature/friendfinder/settings"
++    const-string/jumbo v0, "${xboxliveprotocol}settings.${xboxlivehostname}/settings/feature/friendfinder/settings"
+ 
+     return-object v0
+ .end method
+@@ -188,7 +188,7 @@
+ 
+     .line 209
+     :pswitch_2
+-    const-string/jumbo v0, "https://profile.xboxlive.com/users/gt(%s)/profile/settings?settings=AppDisplayName,DisplayPic,Gamerscore,Gamertag,PublicGamerpic,XboxOneRep"
++    const-string/jumbo v0, "${xboxliveprotocol}profile.${xboxlivehostname}/users/gt(%s)/profile/settings?settings=AppDisplayName,DisplayPic,Gamerscore,Gamertag,PublicGamerpic,XboxOneRep"
+ 
+     goto :goto_0
+ 
+@@ -209,7 +209,7 @@
+ 
+     .prologue
+     .line 159
+-    const-string/jumbo v0, "https://privacy.xboxlive.com/users/xuid(%s)/people/mute"
++    const-string/jumbo v0, "${xboxliveprotocol}privacy.${xboxlivehostname}/users/xuid(%s)/people/mute"
+ 
+     return-object v0
+ .end method
+@@ -219,7 +219,7 @@
+ 
+     .prologue
+     .line 175
+-    const-string/jumbo v0, "https://peoplehub.xboxlive.com/users/me/friendfinder"
++    const-string/jumbo v0, "${xboxliveprotocol}peoplehub.${xboxlivehostname}/users/me/friendfinder"
+ 
+     return-object v0
+ .end method
+@@ -229,7 +229,7 @@
+ 
+     .prologue
+     .line 191
+-    const-string/jumbo v0, "https://peoplehub.xboxlive.com/users/me/people/recommendations"
++    const-string/jumbo v0, "${xboxliveprotocol}peoplehub.${xboxlivehostname}/users/me/people/recommendations"
+ 
+     return-object v0
+ .end method
+@@ -274,7 +274,7 @@
+ 
+     .line 86
+     :pswitch_2
+-    const-string/jumbo v0, "https://social.xboxlive.com/users/me/people/favorites/xuids?method=%s"
++    const-string/jumbo v0, "${xboxliveprotocol}social.${xboxlivehostname}/users/me/people/favorites/xuids?method=%s"
+ 
+     goto :goto_0
+ 
+@@ -330,7 +330,7 @@
+ 
+     .line 72
+     :pswitch_2
+-    const-string/jumbo v0, "https://privacy.xboxlive.com/users/xuid(%s)/people/never"
++    const-string/jumbo v0, "${xboxliveprotocol}privacy.${xboxlivehostname}/users/xuid(%s)/people/never"
+ 
+     goto :goto_0
+ 
+@@ -351,7 +351,7 @@
+ 
+     .prologue
+     .line 179
+-    const-string/jumbo v0, "https://privacy.xboxlive.com/users/me/privacy/settings/%s"
++    const-string/jumbo v0, "${xboxliveprotocol}privacy.${xboxlivehostname}/users/me/privacy/settings/%s"
+ 
+     return-object v0
+ .end method
+@@ -390,7 +390,7 @@
+     return-object v0
+ 
+     :pswitch_2
+-    const-string/jumbo v0, "https://social.xboxlive.com/users/xuid(%s)/summary"
++    const-string/jumbo v0, "${xboxliveprotocol}social.${xboxlivehostname}/users/xuid(%s)/summary"
+ 
+     goto :goto_0
+ 
+@@ -450,7 +450,7 @@
+     return-object v0
+ 
+     :pswitch_2
+-    const-string/jumbo v0, "https://social.xboxlive.com/users/xuid(%s)/people/identityshared/xuids?method=remove"
++    const-string/jumbo v0, "${xboxliveprotocol}social.${xboxlivehostname}/users/xuid(%s)/people/identityshared/xuids?method=remove"
+ 
+     goto :goto_0
+ 
+@@ -471,7 +471,7 @@
+ 
+     .prologue
+     .line 183
+-    const-string/jumbo v0, "https://friendfinder.xboxlive.com/users/me/networks/%s/optin"
++    const-string/jumbo v0, "${xboxliveprotocol}friendfinder.${xboxlivehostname}/users/me/networks/%s/optin"
+ 
+     return-object v0
+ .end method
+@@ -491,7 +491,7 @@
+ 
+     .prologue
+     .line 163
+-    const-string/jumbo v0, "https://reputation.xboxlive.com/users/xuid(%s)/feedback"
++    const-string/jumbo v0, "${xboxliveprotocol}reputation.${xboxlivehostname}/users/xuid(%s)/feedback"
+ 
+     return-object v0
+ .end method
+@@ -501,7 +501,7 @@
+ 
+     .prologue
+     .line 131
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/tenure/%s.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/tenure/%s.png"
+ 
+     return-object v0
+ .end method
+@@ -511,7 +511,7 @@
+ 
+     .prologue
+     .line 187
+-    const-string/jumbo v0, "https://thirdpartytokens.xboxlive.com/users/me/networks/%s/token"
++    const-string/jumbo v0, "${xboxliveprotocol}thirdpartytokens.${xboxlivehostname}/users/me/networks/%s/token"
+ 
+     return-object v0
+ .end method
+@@ -566,7 +566,7 @@
+ 
+     .line 34
+     :pswitch_2
+-    const-string/jumbo v0, "https://profile.xboxlive.com/users/batch/profile/settings"
++    const-string/jumbo v0, "${xboxliveprotocol}profile.${xboxlivehostname}/users/batch/profile/settings"
+ 
+     goto :goto_0
+ 
+@@ -587,7 +587,7 @@
+ 
+     .prologue
+     .line 167
+-    const-string/jumbo v0, "https://privacy.xboxlive.com/users/me/privacy/settings"
++    const-string/jumbo v0, "${xboxliveprotocol}privacy.${xboxlivehostname}/users/me/privacy/settings"
+ 
+     return-object v0
+ .end method
+@@ -748,49 +748,49 @@
+ 
+     .line 137
+     :pswitch_0
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/cheater.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/cheater.png"
+ 
+     goto :goto_1
+ 
+     .line 139
+     :pswitch_1
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/launch/xboxoriginalteam.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/launch/xboxoriginalteam.png"
+ 
+     goto :goto_1
+ 
+     .line 141
+     :pswitch_2
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/launch/xboxlivelaunchteam.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/launch/xboxlivelaunchteam.png"
+ 
+     goto :goto_1
+ 
+     .line 143
+     :pswitch_3
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/launch/launchteam.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/launch/launchteam.png"
+ 
+     goto :goto_1
+ 
+     .line 145
+     :pswitch_4
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/launch/nxeteam.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/launch/nxeteam.png"
+ 
+     goto :goto_1
+ 
+     .line 147
+     :pswitch_5
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/launch/kinectteam.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/launch/kinectteam.png"
+ 
+     goto :goto_1
+ 
+     .line 149
+     :pswitch_6
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/launch/xboxoneteam.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/launch/xboxoneteam.png"
+ 
+     goto :goto_1
+ 
+     .line 151
+     :pswitch_7
+-    const-string/jumbo v0, "http://dlassets.xboxlive.com/public/content/ppl/watermarks/launch/xboxnxoeteam.png"
++    const-string/jumbo v0, "${xboxliveprotocol}dlassets.${xboxlivehostname}/public/content/ppl/watermarks/launch/xboxnxoeteam.png"
+ 
+     goto :goto_1
+ 
+@@ -872,7 +872,7 @@
+ 
+     .line 100
+     :pswitch_2
+-    const-string/jumbo v0, "https://social.xboxlive.com/users/me/people/xuids?method=%s"
++    const-string/jumbo v0, "${xboxliveprotocol}social.${xboxlivehostname}/users/me/people/xuids?method=%s"
+ 
+     goto :goto_0
+ 

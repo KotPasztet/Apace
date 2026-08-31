@@ -1,0 +1,10 @@
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -79,6 +79,7 @@
+         <activity android:configChanges="orientation|screenSize" android:name="com.microsoft.xboxtcui.FbLoginShimActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+         <activity android:configChanges="orientation|screenSize" android:name="com.microsoft.xboxtcui.FbShareShimActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+         <meta-data android:name="com.google.ar.core" android:value="required"/>
++        <meta-data android:name="com.google.ar.core.apikey" android:value="DummyKeyToBypassInitCheck000" />
+         <activity android:configChanges="keyboardHidden|orientation|screenSize" android:excludeFromRecents="true" android:exported="false" android:launchMode="singleTop" android:name="com.google.ar.core.InstallActivity" android:theme="@android:style/Theme.Material.Light.Dialog.Alert"/>
+         <meta-data android:name="com.google.ar.core.min_apk_version" android:value="200501000"/>
+         <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version"/>

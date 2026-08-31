@@ -1,0 +1,222 @@
+--- a/res/xml/network_security_config.xml
++++ b/res/xml/network_security_config.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <network-security-config>
+-    <base-config>
++    <base-config cleartextTrafficPermitted="true">
+         <trust-anchors>
+             <certificates src="system" />
+             <certificates src="user" />
+--- a/smali/com/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper.smali
++++ b/smali/com/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper.smali
+@@ -4,7 +4,7 @@
+ 
+ 
+ # instance fields
+-.field private _connection:Ljavax/net/ssl/HttpsURLConnection;
++.field private _connection:Ljava/net/HttpURLConnection;
+ 
+ .field private _url:Ljava/net/URL;
+ 
+@@ -43,7 +43,7 @@
+ 
+     .prologue
+     .line 205
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+     if-nez v0, :cond_0
+ 
+@@ -73,9 +73,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 168
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0, p1, p2}, Ljavax/net/ssl/HttpsURLConnection;->addRequestProperty(Ljava/lang/String;Ljava/lang/String;)V
++    invoke-virtual {v0, p1, p2}, Ljava/net/HttpURLConnection;->addRequestProperty(Ljava/lang/String;Ljava/lang/String;)V
+ 
+     .line 169
+     return-void
+@@ -89,9 +89,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 149
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0}, Ljavax/net/ssl/HttpsURLConnection;->disconnect()V
++    invoke-virtual {v0}, Ljava/net/HttpURLConnection;->disconnect()V
+ 
+     .line 150
+     return-void
+@@ -105,9 +105,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 158
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0}, Ljavax/net/ssl/HttpsURLConnection;->getContentLength()I
++    invoke-virtual {v0}, Ljava/net/HttpURLConnection;->getContentLength()I
+ 
+     move-result v0
+ 
+@@ -122,9 +122,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 140
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0}, Ljavax/net/ssl/HttpsURLConnection;->getDate()J
++    invoke-virtual {v0}, Ljava/net/HttpURLConnection;->getDate()J
+ 
+     move-result-wide v0
+ 
+@@ -139,9 +139,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 131
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0}, Ljavax/net/ssl/HttpsURLConnection;->getErrorStream()Ljava/io/InputStream;
++    invoke-virtual {v0}, Ljava/net/HttpURLConnection;->getErrorStream()Ljava/io/InputStream;
+ 
+     move-result-object v0
+ 
+@@ -161,9 +161,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 122
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0}, Ljavax/net/ssl/HttpsURLConnection;->getInputStream()Ljava/io/InputStream;
++    invoke-virtual {v0}, Ljava/net/HttpURLConnection;->getInputStream()Ljava/io/InputStream;
+ 
+     move-result-object v0
+ 
+@@ -183,9 +183,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 104
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0}, Ljavax/net/ssl/HttpsURLConnection;->getOutputStream()Ljava/io/OutputStream;
++    invoke-virtual {v0}, Ljava/net/HttpURLConnection;->getOutputStream()Ljava/io/OutputStream;
+ 
+     move-result-object v0
+ 
+@@ -200,9 +200,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 86
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0}, Ljavax/net/ssl/HttpsURLConnection;->getRequestMethod()Ljava/lang/String;
++    invoke-virtual {v0}, Ljava/net/HttpURLConnection;->getRequestMethod()Ljava/lang/String;
+ 
+     move-result-object v0
+ 
+@@ -222,9 +222,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 113
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0}, Ljavax/net/ssl/HttpsURLConnection;->getResponseCode()I
++    invoke-virtual {v0}, Ljava/net/HttpURLConnection;->getResponseCode()I
+ 
+     move-result v0
+ 
+@@ -247,9 +247,9 @@
+ 
+     move-result-object v0
+ 
+-    check-cast v0, Ljavax/net/ssl/HttpsURLConnection;
++    check-cast v0, Ljava/net/HttpURLConnection;
+ 
+-    iput-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iput-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+     .line 42
+     return-void
+@@ -264,9 +264,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 59
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0, p1}, Ljavax/net/ssl/HttpsURLConnection;->setConnectTimeout(I)V
++    invoke-virtual {v0, p1}, Ljava/net/HttpURLConnection;->setConnectTimeout(I)V
+ 
+     .line 60
+     return-void
+@@ -281,9 +281,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 77
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0, p1}, Ljavax/net/ssl/HttpsURLConnection;->setDoInput(Z)V
++    invoke-virtual {v0, p1}, Ljava/net/HttpURLConnection;->setDoInput(Z)V
+ 
+     .line 78
+     return-void
+@@ -298,9 +298,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 95
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0, p1}, Ljavax/net/ssl/HttpsURLConnection;->setDoOutput(Z)V
++    invoke-virtual {v0, p1}, Ljava/net/HttpURLConnection;->setDoOutput(Z)V
+ 
+     .line 96
+     return-void
+@@ -315,9 +315,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 68
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0, p1}, Ljavax/net/ssl/HttpsURLConnection;->setReadTimeout(I)V
++    invoke-virtual {v0, p1}, Ljava/net/HttpURLConnection;->setReadTimeout(I)V
+ 
+     .line 69
+     return-void
+@@ -337,9 +337,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 50
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0, p1}, Ljavax/net/ssl/HttpsURLConnection;->setRequestMethod(Ljava/lang/String;)V
++    invoke-virtual {v0, p1}, Ljava/net/HttpURLConnection;->setRequestMethod(Ljava/lang/String;)V
+ 
+     .line 51
+     return-void
+@@ -385,9 +385,9 @@
+     invoke-direct {p0}, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->verifyConnectionIsOpened()V
+ 
+     .line 178
+-    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljavax/net/ssl/HttpsURLConnection;
++    iget-object v0, p0, Lcom/microsoft/onlineid/internal/transport/HttpsURLConnectionWrapper;->_connection:Ljava/net/HttpURLConnection;
+ 
+-    invoke-virtual {v0, p1}, Ljavax/net/ssl/HttpsURLConnection;->setUseCaches(Z)V
++    invoke-virtual {v0, p1}, Ljava/net/HttpURLConnection;->setUseCaches(Z)V
+ 
+     .line 179
+     return-void

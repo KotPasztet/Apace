@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/Cli/MCEPatcher.Cli.csproj" />
+  <Project Path="src/Core/MCEPatcher.Core.csproj" />
+  <Project Path="src/UI.Desktop/MCEPatcher.UI.Desktop.csproj" />
+  <Project Path="src/UI/MCEPatcher.UI.csproj" />
+</Solution>
