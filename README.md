@@ -12,6 +12,15 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 > [!NOTE]
 > **Active development.** Server is functional — maps, buildplates, challenges, daily rewards, adventures, crafting, and more are working. Performance improvements planned.
 
+> [!TIP]
+> ### :zap: Dev branch news — v2 persistent server
+>
+> I've done some math: on my configuration, **Apace `dev` loads buildplates 3471% faster than Solace/Apace `main`** — the wait time is reduced by **97.2%**. Isn't that crazy?
+>
+> Instead of booting a whole new Minecraft server per buildplate, `dev` runs **one persistent Fabric server** hosting every buildplate as an on-demand dimension (created in ~1s, world data imported/exported on the fly). It will land in the `main` branch soon.
+>
+> We are millimeters (McDonald's sauces, for our fellow American friends) away from actually releasing this — the bugs that came with the dev branch and made buildplates **100% air** have been fixed (world data is now really imported on join and saved on leave).
+
 ## Disclaimer
 
 **Apace** is an independent, community-driven project and is **not affiliated with, authorized, maintained, endorsed, or sponsored** by Microsoft Corporation, Mojang Studios, or any of their affiliates or subsidiaries.
