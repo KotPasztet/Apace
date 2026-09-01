@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.Authorization
 @using System.Text.RegularExpressions
+@using System.Globalization
 @using Solace.LauncherUI.Utils
 @attribute [Authorize(Policy = Permissions.ViewFabricLogs)]
 @implements IDisposable
@@ -73,7 +74,7 @@
                 <div class="log-content">
                     @foreach (var (timestamp, threadLevel, message, levelClass) in GetVisibleLines())
                     {
-                        <div class="log-line"><span class="log-time">[@timestamp]</span> <span class="log-level @levelClass">[@threadLevel]</span> <span class="log-msg">@message</span></div>
+                        <div class="log-line"><span class="log-time">[@FormatTimestamp(timestamp)]</span> <span class="log-level @levelClass">[@threadLevel]</span> <span class="log-msg">@message</span></div>
                     }
                 </div>
             </div>
@@ -100,6 +101,7 @@
     private long _lastFileSize = -1;
     private PeriodicTimer? _pollTimer;
     private CancellationTokenSource? _cts;
+    private TimeZoneInfo? _userTimeZone;
 
     protected override async Task OnInitializedAsync()
     {
@@ -269,11 +271,58 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // The page is statically prerendered, so JS interop is only available
+        // once the circuit exists — resolve the browser time zone here, then
+        // re-render so the already-parsed log lines get converted.
+        if (firstRender && _userTimeZone is null)
+        {
+            _userTimeZone = await GetUserTimeZoneAsync();
+            StateHasChanged();
+        }
+
         if (_lines.Count > 0 && !_scrollerInitialized)
         {
             await JS.InvokeVoidAsync("initFabricLogScroller", _logContainerRef);
             _scrollerInitialized = true;
         }
+    }
+
+    private async Task<TimeZoneInfo> GetUserTimeZoneAsync()
+    {
+        var tzId = await JS.InvokeAsync<string>("eval", "Intl.DateTimeFormat().resolvedOptions().timeZone");
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(tzId);
+        }
+        catch
+        {
+            return TimeZoneInfo.Local;
+        }
+    }
+
+    // The Fabric server prints timestamps using the JVM default timezone, which
+    // is the same container the launcher UI runs in (TimeZoneInfo.Local). The
+    // log line only carries a time-of-day, so anchor it to today's date; if the
+    // result is in the (near) future, the line was written before midnight, so
+    // step back one day. Then convert server-local -> UTC -> user timezone.
+    private string FormatTimestamp(string timestamp)
+    {
+        if (_userTimeZone is null
+            || !TimeSpan.TryParseExact(timestamp, @"hh\:mm\:ss", CultureInfo.InvariantCulture, out var time))
+        {
+            return timestamp;
+        }
+
+        var serverNow = DateTime.Now;
+        var candidate = serverNow.Date + time;
+        if (candidate > serverNow.AddMinutes(5))
+        {
+            candidate = candidate.AddDays(-1);
+        }
+
+        var utc = TimeZoneInfo.ConvertTimeToUtc(
+            DateTime.SpecifyKind(candidate, DateTimeKind.Unspecified), TimeZoneInfo.Local);
+        return TimeZoneInfo.ConvertTimeFromUtc(utc, _userTimeZone).ToString("HH:mm:ss");
     }
 
     // Debug entries are hidden by default; the 🐛 toggle in the header shows them.
@@ -293,7 +342,7 @@
         var text = string.Join("\n", GetVisibleLines().Select(l =>
             string.IsNullOrEmpty(l.threadLevel)
                 ? l.message
-                : $"[{l.timestamp}] [{l.threadLevel}]: {l.message}"));
+                : $"[{FormatTimestamp(l.timestamp)}] [{l.threadLevel}]: {l.message}"));
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
     }
 
