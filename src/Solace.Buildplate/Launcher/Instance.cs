@@ -36,6 +36,7 @@ public sealed class Instance
     private readonly string _buildplateId;
     private readonly BuildplateSource _buildplateSource;
     public readonly string InstanceId;
+    public readonly DateTime CreatedAt = DateTime.UtcNow;
     public string? PlayerId => _playerId;
     private readonly bool _survival;
     private readonly bool _night;
