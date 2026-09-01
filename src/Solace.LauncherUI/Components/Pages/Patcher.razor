@@ -26,7 +26,7 @@
     @* While a patch job is queued/running the user is locked on this page: the patcher
        temporarily takes over the process working directory and the rest of the panel
        does not work correctly until the job finishes. *@
-    <NavigationLock ConfirmExternalNavigation="true" OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
+    <NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
 
     @if (ActiveJob is null)
     {
@@ -591,7 +591,7 @@
                                 case PatchJobStatus.Queued: <span class="file-status text-muted">Queued</span> break;
                                 case PatchJobStatus.Running: <span class="file-status" style="color: #64b5f6;">Running...</span> break;
                                 case PatchJobStatus.Succeeded:
-                                    <a class="btn btn-sm btn-primary" href="/api/patcher/download/@job.Id">Download (@FormatBytes(job.OutputFileSize))</a>
+                                    <a class="btn btn-sm btn-primary" target="_blank" rel="noopener" href="/api/patcher/download/@job.Id">Download (@FormatBytes(job.OutputFileSize))</a>
                                     break;
                                 case PatchJobStatus.Failed: <span class="file-status text-danger" title="@job.Error">Failed</span> break;
                             }
@@ -630,8 +630,10 @@
                 </div>
             }
 
+            @* show only the tail of the log: rendering thousands of sibling
+               nodes every update is what stalls the circuit on slow machines *@
             <div class="log-terminal mt-3">
-                @foreach (var line in logSnapshot)
+                @foreach (var line in logSnapshot.Skip(Math.Max(0, logSnapshot.Count - 400)))
                 {
                     <div class="log-line">@line</div>
                 }
@@ -640,7 +642,11 @@
             <div class="button-group mt-3">
                 @if (ActiveJob.Status == PatchJobStatus.Succeeded)
                 {
-                    <a class="btn btn-primary" href="/api/patcher/download/@ActiveJob.Id">Download @ActiveJob.OutputFileName (@FormatBytes(ActiveJob.OutputFileSize))</a>
+                    @* target="_blank" keeps the download completely outside Blazor's
+                       navigation interception (NavigationLock / enhanced navigation) -
+                       the browser fires a plain GET in a new document, so a busy or
+                       unresponsive SignalR circuit can never stall the click. *@
+                    <a class="btn btn-primary" target="_blank" rel="noopener" href="/api/patcher/download/@ActiveJob.Id">Download @ActiveJob.OutputFileName (@FormatBytes(ActiveJob.OutputFileSize))</a>
                     <span class="text-muted small align-middle ms-2">The download streams right away - the wait is just the file (~@FormatBytes(ActiveJob.OutputFileSize)) transferring over your network.</span>
                 }
                 @if (ActiveJob.IsFinished)
@@ -759,6 +765,11 @@
     private Timer? pollTimer;
     private bool polling;
 
+    /// <summary>Status + line count of the last render - the poller skips re-renders when nothing changed.</summary>
+    private PatchJobStatus lastRenderedStatus;
+
+    private int lastRenderedLogCount;
+
     // dialog
     private bool showDialog;
     private bool isSuccess;
@@ -831,7 +842,23 @@
         {
             if (ActiveJob is { } job)
             {
-                logSnapshot = job.GetLogSnapshot();
+                var snapshot = job.GetLogSnapshot();
+
+                // Re-render ONLY when the log grew or the job status changed.
+                // Unconditionally diffing a 2000-line log terminal twice a
+                // second saturates the SignalR circuit (especially while the
+                // patch job pins the CPU) - interop and click events then
+                // queue behind renders, which makes the page ignore clicks
+                // until a manual refresh. With this check an idle job costs
+                // a single snapshot copy per tick and zero renders.
+                if (snapshot.Count == lastRenderedLogCount && job.Status == lastRenderedStatus)
+                {
+                    return;
+                }
+
+                lastRenderedLogCount = snapshot.Count;
+                lastRenderedStatus = job.Status;
+                logSnapshot = snapshot;
 
                 await InvokeAsync(StateHasChanged);
             }
@@ -1245,12 +1272,15 @@
     {
         activeJobId = jobId;
         logSnapshot = PatcherService.GetJob(jobId)?.GetLogSnapshot() ?? [];
+        lastRenderedLogCount = logSnapshot.Count;
+        lastRenderedStatus = PatcherService.GetJob(jobId)?.Status ?? PatchJobStatus.Queued;
     }
 
     private void CloseJobView()
     {
         activeJobId = null;
         logSnapshot = [];
+        lastRenderedLogCount = 0;
         RemoveUploadedFile();
 
         // drop ?job= from the URL so a later reload does not reopen the view
