@@ -165,6 +165,11 @@ public sealed class PatcherService
             job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Using system zipalign ({zipAlign}) instead of the Google build-tools one.");
         }
 
+        if (SystemTools.ApktoolFramePath is { } framePath)
+        {
+            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Using framework directory ({framePath}) for apktool decode/build.");
+        }
+
         using (var fs = File.OpenRead(job.InputPath))
         {
             if (!ApkProcessor.VerifyApkHash(fs))

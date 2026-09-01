@@ -18,6 +18,16 @@ public static class SystemTools
     /// <summary>zipalign binary used instead of the one from Google's build-tools.</summary>
     public static string? ZipAlignPath => Resolve("ZIPALIGN_PATH");
 
+    /// <summary>
+    /// Optional directory with apktool framework files (expects <c>1.apk</c> inside),
+    /// passed to apktool via <c>--frame-path</c> for both decode and build.
+    ///
+    /// apktool 3.x bundles its own framework, but its resources table is rejected
+    /// by some aapt2 builds (e.g. Debian's) during the link step; pointing apktool
+    /// at a well-formed framework (Google's android.jar) avoids that.
+    /// </summary>
+    public static string? ApktoolFramePath => ResolveDirectory("APKTOOL_FRAMEWORK_DIR");
+
     private static string? Resolve(string variable)
     {
         var value = Environment.GetEnvironmentVariable(variable);
@@ -28,5 +38,17 @@ public static class SystemTools
         }
 
         return File.Exists(value) ? value : null;
+    }
+
+    private static string? ResolveDirectory(string variable)
+    {
+        var value = Environment.GetEnvironmentVariable(variable);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return Directory.Exists(value) ? value : null;
     }
 }
