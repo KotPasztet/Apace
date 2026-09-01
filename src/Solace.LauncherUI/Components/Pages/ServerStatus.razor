@@ -145,11 +145,17 @@
                         @component
                     </button>
                 }
+
+                <button class="ms-auto @(_hideDebug ? "active" : "")"
+                        title="Show/hide debug entries"
+                        @onclick="() => _hideDebug = !_hideDebug">
+                    🐛 Debug
+                </button>
             </div>
 
             <div class="log-terminal" @ref="_logContainerRef">
                 <div class="log-content">
-                    @foreach (var log in LogService.GetLogsFor(_activeTab))
+                    @foreach (var log in LogService.GetLogsFor(_activeTab).Where(log => !_hideDebug || log.Level is not "Debug"))
                     {
                         <div class="log-line"><span class="log-time">[@FormatTimestamp(log.Timestamp)]</span> <span class="log-level @GetLogLevelClass(log.Level)">[@GetShortLevel(log.Level)]</span> <span class="log-msg">@log.RenderedMessage</span></div>
                     }
@@ -177,6 +183,7 @@
         : ServerManager.Status;
 
     private string _activeTab = "Launcher";
+    private bool _hideDebug = true;
     private ClaimsPrincipal? _user;
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
