@@ -571,6 +571,20 @@
                     }
                 </span>
             </div>
+
+            @* If a job is already running (e.g. the Generate click was swallowed by a
+               busy circuit) the page the user stares at may be stale. This link loads
+               the panel fresh in a new tab - plain full GET, completely outside
+               Blazor's navigation interception - and OnInitialized reopens the
+               running job's log view automatically, exactly like a manual F5. *@
+            @if (PatcherService.AnyJobActive)
+            {
+                <div class="alert alert-warning mt-3 mb-0">
+                    A patch job is already running. If this page looks stuck,
+                    <a href="/Patcher" target="_blank" rel="noopener">open the live job log</a>
+                    (the panel is locked to the job page, so it opens straight there).
+                </div>
+            }
         </div>
 
         @* ---------------- Recent jobs ---------------- *@
@@ -627,6 +641,11 @@
                 <div class="alert alert-warning mt-2 mb-0">
                     Patching in progress - the panel is locked to this page (and the Earth server cannot
                     be started) until the patch finishes. Navigation will unlock automatically.
+                    @if (logSnapshot.Count == 0)
+                    {
+                        <text>No log lines showing? The page is stale -
+                        <a href="/Patcher?job=@ActiveJob.Id" target="_blank" rel="noopener">reload the job view</a>.</text>
+                    }
                 </div>
             }
 
