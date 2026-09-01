@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace MCEPatcher.Core;
 
@@ -10,9 +10,9 @@ public static class Signer
     {
         Process process = U.Run("java", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         [
-            "-jar", $"\"{Path.GetFullPath(FileName)}\"",
-            "-a", $"\"{apkFile.FullName}\"",
-            "-o", $"\"{outDir.FullName}\"",
+            "-jar", $"{Path.GetFullPath(FileName)}",
+            "-a", $"{apkFile.FullName}",
+            "-o", $"{outDir.FullName}",
             "--skipZipAlign",
         ]);
 
