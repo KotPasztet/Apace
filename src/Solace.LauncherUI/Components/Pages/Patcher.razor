@@ -1,6 +1,7 @@
 @page "/Patcher"
 @implements IDisposable
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.WebUtilities
 @using Microsoft.JSInterop
 @using System.Text.Json
 @using MCEPatcher.Core
@@ -9,6 +10,7 @@
 @rendermode InteractiveServer
 @inject PatcherService PatcherService
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <PageTitle>Client Patcher - Apace</PageTitle>
 
@@ -759,6 +761,17 @@
         iosLocatorHostname = ApaceAddress;
         iosAuthHostname = ApaceAddress;
 
+        // /Patcher?job=<id> opens that job's view directly (used by the
+        // Generate button, which reloads the page after starting the job)
+        var query = QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
+
+        if (query.TryGetValue("job", out var jobId)
+            && PatcherService.GetJob(jobId.ToString()) is { } job)
+        {
+            activeJobId = job.Id;
+            logSnapshot = job.GetLogSnapshot();
+        }
+
         pollTimer = new Timer(_ => _ = PollAsync(), null, 500, 500);
     }
 
@@ -950,8 +963,9 @@
             var request = BuildRequest();
             var job = PatcherService.CreateJob(request);
 
-            activeJobId = job.Id;
-            logSnapshot = [];
+            // the job now runs in the background; reload the page so the job
+            // view opens from a clean state (/Patcher?job=<id>)
+            Navigation.NavigateTo($"/Patcher?job={job.Id}", forceLoad: true);
         }
         catch (Exception ex)
         {
@@ -1180,6 +1194,12 @@
         activeJobId = null;
         logSnapshot = [];
         RemoveUploadedFile();
+
+        // drop ?job= from the URL so a later reload does not reopen the view
+        if (Navigation.Uri.Contains("?job=", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/Patcher");
+        }
     }
 
     private string JobBadgeClass(PatchJob job)
