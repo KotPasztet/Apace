@@ -64,7 +64,7 @@ Plik: `src/Solace.Buildplate/Launcher/Instance.cs`
        - `Difficulty`: 1
        - `DayTime`: 6000 (dzien) / 18000 (noc)
        - GameRules: `doDaylightCycle=false`, `doWeatherCycle=false`, `doMobSpawning=false`, `fountain:doMobDespawn=false`, `keepInventory=true`
-       - WorldGenSettings: `fountain:wrapper` dla `minecraft:overworld` (ground_level=63, inner=noise) i `minecraft:the_nether` (ground_level=32, inner=noise z nether_wastes)
+       - WorldGenSettings: `fountain:empty` (100% air) dla `minecraft:overworld` (size=32, ground_level=63, underground_height=16, biome=minecraft:plains); Nether i End NIE sa na liscie wymiarow (wymiary nie istnieja)
      - Rozpakowuje `serverData` (zip z regionami swiata) do `world/`
   4. `SetupBridgeFiles()` (linie 836-849): tworzy pusty katalog bridge
 

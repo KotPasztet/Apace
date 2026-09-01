@@ -170,6 +170,11 @@ Program.Main(args)
   │         │  - prepare persistent working dir /app/launcher/persistent_fabric
   │         │  - copy server template (fabric JAR, mods, libraries, .fabric/server)
   │         │  - write eula.txt / server.properties (single internal port 25565)
+  │         │  - write world/level.dat: default overworld uses the 100% air
+  │         │    fountain:empty generator (no noise terrain generation at startup);
+  │         │    the Nether and the End are not listed in the dimensions, so
+  │         │    those dimensions are never created; stale overworld chunk data
+  │         │    from a previous start is deleted
   │         │  - launch: java -jar {fabricJarName} -nogui
   │         │  - wait for "started" (Fabric ready) before continuing
   │
