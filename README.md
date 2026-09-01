@@ -5,6 +5,8 @@
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/github/stars/KotPasztet/Apace?style=flat-square" alt="GitHub Stars">
+
+<img src="https://img.shields.io/github/downloads/KotPasztet/Apace/total?style=flat-square" alt="GitHub Downloads">
 </p>
 
 Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
@@ -48,7 +50,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | Store         | :white_check_mark: | Tab titles do not load                                                                   |
 | Challenges    | :construction: | Daily challenge system (3 per player, deterministic rotation, progress tracking)         |
 | Seasons       | :white_check_mark: | Seasonal content support                                                                 |
-| Adventures    | :white_check_mark: | Join responses, port reuse, instance lifecycle                                           |
+| Adventures    | :construction: | Join responses, port reuse, instance lifecycle                                           |
 | Daily Rewards | :white_check_mark: | Daily login rewards with streak tracking                                                 |
 | Tokens        | :white_check_mark: | Token claim/redeem system                                                                |
 | Tutorial      | :x:                |                                                                                          |
