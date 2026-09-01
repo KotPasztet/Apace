@@ -551,10 +551,27 @@
             }
 
             <div class="button-group mt-4">
-                <button type="button" class="btn btn-primary" @onclick="StartGeneration"
-                        disabled="@(isUploading || uploadedPath is null || !CanPatch)">
-                    Generate patched @(platform == PatchPlatform.Android ? "APK" : "IPA")
-                </button>
+                @* The Generate control is a real anchor (target="_blank") - the exact
+                   same mechanism as the Download link, which is the one thing proven
+                   to work when the interactive circuit is busy/dead: the browser
+                   opens the URL as a plain full GET, completely outside Blazor's
+                   enhanced navigation, so it cannot be swallowed or blocked. The
+                   @onclick handler starts the job in parallel; OnInitialized on the
+                   freshly loaded page then picks up the running job (and the poller
+                   below catches it within one tick even if the GET wins the race). *@
+                @if (isUploading || uploadedPath is null || !CanPatch)
+                {
+                    <button type="button" class="btn btn-primary" disabled="true">
+                        Generate patched @(platform == PatchPlatform.Android ? "APK" : "IPA")
+                    </button>
+                }
+                else
+                {
+                    <a class="btn btn-primary" href="/Patcher" target="_blank" rel="noopener"
+                       @onclick="StartGeneration" @onclick:preventDefault="false">
+                        Generate patched @(platform == PatchPlatform.Android ? "APK" : "IPA")
+                    </a>
+                }
                 <span class="file-status text-muted">
                     @if (!CanPatch)
                     {
@@ -879,6 +896,16 @@
                 lastRenderedStatus = job.Status;
                 logSnapshot = snapshot;
 
+                await InvokeAsync(StateHasChanged);
+            }
+            else if (PatcherService.Jobs.FirstOrDefault(j => !j.IsFinished) is { } running
+                     && activeJobId is null)
+            {
+                // A job is running but this circuit has not latched onto it yet -
+                // e.g. the new tab opened by the Generate anchor raced ahead of the
+                // job's creation, or the click's in-place switch never rendered.
+                // Flip to the running job's log view within one poll tick.
+                ViewJob(running.Id);
                 await InvokeAsync(StateHasChanged);
             }
         }
