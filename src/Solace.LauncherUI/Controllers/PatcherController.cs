@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MCEPatcher.Core;
+using Serilog;
 using Solace.LauncherUI.Patcher;
 
 namespace Solace.LauncherUI.Controllers;
@@ -256,6 +258,19 @@ internal sealed class PatcherController : ControllerBase
             ? "application/vnd.android.package-archive"
             : "application/octet-stream";
 
-        return PhysicalFile(job.OutputPath, contentType, fileDownloadName: job.OutputFileName);
+        // The action returns instantly - any perceived "waiting" is the ~200 MB
+        // file streaming over the network. Log the real transfer time so it can
+        // be told apart from server-side work, and enable range processing so
+        // the browser can resume the download instead of restarting on hiccups.
+        var stopwatch = Stopwatch.StartNew();
+
+        Response.OnCompleted(() =>
+        {
+            Log.Information("Patched client download finished: {FileName}, {Seconds:F1}s, {Size} bytes, job {JobId}",
+                job.OutputFileName, stopwatch.Elapsed.TotalSeconds, job.OutputFileSize, job.Id);
+            return Task.CompletedTask;
+        });
+
+        return PhysicalFile(job.OutputPath, contentType, fileDownloadName: job.OutputFileName, enableRangeProcessing: true);
     }
 }

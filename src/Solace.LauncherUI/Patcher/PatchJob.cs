@@ -75,6 +75,9 @@ public sealed class PatchJob
 
     public string OutputFileName { get; private set; } = string.Empty;
 
+    /// <summary>Size of the patched APK/IPA (set on success).</summary>
+    public long OutputFileSize { get; private set; }
+
     public bool IsFinished => Status is PatchJobStatus.Succeeded or PatchJobStatus.Failed;
 
     public void AddLog(string line)
@@ -129,6 +132,15 @@ public sealed class PatchJob
     {
         OutputPath = outputPath;
         OutputFileName = Path.GetFileName(outputPath);
+
+        try
+        {
+            OutputFileSize = new FileInfo(outputPath).Length;
+        }
+        catch
+        {
+        }
+
         FinishedAt = DateTimeOffset.UtcNow;
         Status = PatchJobStatus.Succeeded;
     }

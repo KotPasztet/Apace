@@ -60,6 +60,31 @@
 
                         if (!file) { reject('UPLOAD_ABORTED: no file selected'); return; }
 
+                        // The upload bar is driven straight from the XHR progress
+                        // events so it updates live no matter what the Blazor
+                        // circuit happens to be busy with - the .NET progress
+                        // callback stays as a bonus. Blazor renders its own file
+                        // card once the interop call returns and hideBar() removes
+                        // this one.
+                        var bar = null;
+                        function fail(msg) { hideBar(); reject(msg); }
+                        function done(msg) { hideBar(); resolve(msg); }
+                        function hideBar() {
+                            if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+                            bar = null;
+                        }
+                        function showBar() {
+                            hideBar();
+                            bar = document.createElement('div');
+                            bar.className = 'file-item mt-3';
+                            bar.innerHTML = '<div class="file-header">' +
+                                '<span class="file-name"></span>' +
+                                '<span class="file-status" style="color: #64b5f6;">Uploading... 0%</span>' +
+                                '</div><div class="progress-bar-container"><div class="progress-bar" style="width: 0%"></div></div>';
+                            bar.querySelector('.file-name').textContent = file.name;
+                            zone.parentNode.insertBefore(bar, zone.nextSibling);
+                        }
+
                         var CHUNK = 8 * 1024 * 1024;
                         var uploadId = (window.crypto && crypto.randomUUID)
                             ? crypto.randomUUID().replace(/-/g, '')
@@ -79,6 +104,11 @@
                             var now = Date.now();
                             if (loaded === file.size || now - lastProgress >= 100) {
                                 lastProgress = now;
+                                var pct = file.size ? Math.round(100 * loaded / file.size) : 100;
+                                if (bar) {
+                                    bar.querySelector('.file-status').textContent = 'Uploading... ' + pct + '%';
+                                    bar.querySelector('.progress-bar').style.width = pct + '%';
+                                }
                                 dotnetRef.invokeMethodAsync(progressMethod, loaded, file.size);
                             }
                         }
@@ -97,17 +127,17 @@
                             xhr.setRequestHeader('X-File-Name', encodeURIComponent(fileName));
                             xhr.onload = function() {
                                 currentXhr = null;
-                                if (cancelled) { reject('UPLOAD_ABORTED: cancelled'); return; }
-                                if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
-                                else reject('Upload failed (HTTP ' + xhr.status + '): ' + shortBody(xhr));
+                                if (cancelled) { fail('UPLOAD_ABORTED: cancelled'); return; }
+                                if (xhr.status >= 200 && xhr.status < 300) done(xhr.responseText);
+                                else fail('Upload failed (HTTP ' + xhr.status + '): ' + shortBody(xhr));
                             };
-                            xhr.onerror = function() { currentXhr = null; reject('Upload failed - network error while finalizing the upload.'); };
-                            xhr.onabort = function() { currentXhr = null; reject('UPLOAD_ABORTED: cancelled'); };
+                            xhr.onerror = function() { currentXhr = null; fail('Upload failed - network error while finalizing the upload.'); };
+                            xhr.onabort = function() { currentXhr = null; fail('UPLOAD_ABORTED: cancelled'); };
                             xhr.send();
                         }
 
                         function sendChunk() {
-                            if (cancelled) { reject('UPLOAD_ABORTED: cancelled'); return; }
+                            if (cancelled) { fail('UPLOAD_ABORTED: cancelled'); return; }
 
                             var end = Math.min(offset + CHUNK, file.size);
                             var xhr = new XMLHttpRequest();
@@ -120,7 +150,7 @@
                             xhr.onload = function() {
                                 currentXhr = null;
 
-                                if (cancelled) { reject('UPLOAD_ABORTED: cancelled'); return; }
+                                if (cancelled) { fail('UPLOAD_ABORTED: cancelled'); return; }
 
                                 if (xhr.status >= 200 && xhr.status < 300) {
                                     attempts = 0;
@@ -133,24 +163,25 @@
                                     else { sendChunk(); }
                                 } else if (xhr.status === 400) {
                                     // hard rejection (wrong platform/file/limit) - no point retrying
-                                    reject('Upload failed (HTTP 400): ' + shortBody(xhr));
+                                    fail('Upload failed (HTTP 400): ' + shortBody(xhr));
                                 } else if (++attempts < 6) {
                                     setTimeout(sendChunk, 1000 * attempts);
                                 } else {
-                                    reject('Upload failed (HTTP ' + xhr.status + ') after ' + attempts + ' attempts: ' + shortBody(xhr));
+                                    fail('Upload failed (HTTP ' + xhr.status + ') after ' + attempts + ' attempts: ' + shortBody(xhr));
                                 }
                             };
 
                             xhr.onerror = function() {
                                 currentXhr = null;
                                 if (++attempts < 6) { setTimeout(sendChunk, 1000 * attempts); }
-                                else { reject('Upload failed - network error (connection dropped mid-upload; this is usually a proxy/firewall/body-size limit on the way to the server).'); }
+                                else { fail('Upload failed - network error (connection dropped mid-upload; this is usually a proxy/firewall/body-size limit on the way to the server).'); }
                             };
 
-                            xhr.onabort = function() { currentXhr = null; reject('UPLOAD_ABORTED: cancelled'); };
+                            xhr.onabort = function() { currentXhr = null; fail('UPLOAD_ABORTED: cancelled'); };
                             xhr.send(file.slice(offset, end));
                         }
 
+                        showBar();
                         sendChunk();
                     });
                 },
