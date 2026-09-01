@@ -81,6 +81,7 @@ RUN apt-get update && apt-get install -y \
     aapt \
     zipalign \
     curl \
+    unzip \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
@@ -119,6 +120,20 @@ RUN printf '%s\n' \
         > /usr/local/bin/aapt2 \
     && chmod +x /usr/local/bin/aapt2 \
     && /usr/local/bin/aapt2 version
+
+# Android platform 29 framework (android.jar) for apktool.
+# apktool 3.x bundles its own framework (1.apk), but its resources table is
+# rejected by the aapt2 shipped in Debian ("RES_TABLE_TYPE_TYPE entry offsets
+# overlap actual entry data") during the link step, which fails the build.
+# Google's original android.jar for API 29 (Minecraft Earth's targetSdk) is
+# well-formed and works. apktool gets it via --frame-path (decode + build),
+# enabled by APKTOOL_FRAMEWORK_DIR below.
+RUN mkdir -p /opt/android-framework \
+    && curl -fsSL -o /tmp/platform-29.zip https://dl.google.com/android/repository/platform-29_r05.zip \
+    && unzip -j /tmp/platform-29.zip 'android-10/android.jar' -d /opt/android-framework \
+    && mv /opt/android-framework/android.jar /opt/android-framework/1.apk \
+    && rm /tmp/platform-29.zip \
+    && ls -la /opt/android-framework
 
 # Install PowerShell for the target architecture
 RUN set -eux; \
@@ -218,7 +233,8 @@ RUN mkdir -p \
 # AAPT2_PATH points at the wrapper generated above, which drops aapt2 flags
 # unknown to Debian's aapt2 build (see the wrapper RUN step).
 ENV AAPT2_PATH=/usr/local/bin/aapt2 \
-    ZIPALIGN_PATH=/usr/bin/zipalign
+    ZIPALIGN_PATH=/usr/bin/zipalign \
+    APKTOOL_FRAMEWORK_DIR=/opt/android-framework
 ENV DOTNET_SYSTEM_NET_DISABLEIPV6=1
 ENV COMPlus_gcServer=0
 ENV COMPlus_gcConcurrent=1
