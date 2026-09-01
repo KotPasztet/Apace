@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using Serilog;
 
 namespace MCEPatcher.Core;
 
@@ -47,29 +48,43 @@ internal static class BuildTools
 
         var alignedApkName = apkFile.FullName + ".aligned";
 
-        var process = U.Run(zipAlign, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        [
-            "-f",
-            "-P", "16",
-            "4",
-            apkFile.FullName,
-            alignedApkName,
-        ]);
+        // Preferred: -P 16 aligns uncompressed .so files to 16 KiB pages, as
+        // required by 16 KiB-page devices (Android 15+) that load libraries
+        // straight from the APK. Older zipalign builds (e.g. Debian's, based
+        // on AOSP 10) only know the deprecated -p (4 KiB page-align for .so)
+        // and abort with "ERROR: unknown flag -P" before creating any output
+        // file, so retrying with -p is safe. The -p fallback still yields a
+        // valid, 4-byte aligned APK; it only loses the 16 KiB zip-level .so
+        // alignment (irrelevant when the app extracts native libs at install
+        // time).
+        string[] preferredArgs = ["-f", "-P", "16", "4", apkFile.FullName, alignedApkName];
+        string[] fallbackArgs = ["-f", "-p", "4", apkFile.FullName, alignedApkName];
 
-        process.WaitForExit();
-        int exitCode = process.ExitCode;
-        process.Close();
-        process.Dispose();
-
-        if (exitCode is not 0)
+        foreach (var (args, isFallback) in new[] { (preferredArgs, false), (fallbackArgs, true) })
         {
-            return false;
+            if (isFallback)
+            {
+                Log.Warning("zipalign does not support -P <pagesize_kb>; retrying with -p (4 KiB page alignment for .so files).");
+                File.Delete(alignedApkName);
+            }
+
+            var process = U.Run(zipAlign, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), args);
+
+            process.WaitForExit();
+            int exitCode = process.ExitCode;
+            process.Close();
+            process.Dispose();
+
+            if (exitCode is 0)
+            {
+                File.Move(alignedApkName, apkFile.FullName, overwrite: true);
+                File.Delete(alignedApkName);
+
+                return true;
+            }
         }
 
-        File.Move(alignedApkName, apkFile.FullName, overwrite: true);
-        File.Delete(alignedApkName);
-
-        return true;
+        return false;
     }
 
     private static async Task EnsureExtractedAsync(CancellationToken cancellationToken = default)
