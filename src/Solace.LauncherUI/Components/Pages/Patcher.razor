@@ -73,8 +73,8 @@
             @* The live upload progress bar is rendered by plain JS (see App.razor,
                apacePatcher.upload) straight from the XHR progress events - it keeps
                moving even when the Blazor circuit is busy. Blazor shows its own
-               file card once the upload finishes below. *@
-            else if (uploadedPath is not null)
+               file card below once the upload finishes. *@
+            @if (uploadedPath is not null)
             {
                 <div class="file-item mt-3">
                     <div class="file-header">
