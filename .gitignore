@@ -494,3 +494,9 @@ repos/*
 # Vim temporary swap files
 *.swp
 CLAUDE.md
+
+# Patcher upload staging (user-submitted APK/IPA originals) and local test binaries
+src/data/patcher/uploads/
+/mce.apk
+/mce.ipa
+/mce-decoded/

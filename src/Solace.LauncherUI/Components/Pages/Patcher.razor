@@ -885,17 +885,13 @@
 
         try
         {
-            // Upload goes over plain HTTP, bypassing the Blazor Server circuit -
-            // the circuit's file stream is capped at ~50 KB per SignalR message,
-            // which makes a ~66 MB APK need over a thousand round-trips.
+            // Upload goes over plain HTTP in 8 MB chunks, bypassing the Blazor Server
+            // circuit - the circuit's file stream is capped at ~50 KB per SignalR
+            // message, and one big request gets killed by proxies/body-size limits.
             var response = await JS.InvokeAsync<string>("apacePatcher.upload",
                 "patcher-drop-zone",
-                $"/api/patcher/upload?platform={platform}",
-                new Dictionary<string, string>
-                {
-                    ["Content-Type"] = "application/octet-stream",
-                    ["X-File-Name"] = Uri.EscapeDataString(file.Name),
-                },
+                platform.ToString(),
+                file.Name,
                 "HandleUploadProgress",
                 jsRef);
 
