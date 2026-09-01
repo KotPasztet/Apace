@@ -259,10 +259,20 @@ internal sealed class PatcherController : ControllerBase
             : "application/octet-stream";
 
         // The action returns instantly - any perceived "waiting" is the ~200 MB
-        // file streaming over the network. Log the real transfer time so it can
-        // be told apart from server-side work, and enable range processing so
-        // the browser can resume the download instead of restarting on hiccups.
+        // file streaming over the network. Log both the start and the end of the
+        // transfer so a delayed download can be pinpointed (server vs. proxy vs.
+        // network), and enable range processing so the browser can resume the
+        // download instead of restarting on hiccups.
+        Log.Information("Patched client download starting: {FileName}, {Size} bytes, job {JobId}",
+            job.OutputFileName, job.OutputFileSize, job.Id);
+
         var stopwatch = Stopwatch.StartNew();
+
+        // X-Accel-Buffering: no tells reverse proxies (nginx & co.) to stop
+        // buffering this response - otherwise the proxy may swallow the whole
+        // ~200 MB before forwarding the headers, which the browser experiences
+        // as "nothing happens for a minute or two, then it suddenly downloads".
+        Response.Headers.Append("X-Accel-Buffering", "no");
 
         Response.OnCompleted(() =>
         {
