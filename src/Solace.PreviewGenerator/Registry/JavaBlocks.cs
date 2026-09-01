@@ -81,7 +81,7 @@ public static class JavaBlocks
                 }
                 catch (BedrockMappingFailException ex)
                 {
-                    Log.Warning($"Cannot find Bedrock block for Java block {name}: {ex.Message}");
+                    Log.Debug($"Cannot find Bedrock block for Java block {name}: {ex.Message}");
                 }
             }
         });
@@ -122,7 +122,7 @@ public static class JavaBlocks
                     }
                     catch (BedrockMappingFailException ex)
                     {
-                        Log.Warning($"Cannot find Bedrock block for Java block {name}: {ex.Message}");
+                        Log.Debug($"Cannot find Bedrock block for Java block {name}: {ex.Message}");
                     }
                 }
 
