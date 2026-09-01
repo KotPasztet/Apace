@@ -84,6 +84,42 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
+# aapt2 wrapper (generated inline, like entrypoint.sh).
+# apktool 3.x passes a few modern aapt2 flags unconditionally - most notably
+# --no-compile-sdk-metadata - but the aapt2 shipped in Debian (package "aapt")
+# is older and aborts the link step with "unknown option". The wrapper drops
+# those flags and execs the real binary. Dropping them is safe: they only
+# DISABLE optional behaviour (compile-sdk metadata injection, compact resource
+# entries, feature-flag encoding) that the older aapt2 never had in the first
+# place, so the produced APK is equivalent.
+RUN printf '%s\n' \
+        '#!/bin/bash' \
+        '# aapt2 wrapper: filters flags unsupported by this aapt2 build.' \
+        '# See comment on the RUN step that generated this file.' \
+        'set -eu' \
+        'REAL_AAPT2=/usr/bin/aapt2' \
+        'args=()' \
+        'while [ $# -gt 0 ]; do' \
+        '    case "$1" in' \
+        '        --no-compile-sdk-metadata|--enable-compact-entries)' \
+        '            printf "aapt2-wrapper: dropping unsupported flag %s\n" "$1" >&2' \
+        '            shift' \
+        '            ;;' \
+        '        --feature-flags)' \
+        '            printf "aapt2-wrapper: dropping unsupported flag %s (and its value)\n" "$1" >&2' \
+        '            if [ $# -ge 2 ]; then shift 2; else shift; fi' \
+        '            ;;' \
+        '        *)' \
+        '            args+=("$1")' \
+        '            shift' \
+        '            ;;' \
+        '    esac' \
+        'done' \
+        'exec "$REAL_AAPT2" ${args[@]+"${args[@]}"}' \
+        > /usr/local/bin/aapt2 \
+    && chmod +x /usr/local/bin/aapt2 \
+    && /usr/local/bin/aapt2 version
+
 # Install PowerShell for the target architecture
 RUN set -eux; \
     . /tmp/arch.env; \
@@ -179,7 +215,9 @@ RUN mkdir -p \
 # Linux binaries only, which cannot run on ARM64 hosts; MCEPatcher.Core
 # (SystemTools) picks these env vars up and passes the binary to apktool
 # (--aapt) and uses it for zipalign instead of the downloaded build-tools.
-ENV AAPT2_PATH=/usr/bin/aapt2 \
+# AAPT2_PATH points at the wrapper generated above, which drops aapt2 flags
+# unknown to Debian's aapt2 build (see the wrapper RUN step).
+ENV AAPT2_PATH=/usr/local/bin/aapt2 \
     ZIPALIGN_PATH=/usr/bin/zipalign
 ENV DOTNET_SYSTEM_NET_DISABLEIPV6=1
 ENV COMPlus_gcServer=0
