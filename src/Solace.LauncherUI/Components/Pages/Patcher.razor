@@ -894,10 +894,10 @@
             // message, and one big request gets killed by proxies/body-size limits.
             // The whole upload loop is one JS promise, and Blazor cancels JS interop
             // calls after 1 minute by default - that killed a 200 MB IPA upload with
-            // "A task was canceled" at ~50%. Give this one call a 180 s budget via
+            // "A task was canceled" at ~50%. Give this one call a 360 s budget via
             // the InvokeAsync CancellationToken overload, leaving the global default
             // untouched for every other interop call.
-            using var uploadTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(180));
+            using var uploadTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(360));
 
             var response = await JS.InvokeAsync<string>(
                 "apacePatcher.upload",
@@ -1009,7 +1009,7 @@
         }
     }
 
-    private void StartGeneration()
+    private async Task StartGeneration()
     {
         if (uploadedPath is null)
         {
@@ -1023,14 +1023,28 @@
             return;
         }
 
+        PatchJob? job = null;
+
         try
         {
             var request = BuildRequest();
-            var job = PatcherService.CreateJob(request);
+            job = PatcherService.CreateJob(request);
 
-            // the job now runs in the background; reload the page so the job
-            // view opens from a clean state (/Patcher?job=<id>)
-            Navigation.NavigateTo($"/Patcher?job={job.Id}", forceLoad: true);
+            // the job now runs in the background; hard-reload the page (exactly like
+            // Ctrl+R) so the job view opens from a clean state (/Patcher?job=<id>)
+            await JS.InvokeVoidAsync("apacePatcher.navigate", $"/Patcher?job={job.Id}");
+        }
+        catch (JSDisconnectedException)
+        {
+            // the navigation above tears the circuit down mid-call - expected
+        }
+        catch (JSException)
+        {
+            // JS unavailable - fall back to a forced navigation
+            if (job is not null)
+            {
+                Navigation.NavigateTo($"/Patcher?job={job.Id}", forceLoad: true);
+            }
         }
         catch (Exception ex)
         {

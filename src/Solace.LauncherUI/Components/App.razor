@@ -156,6 +156,12 @@
                 },
                 cancel: function() {
                     if (activeUpload) activeUpload.abort();
+                },
+                // full browser reload, exactly like the user pressing Ctrl+R
+                // (NavigationManager.NavigateTo(forceLoad) can still end up as a
+                // soft navigate inside an interactive component)
+                navigate: function(url) {
+                    window.location.href = url;
                 }
             };
         })();
