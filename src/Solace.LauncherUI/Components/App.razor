@@ -43,13 +43,16 @@
         })();
     </script>
     <script>
-        // Patcher uploads: sends the selected APK/IPA straight to /api/patcher/upload over
-        // plain HTTP. Bypasses the Blazor Server circuit, whose file streaming is capped at
-        // ~50 KB per SignalR message (RemoteJSDataStream), making large uploads crawl.
+        // Patcher uploads: sends the selected APK/IPA to /api/patcher/upload-chunk in
+        // 8 MB pieces, then finalizes with /api/patcher/upload-finalize. Bypasses the
+        // Blazor Server circuit (whose file streaming is capped at ~50 KB per SignalR
+        // message), and chunking keeps every single request small enough to survive
+        // proxies, AVs and body-size limits that kill one big 200 MB request -
+        // a failed chunk is simply retried from the last server-confirmed offset.
         (function() {
-            var activeXhr = null;
+            var activeUpload = null;
             window.apacePatcher = {
-                upload: function(dropZoneId, url, headers, progressMethod, dotnetRef) {
+                upload: function(dropZoneId, platform, fileName, progressMethod, dotnetRef) {
                     return new Promise(function(resolve, reject) {
                         var zone = document.getElementById(dropZoneId);
                         var input = zone && zone.querySelector('input[type="file"]');
@@ -57,33 +60,102 @@
 
                         if (!file) { reject('UPLOAD_ABORTED: no file selected'); return; }
 
-                        var xhr = new XMLHttpRequest();
-                        activeXhr = xhr;
-                        xhr.open('POST', url, true);
+                        var CHUNK = 8 * 1024 * 1024;
+                        var uploadId = (window.crypto && crypto.randomUUID)
+                            ? crypto.randomUUID().replace(/-/g, '')
+                            : ('' + Date.now() + Math.random()).replace(/[^a-f0-9]/g, function() { return ''; }).padEnd(32, '0').slice(0, 32);
 
-                        for (var key in headers) xhr.setRequestHeader(key, headers[key]);
-
-                        var lastProgress = 0;
-                        xhr.upload.onprogress = function(e) {
-                            var now = Date.now();
-                            if (e.loaded === e.total || now - lastProgress >= 100) {
-                                lastProgress = now;
-                                dotnetRef.invokeMethodAsync(progressMethod, e.loaded, e.total);
+                        var cancelled = false;
+                        var currentXhr = null;
+                        activeUpload = {
+                            abort: function() {
+                                cancelled = true;
+                                if (currentXhr) currentXhr.abort();
                             }
                         };
-                        xhr.onload = function() {
-                            activeXhr = null;
-                            if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
-                            else reject('Upload failed (HTTP ' + xhr.status + ').');
-                        };
-                        xhr.onerror = function() { activeXhr = null; reject('Upload failed - network error.'); };
-                        xhr.onabort = function() { activeXhr = null; reject('UPLOAD_ABORTED: cancelled'); };
 
-                        xhr.send(file);
+                        var lastProgress = 0;
+                        function report(loaded) {
+                            var now = Date.now();
+                            if (loaded === file.size || now - lastProgress >= 100) {
+                                lastProgress = now;
+                                dotnetRef.invokeMethodAsync(progressMethod, loaded, file.size);
+                            }
+                        }
+
+                        function shortBody(xhr) {
+                            var body = (xhr.responseText || '').trim();
+                            return body.length > 300 ? body.slice(0, 300) + '...' : body;
+                        }
+                        var attempts = 0;
+                        var offset = 0;
+
+                        function finalize() {
+                            var xhr = new XMLHttpRequest();
+                            currentXhr = xhr;
+                            xhr.open('POST', '/api/patcher/upload-finalize?platform=' + platform + '&uploadId=' + uploadId, true);
+                            xhr.setRequestHeader('X-File-Name', encodeURIComponent(fileName));
+                            xhr.onload = function() {
+                                currentXhr = null;
+                                if (cancelled) { reject('UPLOAD_ABORTED: cancelled'); return; }
+                                if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
+                                else reject('Upload failed (HTTP ' + xhr.status + '): ' + shortBody(xhr));
+                            };
+                            xhr.onerror = function() { currentXhr = null; reject('Upload failed - network error while finalizing the upload.'); };
+                            xhr.onabort = function() { currentXhr = null; reject('UPLOAD_ABORTED: cancelled'); };
+                            xhr.send();
+                        }
+
+                        function sendChunk() {
+                            if (cancelled) { reject('UPLOAD_ABORTED: cancelled'); return; }
+
+                            var end = Math.min(offset + CHUNK, file.size);
+                            var xhr = new XMLHttpRequest();
+                            currentXhr = xhr;
+                            xhr.open('POST', '/api/patcher/upload-chunk?platform=' + platform + '&uploadId=' + uploadId + '&offset=' + offset, true);
+                            xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+
+                            xhr.upload.onprogress = function(e) { report(offset + e.loaded); };
+
+                            xhr.onload = function() {
+                                currentXhr = null;
+
+                                if (cancelled) { reject('UPLOAD_ABORTED: cancelled'); return; }
+
+                                if (xhr.status >= 200 && xhr.status < 300) {
+                                    attempts = 0;
+                                    // the server always reports where the file really ends -
+                                    // after a partial/dropped chunk this skips what landed anyway
+                                    try { offset = JSON.parse(xhr.responseText).offset; }
+                                    catch (err) { offset = end; }
+
+                                    if (offset >= file.size) { report(file.size); finalize(); }
+                                    else { sendChunk(); }
+                                } else if (xhr.status === 400) {
+                                    // hard rejection (wrong platform/file/limit) - no point retrying
+                                    reject('Upload failed (HTTP 400): ' + shortBody(xhr));
+                                } else if (++attempts < 6) {
+                                    setTimeout(sendChunk, 1000 * attempts);
+                                } else {
+                                    reject('Upload failed (HTTP ' + xhr.status + ') after ' + attempts + ' attempts: ' + shortBody(xhr));
+                                }
+                            };
+
+                            xhr.onerror = function() {
+                                currentXhr = null;
+                                if (++attempts < 6) { setTimeout(sendChunk, 1000 * attempts); }
+                                else { reject('Upload failed - network error (connection dropped mid-upload; this is usually a proxy/firewall/body-size limit on the way to the server).'); }
+                            };
+
+                            xhr.onabort = function() { currentXhr = null; reject('UPLOAD_ABORTED: cancelled'); };
+                            xhr.send(file.slice(offset, end));
+                        }
+
+                        sendChunk();
                     });
                 },
                 cancel: function() {
-                    if (activeXhr) activeXhr.abort();
+                    if (activeUpload) activeUpload.abort();
                 }
             };
         })();
