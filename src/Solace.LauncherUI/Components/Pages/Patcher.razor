@@ -872,6 +872,10 @@
 
         RemoveUploadedFile();
 
+        // after an interop cancellation the JS promise keeps running in the browser -
+        // abort any stale one before starting a new upload
+        _ = JS.InvokeVoidAsync("apacePatcher.cancel");
+
         isUploading = true;
         uploadName = file.Name;
         uploadBytes = 0;
@@ -888,7 +892,16 @@
             // Upload goes over plain HTTP in 8 MB chunks, bypassing the Blazor Server
             // circuit - the circuit's file stream is capped at ~50 KB per SignalR
             // message, and one big request gets killed by proxies/body-size limits.
-            var response = await JS.InvokeAsync<string>("apacePatcher.upload",
+            // The whole upload loop is one JS promise, and Blazor cancels JS interop
+            // calls after 1 minute by default - that killed a 200 MB IPA upload with
+            // "A task was canceled" at ~50%. Give this one call a 180 s budget via
+            // the InvokeAsync CancellationToken overload, leaving the global default
+            // untouched for every other interop call.
+            using var uploadTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(180));
+
+            var response = await JS.InvokeAsync<string>(
+                "apacePatcher.upload",
+                uploadTimeout.Token,
                 "patcher-drop-zone",
                 platform.ToString(),
                 file.Name,
