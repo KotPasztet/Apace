@@ -70,18 +70,10 @@
                 </div>
             </div>
 
-            @if (isUploading)
-            {
-                <div class="file-item mt-3">
-                    <div class="file-header">
-                        <span class="file-name">@uploadName</span>
-                        <span class="file-status" style="color: #64b5f6;">Uploading... @(Math.Round(uploadPct))%</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: @uploadPct%"></div>
-                    </div>
-                </div>
-            }
+            @* The live upload progress bar is rendered by plain JS (see App.razor,
+               apacePatcher.upload) straight from the XHR progress events - it keeps
+               moving even when the Blazor circuit is busy. Blazor shows its own
+               file card once the upload finishes below. *@
             else if (uploadedPath is not null)
             {
                 <div class="file-item mt-3">
@@ -599,7 +591,7 @@
                                 case PatchJobStatus.Queued: <span class="file-status text-muted">Queued</span> break;
                                 case PatchJobStatus.Running: <span class="file-status" style="color: #64b5f6;">Running...</span> break;
                                 case PatchJobStatus.Succeeded:
-                                    <a class="btn btn-sm btn-primary" href="/api/patcher/download/@job.Id">Download</a>
+                                    <a class="btn btn-sm btn-primary" href="/api/patcher/download/@job.Id">Download (@FormatBytes(job.OutputFileSize))</a>
                                     break;
                                 case PatchJobStatus.Failed: <span class="file-status text-danger" title="@job.Error">Failed</span> break;
                             }
@@ -648,7 +640,8 @@
             <div class="button-group mt-3">
                 @if (ActiveJob.Status == PatchJobStatus.Succeeded)
                 {
-                    <a class="btn btn-primary" href="/api/patcher/download/@ActiveJob.Id">Download @ActiveJob.OutputFileName</a>
+                    <a class="btn btn-primary" href="/api/patcher/download/@ActiveJob.Id">Download @ActiveJob.OutputFileName (@FormatBytes(ActiveJob.OutputFileSize))</a>
+                    <span class="text-muted small align-middle ms-2">The download streams right away - the wait is just the file (~@FormatBytes(ActiveJob.OutputFileSize)) transferring over your network.</span>
                 }
                 @if (ActiveJob.IsFinished)
                 {
