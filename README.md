@@ -5,6 +5,8 @@
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/github/stars/KotPasztet/Apace?style=flat-square" alt="GitHub Stars">
+
+<img src="https://img.shields.io/github/downloads/KotPasztet/Apace/total?style=flat-square" alt="GitHub Downloads">
 </p>
 
 Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
