@@ -47,26 +47,35 @@ public static class APK
     {
         outApk.Delete();
 
+        List<string> args =
+        [
+            "b",
+            "-f",
+            "-o", $"\"{outApk.FullName}\"",
+        ];
+
+        // apktool 3.x bundles an x86-64 aapt2 only; on other hosts (e.g. ARM64
+        // servers) the bundled binary cannot be executed, so allow overriding
+        // it with a native one from the system (AAPT2_PATH, see SystemTools).
+        if (SystemTools.Aapt2Path is { } aapt2)
+        {
+            args.Add("--aapt");
+            args.Add($"\"{aapt2}\"");
+        }
+
+        args.Add($"\"{input.FullName}\"");
+
         Process process;
         if (OperatingSystem.IsWindows() && File.Exists(FileNameBat))
         {
-            process = U.Run(Path.GetFullPath(FileNameBat), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            [
-                "b",
-                "-f",
-                "-o", $"\"{outApk.FullName}\"",
-                $"\"{input.FullName}\""
-            ]);
+            process = U.Run(Path.GetFullPath(FileNameBat), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), [.. args]);
         }
         else
         {
             process = U.Run("java", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             [
                 "-jar", $"\"{Path.GetFullPath(FileName)}\"",
-                "b",
-                "-f",
-                "-o", $"\"{outApk.FullName}\"",
-                $"\"{input.FullName}\""
+                .. args,
             ]);
         }
 

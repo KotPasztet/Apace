@@ -103,6 +103,20 @@ public static class U
         }
 
         process.Start();
+
+        try
+        {
+            // Patch tooling (apktool, aapt2, zipalign, the signer) can saturate
+            // the host and starve the panel / game server; keep it below normal
+            // priority so interactive work always wins the CPU. Child processes
+            // (e.g. java -> aapt2) inherit this.
+            process.PriorityClass = ProcessPriorityClass.BelowNormal;
+        }
+        catch
+        {
+            // the priority is best-effort
+        }
+
         if (!shellExecute)
         {
             process.BeginOutputReadLine();

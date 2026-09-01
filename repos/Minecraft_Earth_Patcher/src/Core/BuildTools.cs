@@ -30,11 +30,24 @@ internal static class BuildTools
 
     public static async Task<bool> AlignAsync(FileInfo apkFile, CancellationToken cancellationToken = default)
     {
-        await EnsureExtractedAsync(cancellationToken);
+        // Google's build-tools ship x86-64 binaries only; ZIPALIGN_PATH can
+        // override them with a native binary (e.g. Debian's zipalign on ARM64,
+        // see SystemTools).
+        string zipAlign;
+
+        if (SystemTools.ZipAlignPath is { } systemZipAlign)
+        {
+            zipAlign = systemZipAlign;
+        }
+        else
+        {
+            await EnsureExtractedAsync(cancellationToken);
+            zipAlign = ZipAlignPath;
+        }
 
         var alignedApkName = apkFile.FullName + ".aligned";
 
-        var process = U.Run(ZipAlignPath, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        var process = U.Run(zipAlign, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         [
             "-f",
             "-P", "16",

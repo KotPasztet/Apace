@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -64,6 +65,12 @@ public partial class Program
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
+
+        // File uploads (e.g. the patcher's APK/IPA input) stream through the
+        // SignalR circuit of the interactive server components; with the
+        // default 32 KB maximum message size every chunk needs a full
+        // round-trip, which makes large uploads crawl. Allow bigger chunks.
+        builder.Services.Configure<HubOptions>(options => options.MaximumReceiveMessageSize = 10 * 1024 * 1024);
 
         builder.Services.AddCascadingAuthenticationState();
         builder.Services.AddScoped<IdentityRedirectManager>();

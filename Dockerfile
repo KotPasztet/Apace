@@ -78,6 +78,8 @@ RUN set -eux; \
 
 RUN apt-get update && apt-get install -y \
     openjdk-17-jre \
+    aapt \
+    zipalign \
     curl \
     wget \
     && rm -rf /var/lib/apt/lists/*
@@ -172,6 +174,13 @@ RUN mkdir -p \
     /app/staticdata/server_template_dir \
     /root/.aspnet/DataProtection-Keys
 
+# Native Android build tools for the client patcher (the 'aapt' package
+# provides /usr/bin/aapt2). apktool 3.x and Google's build-tools ship x86-64
+# Linux binaries only, which cannot run on ARM64 hosts; MCEPatcher.Core
+# (SystemTools) picks these env vars up and passes the binary to apktool
+# (--aapt) and uses it for zipalign instead of the downloaded build-tools.
+ENV AAPT2_PATH=/usr/bin/aapt2 \
+    ZIPALIGN_PATH=/usr/bin/zipalign
 ENV DOTNET_SYSTEM_NET_DISABLEIPV6=1
 ENV COMPlus_gcServer=0
 ENV COMPlus_gcConcurrent=1
