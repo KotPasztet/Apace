@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text.RegularExpressions;
 using Serilog;
 using SixLabors.ImageSharp;
@@ -165,13 +166,28 @@ public static class IconPatcher
 
     private static void ReplaceWithScaledIcon(string targetFile, string iconPath)
     {
-        using Image target = Image.Load(targetFile);
-        using Image icon = Image.Load(iconPath);
+        // Only the target's pixel dimensions are needed - iOS app bundles keep icons
+        // as proprietary Apple PNGs (CgBI chunk) which ImageSharp refuses to decode,
+        // so PNG sizes are read straight from the IHDR header instead. The replaced
+        // icon is saved back as a regular PNG, which iOS accepts fine.
+        string extension = Path.GetExtension(targetFile).ToLowerInvariant();
+        int targetWidth, targetHeight;
 
-        icon.Mutate(o => o.Resize(target.Width, target.Height));
+        if (extension == ".png")
+        {
+            (targetWidth, targetHeight) = GetPngSize(targetFile);
+        }
+        else
+        {
+            using Image target = Image.Load(targetFile);
+            (targetWidth, targetHeight) = (target.Width, target.Height);
+        }
+
+        using Image icon = Image.Load(iconPath);
+        icon.Mutate(o => o.Resize(targetWidth, targetHeight));
 
         // keep the original file format
-        if (Path.GetExtension(targetFile).Equals(".webp", StringComparison.OrdinalIgnoreCase))
+        if (extension.Equals(".webp", StringComparison.OrdinalIgnoreCase))
         {
             icon.SaveAsWebp(targetFile);
         }
@@ -180,6 +196,57 @@ public static class IconPatcher
             icon.SaveAsPng(targetFile);
         }
 
-        Log.Debug($"Replaced '{targetFile}' ({target.Width}x{target.Height})");
+        Log.Debug($"Replaced '{targetFile}' ({targetWidth}x{targetHeight})");
+    }
+
+    /// <summary>
+    /// Reads the pixel size from a PNG's IHDR chunk. Works for regular PNGs and for
+    /// Apple's proprietary CgBI PNGs (which carry an extra chunk before IHDR and
+    /// cannot be decoded by ImageSharp).
+    /// </summary>
+    private static (int Width, int Height) GetPngSize(string path)
+    {
+        using FileStream stream = File.OpenRead(path);
+        using var reader = new BinaryReader(stream);
+
+        ReadOnlySpan<byte> pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+
+        if (!pngSignature.SequenceEqual(reader.ReadBytes(8)))
+        {
+            throw new InvalidDataException($"'{path}' is not a PNG file.");
+        }
+
+        // walk the chunks until IHDR (CgBI files insert a proprietary chunk first);
+        // width/height are the first two big-endian uint32 values of the IHDR data
+        while (stream.Position < stream.Length)
+        {
+            byte[] lengthBytes = reader.ReadBytes(4);
+            byte[] type = reader.ReadBytes(4);
+
+            if (lengthBytes.Length < 4 || type.Length < 4)
+            {
+                break;
+            }
+
+            uint length = BinaryPrimitives.ReadUInt32BigEndian(lengthBytes);
+
+            if (type.AsSpan().SequenceEqual("IHDR"u8))
+            {
+                byte[] ihdr = reader.ReadBytes(8);
+
+                if (ihdr.Length < 8)
+                {
+                    break;
+                }
+
+                return ((int)BinaryPrimitives.ReadUInt32BigEndian(ihdr),
+                    (int)BinaryPrimitives.ReadUInt32BigEndian(ihdr.AsSpan(4)));
+            }
+
+            // skip the chunk data and its CRC
+            stream.Seek(length + 4, SeekOrigin.Current);
+        }
+
+        throw new InvalidDataException($"No IHDR chunk found in '{path}'.");
     }
 }
