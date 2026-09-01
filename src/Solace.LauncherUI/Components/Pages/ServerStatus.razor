@@ -38,7 +38,7 @@
             <div class="status-dot @GetStatusClass(_currentStatus) mr-2"></div>
             <h2 class="display-4 mb-0" style="font-size: 1.8rem; border-bottom: none; padding-bottom: 0;">@_currentStatus.ToString().ToUpper()</h2>
         </div>
-        <small class="text-muted mt-3 d-block">Last updated: @DateTime.Now.ToString("t")</small>
+        <small class="text-muted mt-3 d-block">Last updated: @FormatCurrentTime()</small>
     </div>
 </div>
 
@@ -291,6 +291,13 @@
         => _userTimeZone is null
             ? utc.ToString("HH:mm:ss")
             : TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), _userTimeZone).ToString("HH:mm:ss");
+
+    // "Last updated" must show the *user's* wall-clock time, not the server's
+    // (the container runs in UTC while the browser may be in any timezone).
+    private string FormatCurrentTime()
+        => _userTimeZone is null
+            ? DateTime.Now.ToString("t")
+            : TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _userTimeZone).ToString("t");
 
     private async void HandleUpdate()
     {
