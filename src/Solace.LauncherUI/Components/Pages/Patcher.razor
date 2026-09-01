@@ -785,8 +785,8 @@
         iosLocatorHostname = ApaceAddress;
         iosAuthHostname = ApaceAddress;
 
-        // /Patcher?job=<id> opens that job's view directly (used by the
-        // Generate button, which reloads the page after starting the job)
+        // /Patcher?job=<id> opens that job's view directly (deep link into a
+        // previously started job, e.g. after a browser reload mid-patch)
         var query = QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
 
         if (query.TryGetValue("job", out var jobId)
@@ -1009,7 +1009,7 @@
         }
     }
 
-    private async Task StartGeneration()
+    private void StartGeneration()
     {
         if (uploadedPath is null)
         {
@@ -1023,28 +1023,14 @@
             return;
         }
 
-        PatchJob? job = null;
-
         try
         {
             var request = BuildRequest();
-            job = PatcherService.CreateJob(request);
+            var job = PatcherService.CreateJob(request);
 
-            // the job now runs in the background; hard-reload the page (exactly like
-            // Ctrl+R) so the job view opens from a clean state (/Patcher?job=<id>)
-            await JS.InvokeVoidAsync("apacePatcher.navigate", $"/Patcher?job={job.Id}");
-        }
-        catch (JSDisconnectedException)
-        {
-            // the navigation above tears the circuit down mid-call - expected
-        }
-        catch (JSException)
-        {
-            // JS unavailable - fall back to a forced navigation
-            if (job is not null)
-            {
-                Navigation.NavigateTo($"/Patcher?job={job.Id}", forceLoad: true);
-            }
+            // switch straight to the job view in-place - no navigation, the log
+            // poller (PollAsync) keeps the detailed log lines updating live
+            ViewJob(job.Id);
         }
         catch (Exception ex)
         {
