@@ -45,9 +45,19 @@ public sealed class Starter
 		{
 			await instance.WaitForShutdownAsync();
 
+			if (!baseDir.Exists)
+			{
+				Log.Debug("Runtime directory already absent, skipping cleanup");
+				return;
+			}
+
 			try
 			{
 				baseDir.Delete(recursive: true);
+			}
+			catch (DirectoryNotFoundException)
+			{
+				Log.Debug("Runtime directory not found during cleanup (likely already removed)");
 			}
 			catch (Exception exception)
 			{
