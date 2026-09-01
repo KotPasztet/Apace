@@ -1,13 +1,14 @@
 @page "/Patcher"
 @implements IDisposable
 @using Microsoft.AspNetCore.Authorization
-@using System.Buffers
-@using System.Security.Cryptography
+@using Microsoft.JSInterop
+@using System.Text.Json
 @using MCEPatcher.Core
 @using Solace.LauncherUI.Patcher
 @attribute [Authorize(Policy = Permissions.UsePatcher)]
 @rendermode InteractiveServer
 @inject PatcherService PatcherService
+@inject IJSRuntime JS
 
 <PageTitle>Client Patcher - Apace</PageTitle>
 
@@ -51,7 +52,7 @@
                 </button>
             </div>
 
-            <div class="drop-zone @(isHovering ? "hovering" : "")" @ondragenter="@(() => isHovering = true)"
+            <div id="patcher-drop-zone" class="drop-zone @(isHovering ? "hovering" : "")" @ondragenter="@(() => isHovering = true)"
                  @ondragleave="@(() => isHovering = false)" @ondrop="@(() => isHovering = false)">
                 <InputFile OnChange="HandleFileSelection" accept="@(platform == PatchPlatform.Android ? ".apk" : ".ipa")"
                            class="file-input" disabled="@isUploading" />
@@ -665,7 +666,11 @@
     private string uploadedName = string.Empty;
     private bool hashVerified;
     private bool hashMismatch;
-    private CancellationTokenSource? uploadCts;
+
+    // response of POST /api/patcher/upload (see PatcherController)
+    private sealed record UploadResult(string Name, string FileName, long Size, string Hash, bool Verified);
+
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     // resource pack (Android, advanced)
     private string? resourcePackPath;
@@ -810,65 +815,60 @@
         uploadPct = 0;
         hashVerified = false;
         hashMismatch = false;
-        uploadCts = new CancellationTokenSource();
 
-        var uploadDir = Path.Combine(PatcherService.BaseDir, "uploads");
-        Directory.CreateDirectory(uploadDir);
-        var targetPath = Path.Combine(uploadDir, $"{Guid.NewGuid():N}{extension}");
+        await InvokeAsync(StateHasChanged);
+
+        var jsRef = DotNetObjectReference.Create(this);
 
         try
         {
-            await using var fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            await using var stream = file.OpenReadStream(MaxInputSize, uploadCts.Token);
-
-            var buffer = ArrayPool<byte>.Shared.Rent(81920);
-            using var hasher = SHA256.Create();
-
-            try
-            {
-                int bytesRead;
-                while ((bytesRead = await stream.ReadAsync(buffer, uploadCts.Token)) != 0)
+            // Upload goes over plain HTTP, bypassing the Blazor Server circuit -
+            // the circuit's file stream is capped at ~50 KB per SignalR message,
+            // which makes a ~66 MB APK need over a thousand round-trips.
+            var response = await JS.InvokeAsync<string>("apacePatcher.upload",
+                "patcher-drop-zone",
+                $"/api/patcher/upload?platform={platform}",
+                new Dictionary<string, string>
                 {
-                    hasher.TransformBlock(buffer, 0, bytesRead, null, 0);
-                    await fs.WriteAsync(buffer.AsMemory(0, bytesRead), uploadCts.Token);
+                    ["Content-Type"] = "application/octet-stream",
+                    ["X-File-Name"] = Uri.EscapeDataString(file.Name),
+                },
+                "HandleUploadProgress",
+                jsRef);
 
-                    uploadBytes += bytesRead;
-                    uploadPct = file.Size == 0 ? 100 : 100.0 * uploadBytes / file.Size;
+            var result = JsonSerializer.Deserialize<UploadResult>(response, JsonOptions)
+                ?? throw new InvalidOperationException("The server returned an empty upload response.");
 
-                    await InvokeAsync(StateHasChanged);
-                }
-
-                hasher.TransformFinalBlock([], 0, 0);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
-
-            var hash = Convert.ToHexString(hasher.Hash!);
-
-            hashVerified = platform == PatchPlatform.Android
-                ? hash == ApkProcessor.ApkHash
-                : hash == IpaProcessor.IpaHash;
+            uploadedPath = Path.Combine(PatcherService.BaseDir, "uploads", result.Name);
+            uploadedName = result.FileName;
+            uploadBytes = result.Size;
+            uploadPct = 100;
+            hashVerified = result.Verified;
             hashMismatch = !hashVerified;
-
-            uploadedPath = targetPath;
-            uploadedName = file.Name;
         }
-        catch (OperationCanceledException)
+        catch (JSException ex) when (ex.Message.Contains("UPLOAD_ABORTED"))
         {
-            TryDelete(targetPath);
+            // cancelled by the user - nothing to report
         }
         catch (Exception ex)
         {
             ShowDialog(false, $"Upload failed: {ex.Message}");
-            TryDelete(targetPath);
         }
         finally
         {
+            jsRef.Dispose();
             isUploading = false;
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    [JSInvokable]
+    public void HandleUploadProgress(long loaded, long total)
+    {
+        uploadBytes = loaded;
+        uploadPct = total == 0 ? 100 : 100.0 * loaded / total;
+
+        _ = InvokeAsync(StateHasChanged);
     }
 
 
@@ -910,9 +910,8 @@
 
     private void RemoveUploadedFile()
     {
-        uploadCts?.Cancel();
-        uploadCts?.Dispose();
-        uploadCts = null;
+        // abort an in-flight XHR upload, if any
+        _ = JS.InvokeVoidAsync("apacePatcher.cancel");
 
         if (uploadedPath is not null)
         {
@@ -1212,8 +1211,9 @@
     public void Dispose()
     {
         pollTimer?.Dispose();
-        uploadCts?.Cancel();
-        uploadCts?.Dispose();
+
+        // abort an in-flight upload, if any
+        _ = JS.InvokeVoidAsync("apacePatcher.cancel");
 
         // orphaned uploads (never turned into a job) should not linger on disk
         if (uploadedPath is not null)

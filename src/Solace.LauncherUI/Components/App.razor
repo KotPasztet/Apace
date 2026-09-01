@@ -42,6 +42,52 @@
             }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
         })();
     </script>
+    <script>
+        // Patcher uploads: sends the selected APK/IPA straight to /api/patcher/upload over
+        // plain HTTP. Bypasses the Blazor Server circuit, whose file streaming is capped at
+        // ~50 KB per SignalR message (RemoteJSDataStream), making large uploads crawl.
+        (function() {
+            var activeXhr = null;
+            window.apacePatcher = {
+                upload: function(dropZoneId, url, headers, progressMethod, dotnetRef) {
+                    return new Promise(function(resolve, reject) {
+                        var zone = document.getElementById(dropZoneId);
+                        var input = zone && zone.querySelector('input[type="file"]');
+                        var file = input && input.files && input.files[0];
+
+                        if (!file) { reject('UPLOAD_ABORTED: no file selected'); return; }
+
+                        var xhr = new XMLHttpRequest();
+                        activeXhr = xhr;
+                        xhr.open('POST', url, true);
+
+                        for (var key in headers) xhr.setRequestHeader(key, headers[key]);
+
+                        var lastProgress = 0;
+                        xhr.upload.onprogress = function(e) {
+                            var now = Date.now();
+                            if (e.loaded === e.total || now - lastProgress >= 100) {
+                                lastProgress = now;
+                                dotnetRef.invokeMethodAsync(progressMethod, e.loaded, e.total);
+                            }
+                        };
+                        xhr.onload = function() {
+                            activeXhr = null;
+                            if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
+                            else reject('Upload failed (HTTP ' + xhr.status + ').');
+                        };
+                        xhr.onerror = function() { activeXhr = null; reject('Upload failed - network error.'); };
+                        xhr.onabort = function() { activeXhr = null; reject('UPLOAD_ABORTED: cancelled'); };
+
+                        xhr.send(file);
+                    });
+                },
+                cancel: function() {
+                    if (activeXhr) activeXhr.abort();
+                }
+            };
+        })();
+    </script>
 </body>
 
 </html>
