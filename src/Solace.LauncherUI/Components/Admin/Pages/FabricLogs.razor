@@ -47,7 +47,8 @@
     <div class="card-header d-flex align-items-center justify-content-between">
         <span>▸ Fabric Server Logs</span>
         <div>
-            <button class="btn btn-sm btn-secondary" @onclick="RefreshLogs" title="Reload entire log file">↺ Refresh</button>
+            <button class="btn btn-sm @(_hideDebug ? "btn-secondary" : "btn-outline-secondary")" @onclick="() => _hideDebug = !_hideDebug" title="Show/hide debug entries">🐛 Debug</button>
+            <button class="btn btn-sm btn-secondary ms-2" @onclick="RefreshLogs" title="Reload entire log file">↺ Refresh</button>
             <button class="btn btn-sm btn-secondary ms-2" @onclick="CopyLogs" title="Copy visible log content to clipboard">📋 Copy</button>
         </div>
     </div>
@@ -59,7 +60,7 @@
                 <span class="text-muted" style="white-space: pre-wrap;">@_errorMessage</span>
             </div>
         }
-        else if (!_lines.Any())
+        else if (!GetVisibleLines().Any())
         {
             <div class="alert alert-light text-center py-4">
                 <span style="font-size: 1.5rem;" class="d-block mb-2">📄</span>
@@ -70,7 +71,7 @@
         {
             <div class="log-terminal" @ref="_logContainerRef">
                 <div class="log-content">
-                    @foreach (var (timestamp, threadLevel, message, levelClass) in _lines)
+                    @foreach (var (timestamp, threadLevel, message, levelClass) in GetVisibleLines())
                     {
                         <div class="log-line"><span class="log-time">[@timestamp]</span> <span class="log-level @levelClass">[@threadLevel]</span> <span class="log-msg">@message</span></div>
                     }
@@ -90,6 +91,7 @@
 
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
+    private bool _hideDebug = true;
     private string? _errorMessage;
     private bool _logFileExists;
     private string _logFilePath = "";
@@ -274,6 +276,10 @@
         }
     }
 
+    // Debug entries are hidden by default; the 🐛 toggle in the header shows them.
+    private IEnumerable<(string timestamp, string threadLevel, string message, string levelClass)> GetVisibleLines()
+        => _hideDebug ? _lines.Where(l => l.levelClass != "log-dbg") : _lines;
+
     private async Task RefreshLogs()
     {
         _lastFilePosition = 0;
@@ -284,7 +290,7 @@
 
     private async Task CopyLogs()
     {
-        var text = string.Join("\n", _lines.Select(l =>
+        var text = string.Join("\n", GetVisibleLines().Select(l =>
             string.IsNullOrEmpty(l.threadLevel)
                 ? l.message
                 : $"[{l.timestamp}] [{l.threadLevel}]: {l.message}"));
