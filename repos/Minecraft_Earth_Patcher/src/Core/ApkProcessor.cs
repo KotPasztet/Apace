@@ -66,7 +66,14 @@ public static class ApkProcessor
         if (!options.SkipDecode || !options.SkipBuild)
         {
             await DependencyDownloader.Download("https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar", APK.FileName);
-            await DependencyDownloader.Download(BuildTools.DownloadUrl, BuildTools.FileName);
+
+            // the Google build-tools zip (x86-64 only) is needed just for
+            // zipalign; when ZIPALIGN_PATH provides a native binary the
+            // download is skipped entirely (see SystemTools / BuildTools)
+            if (SystemTools.ZipAlignPath is null)
+            {
+                await DependencyDownloader.Download(BuildTools.DownloadUrl, BuildTools.FileName);
+            }
         }
 
         if (options.AndroidOSVersion >= 15)

@@ -155,6 +155,16 @@ public sealed class PatcherService
                 "Java (java in PATH) is required to patch APKs (apktool and the signer are Java tools), but it was not found on this machine.");
         }
 
+        if (SystemTools.Aapt2Path is { } aapt2)
+        {
+            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Using system aapt2 ({aapt2}) instead of the one bundled with apktool.");
+        }
+
+        if (SystemTools.ZipAlignPath is { } zipAlign)
+        {
+            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Using system zipalign ({zipAlign}) instead of the Google build-tools one.");
+        }
+
         using (var fs = File.OpenRead(job.InputPath))
         {
             if (!ApkProcessor.VerifyApkHash(fs))
