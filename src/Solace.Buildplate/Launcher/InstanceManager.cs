@@ -211,7 +211,11 @@ public sealed class InstanceManager
                     // Sent by the persistent bridge's connector plugin when a Bedrock
                     // player logs in: resolve which buildplate instance (dimension on
                     // the persistent Fabric server) the player belongs to. Payload is
-                    // a plain JSON string with the player id.
+                    // a plain JSON string with the player id. Route to the player's
+                    // most recently created instance: a player can have several live
+                    // instances at once (an encounter plus a freshly started
+                    // buildplate), and a FirstOrDefault over the
+                    // ConcurrentDictionary would pick an arbitrary one.
                     string? playerId;
                     try
                     {
@@ -229,7 +233,7 @@ public sealed class InstanceManager
 
                     lock (instanceManager._lock)
                     {
-                        Instance? instance = instanceManager._activeInstances.Values.FirstOrDefault(instance => instance.PlayerId == playerId);
+                        Instance? instance = instanceManager._activeInstances.Values.Where(instance => instance.PlayerId == playerId).OrderByDescending(instance => instance.CreatedAt).FirstOrDefault();
                         if (instance is null)
                         {
                             Log.Information($"playerLogin for player {playerId}: no active instance, rejecting");
