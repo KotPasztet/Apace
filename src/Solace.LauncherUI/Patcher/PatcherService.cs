@@ -23,6 +23,12 @@ public sealed class PatcherService
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly object jobsLock = new();
     private readonly List<PatchJob> jobs = [];
+    private readonly ServerManager serverManager;
+
+    public PatcherService(ServerManager serverManager)
+    {
+        this.serverManager = serverManager;
+    }
 
     public static string BaseDir => Path.Combine(Program.DataDir, "patcher");
 
@@ -30,6 +36,18 @@ public sealed class PatcherService
 
     /// <summary>Default Apace icon shipped with the panel (images/Apace_Favicon.png).</summary>
     public static string DefaultIconPath => Path.Combine(AppContext.BaseDirectory, "images", "Apace_Favicon.png");
+
+    /// <summary>True while any job is queued or running - the whole panel is locked to the patcher page then.</summary>
+    public bool AnyJobActive
+    {
+        get
+        {
+            lock (jobsLock)
+            {
+                return jobs.Any(job => job.Status is PatchJobStatus.Queued or PatchJobStatus.Running);
+            }
+        }
+    }
 
     public IReadOnlyList<PatchJob> Jobs
     {
@@ -56,6 +74,15 @@ public sealed class PatcherService
     /// </summary>
     public PatchJob CreateJob(PatchRequest request)
     {
+        // Patching requires the Earth server to be fully offline: MCEPatcher.Core
+        // swaps the process working directory and global tool state, which breaks
+        // the running server components (DB access etc.) until the job finishes.
+        if (serverManager.Status is not ServerStatus.Offline)
+        {
+            throw new InvalidOperationException(
+                "The Earth server must be offline before patching a client - stop it first.");
+        }
+
         Validate(request);
 
         var job = new PatchJob
@@ -68,6 +95,10 @@ public sealed class PatcherService
         };
 
         Directory.CreateDirectory(job.WorkDir);
+
+        // Held from queueing until the job finishes: blocks starting the Earth
+        // server/components while the patcher owns the process working directory.
+        var patchLock = serverManager.AcquirePatchLock();
 
         lock (jobsLock)
         {
@@ -94,12 +125,12 @@ public sealed class PatcherService
             }
         }
 
-        _ = RunJobAsync(job, request);
+        _ = RunJobAsync(job, request, patchLock);
 
         return job;
     }
 
-    private async Task RunJobAsync(PatchJob job, PatchRequest request)
+    private async Task RunJobAsync(PatchJob job, PatchRequest request, IDisposable patchLock)
     {
         await gate.WaitAsync();
 
@@ -142,6 +173,7 @@ public sealed class PatcherService
             Environment.CurrentDirectory = originalDir;
             gate.Release();
             CleanupJobWorkingFiles(job);
+            patchLock.Dispose();
         }
     }
 

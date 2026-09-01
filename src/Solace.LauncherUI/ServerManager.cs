@@ -49,7 +49,12 @@ public sealed class ServerManager : IDisposable
     private int _startLockCount;
     public bool StartLocked => Volatile.Read(ref _startLockCount) > 0;
 
-    public bool CanStart => !StartLocked && Status is not (ServerStatus.Starting or ServerStatus.Online);
+    private int _patchLockCount;
+
+    /// <summary>True while a client patch job is running - the Earth server must not be (re)started then.</summary>
+    public bool PatchLocked => Volatile.Read(ref _patchLockCount) > 0;
+
+    public bool CanStart => !StartLocked && !PatchLocked && Status is not (ServerStatus.Starting or ServerStatus.Online);
     public bool CanRestart => Status is not (ServerStatus.Stopping or ServerStatus.Offline);
     public bool CanStop => Status is not (ServerStatus.Stopping or ServerStatus.Offline);
 
@@ -131,6 +136,14 @@ public sealed class ServerManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Held for the whole duration of a client patch job (queued or running).
+    /// While held, starting the Earth server or any of its components is refused:
+    /// MCEPatcher.Core swaps the process working directory and global tool state,
+    /// which breaks the server components (DB access etc.).
+    /// </summary>
+    public IDisposable AcquirePatchLock() => new PatchLockHandle(this);
+
     private ServerStatus ComputeGlobalStatus()
     {
         if (Components.Any(c => c.Status is ServerStatus.Stopping))
@@ -191,9 +204,9 @@ public sealed class ServerManager : IDisposable
 
         lock (_statusLock)
         {
-            if (StartLocked)
+            if (StartLocked || PatchLocked)
             {
-                Log.Logger.Warning("EnsureComponentsOnline blocked because server start is locked.");
+                Log.Logger.Warning("EnsureComponentsOnline blocked because the server start is locked (start lock or patch in progress).");
                 return false;
             }
 
@@ -643,6 +656,36 @@ public sealed class ServerManager : IDisposable
             if (remaining <= 0)
             {
                 Interlocked.Exchange(ref _manager._startLockCount, 0);
+                _manager.OnStatusChanged?.Invoke();
+            }
+        }
+    }
+
+    private sealed class PatchLockHandle : IDisposable
+    {
+        private readonly ServerManager _manager;
+        private int _disposed;
+
+        public PatchLockHandle(ServerManager manager)
+        {
+            _manager = manager;
+            if (Interlocked.Increment(ref _manager._patchLockCount) == 1)
+            {
+                _manager.OnStatusChanged?.Invoke();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            var remaining = Interlocked.Decrement(ref _manager._patchLockCount);
+            if (remaining <= 0)
+            {
+                Interlocked.Exchange(ref _manager._patchLockCount, 0);
                 _manager.OnStatusChanged?.Invoke();
             }
         }

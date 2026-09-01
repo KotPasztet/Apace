@@ -132,6 +132,25 @@ public partial class Program
 
         app.UseAntiforgery();
 
+        // While a client patch job is queued/running, keep users on the patcher page:
+        // MCEPatcher.Core swaps the process working directory, which breaks the rest
+        // of the panel (DB access etc.) until the job finishes. Applies to document
+        // navigations only (links, address bar, back/forward) - assets and APIs are
+        // left alone so the patcher page itself keeps working.
+        app.Use(async (context, next) =>
+        {
+            if (context.RequestServices.GetRequiredService<PatcherService>().AnyJobActive
+                && !context.Request.Path.StartsWithSegments("/Patcher")
+                && HttpMethods.IsGet(context.Request.Method)
+                && context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.Redirect("/Patcher");
+                return;
+            }
+
+            await next();
+        });
+
         app.MapStaticAssets();
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();

@@ -11,6 +11,7 @@
 @inject PatcherService PatcherService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject ServerManager ServerManager
 
 <PageTitle>Client Patcher - Apace</PageTitle>
 
@@ -21,6 +22,11 @@
     <p class="section-subtitle">
         Generate a patched Minecraft Earth client (APK/IPA) that connects to your Apace server.
     </p>
+
+    @* While a patch job is queued/running the user is locked on this page: the patcher
+       temporarily takes over the process working directory and the rest of the panel
+       does not work correctly until the job finishes. *@
+    <NavigationLock ConfirmExternalNavigation="true" OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
 
     @if (ActiveJob is null)
     {
@@ -554,15 +560,22 @@
 
             <div class="button-group mt-4">
                 <button type="button" class="btn btn-primary" @onclick="StartGeneration"
-                        disabled="@(isUploading || uploadedPath is null)">
+                        disabled="@(isUploading || uploadedPath is null || !CanPatch)">
                     Generate patched @(platform == PatchPlatform.Android ? "APK" : "IPA")
                 </button>
                 <span class="file-status text-muted">
-                    @switch (mode)
+                    @if (!CanPatch)
                     {
-                        case PatchMode.Auto: <text>Auto: everything derived from your Apace configuration.</text> break;
-                        case PatchMode.Simple: <text>Simple: Auto defaults with your address overrides.</text> break;
-                        case PatchMode.Advanced: <text>Advanced: full control, like the desktop patcher.</text> break;
+                        <text>The Earth server must be offline to patch a client.</text>
+                    }
+                    else
+                    {
+                        @switch (mode)
+                        {
+                            case PatchMode.Auto: <text>Auto: everything derived from your Apace configuration.</text> break;
+                            case PatchMode.Simple: <text>Simple: Auto defaults with your address overrides.</text> break;
+                            case PatchMode.Advanced: <text>Advanced: full control, like the desktop patcher.</text> break;
+                        }
                     }
                 </span>
             </div>
@@ -616,6 +629,14 @@
                     case PatchJobStatus.Failed: <span class="text-danger">Patching failed</span> break;
                 }
             </div>
+
+            @if (!ActiveJob.IsFinished)
+            {
+                <div class="alert alert-warning mt-2 mb-0">
+                    Patching in progress - the panel is locked to this page (and the Earth server cannot
+                    be started) until the patch finishes. Navigation will unlock automatically.
+                </div>
+            }
 
             <div class="log-terminal mt-3">
                 @foreach (var line in logSnapshot)
@@ -754,6 +775,9 @@
 
     private string ApaceAddress => $"{Settings.Instance.IPv4}:{Settings.Instance.ApiPort}";
 
+    /// <summary>Patching is only allowed while the Earth server is fully offline.</summary>
+    private bool CanPatch => ServerManager.Status == Solace.LauncherUI.ServerStatus.Offline;
+
     protected override void OnInitialized()
     {
         locatorHostname = ApaceAddress;
@@ -771,8 +795,34 @@
             activeJobId = job.Id;
             logSnapshot = job.GetLogSnapshot();
         }
+        else if (PatcherService.Jobs.FirstOrDefault(j => !j.IsFinished) is { } active)
+        {
+            // a reload/redirect during an active job must not let the user escape
+            // to the form - reopen the running job's view instead
+            activeJobId = active.Id;
+            logSnapshot = active.GetLogSnapshot();
+        }
+
+        ServerManager.OnStatusChanged += OnServerStatusChanged;
 
         pollTimer = new Timer(_ => _ = PollAsync(), null, 500, 500);
+    }
+
+    private void OnServerStatusChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// NavigationLock: while a patch job is queued/running the user stays on this
+    /// page - the rest of the panel does not work correctly during patching.
+    /// </summary>
+    private void OnBeforeInternalNavigation(LocationChangingContext context)
+    {
+        if (PatcherService.AnyJobActive)
+        {
+            context.PreventNavigation();
+        }
     }
 
     private async Task PollAsync()
@@ -955,6 +1005,12 @@
         if (uploadedPath is null)
         {
             ShowDialog(false, $"Upload the original Minecraft Earth {(platform == PatchPlatform.Android ? "APK" : "IPA")} first.");
+            return;
+        }
+
+        if (!CanPatch)
+        {
+            ShowDialog(false, "The Earth server must be offline before patching a client - stop it first.");
             return;
         }
 
@@ -1231,6 +1287,7 @@
     public void Dispose()
     {
         pollTimer?.Dispose();
+        ServerManager.OnStatusChanged -= OnServerStatusChanged;
 
         // abort an in-flight upload, if any
         _ = JS.InvokeVoidAsync("apacePatcher.cancel");
