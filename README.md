@@ -19,7 +19,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 >
 > Instead of booting a whole new Minecraft server per buildplate, `dev` runs **one persistent Fabric server** hosting every buildplate as an on-demand dimension (created in ~1s, world data imported/exported on the fly). It will land in the `main` branch soon.
 >
-> It also slashes RAM usage: `main` needs a full JVM (**1.6 GB per server**) *per buildplate*, while `dev` serves all of them from a single server — roughly **1.5 GB total plus ~30 MB per additional concurrent buildplate**. With 10 concurrent buildplates that is **16 GB → ~1.8 GB, about 89% less RAM**.
+> It also slashes RAM usage: `main` needs a full JVM (**1.6 GB per server**) *per buildplate*, while `dev` serves all of them from a single server — roughly **1.5 GB total plus ~30 MB per additional concurrent buildplate**. With 15 concurrent buildplates that is **24 GB → ~1.9 GB, about 92% less RAM**.
 
 ## Disclaimer
 
