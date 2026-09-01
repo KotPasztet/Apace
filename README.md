@@ -15,11 +15,11 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 > [!TIP]
 > ### :zap: Dev branch news — v2 persistent server
 >
-> I've done some math: on my configuration, **Apace `dev` loads buildplates 3471% faster than Solace/Apace `main`** — the wait time is reduced by **97.2%**. Isn't that crazy?
+> I've done some math: on my configuration, **Apace `dev` loads buildplates 3471% faster than Solace/Apace `main`** — the wait time is reduced by **97.2%**.
 >
 > Instead of booting a whole new Minecraft server per buildplate, `dev` runs **one persistent Fabric server** hosting every buildplate as an on-demand dimension (created in ~1s, world data imported/exported on the fly). It will land in the `main` branch soon.
 >
-> We are millimeters (McDonald's sauces, for our fellow American friends) away from actually releasing this — the bugs that came with the dev branch and made buildplates **100% air** have been fixed (world data is now really imported on join and saved on leave).
+> It also slashes RAM usage (estimated): `main` needs a full JVM (~1.2 GB) *per buildplate*, while `dev` serves all of them from a single server — roughly **1.5 GB total plus ~30 MB per additional concurrent buildplate**. With 5 concurrent buildplates that is about **6 GB → 1.7 GB, ~72% less RAM**.
 
 ## Disclaimer
 
