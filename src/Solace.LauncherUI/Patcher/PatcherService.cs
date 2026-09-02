@@ -144,7 +144,7 @@ public sealed class PatcherService
             Environment.CurrentDirectory = WorkDir;
             PatchLogSink.CurrentJob = job;
 
-            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Starting {job.Platform} patch ({job.Mode} mode)");
+            job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] Starting {job.Platform} patch ({job.Mode} mode)");
 
             bool success = job.Platform == PatchPlatform.Android
                 ? await RunAndroidAsync(job, request)
@@ -159,12 +159,12 @@ public sealed class PatcherService
             var outputPath = Path.Combine(job.WorkDir, BuildOutputFileName(request));
             job.MarkSucceeded(outputPath);
 
-            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Done: {Path.GetFileName(outputPath)}");
+            job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] Done: {Path.GetFileName(outputPath)}");
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Patch job {JobId} failed", job.Id);
-            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [ERR] {ex.Message}");
+            job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [ERR] {ex.Message}");
             job.MarkFailed(ex.Message);
         }
         finally
@@ -189,24 +189,24 @@ public sealed class PatcherService
 
         if (SystemTools.Aapt2Path is { } aapt2)
         {
-            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Using system aapt2 ({aapt2}) instead of the one bundled with apktool.");
+            job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] Using system aapt2 ({aapt2}) instead of the one bundled with apktool.");
         }
 
         if (SystemTools.ZipAlignPath is { } zipAlign)
         {
-            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Using system zipalign ({zipAlign}) instead of the Google build-tools one.");
+            job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] Using system zipalign ({zipAlign}) instead of the Google build-tools one.");
         }
 
         if (SystemTools.ApktoolFramePath is { } framePath)
         {
-            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [INF] Using framework directory ({framePath}) for apktool decode/build.");
+            job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] Using framework directory ({framePath}) for apktool decode/build.");
         }
 
         using (var fs = File.OpenRead(job.InputPath))
         {
             if (!ApkProcessor.VerifyApkHash(fs))
             {
-                job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [WRN] The .apk file hash does not match the supported original - patching may fail.");
+                job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [WRN] The .apk file hash does not match the supported original - patching may fail.");
             }
         }
 
@@ -216,7 +216,7 @@ public sealed class PatcherService
             {
                 if (!ApkProcessor.VerifyResourcePackHash(fs))
                 {
-                    job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [WRN] The resource pack hash does not match - the game may not function correctly.");
+                    job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [WRN] The resource pack hash does not match - the game may not function correctly.");
                 }
             }
         }
@@ -245,7 +245,7 @@ public sealed class PatcherService
         {
             if (!IpaProcessor.VerifyHash(fs))
             {
-                job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [WRN] The .ipa file hash does not match the supported original - patching may fail.");
+                job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [WRN] The .ipa file hash does not match the supported original - patching may fail.");
             }
         }
 
@@ -538,7 +538,7 @@ public sealed class PatcherService
     {
         if (!File.Exists(DefaultIconPath))
         {
-            job.AddLog($"{DateTimeOffset.Now:HH:mm:ss} [WRN] Apace icon not found at '{DefaultIconPath}' - the app icon will not be changed.");
+            job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [WRN] Apace icon not found at '{DefaultIconPath}' - the app icon will not be changed.");
             return null;
         }
 
