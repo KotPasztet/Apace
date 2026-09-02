@@ -1,7 +1,7 @@
 # Apace — Minecraft Earth replacement server
 # Windows PowerShell installer
-# Usage: iwr .../install.ps1 | iex                (Docker, recommended)
-#        iwr .../install.ps1 | iex -args '--no-docker'  (direct download)
+# Usage: iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex                (Docker, recommended)
+#        iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex -args '--no-docker'  (direct download)
 
 param([string]$Mode = "docker")
 
@@ -12,14 +12,27 @@ if ($Mode -eq "--no-docker") {
     # ─── Direct download from GitHub Releases ─────────────────────────
     Write-Host "Downloading latest Apace release..."
 
+    # Detect CPU architecture (matches the release asset naming: $os-$arch)
+    # 9 = x64/AMD64, 12 = ARM64, 6 = IA64, 5 = ARM (32-bit)
+    $cpuArch = (Get-CimInstance Win32_Processor).Architecture
+    $arch = switch ($cpuArch) {
+        9  { "x64" }
+        12 { "arm64" }
+        default { $null }
+    }
+    if (-not $arch) {
+        Write-Host "Unsupported CPU architecture: $cpuArch" -ForegroundColor Red
+        exit 1
+    }
+
     $APACE_DIR = "$env:USERPROFILE\apace"
     New-Item -ItemType Directory -Force -Path $APACE_DIR | Out-Null
     Set-Location $APACE_DIR
 
     $release = Invoke-RestMethod -Uri "https://api.github.com/repos/KotPasztet/Apace/releases/latest"
-    $asset = $release.assets | Where-Object { $_.name -like "*win-x64*" } | Select-Object -First 1
+    $asset = $release.assets | Where-Object { $_.name -like "*win-$arch*" } | Select-Object -First 1
     if (-not $asset) {
-        Write-Host "No Windows release found. Try Docker mode instead." -ForegroundColor Red
+        Write-Host "No Windows release found for win-$arch. Try Docker mode instead." -ForegroundColor Red
         Write-Host "  iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex"
         exit 1
     }
@@ -89,7 +102,7 @@ if ($Mode -eq "--no-docker") {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml" -OutFile "docker-compose.yml"
 
     # Detect architecture and inject platform
-    $hostArch = (Get-WmiObject Win32_Processor).Architecture
+    $hostArch = (Get-CimInstance Win32_Processor).Architecture
     # 9 = x64/AMD64, 12 = ARM64
     $dockerPlatform = switch ($hostArch) {
         9  { "linux/amd64" }
@@ -104,9 +117,10 @@ if ($Mode -eq "--no-docker") {
     }
 
     Write-Host "Setting up persistent storage..."
-    $dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs")
+    $dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs", "fabric-data")
     foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path "$PERSISTENT\$d" | Out-Null }
-    if (-not (Test-Path "$PERSISTENT\config.json")) { '{}' | Out-File -FilePath "$PERSISTENT\config.json" -Encoding utf8 }
+    # ApiPort=1808 matches the compose port mapping (code default is 8080)
+    if (-not (Test-Path "$PERSISTENT\config.json")) { '{"ApiPort":1808}' | Out-File -FilePath "$PERSISTENT\config.json" -Encoding utf8 }
 
     $compose = Get-Content docker-compose.yml -Raw
     $compose = $compose -replace '/opt/apace-persistent/', 'C:/apace-persistent/'
@@ -123,6 +137,11 @@ if ($Mode -eq "--no-docker") {
     Write-Host ""
     Write-Host "Apace is running!" -ForegroundColor Green
     Write-Host "  Panel: http://localhost:5000 (or http://${IP}:5000)"
+    Write-Host "  API:   http://localhost:1808"
     Write-Host ""
-    Write-Host "  Next: open panel, create account, Server Options → set IP, Start All"
+    Write-Host "  Next steps:"
+    Write-Host "  1. Open the panel and create an account"
+    Write-Host "  2. Server Options → set your IP address ($IP)"
+    Write-Host "  3. Server Status → click Start All"
+    Write-Host "  4. Accept the Minecraft EULA when prompted"
 }

@@ -1,3 +1,8 @@
+# Port map (shared services, not per-instance):
+#   5000      launcher UI / panel
+#   1808      public HTTP API (ApiPort from config.json; 1808 on fresh installs)
+#   5532      event bus (TCP)
+#   19132/udp single shared bridge Bedrock port (all instances)
 services:
   apace:
     image: ghcr.io/kotpasztet/apace:dev
@@ -6,10 +11,10 @@ services:
     restart: unless-stopped
 
     ports:
-      - "5000:5000"
-      - "1808:1808"
-      - "5532:5532"
-      - "19132:19132/udp"
+      - "5000:5000"        # launcher UI / panel
+      - "1808:1808"        # public HTTP API (ApiPort from config.json)
+      - "5532:5532"        # event bus (TCP)
+      - "19132:19132/udp"  # single shared bridge Bedrock port
 
     volumes:
       - /opt/apace-persistent/launcher-data:/app/launcher/Data
