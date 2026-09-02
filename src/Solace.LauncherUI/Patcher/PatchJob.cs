@@ -104,7 +104,7 @@ public sealed class PatchJob
             _ => "INF",
         };
 
-        var message = $"{logEvent.Timestamp.LocalDateTime:HH:mm:ss} [{level}] {logEvent.RenderMessage()}";
+        var message = $"{logEvent.Timestamp.LocalDateTime:yyyy-MM-dd HH:mm:ss} [{level}] {logEvent.RenderMessage()}";
 
         if (logEvent.Exception is not null)
         {
