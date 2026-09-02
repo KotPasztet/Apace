@@ -3,8 +3,8 @@ set -e
 
 # Apace — Minecraft Earth replacement server
 # Auto-installer for Linux and macOS
-# Usage: curl .../install.sh | bash          (Docker, recommended)
-#        curl .../install.sh | bash -s -- --no-docker  (direct download)
+# Usage: curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash          (Docker, recommended)
+#        curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker  (direct download)
 
 RED='\033[1;31m'
 GRN='\033[1;32m'
@@ -123,9 +123,10 @@ else
     fi
 
     PERSISTENT="/opt/apace-persistent"
-    sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs}
+    sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs,fabric-data}
     if [ ! -f "$PERSISTENT/config.json" ]; then
-        echo '{}' | sudo tee "$PERSISTENT/config.json" > /dev/null
+        # ApiPort=1808 matches the compose port mapping (code default is 8080)
+        echo '{"ApiPort":1808}' | sudo tee "$PERSISTENT/config.json" > /dev/null
     fi
     sudo chown -R 1654:1654 "$PERSISTENT" 2>/dev/null || sudo chmod -R 777 "$PERSISTENT" 2>/dev/null
 

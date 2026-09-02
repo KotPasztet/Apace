@@ -6,8 +6,8 @@
 # separate JVM process as in v1.
 #
 # The ports below are therefore SHARED services, not per-instance ports:
-#   - 5000      public HTTP API (ASP.NET Core)
-#   - 1808      launcher UI / dashboard
+#   - 5000      launcher UI / panel (ASP.NET Core)
+#   - 1808      public HTTP API (ApiPort from config.json; 1808 on fresh installs)
 #   - 5532      event bus (TCP, orchestrator <-> ViennaConnectorPlugin)
 #   - 19132/udp the SINGLE shared bridge Bedrock port (all instances connect here)
 services:
@@ -18,8 +18,8 @@ services:
     restart: unless-stopped
 
     ports:
-      - "5000:5000"        # public HTTP API
-      - "1808:1808"        # launcher UI / dashboard
+      - "5000:5000"        # launcher UI / panel
+      - "1808:1808"        # public HTTP API (ApiPort from config.json)
       - "5532:5532"        # event bus (TCP)
       - "19132:19132/udp"  # single shared bridge Bedrock port (all instances)
 
