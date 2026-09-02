@@ -133,7 +133,7 @@ internal static class Program
         await persistentProcessManager.StartBridgeAsync();
 
         var starter = new Starter(eventBusClient, options.EventBusConnectionString, options.PublicAddress);
-        var instanceManager = await InstanceManager.CreateAsync(eventBusClient, starter, options.PublicAddress);
+        var instanceManager = await InstanceManager.CreateAsync(eventBusClient, starter, options.PublicAddress, persistentProcessManager);
 
         Console.CancelKeyPress += (sender, e) =>
         {
