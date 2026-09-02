@@ -2,15 +2,15 @@
 
 ## v0.1.0 — 2026-09-02
 
-> Scope: everything currently on the `dev` branch that is **not** in `main` yet
-> (88 commits since v0.0.3, base: `main` @ `0384d18`, 2026-08-07).
+> Scope: everything between **v0.0.3** and **v0.1.0**
+> (95 commits, base: `v0.0.3` @ `7d745f8`, 2026-08-07).
 > Released in **v0.1.0** — this is the first release of the v2 persistent-server architecture.
 
 ---
 
 ## 🏗️ v2 persistent-server architecture (the headline change)
 
-Instead of booting a whole new Minecraft server (JVM pair) **per buildplate**, `dev` runs **one persistent Fabric server** that hosts every buildplate as an on-demand **dimension**.
+Instead of booting a whole new Minecraft server (JVM pair) **per buildplate**, v0.1.0 runs **one persistent Fabric server** that hosts every buildplate as an on-demand **dimension**.
 
 - One **persistent Fabric server** + one **persistent bridge** serve all instances concurrently (`5132c73`, `32263fe`).
 - A buildplate instance is a **dynamically registered dimension** — created in **~1 s** via `createInstance` on the control channel, world data imported/exported on the fly.
@@ -19,8 +19,8 @@ Instead of booting a whole new Minecraft server (JVM pair) **per buildplate**, `
 - Fountain-fabric mod shipped in the Docker image and auto-synced into the volume on every start.
 
 **Measured impact (see README):**
-- Buildplates load **3471% faster** than `main` — wait time reduced by **97.2%**.
-- RAM: `main` needs a full JVM (**1.6 GB per server**) per buildplate; `dev` serves everything from one server — **~1.5 GB total + ~30 MB per additional concurrent buildplate**.
+- Buildplates load **3471% faster** than v0.0.3 — wait time reduced by **97.2%**.
+- RAM: v0.0.3 needs a full JVM (**1.6 GB per server**) per buildplate; v0.1.0 serves everything from one server — **~1.5 GB total + ~30 MB per additional concurrent buildplate**.
 - 15 concurrent buildplates: **24 GB → ~1.9 GB (≈92% less RAM)**.
 
 ## ⚡ Startup & world generation performance

@@ -67,7 +67,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | 15 concurrent buildplates             | **24 GB**                                       | **~1.9 GB** (≈92% less)                                              |
 | Boot worldgen ("Preparing spawn area")| Minutes                                         | **Seconds** (air overworld, no Nether/End)                           |
 
-*Measured as dev-vs-main — see [CHANGELOG.md](CHANGELOG.md).*
+*Measured against v0.0.3 (the previous, Solace-derived architecture) — see [CHANGELOG.md](CHANGELOG.md).*
 
 ## Quick Start
 
