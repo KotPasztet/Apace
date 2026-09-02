@@ -364,6 +364,15 @@ public sealed class ServerManager : IDisposable
             OnStatusChanged?.Invoke();
         }
 
+        // The Minecraft Fabric/"MC Java" server itself is a plain "java"
+        // process spawned as a child of Buildplate Launcher — it is not one
+        // of the tracked Components above, so stopping Buildplate Launcher
+        // alone does not guarantee it dies too (it can be left running as
+        // an orphaned process). Explicitly stop it here so the panel's Stop
+        // button always actually stops the Java server as well.
+        cancellationToken.ThrowIfCancellationRequested();
+        await StopProgram("java", Log.Logger, cancellationToken);
+
         cancellationToken.ThrowIfCancellationRequested();
         AnyOnline = false;
         Status = ServerStatus.Offline;
@@ -413,6 +422,12 @@ public sealed class ServerManager : IDisposable
             comp.Status = ServerStatus.Offline;
             OnStatusChanged?.Invoke();
         }
+
+        // Same reasoning as in Stop(): "java" (the actual Minecraft server)
+        // isn't a tracked Component and must be force-stopped explicitly,
+        // otherwise KillAll can leave it running orphaned.
+        cancellationToken.ThrowIfCancellationRequested();
+        await StopProgram("java", Log.Logger, cancellationToken);
 
         cancellationToken.ThrowIfCancellationRequested();
         AnyOnline = false;
