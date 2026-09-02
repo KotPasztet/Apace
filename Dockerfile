@@ -28,7 +28,7 @@ RUN set -eux; \
     . /tmp/arch.env; \
     mkdir -p /opt/microsoft/powershell/7 \
     && cd /opt/microsoft/powershell/7 \
-    && wget -q "https://github.com/PowerShell/PowerShell/releases/download/v7.6.1/powershell-7.6.1-linux-${PWARCH}.tar.gz" \
+    && wget -q --tries=5 --retry-connrefused "https://github.com/PowerShell/PowerShell/releases/download/v7.6.1/powershell-7.6.1-linux-${PWARCH}.tar.gz" \
     && tar zxf "powershell-7.6.1-linux-${PWARCH}.tar.gz" \
     && chmod +x pwsh \
     && ln -sf /opt/microsoft/powershell/7/pwsh /usr/local/bin/pwsh \
@@ -129,7 +129,7 @@ RUN printf '%s\n' \
 # well-formed and works. apktool gets it via --frame-path (decode + build),
 # enabled by APKTOOL_FRAMEWORK_DIR below.
 RUN mkdir -p /opt/android-framework \
-    && curl -fsSL -o /tmp/platform-29.zip https://dl.google.com/android/repository/platform-29_r05.zip \
+    && curl -fsSL --http1.1 --retry 5 --retry-all-errors --retry-delay 3 -o /tmp/platform-29.zip https://dl.google.com/android/repository/platform-29_r05.zip \
     && unzip -j /tmp/platform-29.zip 'android-10/android.jar' -d /opt/android-framework \
     && mv /opt/android-framework/android.jar /opt/android-framework/1.apk \
     && rm /tmp/platform-29.zip \
@@ -140,7 +140,7 @@ RUN set -eux; \
     . /tmp/arch.env; \
     mkdir -p /opt/microsoft/powershell/7 \
     && cd /opt/microsoft/powershell/7 \
-    && wget -q "https://github.com/PowerShell/PowerShell/releases/download/v7.6.1/powershell-7.6.1-linux-${PWARCH}.tar.gz" \
+    && wget -q --tries=5 --retry-connrefused "https://github.com/PowerShell/PowerShell/releases/download/v7.6.1/powershell-7.6.1-linux-${PWARCH}.tar.gz" \
     && tar zxf "powershell-7.6.1-linux-${PWARCH}.tar.gz" \
     && chmod +x pwsh \
     && ln -sf /opt/microsoft/powershell/7/pwsh /usr/local/bin/pwsh \
