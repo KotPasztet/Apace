@@ -15,6 +15,7 @@ public sealed class InstanceManager
     private readonly Starter _starter;
     private readonly Publisher _publisher;
     private readonly string _publicAddress;
+    private readonly PersistentProcessManager? _persistentProcessManager;
 
     private RequestHandler _requestHandler = null!;
     private bool _shuttingDown;
@@ -56,18 +57,24 @@ public sealed class InstanceManager
     // player should be routed to.
     private sealed record PlayerLoginResponse(bool Accepted, string? InstanceId);
 
-    public InstanceManager(Starter starter, Publisher publisher, string publicAddress)
+    // Response to the LauncherUI panel's stopFabricServer request: whether the
+    // graceful stop attempt was made (the server either exited by itself or
+    // was killed after the grace period).
+    private sealed record StopFabricServerResponse(bool Stopped);
+
+    public InstanceManager(Starter starter, Publisher publisher, string publicAddress, PersistentProcessManager? persistentProcessManager = null)
     {
         _starter = starter;
         _publisher = publisher;
         _publicAddress = publicAddress;
+        _persistentProcessManager = persistentProcessManager;
     }
 
-    public static async Task<InstanceManager> CreateAsync(EventBusClient eventBusClient, Starter starter, string publicAddress)
+    public static async Task<InstanceManager> CreateAsync(EventBusClient eventBusClient, Starter starter, string publicAddress, PersistentProcessManager? persistentProcessManager = null)
     {
         var publisher = await eventBusClient.AddPublisherAsync();
 
-        var instanceManager = new InstanceManager(starter, publisher, publicAddress);
+        var instanceManager = new InstanceManager(starter, publisher, publicAddress, persistentProcessManager);
 
         instanceManager._requestHandler = await eventBusClient.AddRequestHandlerAsync("buildplates", new RequestHandlerLister(
             async request =>
@@ -267,6 +274,30 @@ public sealed class InstanceManager
                     }
 
                     return preview;
+                }
+                else if (request.Type is "stopFabricServer")
+                {
+                    // Sent by the LauncherUI panel's Stop button before it force
+                    // kills all java processes: gracefully stop the persistent
+                    // Fabric server (console "stop" + up to 25 s for the world
+                    // save) so the last buildplate states are persisted. Always
+                    // answers - the caller is blocked waiting for a response.
+                    if (instanceManager._persistentProcessManager is null)
+                    {
+                        Log.Warning("stopFabricServer request ignored, no persistent process manager available");
+                        return null;
+                    }
+
+                    try
+                    {
+                        await instanceManager._persistentProcessManager.StopFabricAsync();
+                        return Json.Serialize(new StopFabricServerResponse(true));
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Error(exception, "Error while gracefully stopping the persistent Fabric server");
+                        return Json.Serialize(new StopFabricServerResponse(false));
+                    }
                 }
                 else
                 {

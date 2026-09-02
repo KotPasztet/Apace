@@ -3,6 +3,7 @@ using Serilog;
 using Solace.Common.Utils;
 using Solace.LauncherUI.Programs;
 using Solace.LauncherUI.Utils;
+using Solace.EventBus.Client;
 
 namespace Solace.LauncherUI;
 
@@ -346,6 +347,13 @@ public sealed class ServerManager : IDisposable
             Status = ServerStatus.Stopping;
         }
 
+        // The Minecraft Fabric/"MC Java" server is a child of Buildplate
+        // Launcher. Ask it first to stop the server gracefully ("stop" on the
+        // server console, so the worlds are saved) before the loop below tears
+        // everything down. It waits up to 25 s; a little extra margin is added
+        // so we never hang here and always fall through to the force kill.
+        await TryStopFabricServerGracefully(Log.Logger, cancellationToken);
+
         foreach (var comp in Components)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -363,6 +371,15 @@ public sealed class ServerManager : IDisposable
             comp.Status = ServerStatus.Offline;
             OnStatusChanged?.Invoke();
         }
+
+        // The Minecraft Fabric/"MC Java" server itself is a plain "java"
+        // process spawned as a child of Buildplate Launcher — it is not one
+        // of the tracked Components above, so stopping Buildplate Launcher
+        // alone does not guarantee it dies too (it can be left running as
+        // an orphaned process). Explicitly stop it here so the panel's Stop
+        // button always actually stops the Java server as well.
+        cancellationToken.ThrowIfCancellationRequested();
+        await StopProgram("java", Log.Logger, cancellationToken);
 
         cancellationToken.ThrowIfCancellationRequested();
         AnyOnline = false;
@@ -413,6 +430,12 @@ public sealed class ServerManager : IDisposable
             comp.Status = ServerStatus.Offline;
             OnStatusChanged?.Invoke();
         }
+
+        // Same reasoning as in Stop(): "java" (the actual Minecraft server)
+        // isn't a tracked Component and must be force-stopped explicitly,
+        // otherwise KillAll can leave it running orphaned.
+        cancellationToken.ThrowIfCancellationRequested();
+        await StopProgram("java", Log.Logger, cancellationToken);
 
         cancellationToken.ThrowIfCancellationRequested();
         AnyOnline = false;
@@ -599,6 +622,56 @@ public sealed class ServerManager : IDisposable
             }
 
             await Task.Delay(1000, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Asks Buildplate Launcher (over the event bus) to stop the Minecraft
+    /// Fabric server gracefully. Best effort: on any failure or timeout we just
+    /// log and return, so the caller always continues with the normal stop flow
+    /// (which force kills the java processes) and Stop() never hangs.
+    /// </summary>
+    private static async Task TryStopFabricServerGracefully(Serilog.ILogger logger, CancellationToken cancellationToken)
+    {
+        // 25 s graceful stop on the launcher side + margin for bus round trips.
+        // RequestAsync has no timeout parameter (its own internal cap is 90 s),
+        // so the hard cap is enforced here with Task.WhenAny.
+        var timeout = TimeSpan.FromSeconds(35);
+
+        EventBusClient? eventBus = null;
+        try
+        {
+            eventBus = await EventBusClient.ConnectAsync($"localhost:{Settings.Instance.EventBusPort}");
+            var requestSender = await eventBus.AddRequestSenderAsync();
+            Task<string?> requestTask = requestSender.RequestAsync("buildplates", "stopFabricServer", "{}");
+            string? response = await Task.WhenAny(requestTask, Task.Delay(timeout, cancellationToken)) == requestTask
+                ? await requestTask
+                : null;
+            if (response is null)
+            {
+                logger.Warning("Graceful Fabric server stop request failed or timed out, falling back to force kill");
+                return;
+            }
+
+            logger.Information("Fabric server was stopped gracefully");
+        }
+        catch (OperationCanceledException)
+        {
+            logger.Warning("Graceful Fabric server stop request cancelled, falling back to force kill");
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Graceful Fabric server stop request failed, falling back to force kill");
+        }
+        finally
+        {
+            // DisposeAsync on the client (not on the request sender) is
+            // intentional: disposing the sender first would FlushAsync() the
+            // still pending response and block forever.
+            if (eventBus is not null)
+            {
+                await eventBus.DisposeAsync();
+            }
         }
     }
 

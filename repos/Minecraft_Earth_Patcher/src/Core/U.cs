@@ -1,4 +1,4 @@
-﻿using DiffPatch.Data;
+using DiffPatch.Data;
 using Serilog;
 using System.Diagnostics;
 using System.Text;
@@ -71,7 +71,6 @@ public static class U
         var startInfo = new ProcessStartInfo()
         {
             FileName = file,
-            Arguments = string.Join(' ', args),
             WorkingDirectory = workDir,
             UseShellExecute = shellExecute,
             CreateNoWindow = !shellExecute,
@@ -79,6 +78,19 @@ public static class U
             RedirectStandardError = !shellExecute,
             RedirectStandardInput = !shellExecute,
         };
+
+        // IMPORTANT: use ArgumentList, not a manually space-joined Arguments
+        // string. Joining with string.Join(' ', args) breaks as soon as any
+        // argument (e.g. an apk path like ".../Apace DEV.apk") contains a
+        // space: it gets split into two separate argv entries by the child
+        // process, which then fails with a generic "too many arguments" /
+        // usage dump (this is what caused zipalign to fail even on the
+        // -p fallback, not just the -P flag). ArgumentList lets .NET quote
+        // / escape each argument correctly per-platform.
+        foreach (var arg in args)
+        {
+            startInfo.ArgumentList.Add(arg);
+        }
         var process = new Process()
         {
             StartInfo = startInfo,

@@ -17,7 +17,8 @@ sudo mkdir -p \
     "$PERSISTENT_DIR/dataprotection-keys" \
     "$PERSISTENT_DIR/resourcepacks" \
     "$PERSISTENT_DIR/server-template-dir" \
-    "$PERSISTENT_DIR/logs"
+    "$PERSISTENT_DIR/logs" \
+    "$PERSISTENT_DIR/fabric-data"
 
 # config.json MUSI być plikiem, nie katalogiem
 # Jeśli przypadkiem istnieje jako katalog — usuń go
@@ -27,8 +28,9 @@ if [ -d "$PERSISTENT_DIR/config.json" ]; then
 fi
 
 if [ ! -f "$PERSISTENT_DIR/config.json" ]; then
-    echo "{}" | sudo tee "$PERSISTENT_DIR/config.json" > /dev/null
-    echo "  ✓ config.json (utworzony)"
+    # ApiPort=1808 matches the compose port mapping (code default is 8080)
+    echo '{"ApiPort":1808}' | sudo tee "$PERSISTENT_DIR/config.json" > /dev/null
+    echo "  ✓ config.json (utworzony, ApiPort=1808)"
 else
     echo "  ✓ config.json (już istnieje)"
 fi

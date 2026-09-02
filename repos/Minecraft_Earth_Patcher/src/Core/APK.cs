@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace MCEPatcher.Core;
@@ -22,12 +22,12 @@ public static class APK
         if (SystemTools.ApktoolFramePath is { } framePath)
         {
             args.Add("--frame-path");
-            args.Add($"\"{framePath}\"");
+            args.Add($"{framePath}");
         }
 
         args.Add("-o");
-        args.Add($"\"{output.FullName}\"");
-        args.Add($"\"{apk.FullName}\"");
+        args.Add($"{output.FullName}");
+        args.Add($"{apk.FullName}");
 
         Process process;
         if (OperatingSystem.IsWindows() && File.Exists(FileNameBat))
@@ -38,7 +38,7 @@ public static class APK
         {
             process = U.Run("java", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             [
-                "-jar", $"\"{Path.GetFullPath(FileName)}\"",
+                "-jar", $"{Path.GetFullPath(FileName)}",
                 .. args,
             ]);
         }
@@ -61,7 +61,7 @@ public static class APK
         [
             "b",
             "-f",
-            "-o", $"\"{outApk.FullName}\"",
+            "-o", $"{outApk.FullName}",
         ];
 
         // apktool 3.x bundles an x86-64 aapt2 only; on other hosts (e.g. ARM64
@@ -70,7 +70,7 @@ public static class APK
         if (SystemTools.Aapt2Path is { } aapt2)
         {
             args.Add("--aapt");
-            args.Add($"\"{aapt2}\"");
+            args.Add($"{aapt2}");
         }
 
         // Optional framework directory (see SystemTools). apktool 3.x bundles
@@ -79,10 +79,10 @@ public static class APK
         if (SystemTools.ApktoolFramePath is { } framePath)
         {
             args.Add("--frame-path");
-            args.Add($"\"{framePath}\"");
+            args.Add($"{framePath}");
         }
 
-        args.Add($"\"{input.FullName}\"");
+        args.Add($"{input.FullName}");
 
         Process process;
         if (OperatingSystem.IsWindows() && File.Exists(FileNameBat))
@@ -93,7 +93,7 @@ public static class APK
         {
             process = U.Run("java", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             [
-                "-jar", $"\"{Path.GetFullPath(FileName)}\"",
+                "-jar", $"{Path.GetFullPath(FileName)}",
                 .. args,
             ]);
         }

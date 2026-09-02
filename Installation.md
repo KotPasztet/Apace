@@ -81,25 +81,19 @@ pwsh ./run_launcher.ps1
 
 ## Client Setup (phone)
 
-### Android — MCE Patcher (recommended)
+The patcher is built into the panel — **Patcher** page. No separate download.
 
-1. Download [MCE Patcher](https://github.com/Earth-Restored/Minecraft_Earth_Patcher/releases) (UI version)
-2. Obtain a Minecraft Earth APK (dump from your phone or find online)
-3. Open the patcher, select the APK
-4. Set **Locator Hostname/IP** to `YOUR_PC_IP:8080` (e.g. `192.168.1.5:8080`)
-5. Click **Patch** → install the patched APK on your phone
-6. Open the app and sign in with your panel account
+1. Open the **Patcher** page and pick **Android (APK)** or **iOS (IPA)**.
+2. Choose a mode:
+   - **Auto** — server addresses are derived from your Apace configuration; just drop the file
+   - **Simple** — Auto defaults, but you can override the server addresses
+   - **Advanced** — every option, like the desktop patcher
+3. Drop in the **original** Minecraft Earth APK/IPA (dumped from your device) and start the patch
+4. Install the patched file on your phone, open the app, and sign in with your panel account
 
-### Android — Project Earth Patcher
-
-1. Install [Project Earth Patcher APK](https://archive.org/download/dev.projectearth.patcher-1.0/dev.projectearth.patcher-1.0.apk)
-2. Have a legal copy of Minecraft Earth installed
-3. Open patcher → Settings → set Locator Server to `http://YOUR_PC_IP:8080`
-4. Go back and start patching
-
-### iOS
-
-Use [ProjectEarthiOSPatcher](https://github.com/catdogmat/ProjectEarthiOSPatcher). Not officially supported.
+The client connects to the **API Port** from Server Options on your PC's IP — fresh installs
+default to `1808` (matching the Docker port mapping; the in-code fallback is `8080`) —
+make sure that port is reachable from the phone (and published if you run Apace in Docker).
 
 ---
 
@@ -118,7 +112,7 @@ Your IP usually looks like `192.168.X.XXX`.
 | Problem | Fix |
 |---------|-----|
 | "Cannot connect to the network" | Server not running, wrong IP, or firewall blocking |
-| App closes when joining buildplate | Server cold-starting — try joining the same buildplate again immediately |
+| App closes when joining buildplate | A buildplate dimension is created in ~1 s by the persistent Fabric server — just join the same buildplate again and it reappears |
 | "Start Server" button greyed out | First account only gets admin. Log into the first account, or delete `launcher/Data/app.db` to reset |
 | Resource pack download fails | The file is downloaded automatically on first run. If it fails, download manually from the Internet Archive link shown in the logs |
-| Port not reachable | Make sure ports 1808, 19132/udp, and 5000 are allowed through your firewall |
+| Port not reachable | Make sure ports 5000, 1808, and 19132/udp are allowed through your firewall |

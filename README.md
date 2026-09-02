@@ -5,23 +5,21 @@
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/github/stars/KotPasztet/Apace?style=flat-square" alt="GitHub Stars">
-
-<img src="https://img.shields.io/github/downloads/KotPasztet/Apace/total?style=flat-square" alt="GitHub Downloads">
+  <img src="https://img.shields.io/github/downloads/KotPasztet/Apace/total?style=flat-square" alt="GitHub Downloads">
+  <a href="https://discord.gg/5K8HJukMSX"><img src="https://img.shields.io/badge/Discord-join_us-5865F2?logo=discord&logoColor=white&style=flat-square" alt="Discord"></a>
 </p>
 
 Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
 
 > [!NOTE]
-> **Active development.** Server is functional — maps, buildplates, challenges, daily rewards, adventures, crafting, and more are working. Performance improvements planned.
+> **Actively developed.** The server is functional — maps, buildplates, challenges, daily rewards, adventures, crafting, and more are working.
 
 > [!TIP]
-> ### :zap: Dev branch news — v2 persistent server
+> ### ✨ What's new in v0.1.0
 >
-> I've done some math: on my configuration, **Apace `dev` loads buildplates 3471% faster than Solace/Apace `main`** — the wait time is reduced by **97.2%**.
+> The **persistent-server architecture** is now released. Instead of booting a whole new Minecraft server for every buildplate, **one persistent Fabric server** hosts all of them as **on-demand dimensions** — created in ~1 s, with world data imported and exported on the fly. Every player connects through a **single shared Bedrock port** (`19132/udp`), and the **client patcher** (APK & IPA) is built straight into the panel.
 >
-> Instead of booting a whole new Minecraft server per buildplate, `dev` runs **one persistent Fabric server** hosting every buildplate as an on-demand dimension (created in ~1s, world data imported/exported on the fly). It will land in the `main` branch soon.
->
-> It also slashes RAM usage: `main` needs a full JVM (**1.6 GB per server**) *per buildplate*, while `dev` serves all of them from a single server — roughly **1.5 GB total plus ~30 MB per additional concurrent buildplate**. With 15 concurrent buildplates that is **24 GB → ~1.9 GB, about 92% less RAM**.
+> Buildplates load **3471% faster**, and 15 concurrent buildplates now need **~1.9 GB of RAM instead of 24 GB**. Details in the table below.
 
 ## Disclaimer
 
@@ -59,6 +57,17 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 :construction: - Under Development
 :x: - Not Working
 
+## Apace v0.1 vs Solace
+
+|                                       | Solace / previous architecture                  | Apace v0.1                                                          |
+|---------------------------------------|-------------------------------------------------|---------------------------------------------------------------------|
+| Buildplate instance creation          | Boots a whole new server (JVM pair) per buildplate | Dynamically registered dimension, created in **~1 s**               |
+| Buildplate load                       | Wait for a full server boot                     | **3471% faster** — wait time reduced by **97.2%**                    |
+| RAM                                   | **1.6 GB per buildplate** (a full JVM each)     | **~1.5 GB total + ~30 MB** per additional concurrent buildplate      |
+| 15 concurrent buildplates             | **24 GB**                                       | **~1.9 GB** (≈92% less)                                              |
+| Boot worldgen ("Preparing spawn area")| Minutes                                         | **Seconds** (air overworld, no Nether/End)                           |
+
+*Measured against v0.0.3 (the previous, Solace-derived architecture) — see [CHANGELOG.md](CHANGELOG.md).*
 
 ## Quick Start
 
@@ -72,8 +81,17 @@ curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | b
 iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
 ```
 
-After install, open http://localhost:5000, create an account, set your IP in Server Options, click Start.
+Then:
+
+1. Open the panel at http://localhost:5000 and create an account.
+2. **Server Options** → set your IP address.
+3. **Server Status** → click **Start All**.
+4. Accept the Minecraft EULA when prompted.
 
 To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Windows) from the `~/apace` directory.
 
-Full instructions: [Installation.md](Installation.md)
+No Docker, or building from source? Full instructions: [Installation.md](Installation.md).
+
+## Community
+
+Questions, setup help, and development news — join the Discord: **https://discord.gg/5K8HJukMSX**

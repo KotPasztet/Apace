@@ -495,9 +495,6 @@ repos/*
 *.swp
 CLAUDE.md
 
-# Local-only changelog (dev vs main, not shipped)
-CHANGELOG.md
-
 # Patcher upload staging (user-submitted APK/IPA originals) and local test binaries
 src/data/patcher/uploads/
 /mce.apk

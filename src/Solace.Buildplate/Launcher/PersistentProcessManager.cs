@@ -325,6 +325,54 @@ public sealed class PersistentProcessManager
         _javaLogger.Information("[{Prefix}] {Line}", prefix, line.TrimEnd());
     }
 
+    /// <summary>
+    /// Stops the persistent Fabric server gracefully: writes <c>stop</c> to its
+    /// console (stdin) so it saves all worlds, then waits up to 25 seconds for
+    /// it to exit by itself. If it is still running after that, it is killed.
+    /// </summary>
+    public async Task StopFabricAsync(CancellationToken cancellationToken = default)
+    {
+        // Deliberately no _subprocessLock here: StartFabricAsync holds it while
+        // copying the whole server template (can take a long time), which would
+        // eat into the 25 second grace period. Capturing the field reference is
+        // enough - writing "stop" to a replaced process's stdin is harmless.
+        ConsoleProcess? fabricProcess = _fabricProcess;
+        if (fabricProcess is null || fabricProcess.ExitCode is not null)
+        {
+            _logger.Information("Persistent Fabric server is not running, nothing to stop");
+            return;
+        }
+
+        _logger.Information("Sending 'stop' to the Fabric server console");
+
+        try
+        {
+            fabricProcess.WriteLine("stop");
+        }
+        catch (Exception exception)
+        {
+            // stdin may already be broken (pipe closed etc.) - the wait/kill
+            // path below still applies.
+            _logger.Warning(exception, "Could not write 'stop' to the Fabric server console, falling back to the grace period wait");
+        }
+
+        try
+        {
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(25));
+            await fabricProcess.WaitForExitAsync(timeoutCts.Token);
+
+            _logger.Information($"Persistent Fabric server stopped gracefully with exit code {fabricProcess.ExitCodeText}");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.Warning("Persistent Fabric server did not exit within 25 s of the 'stop' console command, killing it");
+            // A short kill timeout keeps the whole operation well below the
+            // caller's overall budget (grace 25 s + kill 5 s < 35 s).
+            await fabricProcess.StopNoWaitAsync(5 * 1000, cancellationToken);
+        }
+    }
+
     public async Task StopAllAsync()
     {
         var @lock = await _subprocessLock.LockAsync(CancellationToken.None);
