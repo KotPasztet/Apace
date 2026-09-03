@@ -66,6 +66,16 @@
                         <InputText @bind-Value="SettingsModel.IPv4" class="form-control" placeholder="192.168.x.x" />
                         <ValidationMessage For="@(() => SettingsModel.IPv4)" />
                     </div>
+                    <div class="col-12 mt-3">
+                        <div class="form-check form-switch">
+                            <InputCheckbox @bind-Value="SettingsModel.OnlyAllowLocalLogin" class="form-check-input"
+                                           id="onlyAllowLocalLogin" />
+                            <label class="form-check-label" for="onlyAllowLocalLogin">Only Allow Local Login</label>
+                            <div class="form-text text-white">
+                                Only clients with an account created on this server can log in, Microsoft login is unsupported. Takes effect after the Api server restarts.
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -329,6 +339,7 @@
         SettingsModel.StaticDataPath = source.StaticDataPath;
         SettingsModel.LauncherBuildplatePreview = source.LauncherBuildplatePreview ?? false;
         SettingsModel.PlayableScale = source.PlayableScale ?? Settings.Default.PlayableScale;
+        SettingsModel.OnlyAllowLocalLogin = source.OnlyAllowLocalLogin ?? false;
     }
 
     private void HandleSave()
@@ -350,6 +361,7 @@
             StaticDataPath = SettingsModel.StaticDataPath,
             LauncherBuildplatePreview = SettingsModel.LauncherBuildplatePreview,
             PlayableScale = SettingsModel.PlayableScale,
+            OnlyAllowLocalLogin = SettingsModel.OnlyAllowLocalLogin,
         };
 
         Settings.Instance = settings;
@@ -412,6 +424,8 @@
 
         [Required, Range(1, 32, ErrorMessage = "PlayableScale must be between 1 and 32 blocks per meter.")]
         public int? PlayableScale { get; set; }
+
+        public bool OnlyAllowLocalLogin { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

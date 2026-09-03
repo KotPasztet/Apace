@@ -31,6 +31,7 @@ public static class Program
     internal static BuildplateInstancesManager buildplateInstancesManager;
     internal static Importer importer;
     internal static int PlayableScale { get; private set; } = 4;
+    internal static bool LocalLoginOnly { get; private set; }
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private sealed class Options
@@ -59,6 +60,9 @@ public static class Program
 
         [Option("playable-scale", Default = 4, Required = false, HelpText = "AR scale for playable buildplates and player adventures, in blocks per meter")]
         public int PlayableScale { get; set; }
+
+        [Option("local-login-only", Default = false, Required = false, HelpText = "Whether to only allow local accounts, or also allow microsoft accounts")]
+        public bool LocalLoginOnly { get; set; }
     }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
@@ -118,6 +122,7 @@ public static class Program
         }
 
         PlayableScale = Math.Clamp(options.PlayableScale, 1, 32);
+        LocalLoginOnly = options.LocalLoginOnly;
 
         var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()
@@ -137,6 +142,15 @@ public static class Program
         var log = loggerConfig.CreateLogger();
 
         Log.Logger = log;
+
+        if (options.LocalLoginOnly)
+        {
+            Log.Information("Local account only login enabled, Microsoft accounts will not work");
+        }
+        else
+        {
+            Log.Warning("Local account only login disabled, account credentials cannot be verified");
+        }
 
         Log.Information("Loading configuration");
         try
