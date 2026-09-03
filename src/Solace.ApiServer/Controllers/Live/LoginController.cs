@@ -12,6 +12,7 @@ using System.Xml;
 using Solace.ApiServer.Models;
 using Solace.ApiServer.Utils;
 using Solace.Common.Utils;
+using static Solace.Common.Constants.AccountConstants;
 
 namespace Solace.ApiServer.Controllers.Live;
 
@@ -111,29 +112,29 @@ internal sealed partial class LoginController : SolaceControllerBase
 
         Log.Debug($"Register attempt: Username: {username}, First name: {firstName}, Last name: {lastName}");
 
-        if (string.IsNullOrWhiteSpace(username) || username.Length < 3 || username.Length > 16)
+        if (string.IsNullOrWhiteSpace(username) || username.Length < UsernameLengthMin || username.Length > UsernameLengthMax)
         {
-            return TypedResults.BadRequest("Username must be 3-16 characters long");
+            return TypedResults.BadRequest($"Username must be {UsernameLengthMin}-{UsernameLengthMax} characters long");
         }
 
-        if (string.IsNullOrWhiteSpace(password) || password.Length < 4 || password.Length > 32)
+        if (string.IsNullOrWhiteSpace(password) || password.Length < PasswordLengthMin || password.Length > PasswordLengthMax)
         {
-            return TypedResults.BadRequest("Password must be 4-32 characters long");
+            return TypedResults.BadRequest($"Password must be {PasswordLengthMin}-{PasswordLengthMax} characters long");
         }
 
-        if (!string.IsNullOrWhiteSpace(firstName) && (firstName.Length < 2 || firstName.Length > 100))
+        if (!string.IsNullOrWhiteSpace(firstName) && (firstName.Length < NameLengthMin || firstName.Length > NameLengthMax))
         {
-            return TypedResults.BadRequest("First name must be 2-100 characters long");
+            return TypedResults.BadRequest($"First name must be {NameLengthMin}-{NameLengthMax} characters long");
         }
 
-        if (!string.IsNullOrWhiteSpace(lastName) && (lastName.Length < 2 || lastName.Length > 100))
+        if (!string.IsNullOrWhiteSpace(lastName) && (lastName.Length < NameLengthMin || lastName.Length > NameLengthMax))
         {
-            return TypedResults.BadRequest("Last name must be 2-100 characters long");
+            return TypedResults.BadRequest($"Last name must be {NameLengthMin}-{NameLengthMax} characters long");
         }
 
         if (!GetUsernameRegex().IsMatch(username))
         {
-            return TypedResults.BadRequest("Username must contain only: lowercase letters, numbers, underscore and colon");
+            return TypedResults.BadRequest($"Username must contain only: {UsernameAllowedCharacters}"); // keep in sync with GetUsernameRegex
         }
 
         var account = await _dbContext.Accounts
@@ -671,15 +672,6 @@ internal sealed partial class LoginController : SolaceControllerBase
         return Convert.ToHexStringLower(usernameHash[..8]);
     }
 
-    private static byte[] HashPassword(string password, byte[] salt)
-    {
-        Debug.Assert(password.Length <= 32);
-
-        byte[] passwordUTF8 = Encoding.UTF8.GetBytes(password);
-
-        return Org.BouncyCastle.Crypto.Generators.SCrypt.Generate(passwordUTF8, salt, 16384, 8, 1, 64);
-    }
-
     private static string DoAESEncryption(byte[] sessionKey, string nonceBase64, string plainText)
     {
         byte[] nonce = Convert.FromBase64String(nonceBase64);
@@ -725,9 +717,6 @@ internal sealed partial class LoginController : SolaceControllerBase
 
         return Convert.ToBase64String(cipherText);
     }
-
-    [GeneratedRegex("^[a-z0-9_:]+$")]
-    private partial Regex GetUsernameRegex();
 
     [GeneratedRegex("&da=([^&]*)")]
     private partial Regex GetDeviceDATokenStringRegex();

@@ -9,6 +9,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<DbBuildplatePreview> BuildplatePreviews { get; set; }
 
+    public DbSet<DbLinkedGameAccount> LinkedGameAccounts { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -27,6 +29,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.PreviewData)
                 .IsRequired()
                 .HasColumnType("BLOB");
+        });
+
+        builder.Entity<DbLinkedGameAccount>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.PanelUserId)
+                .IsRequired();
+
+            entity.Property(e => e.PlayerId)
+                .IsRequired();
+
+            entity.HasIndex(e => new { e.PanelUserId, e.PlayerId })
+                .HasDatabaseName("IX_PanelUser_Player")
+                .IsUnique();
         });
     }
 }

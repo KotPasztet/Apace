@@ -2,6 +2,7 @@
 using Serilog;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Solace.DB;
 using Solace.DB.Models.Player;
@@ -133,6 +134,82 @@ internal static class DataUtils
         catch
         {
             return null;
+        }
+    }
+
+    public static async Task<List<(string Id, string? Username)>> GetAccountsAsync(SqliteConnection liveConnection, CancellationToken cancellationToken = default)
+    {
+        var accounts = new List<(string Id, string? Username)>();
+
+        try
+        {
+            using (var command = new SqliteCommand($"""
+                SELECT Id, Username FROM Accounts ORDER BY Username COLLATE NOCASE;
+                """, liveConnection))
+            {
+                using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+                {
+                    while (await reader.ReadAsync(cancellationToken))
+                    {
+                        accounts.Add((reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1)));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to load accounts: {ex}");
+        }
+
+        return accounts;
+    }
+
+    public static async Task<bool> IsUsernameTakenAsync(string username, string exceptPlayerId, SqliteConnection liveConnection, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using (var command = new SqliteCommand($"""
+                SELECT COUNT(*) FROM Accounts WHERE Username = @username COLLATE NOCASE AND Id != @id;
+                """, liveConnection))
+            {
+                command.Parameters.AddWithValue("@username", username);
+                command.Parameters.AddWithValue("@id", exceptPlayerId);
+
+                long? count = await command.ExecuteScalarAsync(cancellationToken) as long?;
+
+                return (count ?? 0) > 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to check username {Username}", username);
+            return false;
+        }
+    }
+
+    public static async Task<bool> UpdatePasswordAsync(string userId, string password, SqliteConnection liveConnection, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            byte[] passwordSalt = new byte[16];
+            RandomNumberGenerator.Fill(passwordSalt);
+
+            byte[] passwordHash = Solace.Common.Constants.AccountConstants.HashPassword(password, passwordSalt);
+
+            using var command = new SqliteCommand("""
+                UPDATE Accounts SET PasswordHash = @hash, PasswordSalt = @salt WHERE Id = @id;
+                """, liveConnection);
+
+            command.Parameters.AddWithValue("@hash", passwordHash);
+            command.Parameters.AddWithValue("@salt", passwordSalt);
+            command.Parameters.AddWithValue("@id", userId);
+
+            return await command.ExecuteNonQueryAsync(cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to update password for {userId}: {ex}");
+            return false;
         }
     }
 
