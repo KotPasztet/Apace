@@ -1,0 +1,851 @@
+@page "/Admin/LinkedAccounts"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Serilog
+@using System.ComponentModel.DataAnnotations
+@using Solace.BuildplateRenderer
+@using Solace.Common.Constants
+@using Solace.DB
+@using Solace.DB.Models.Player
+@using Solace.LauncherUI.Data
+@using Solace.LauncherUI.Models.Db
+@using Solace.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.LinkPlayers)]
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext AppDbContext
+
+<PageTitle>Linked Accounts - Apace</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+            <img class="nav-icon" src="/images/sign_icon.png" alt="" /> Linked Accounts
+        </div>
+        <p class="text-muted small mb-0 mt-1">Link admin panel accounts to in-game player profiles and manage them</p>
+    </div>
+    <span class="badge badge-subtle" style="font-size: 0.75rem; padding: 6px 12px;">
+        @(_links?.Count ?? 0) linked profiles
+    </span>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger">⚠ @_errorMessage</div>
+}
+
+@if (_isLoading)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+}
+else if (_accounts is null || !_accounts.Any())
+{
+    <div class="alert alert-info">No panel accounts found.</div>
+}
+else
+{
+    <!-- Panel account picker -->
+    <div class="card mb-4">
+        <div class="card-header py-2">
+            <h6 class="mb-0">Panel Accounts</h6>
+        </div>
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+            @foreach (var account in _accounts)
+            {
+                var linkCount = LinkedFor(account.Id).Count;
+
+                <button class="btn btn-sm @(account.Id == _selectedPanelUserId ? "btn-primary" : "btn-outline-secondary")"
+                        @onclick="async () => await SelectPanelUser(account.Id)">
+                    @(account.UserName ?? account.Id)
+                    <span class="badge @(account.Id == _selectedPanelUserId ? "bg-light text-dark" : "bg-secondary") ms-1">@linkCount</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Linked in-game profiles of the selected panel account -->
+    <div class="card mb-4">
+        <div class="card-header py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h6 class="mb-0">
+                In-game profiles linked to <span class="fw-bold">@SelectedPanelUserName</span>
+            </h6>
+            @if (LinkedFor(_selectedPanelUserId).Count >= MaxLinkedAccountsPerUser)
+            {
+                <button class="btn btn-secondary btn-sm" disabled>Max @MaxLinkedAccountsPerUser profiles linked</button>
+            }
+            else
+            {
+                <button class="btn btn-primary btn-sm" @onclick="OpenLinkModal">
+                    + Link Profile (@LinkedFor(_selectedPanelUserId).Count/@MaxLinkedAccountsPerUser)
+                </button>
+            }
+        </div>
+
+        @if (!LinkedFor(_selectedPanelUserId).Any())
+        {
+            <div class="card-body">
+                <div class="alert alert-info mb-0">
+                    No in-game profiles linked to this panel account yet.
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>In-game profile</th>
+                            <th>Player ID</th>
+                            <th>Level</th>
+                            <th>Rubies</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var link in LinkedFor(_selectedPanelUserId))
+                        {
+                            var profile = ProfileOf(link.PlayerId);
+
+                            <tr @key="link.Id">
+                                <td class="fw-bold">@(UsernameOf(link.PlayerId) ?? "—")</td>
+                                <td><code style="font-size: 0.7rem; color: #9a9ab0;">@link.PlayerId</code></td>
+                                <td>
+                                    @if (profile is not null)
+                                    {
+                                        <span class="badge bg-primary">Lvl @profile.Level</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">no profile</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (profile is not null)
+                                    {
+                                        <span style="color: #e57373;">💎</span> @profile.Rubies.Total
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td style="text-align: right;">
+                                    <button class="btn btn-outline btn-sm" @onclick="() => SelectPlayer(link.PlayerId)">
+                                        <img class="nav-icon" src="/images/buildplate_icon.png" alt="" /> Buildplates
+                                    </button>
+
+                                    @if (_canManagePlayers)
+                                    {
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => OpenCredentialsModal(link.PlayerId)">Credentials</button>
+                                    }
+                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => UnlinkAsync(link)">Unlink</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- Buildplates of the selected in-game profile -->
+    @if (_selectedPlayerId is not null)
+    {
+        <div class="card">
+            <div class="card-header py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h6 class="mb-0">
+                    <img class="nav-icon" src="/images/buildplate_icon.png" alt="" />
+                    Buildplates of @(UsernameOf(_selectedPlayerId) ?? $"player {_selectedPlayerId}")
+                </h6>
+                <div class="d-flex gap-2 align-items-center">
+                    <div class="input-group input-group-sm" style="width: 220px;">
+                        <span class="input-group-text">⌕</span>
+                        <input type="text" class="form-control" placeholder="Search by name..."
+                               value="@_buildplateSearchTerm" @oninput="HandleBuildplateSearch" />
+                    </div>
+
+                    @if (_canManagePlayers)
+                    {
+                        <a href="/Admin/Players/@_selectedPlayerId/Buildplates" class="btn btn-outline btn-sm">Manage</a>
+                    }
+                </div>
+            </div>
+            <div class="card-body">
+                @if (_playerBuildplates is null)
+                {
+                    <div class="d-flex justify-content-center py-4">
+                        <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+                    </div>
+                }
+                else if (!_playerBuildplates.Any())
+                {
+                    <div class="alert alert-info mb-0">This profile doesn't have any buildplates yet.</div>
+                }
+                else if (!FilteredBuildplates.Any())
+                {
+                    <div class="alert alert-warning mb-0">No buildplates match your search.</div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var bp in PaginatedBuildplates)
+                        {
+                            <div class="col-12 col-md-6 col-lg-4 col-xl-3" @key="bp.Id">
+                                <div class="card h-100">
+                                    <BuildplatePreview BuildplateId="@bp.Id" IsTemplate="false" PlayerId="@_selectedPlayerId"
+                                                       Size="@bp.Size" BlocksPerMeter="@bp.BlocksPerMeter" IsNight="@bp.IsNight"
+                                                       ResourcePackManager="@_resourcePackManager" />
+                                    <div class="card-body p-2">
+                                        <div class="fw-bold text-truncate" title="@bp.Name">@bp.Name</div>
+                                        <div class="small text-muted">Size: @(bp.Size)x@(bp.Size) | BPM: @bp.BlocksPerMeter</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (TotalBuildplatePages > 1)
+                    {
+                        <nav aria-label="Linked profiles buildplates pagination" class="mt-3 d-flex justify-content-center">
+                            <ul class="pagination pagination-sm mb-0" style="display: flex; gap: 6px; list-style: none;">
+                                <li class="page-item @(_buildplateCurrentPage <= 1 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangeBuildplatePage(_buildplateCurrentPage - 1)">« Prev</button>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Page @_buildplateCurrentPage of @TotalBuildplatePages</span>
+                                </li>
+                                <li class="page-item @(_buildplateCurrentPage >= TotalBuildplatePages ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangeBuildplatePage(_buildplateCurrentPage + 1)">Next »</button>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
+                }
+            </div>
+        </div>
+    }
+}
+
+@if (_showLinkModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6); position: fixed; inset: 0; z-index: 1050;">
+        <div class="modal-dialog modal-lg modal-dialog-centered" style="margin: 7vh auto;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Link In-game Profile</h5>
+                    <button type="button" class="btn-close" @onclick="CloseLinkModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_linkErrorMessage))
+                    {
+                        <div class="alert alert-danger py-2" role="alert">⚠ @_linkErrorMessage</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Panel account</label>
+                        <select class="form-select" value="@_linkTargetPanelUserId" @onchange="HandleLinkTargetChange">
+                            @foreach (var account in _accounts ?? [])
+                            {
+                                <option value="@account.Id" selected="@(account.Id == _linkTargetPanelUserId)">
+                                    @(account.UserName ?? account.Id)
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">⌕</span>
+                        <input type="text" class="form-control" placeholder="Search in-game profiles by username or id..."
+                               value="@_linkSearchTerm" @oninput="HandleLinkSearch" />
+                    </div>
+
+                    @if (!LinkCandidates.Any())
+                    {
+                        <div class="alert alert-warning mb-0">No in-game accounts found.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Player ID</th>
+                                        <th style="text-align: right;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var candidate in LinkCandidates.Take(LinkCandidatesPageSize))
+                                    {
+                                        var isLinked = IsLinked(_linkTargetPanelUserId, candidate.Id);
+
+                                        <tr @key="candidate.Id">
+                                            <td class="fw-bold">@(candidate.Username ?? "—")</td>
+                                            <td><code style="font-size: 0.7rem; color: #9a9ab0;">@candidate.Id</code></td>
+                                            <td style="text-align: right;">
+                                                <button class="btn btn-sm @(isLinked ? "btn-secondary" : "btn-success")"
+                                                        disabled="@isLinked"
+                                                        @onclick="() => LinkProfileAsync(candidate.Id)">
+                                                    @(isLinked ? "Linked" : "Link")
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if (LinkCandidates.Count() > LinkCandidatesPageSize)
+                        {
+                            <div class="text-muted small mt-2">
+                                Showing @LinkCandidatesPageSize of @LinkCandidates.Count() matches - refine your search.
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseLinkModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showCredentialsModal && _credentialsPlayerId is not null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6); position: fixed; inset: 0; z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 520px; margin: 7vh auto;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Credentials of @(UsernameOf(_credentialsPlayerId) ?? $"player {_credentialsPlayerId}")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseCredentialsModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_credentialsError))
+                    {
+                        <div class="alert alert-danger py-2" role="alert">⚠ @_credentialsError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_credentialsSuccess))
+                    {
+                        <div class="alert alert-success py-2" role="alert">@_credentialsSuccess</div>
+                    }
+
+                    <h6 class="mt-1">Username</h6>
+                    <EditForm Model="_credentialsUsernameModel" OnValidSubmit="ChangeUsername" class="d-flex gap-2 align-items-start">
+                        <DataAnnotationsValidator />
+                        <div class="flex-grow-1">
+                            <InputText class="form-control form-control-sm" @bind-Value="_credentialsUsernameModel.Username" placeholder="New username" />
+                            <ValidationMessage For="@(() => _credentialsUsernameModel.Username)" class="text-danger small" />
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    </EditForm>
+
+                    <hr />
+
+                    <h6>Password</h6>
+                    <EditForm Model="_credentialsPasswordModel" OnValidSubmit="ChangePassword">
+                        <DataAnnotationsValidator />
+                        <div class="mb-2">
+                            <InputText type="password" class="form-control form-control-sm mb-1" @bind-Value="_credentialsPasswordModel.Password" placeholder="New password" />
+                            <InputText type="password" class="form-control form-control-sm" @bind-Value="_credentialsPasswordModel.ConfirmPassword" placeholder="Confirm password" />
+                            <ValidationMessage For="@(() => _credentialsPasswordModel.Password)" class="text-danger small" />
+                            <ValidationMessage For="@(() => _credentialsPasswordModel.ConfirmPassword)" class="text-danger small" />
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    </EditForm>
+
+                    <p class="text-muted small mt-3 mb-0">
+                        Changes apply to the in-game login (live database) immediately.
+                    </p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseCredentialsModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private const int MaxLinkedAccountsPerUser = 3;
+    private const int LinkCandidatesPageSize = 10;
+    private const int BuildplatePageSize = 8;
+
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    private string _currentUserId = string.Empty;
+    private bool _canManagePlayers;
+
+    private List<ApplicationUser>? _accounts;
+    private List<DbLinkedGameAccount>? _links;
+    private Dictionary<string, string?> _usernames = new();
+    private Dictionary<string, Profile> _profiles = new();
+    private List<(string Id, string? Username)> _gameAccounts = [];
+
+    private string _selectedPanelUserId = string.Empty;
+    private string? _selectedPlayerId;
+
+    private ResourcePackManager? _resourcePackManager;
+
+    // Link modal
+    private bool _showLinkModal;
+    private string _linkTargetPanelUserId = string.Empty;
+    private string _linkSearchTerm = string.Empty;
+    private string? _linkErrorMessage;
+
+    // Credentials modal
+    private bool _showCredentialsModal;
+    private string? _credentialsPlayerId;
+    private ChangeUsernameModel _credentialsUsernameModel = new();
+    private ChangePasswordModel _credentialsPasswordModel = new();
+    private string? _credentialsError;
+    private string? _credentialsSuccess;
+
+    // Buildplates
+    private List<PlayerBuildplate>? _playerBuildplates;
+    private string _buildplateSearchTerm = string.Empty;
+    private int _buildplateCurrentPage = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = UserManager.GetUserId(authState.User) ?? string.Empty;
+        _canManagePlayers = authState.User.HasPermission(Permissions.ManagePlayers);
+
+        try
+        {
+            _resourcePackManager = await ResourcePackManagerSingleton.GetResourcePackManagerAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to load resource packs, buildplate previews may fail.");
+        }
+
+        try
+        {
+            _accounts = await UserManager.Users
+                .OrderBy(user => user.UserName)
+                .ToListAsync();
+
+            _links = await AppDbContext.LinkedGameAccounts
+                .AsNoTracking()
+                .ToListAsync();
+
+            // Drop links pointing at panel accounts that no longer exist
+            var panelUserIds = _accounts.Select(user => user.Id).ToHashSet();
+            var orphans = _links.Where(link => !panelUserIds.Contains(link.PanelUserId)).ToList();
+
+            if (orphans.Count > 0)
+            {
+                AppDbContext.LinkedGameAccounts.RemoveRange(orphans);
+                await AppDbContext.SaveChangesAsync();
+                _links.RemoveAll(link => !panelUserIds.Contains(link.PanelUserId));
+            }
+
+            using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+            if (liveDb is not null)
+            {
+                _gameAccounts = await DataUtils.GetAccountsAsync(liveDb);
+            }
+
+            foreach (var (id, username) in _gameAccounts)
+            {
+                _usernames[id] = username;
+            }
+
+            using var earthDb = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
+            await foreach (var (id, profile) in DataUtils.GetAllProfilesAsync(earthDb))
+            {
+                _profiles[id] = profile;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load linked accounts.");
+            _errorMessage = "Database connection failed.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
+        // Select the signed-in panel account by default, otherwise the first one
+        _selectedPanelUserId = _accounts?.Any(user => user.Id == _currentUserId) == true
+            ? _currentUserId
+            : _accounts?.FirstOrDefault()?.Id ?? string.Empty;
+
+        var firstLinked = LinkedFor(_selectedPanelUserId).FirstOrDefault();
+        if (firstLinked is not null)
+        {
+            await SelectPlayer(firstLinked.PlayerId);
+        }
+    }
+
+    private string SelectedPanelUserName
+        => _accounts?.FirstOrDefault(user => user.Id == _selectedPanelUserId)?.UserName ?? "(unknown)";
+
+    private string PanelUserName(string panelUserId)
+        => _accounts?.FirstOrDefault(user => user.Id == panelUserId)?.UserName ?? "(unknown)";
+
+    private List<DbLinkedGameAccount> LinkedFor(string panelUserId)
+        => _links?.Where(link => link.PanelUserId == panelUserId).ToList() ?? [];
+
+    private bool IsLinked(string panelUserId, string playerId)
+        => _links?.Any(link => link.PanelUserId == panelUserId && link.PlayerId == playerId) ?? false;
+
+    private string? UsernameOf(string playerId)
+        => _usernames.GetValueOrDefault(playerId);
+
+    private Profile? ProfileOf(string playerId)
+        => _profiles.GetValueOrDefault(playerId);
+
+    private async Task SelectPanelUser(string panelUserId)
+    {
+        if (_selectedPanelUserId == panelUserId)
+        {
+            return;
+        }
+
+        _selectedPanelUserId = panelUserId;
+        _linkErrorMessage = null;
+
+        // Show the buildplates of the first linked profile of the newly selected panel account
+        var firstLinked = LinkedFor(panelUserId).FirstOrDefault();
+        if (firstLinked is not null)
+        {
+            await SelectPlayer(firstLinked.PlayerId);
+        }
+        else
+        {
+            _selectedPlayerId = null;
+            _playerBuildplates = null;
+        }
+    }
+
+    private async Task SelectPlayer(string playerId)
+    {
+        _selectedPlayerId = playerId;
+        _buildplateSearchTerm = string.Empty;
+        _buildplateCurrentPage = 1;
+
+        await LoadPlayerBuildplates(playerId);
+    }
+
+    // --- Linking ---
+
+    private void OpenLinkModal()
+    {
+        _linkErrorMessage = null;
+        _linkSearchTerm = string.Empty;
+        _linkTargetPanelUserId = _selectedPanelUserId;
+        _showLinkModal = true;
+    }
+
+    private void CloseLinkModal()
+        => _showLinkModal = false;
+
+    private IEnumerable<(string Id, string? Username)> LinkCandidates
+        => _gameAccounts.Where(account => string.IsNullOrWhiteSpace(_linkSearchTerm)
+            || (account.Username?.Contains(_linkSearchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+            || account.Id.Contains(_linkSearchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private void HandleLinkSearch(ChangeEventArgs e)
+        => _linkSearchTerm = e.Value?.ToString() ?? string.Empty;
+
+    private void HandleLinkTargetChange(ChangeEventArgs e)
+        => _linkTargetPanelUserId = e.Value?.ToString() ?? string.Empty;
+
+    private async Task LinkProfileAsync(string playerId)
+    {
+        _linkErrorMessage = null;
+
+        if (_links is null)
+        {
+            return;
+        }
+
+        if (LinkedFor(_linkTargetPanelUserId).Count >= MaxLinkedAccountsPerUser)
+        {
+            _linkErrorMessage = $"A panel account can have at most {MaxLinkedAccountsPerUser} linked in-game profiles.";
+            return;
+        }
+
+        if (IsLinked(_linkTargetPanelUserId, playerId))
+        {
+            _linkErrorMessage = "This in-game profile is already linked to that panel account.";
+            return;
+        }
+
+        try
+        {
+            var link = new DbLinkedGameAccount
+            {
+                PanelUserId = _linkTargetPanelUserId,
+                PlayerId = playerId,
+            };
+
+            AppDbContext.LinkedGameAccounts.Add(link);
+            await AppDbContext.SaveChangesAsync();
+
+            _links.Add(link);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to link player {PlayerId} to panel user {PanelUserId}", playerId, _linkTargetPanelUserId);
+            _linkErrorMessage = "Failed to link the in-game profile.";
+            return;
+        }
+
+        _showLinkModal = false;
+
+        await SelectPlayer(playerId);
+    }
+
+    private async Task UnlinkAsync(DbLinkedGameAccount link)
+    {
+        if (_links is null)
+        {
+            return;
+        }
+
+        string confirmText = $"Unlink in-game profile '{UsernameOf(link.PlayerId) ?? link.PlayerId}' from panel account '{PanelUserName(link.PanelUserId)}'?";
+        if (!await JS.InvokeAsync<bool>("confirm", confirmText))
+        {
+            return;
+        }
+
+        try
+        {
+            var tracked = await AppDbContext.LinkedGameAccounts
+                .FirstOrDefaultAsync(item => item.Id == link.Id);
+
+            if (tracked is not null)
+            {
+                AppDbContext.LinkedGameAccounts.Remove(tracked);
+                await AppDbContext.SaveChangesAsync();
+            }
+
+            _links.Remove(link);
+
+            if (_selectedPlayerId == link.PlayerId)
+            {
+                _selectedPlayerId = null;
+                _playerBuildplates = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to unlink player {PlayerId} from panel user {PanelUserId}", link.PlayerId, link.PanelUserId);
+            _errorMessage = "Failed to unlink the in-game profile.";
+        }
+    }
+
+    // --- Credentials ---
+
+    private void OpenCredentialsModal(string playerId)
+    {
+        if (!_canManagePlayers)
+        {
+            return;
+        }
+
+        _credentialsPlayerId = playerId;
+        _credentialsUsernameModel = new ChangeUsernameModel { Username = UsernameOf(playerId) ?? string.Empty };
+        _credentialsPasswordModel = new ChangePasswordModel();
+        _credentialsError = null;
+        _credentialsSuccess = null;
+        _showCredentialsModal = true;
+    }
+
+    private void CloseCredentialsModal()
+    {
+        _showCredentialsModal = false;
+        _credentialsPlayerId = null;
+    }
+
+    private async Task ChangeUsername()
+    {
+        _credentialsError = null;
+        _credentialsSuccess = null;
+
+        if (_credentialsPlayerId is null)
+        {
+            return;
+        }
+
+        string username = _credentialsUsernameModel.Username.Trim();
+
+        if (string.IsNullOrWhiteSpace(username) ||
+            username.Length < AccountConstants.UsernameLengthMin ||
+            username.Length > AccountConstants.UsernameLengthMax)
+        {
+            _credentialsError = $"Username must be {AccountConstants.UsernameLengthMin}-{AccountConstants.UsernameLengthMax} characters long.";
+            return;
+        }
+
+        if (!AccountConstants.GetUsernameRegex().IsMatch(username))
+        {
+            _credentialsError = $"Username must contain only: {AccountConstants.UsernameAllowedCharacters}.";
+            return;
+        }
+
+        using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+        if (liveDb is null)
+        {
+            _credentialsError = "Could not open the live database.";
+            return;
+        }
+
+        if (await DataUtils.IsUsernameTakenAsync(username, _credentialsPlayerId, liveDb))
+        {
+            _credentialsError = "Username must be unique.";
+            return;
+        }
+
+        await DataUtils.UpdateUsernameAsync(_credentialsPlayerId, username, liveDb);
+
+        _usernames[_credentialsPlayerId] = username;
+        _credentialsUsernameModel = new ChangeUsernameModel { Username = username };
+        _credentialsSuccess = "Username updated.";
+    }
+
+    private async Task ChangePassword()
+    {
+        _credentialsError = null;
+        _credentialsSuccess = null;
+
+        if (_credentialsPlayerId is null)
+        {
+            return;
+        }
+
+        string password = _credentialsPasswordModel.Password.Trim();
+
+        if (string.IsNullOrWhiteSpace(password) ||
+            password.Length < AccountConstants.PasswordLengthMin ||
+            password.Length > AccountConstants.PasswordLengthMax)
+        {
+            _credentialsError = $"Password must be {AccountConstants.PasswordLengthMin}-{AccountConstants.PasswordLengthMax} characters long.";
+            return;
+        }
+
+        using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+        if (liveDb is null)
+        {
+            _credentialsError = "Could not open the live database.";
+            return;
+        }
+
+        if (!await DataUtils.UpdatePasswordAsync(_credentialsPlayerId, password, liveDb))
+        {
+            _credentialsError = "Failed to update the password.";
+            return;
+        }
+
+        _credentialsPasswordModel = new ChangePasswordModel();
+        _credentialsSuccess = "Password updated.";
+    }
+
+    // --- Buildplates ---
+
+    private async Task LoadPlayerBuildplates(string playerId)
+    {
+        _playerBuildplates = null;
+
+        Buildplates buildplatesModel;
+
+        try
+        {
+            using var earthDb = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
+
+            EarthDB.Results results = await new EarthDB.Query(false)
+                .Get("buildplates", playerId, typeof(Buildplates))
+                .ExecuteAsync(earthDb, default);
+
+            buildplatesModel = results.Get<Buildplates>("buildplates");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load buildplates for player {PlayerId}", playerId);
+            _errorMessage = "Could not load buildplates. Please check the database connection.";
+            _playerBuildplates = [];
+            return;
+        }
+
+        _playerBuildplates = buildplatesModel
+            .GetBuildplates()
+            .Select(entry => new PlayerBuildplate
+            {
+                Id = entry.Id,
+                Name = entry.Buildplate.Name,
+                Size = entry.Buildplate.Size,
+                BlocksPerMeter = entry.Buildplate.Scale,
+                IsNight = entry.Buildplate.Night,
+            })
+            .OrderBy(buildplate => buildplate.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private IEnumerable<PlayerBuildplate> FilteredBuildplates
+        => _playerBuildplates?.Where(buildplate => string.IsNullOrWhiteSpace(_buildplateSearchTerm)
+            || buildplate.Name.Contains(_buildplateSearchTerm, StringComparison.OrdinalIgnoreCase))
+        ?? Enumerable.Empty<PlayerBuildplate>();
+
+    private int TotalBuildplatePages
+        => Math.Max(1, (int)Math.Ceiling(FilteredBuildplates.Count() / (double)BuildplatePageSize));
+
+    private IEnumerable<PlayerBuildplate> PaginatedBuildplates
+        => FilteredBuildplates.Skip((_buildplateCurrentPage - 1) * BuildplatePageSize).Take(BuildplatePageSize);
+
+    private void HandleBuildplateSearch(ChangeEventArgs e)
+    {
+        _buildplateSearchTerm = e.Value?.ToString() ?? string.Empty;
+        _buildplateCurrentPage = 1;
+    }
+
+    private void ChangeBuildplatePage(int newPage)
+    {
+        if (newPage >= 1 && newPage <= TotalBuildplatePages)
+        {
+            _buildplateCurrentPage = newPage;
+        }
+    }
+
+    public sealed class ChangeUsernameModel
+    {
+        [Required(ErrorMessage = "Username cannot be empty.")]
+        [StringLength(AccountConstants.UsernameLengthMax, MinimumLength = AccountConstants.UsernameLengthMin,
+            ErrorMessage = $"Username must be between {AccountConstants.UsernameLengthMinStr} and {AccountConstants.UsernameLengthMaxStr} characters.")]
+        public string Username { get; set; } = string.Empty;
+    }
+
+    public sealed class ChangePasswordModel
+    {
+        [Required(ErrorMessage = "Password cannot be empty.")]
+        [StringLength(AccountConstants.PasswordLengthMax, MinimumLength = AccountConstants.PasswordLengthMin,
+            ErrorMessage = $"Password must be between {AccountConstants.PasswordLengthMinStr} and {AccountConstants.PasswordLengthMaxStr} characters.")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please retype your password.")]
+        [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    public sealed class PlayerBuildplate
+    {
+        public required string Id { get; set; }
+        public required string Name { get; set; }
+        public int Size { get; set; }
+        public int BlocksPerMeter { get; set; }
+        public bool IsNight { get; set; }
+    }
+}

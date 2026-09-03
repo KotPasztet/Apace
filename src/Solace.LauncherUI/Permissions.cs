@@ -33,6 +33,8 @@ internal static class Permissions
     public const string ViewPlayers = "player.view";
     [PermissionInfo("Players", "Manage player accounts - edit, delete")]
     public const string ManagePlayers = "player.manage";
+    [PermissionInfo("Players", "Link in-game player profiles to panel accounts - manage linked accounts")]
+    public const string LinkPlayers = "player.link";
 
     [PermissionInfo("Buildplates", "View the imported buildplates")]
     public const string ViewBuildplates = "buildplate.view";
