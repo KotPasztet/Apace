@@ -10,6 +10,8 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
 @using System.Diagnostics
+@using System.IO.Compression
+@using System.Text
 @using Microsoft.EntityFrameworkCore
 @using Serilog
 @using Solace.Buildplate.Model
@@ -151,19 +153,27 @@
                                 }
                             </div>
 
-                            <button class="btn btn-outline btn-sm w-100" @onclick="() => RegeneratePreview(bp)"
-                                    disabled="@bp.IsBusy">
-                                @if (bp.IsRegeneratingPreview)
-                                {
-                                    <span class="spinner-border spinner-border-sm"></span>
-                                    <span>Regenerating...</span>
-                                }
-                                else
-                                {
-                                    <img class="nav-icon" src="/images/settings_icon.png" alt="" />
-                                    <span>Regenerate In-Game Preview</span>
-                                }
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline btn-sm w-100" @onclick="() => RegeneratePreview(bp)"
+                                        disabled="@bp.IsBusy">
+                                    @if (bp.IsRegeneratingPreview)
+                                    {
+                                        <span class="spinner-border spinner-border-sm"></span>
+                                        <span>Regenerating...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-gear-fill me-1"></i>
+                                        <span>Regenerate</span>
+                                    }
+                                </button>
+
+                                <button class="btn btn-outline btn-sm w-100" @onclick="() => RequestExport(bp)"
+                                        disabled="@bp.IsBusy">
+                                    <i class="bi bi-download me-1"></i>
+                                    <span>Export</span>
+                                </button>
+                            </div>
                         </div>
                     }
                 </div>
@@ -259,6 +269,61 @@
     </div>
 }
 
+@if (_showExportModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); position: fixed; inset: 0; z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px; margin: 10vh auto;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Export Buildplate</h5>
+                    <button type="button" class="btn-close" @onclick="CancelExport" disabled="@_isExporting"></button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <p>Select export format for <strong>@_exportBp?.Name</strong>:</p>
+
+                    <select class="form-select" @bind="_exportFormat" disabled="@_isExporting">
+                        <option value="Solace">Apace/Vienna (.zip)</option>
+                        <option value="Earth">Project Earth (.json)</option>
+                    </select>
+
+                    @if (_isExporting)
+                    {
+                        <div class="mt-3">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>Generating file...</span>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_exportErrorMessage))
+                    {
+                        <div class="alert alert-danger py-2 small mt-3 mb-0">
+                            ⚠ @_exportErrorMessage
+                            <button type="button" class="btn-close" style="float: right;"
+                                    @onclick="() => _exportErrorMessage = null"></button>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelExport"
+                            disabled="@_isExporting">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmExport" disabled="@_isExporting"
+                            style="min-width: 100px;">
+                        @if (_isExporting)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                            <span>Exporting...</span>
+                        }
+                        else
+                        {
+                            <span>Export</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private ClaimsPrincipal? _user;
     private List<Buildplate> _buildplates = new();
@@ -281,6 +346,13 @@
     private Buildplate? _bpToDelete;
     private bool _removeTemplateFromPlayers = false;
     private string? _deleteErrorMessage;
+
+    // Export Modal State
+    private bool _showExportModal = false;
+    private bool _isExporting = false;
+    private Buildplate? _exportBp;
+    private string _exportFormat = "Solace";
+    private string? _exportErrorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -400,7 +472,7 @@ BuildplateLauncher.ExeName))
         {
             await using var importer = await Importer.CreateFromSettings(Settings.Instance, Log.Logger);
 
-            if (!await importer.RegenerateTemplatePreviewAsync(bp.Id, default))
+            if (await importer.RegenerateTemplatePreviewAsync(bp.Id, default) is null)
             {
                 bp.ErrorMessage = "Failed to regenerate preview, check Launcher logs for details.";
                 return;
@@ -522,6 +594,157 @@ BuildplateLauncher.ExeName))
     private void CloseErrorModal()
     {
         _deleteErrorMessage = null;
+    }
+
+    private void RequestExport(Buildplate bp)
+    {
+        _exportBp = bp;
+        _exportFormat = "Solace";
+        _exportErrorMessage = null;
+        _showExportModal = true;
+    }
+
+    private void CancelExport()
+    {
+        if (_isExporting)
+        {
+            return;
+        }
+
+        _showExportModal = false;
+        _exportBp = null;
+    }
+
+    private async Task ConfirmExport()
+    {
+        if (_exportBp is null)
+        {
+            return;
+        }
+
+        _isExporting = true;
+        _exportErrorMessage = null;
+
+        bool solaceFormat = _exportFormat is "Solace";
+
+        Stream fileStream;
+        try
+        {
+            StateHasChanged();
+
+            if (!await ServerManager.EnsureComponentsOnline(ObjectStoreServer.ExeName))
+            {
+                _exportErrorMessage = "Export failed: The server must be running.";
+                return;
+            }
+
+            await using var importer = await Importer.CreateFromSettings(Settings.Instance, Log.Logger, createEventBus: false);
+
+            if (solaceFormat)
+            {
+                var data = await importer.ObjectStoreClient.GetAsync(_exportBp.ServerDataObjectId);
+
+                if (data is null)
+                {
+                    _exportErrorMessage = "Export failed: Could not get buildplate world data.";
+                    return;
+                }
+
+                var stream = new MemoryStream(data.Length);
+                stream.Write(data);
+                stream.Position = 0;
+
+                using (var zip = new ZipArchive(stream, ZipArchiveMode.Update, leaveOpen: true))
+                {
+                    if (zip.GetEntry(WorldData.MetadataFileName) is null)
+                    {
+                        var metadataEntry = zip.CreateEntry(WorldData.MetadataFileName);
+
+                        using (var metadataStream = metadataEntry.Open())
+                        {
+                            WorldData.WriteMetadata(metadataStream, new BuildplateMetadataV1(_exportBp.Size, _exportBp.Offset, _exportBp.IsNight));
+                        }
+                    }
+                }
+
+                fileStream = stream;
+            }
+            else
+            {
+                var data = await importer.ObjectStoreClient.GetAsync(_exportBp.PreviewObjectId);
+
+                if (data is null || data.Length == 0)
+                {
+                    // try to regenerate the preview
+                    if (!await ServerManager.EnsureComponentsOnline(EventBusServer.ExeName, ObjectStoreServer.ExeName,
+                    BuildplateLauncher.ExeName))
+                    {
+                        _exportErrorMessage = "Export failed: The server must be running.";
+                        return;
+                    }
+
+                    await using var regenImporter = await Importer.CreateFromSettings(Settings.Instance, Log.Logger);
+
+                    data = await regenImporter.RegenerateTemplatePreviewAsync(_exportBp.Id);
+
+                    if (data is null || data.Length == 0)
+                    {
+                        _exportErrorMessage = "Export failed: Could not get buildplate preview.";
+                        return;
+                    }
+                }
+
+                if (!Guid.TryParse(_exportBp.Id, out Guid buildplateId))
+                {
+                    _exportErrorMessage = "Export failed: Buildplate id is not a valid Project Earth buildplate id.";
+                    return;
+                }
+
+                var buildplate = new MCeToJava.Models.MCE.Buildplate(
+                    buildplateId,
+                    "",
+                    DateTime.UtcNow,
+                    false,
+                    false,
+                    1,
+                    1,
+                    buildplateId,
+                    MCeToJava.Models.MCE.Buildplate.Gamemode.Survival,
+                    Encoding.UTF8.GetString(data),
+                    new BitcoderCZ.Maths.Vectors.int3(0, _exportBp.Offset, 0),
+                    new MCeToJava.Models.MCE.Buildplate.Flat2(_exportBp.Size, _exportBp.Size),
+                    _exportBp.BlocksPerMeter,
+                    MCeToJava.Models.MCE.Buildplate.Orientation.Horizontal,
+                    0
+                );
+
+                fileStream = new MemoryStream(Encoding.UTF8.GetBytes(MCeToJava.Utils.JsonUtils.SerializeJson(buildplate)));
+            }
+
+            fileStream.Position = 0;
+
+            using var streamRef = new DotNetStreamReference(fileStream);
+
+            string extension = solaceFormat ? "zip" : "json";
+            string fileName = $"{_exportBp.Name.Replace(" ", "_")}_export.{extension}";
+
+            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+
+            Log.Information($"Successfully exported buildplate '{_exportBp.Name}' as {fileName}");
+
+            _showExportModal = false;
+            _exportBp = null;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to export buildplate '{_exportBp?.Id}': {ex}");
+            _exportErrorMessage = $"Export failed: {ex.Message}";
+        }
+        finally
+        {
+            _isExporting = false;
+            StateHasChanged();
+        }
     }
 
     private bool HasPermission(string permission)
