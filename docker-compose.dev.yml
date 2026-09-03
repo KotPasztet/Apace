@@ -14,7 +14,7 @@ services:
       - "5000:5000"        # launcher UI / panel
       - "1808:1808"        # public HTTP API (ApiPort from config.json)
       - "5532:5532"        # event bus (TCP)
-      - "19132:19132/udp"  # single shared bridge Bedrock port
+      - "${BRIDGE_PORT:-19132}:${BRIDGE_PORT:-19132}/udp"  # single shared bridge Bedrock port; set BRIDGE_PORT to match the panel's "Buildplate Bridge Port" setting
 
     volumes:
       - /opt/apace-persistent/launcher-data:/app/launcher/Data

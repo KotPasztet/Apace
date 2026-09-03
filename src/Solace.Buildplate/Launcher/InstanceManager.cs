@@ -191,7 +191,7 @@ public sealed class InstanceManager
                         startRequest.EncounterId,
                         startRequest.BuildplateId,
                         instanceManager._publicAddress,
-                        Starter.BRIDGE_PORT,
+                        instanceManager._starter.BridgePort,
                         startRequest.Type
                     )));
 

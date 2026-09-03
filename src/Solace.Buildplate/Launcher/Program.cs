@@ -19,6 +19,8 @@ internal static class Program
         public string EventBusConnectionString { get; set; }
         [Option("publicAddress", Required = true, HelpText = "Public server address to report in instance info")]
         public string PublicAddress { get; set; }
+        [Option("bridgePort", Default = Starter.DEFAULT_BRIDGE_PORT, Required = false, HelpText = "Public Bedrock bridge port, both listened on by the persistent bridge and reported to clients in instance info")]
+        public int BridgePort { get; set; }
         [Option("bridgeJar", Required = true, HelpText = "Fountain bridge JAR file")]
         public string BridgeJar { get; set; }
         [Option("serverTemplateDir", Required = true, HelpText = "Minecraft/Fabric server template directory, containing the Fabric JAR, mods, and libraries")]
@@ -123,8 +125,11 @@ internal static class Program
             fountainBridgeJar,
             connectorPluginJar,
             options.EventBusConnectionString,
-            options.PublicAddress
+            options.PublicAddress,
+            options.BridgePort
         );
+
+        Log.Information($"Public bridge port: {options.BridgePort}");
 
         Log.Information("Starting persistent Fabric server");
         await persistentProcessManager.StartFabricAsync();
@@ -132,7 +137,7 @@ internal static class Program
         Log.Information("Starting persistent bridge");
         await persistentProcessManager.StartBridgeAsync();
 
-        var starter = new Starter(eventBusClient, options.EventBusConnectionString, options.PublicAddress);
+        var starter = new Starter(eventBusClient, options.EventBusConnectionString, options.PublicAddress, options.BridgePort);
         var instanceManager = await InstanceManager.CreateAsync(eventBusClient, starter, options.PublicAddress, persistentProcessManager);
 
         Console.CancelKeyPress += (sender, e) =>

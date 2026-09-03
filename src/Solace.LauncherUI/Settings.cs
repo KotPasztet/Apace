@@ -31,6 +31,7 @@ public sealed class Settings
         LauncherBuildplatePreview = false,
         PlayableScale = 4,
         OnlyAllowLocalLogin = false,
+        BridgePort = 19132,
     };
 
     public static Settings Instance { get; set; } = Default;
@@ -59,6 +60,8 @@ public sealed class Settings
     public int? PlayableScale { get; set; }
 
     public bool? OnlyAllowLocalLogin { get; set; }
+
+    public ushort? BridgePort { get; set; }
 
     public enum TileDataSourceE
     {
@@ -202,6 +205,12 @@ public sealed class Settings
         {
             Log.Warning($"OnlyAllowLocalLogin is invalid, using default: '{Default.OnlyAllowLocalLogin}'");
             settings.OnlyAllowLocalLogin = Default.OnlyAllowLocalLogin;
+        }
+
+        if (settings.BridgePort is null)
+        {
+            Log.Warning($"Bridge port is invalid, using default: '{Default.BridgePort}'");
+            settings.BridgePort = Default.BridgePort;
         }
 
         Log.Information("Loaded settings");

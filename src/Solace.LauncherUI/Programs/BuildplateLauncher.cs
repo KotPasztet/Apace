@@ -48,17 +48,20 @@ internal static class BuildplateLauncher
             return null;
         }
         
-        return Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)),
-        [
+        var arguments = new List<string>(9)
+        {
             $"--eventbus=localhost:{settings.EventBusPort}",
             $"--publicAddress={settings.IPv4}",
+            $"--bridgePort={settings.BridgePort}",
             $"--bridgeJar={fountainBridgePath}",
             $"--serverTemplateDir={Path.GetFullPath(Path.Combine(Program.StaticDataDir, "server_template_dir"))}",
             $"--fabricJarName={ServerJarName}",
             $"--connectorPluginJar={connectorPluginPath}",
             $"--dir={Program.StaticDataDir}",
             $"--logger-url={Program.LoggerAddress}",
-        ])
+        };
+
+        return Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)), arguments)
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),
             CreateNoWindow = false,
