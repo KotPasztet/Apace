@@ -30,6 +30,7 @@ public sealed class Settings
         StaticDataPath = "../staticdata",
         LauncherBuildplatePreview = false,
         PlayableScale = 4,
+        OnlyAllowLocalLogin = false,
     };
 
     public static Settings Instance { get; set; } = Default;
@@ -56,6 +57,8 @@ public sealed class Settings
 
     public bool? LauncherBuildplatePreview { get; set; }
     public int? PlayableScale { get; set; }
+
+    public bool? OnlyAllowLocalLogin { get; set; }
 
     public enum TileDataSourceE
     {
@@ -193,6 +196,12 @@ public sealed class Settings
         {
             Log.Warning($"Playable scale is invalid, using default: '{Default.PlayableScale}'");
             settings.PlayableScale = Default.PlayableScale;
+        }
+
+        if (settings.OnlyAllowLocalLogin is null)
+        {
+            Log.Warning($"OnlyAllowLocalLogin is invalid, using default: '{Default.OnlyAllowLocalLogin}'");
+            settings.OnlyAllowLocalLogin = Default.OnlyAllowLocalLogin;
         }
 
         Log.Information("Loaded settings");

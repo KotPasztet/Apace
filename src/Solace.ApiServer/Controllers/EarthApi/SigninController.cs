@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System.Text.RegularExpressions;
+using Solace.ApiServer.Models;
 using Solace.ApiServer.Utils;
 using Solace.Common.Utils;
 
@@ -11,6 +12,8 @@ namespace Solace.ApiServer.Controllers;
 [ApiVersion("1.1")]
 internal sealed partial class SigninController : SolaceControllerBase
 {
+    private static Config config => Program.config;
+
     [GeneratedRegex("^[0-9A-F]{15,16}$")]
     private static partial Regex GetUserIdRegex();
 
@@ -37,6 +40,25 @@ internal sealed partial class SigninController : SolaceControllerBase
         {
             Log.Error($"User id not match ({userId})");
             return TypedResults.BadRequest();
+        }
+
+        if (Program.LocalLoginOnly)
+        {
+            // self-asserted session tickets cannot be verified, only accept tickets issued by this server (local accounts)
+            string jwt = string.Join('-', parts, 1, parts.Length - 1);
+            var sessionTicket = JwtUtils.Verify<Tokens.Shared.PlayfabSessionTicket>(jwt, config.PlayfabApi.SessionTicketSecretBytes);
+
+            if (sessionTicket is null)
+            {
+                Log.Warning($"Sign in - local login only is enabled and the session ticket was not issued by this server");
+                return TypedResults.BadRequest();
+            }
+
+            if (!string.Equals(sessionTicket.Data.UserId, userId, StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Warning($"Sign in - local login only is enabled and the session ticket user id does not match ({sessionTicket.Data.UserId} != {userId})");
+                return TypedResults.BadRequest();
+            }
         }
 
         // TODO: check credentials
