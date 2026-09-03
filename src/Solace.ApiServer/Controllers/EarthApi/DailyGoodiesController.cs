@@ -47,7 +47,7 @@ internal sealed class DailyGoodiesController : SolaceControllerBase
         TokenClaims tokenClaims = results.Get<TokenClaims>("tokenClaims");
         Tokens tokens = results.Get<Tokens>("tokens");
 
-        bool claimed = tokenClaims.RedeemedDailyLoginDates.Contains(today);
+        bool claimed = TokenUtils.IsDailyLoginClaimedToday(tokenClaims, today);
         string? tokenId = FindDailyLoginTokenId(tokens, today);
         bool hasToken = tokenId is not null;
 
@@ -146,8 +146,8 @@ internal sealed class DailyGoodiesController : SolaceControllerBase
         DBRewards rewards = DailyLoginRewards();
 
         var rewardResponse = Utils.Rewards.FromDBRewardsModel(rewards).ToApiResponse();
-        int streak = Math.Max(1, tokenClaims.DailyLoginStreak);
-        int currentDay = ((streak - 1) % 7) + 1;
+        int currentDay = TokenUtils.GetDailyLoginCycleDay(tokenClaims, today);
+        int streak = currentDay;
         string state = claimed ? "Completed" : hasToken ? "Available" : "Locked";
 
         return new Dictionary<string, object>

@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using System.Globalization;
+using Serilog;
 using Solace.Common.Utils;
 using Solace.ApiServer.Controllers.EarthApi;
 using Solace.DB;
@@ -29,7 +30,7 @@ public static class TokenUtils
 
     public static async Task EnsureDailyLoginToken(string playerId, CancellationToken cancellationToken)
     {
-        string today = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        string today = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         try
         {
@@ -80,11 +81,7 @@ public static class TokenUtils
                             : EarthDB.Query.Empty;
                     }
 
-                    tokenClaims.DailyLoginStreak = tokenClaims.LastDailyLoginDate is null || tokenClaims.LastDailyLoginDate == today
-                        ? Math.Max(1, tokenClaims.DailyLoginStreak)
-                        : tokenClaims.DailyLoginStreak + 1;
-                    tokenClaims.LastDailyLoginDate = today;
-
+                    // the streak advances when the token is claimed (DoActionsOnRedeemedToken), not when it is created
                     tokens.AddToken(U.RandomUuid().ToString(), new Tokens.DailyLoginToken(
                         today,
                         new Solace.DB.Models.Common.Rewards(
@@ -95,9 +92,7 @@ public static class TokenUtils
                             [],
                             [])));
 
-                    return new EarthDB.Query(true)
-                        .Update("tokenClaims", playerId, tokenClaims)
-                        .Update("tokens", playerId, tokens);
+                    return new EarthDB.Query(true).Update("tokens", playerId, tokens);
                 })
                 .ExecuteAsync(Program.DB, cancellationToken);
         }
@@ -106,6 +101,51 @@ public static class TokenUtils
             Log.Warning(exception, "Could not create daily login token for {PlayerId}", playerId);
         }
     }
+
+    // port of Solace v0.0.7 ChallengeProgressVersion.GetDailyLoginDay: the cycle day is derived from the
+    // last CLAIM date, so a streak whose last claim was neither today nor yesterday starts over at day 1
+    public static int GetDailyLoginCycleDay(TokenClaims tokenClaims, string today)
+    {
+        int streak = tokenClaims.LastDailyLoginDate switch
+        {
+            null => 1,
+            var date when date == today => Math.Max(1, tokenClaims.DailyLoginStreak),
+            var date when date == GetPreviousDate(today) => Math.Max(1, tokenClaims.DailyLoginStreak) + 1,
+            _ => 1
+        };
+
+        return (streak - 1) % 7 + 1;
+    }
+
+    public static int GetDailyLoginCycleDay(TokenClaims tokenClaims, long timestamp)
+        => GetDailyLoginCycleDay(tokenClaims, GetDate(timestamp));
+
+    public static bool IsDailyLoginClaimedToday(TokenClaims tokenClaims, string today)
+        => tokenClaims.RedeemedDailyLoginDates.Contains(today);
+
+    public static bool IsDailyLoginClaimedToday(TokenClaims tokenClaims, long timestamp)
+        => IsDailyLoginClaimedToday(tokenClaims, GetDate(timestamp));
+
+    // advances the streak for a claim on the given day; a last claim that is neither the same day nor the
+    // previous one resets the streak to 1, and re-claiming the same day is a no-op
+    private static void ClaimDailyLogin(TokenClaims tokenClaims, string date)
+    {
+        if (tokenClaims.LastDailyLoginDate == date)
+        {
+            return;
+        }
+
+        tokenClaims.DailyLoginStreak = tokenClaims.LastDailyLoginDate == GetPreviousDate(date)
+            ? Math.Max(1, tokenClaims.DailyLoginStreak) + 1
+            : 1;
+        tokenClaims.LastDailyLoginDate = date;
+    }
+
+    private static string GetDate(long timestamp)
+        => DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static string GetPreviousDate(string date)
+        => DateOnly.ParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture).AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     // does not handle redeeming the token itself (removing it from the list of tokens belonging to the player)
     public static EarthDB.Query DoActionsOnRedeemedToken(Tokens.Token token, string playerId, long currentTime, StaticData.StaticData staticData)
@@ -158,12 +198,21 @@ public static class TokenUtils
                     getQuery.Then(results =>
                     {
                         TokenClaims tokenClaims = results.Get<TokenClaims>("tokenClaims");
-                        tokenClaims.LastDailyLoginDate = dailyLoginToken.Date;
-                        tokenClaims.RedeemedDailyLoginDates.Add(dailyLoginToken.Date);
 
-                        return new EarthDB.Query(true)
-                            .Update("tokenClaims", playerId, tokenClaims)
-                            .Then(Rewards.FromDBRewardsModel(dailyLoginToken.Rewards).ToRedeemQuery(playerId, currentTime, staticData), false);
+                        // the streak advances on claim (not on token creation); RedeemedDailyLoginDates keeps
+                        // double claims of the same day from advancing the streak or granting rewards twice
+                        bool firstClaim = tokenClaims.RedeemedDailyLoginDates.Add(dailyLoginToken.Date);
+                        if (firstClaim)
+                        {
+                            ClaimDailyLogin(tokenClaims, dailyLoginToken.Date);
+                        }
+
+                        var updateQuery = new EarthDB.Query(true)
+                            .Update("tokenClaims", playerId, tokenClaims);
+
+                        return firstClaim
+                            ? updateQuery.Then(Rewards.FromDBRewardsModel(dailyLoginToken.Rewards).ToRedeemQuery(playerId, currentTime, staticData), false)
+                            : updateQuery;
                     }, false);
                 }
 
