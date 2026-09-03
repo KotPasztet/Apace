@@ -10,15 +10,18 @@ public sealed class Starter
 	private readonly EventBusClient _eventBusClient;
 	private readonly string _eventBusConnectionString;
 	private readonly string _publicAddress;
+	private readonly int _bridgePort;
 
-	public const int BRIDGE_PORT = 19132;
+	public const int DEFAULT_BRIDGE_PORT = 19132;
 	public string PublicAddress => _publicAddress;
+	public int BridgePort => _bridgePort;
 
-	public Starter(EventBusClient eventBusClient, string eventBusConnectionString, string publicAddress)
+	public Starter(EventBusClient eventBusClient, string eventBusConnectionString, string publicAddress, int bridgePort)
 	{
 		_eventBusClient = eventBusClient;
 		_eventBusConnectionString = eventBusConnectionString;
 		_publicAddress = publicAddress;
+		_bridgePort = bridgePort;
 	}
 
 	public Instance? StartInstance(

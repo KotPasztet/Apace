@@ -61,6 +61,14 @@
                         <InputNumber @bind-Value="SettingsModel.ObjectStorePort" class="form-control" />
                         <ValidationMessage For="@(() => SettingsModel.ObjectStorePort)" />
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Buildplate Bridge Port</label>
+                        <InputNumber @bind-Value="SettingsModel.BridgePort" class="form-control" />
+                        <div class="form-text text-white">
+                            Public Bedrock port of the single shared buildplate bridge (default 19132). Requires the Buildplate launcher to restart.
+                        </div>
+                        <ValidationMessage For="@(() => SettingsModel.BridgePort)" />
+                    </div>
                     <div class="col-12">
                         <label class="form-label">PC Ipv4 Address or Hostname (without port)</label>
                         <InputText @bind-Value="SettingsModel.IPv4" class="form-control" placeholder="192.168.x.x" />
@@ -327,6 +335,7 @@
         SettingsModel.ApiPort = source.ApiPort;
         SettingsModel.EventBusPort = source.EventBusPort;
         SettingsModel.ObjectStorePort = source.ObjectStorePort;
+        SettingsModel.BridgePort = source.BridgePort;
         SettingsModel.IPv4 = source.IPv4;
         SettingsModel.EarthDatabaseConnectionString = source.EarthDatabaseConnectionString;
         SettingsModel.LiveDatabaseConnectionString = source.LiveDatabaseConnectionString;
@@ -349,6 +358,7 @@
             ApiPort = (ushort)SettingsModel.ApiPort!,
             EventBusPort = (ushort)SettingsModel.EventBusPort!,
             ObjectStorePort = (ushort)SettingsModel.ObjectStorePort!,
+            BridgePort = (ushort)SettingsModel.BridgePort!,
             IPv4 = SettingsModel.IPv4,
             EarthDatabaseConnectionString = SettingsModel.EarthDatabaseConnectionString,
             LiveDatabaseConnectionString = SettingsModel.LiveDatabaseConnectionString,
@@ -395,6 +405,12 @@
         }
         [Required, Range(1, ushort.MaxValue, ErrorMessage = $"Port must be between 1 and 65535")]
         public int? ObjectStorePort
+        {
+            get; set;
+        }
+
+        [Required, Range(1, ushort.MaxValue, ErrorMessage = $"Port must be between 1 and 65535")]
+        public int? BridgePort
         {
             get; set;
         }

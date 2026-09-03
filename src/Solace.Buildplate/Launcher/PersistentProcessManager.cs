@@ -19,7 +19,6 @@ public sealed class PersistentProcessManager
     public const int PERSISTENT_FABRIC_PORT = 25565;
     public const string PERSISTENT_QUEUE_NAME = "buildplate_persistent";
 #pragma warning restore CA1707
-    private const int BRIDGE_PORT = 19132;
     private const int CONTROL_CHANNEL_PORT = 25564;
     private const string PERSISTENT_BRIDGE_DIR_NAME = "vienna-buildplate-persistent-bridge";
 
@@ -31,6 +30,7 @@ public sealed class PersistentProcessManager
     private readonly FileInfo _connectorPluginJar;
     private readonly string _eventBusConnectionString;
     private readonly string _publicAddress;
+    private readonly int _bridgePort;
 
     private readonly string _connectorPluginArgString;
 
@@ -54,7 +54,8 @@ public sealed class PersistentProcessManager
         FileInfo fountainBridgeJar,
         FileInfo connectorPluginJar,
         string eventBusConnectionString,
-        string publicAddress
+        string publicAddress,
+        int bridgePort
     )
     {
         _javaCmd = javaCmd;
@@ -65,6 +66,7 @@ public sealed class PersistentProcessManager
         _connectorPluginJar = connectorPluginJar;
         _eventBusConnectionString = eventBusConnectionString;
         _publicAddress = publicAddress;
+        _bridgePort = bridgePort;
 
         _connectorPluginArgString = Json.Serialize(new ConnectorPluginArg(
             eventBusConnectionString,
@@ -284,7 +286,7 @@ public sealed class PersistentProcessManager
                 await _bridgeProcess.ExecuteAsync(bridgeWorkDir.FullName,
                 [
                     "-jar", _fountainBridgeJar.FullName,
-                    "-port", BRIDGE_PORT.ToString(CultureInfo.InvariantCulture),
+                    "-port", _bridgePort.ToString(CultureInfo.InvariantCulture),
                     "-serverAddress", "127.0.0.1",
                     "-serverPort", PERSISTENT_FABRIC_PORT.ToString(CultureInfo.InvariantCulture),
                     "-connectorPluginJar", _connectorPluginJar.FullName,
