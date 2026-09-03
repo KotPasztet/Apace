@@ -137,7 +137,7 @@
     <div class="card-body">
         @if (HasPermission(Permissions.ViewServerLogs))
         {
-            <div class="nav-pills mb-3" style="overflow-x: auto;">
+            <div class="nav-pills mb-2" style="overflow-x: auto;">
                 @foreach (var component in LogService.GetKnownComponents())
                 {
                     <button class="@(_activeTab == component ? "active" : "")"
@@ -145,17 +145,24 @@
                         @component
                     </button>
                 }
+            </div>
 
-                <button class="ms-auto @(_hideDebug ? "active" : "")"
-                        title="Show/hide debug entries"
-                        @onclick="() => _hideDebug = !_hideDebug">
-                    🐛 Debug
-                </button>
+            <div class="log-filter mb-3">
+                <span class="log-filter-label">Levels:</span>
+                @foreach (var level in _allLevels)
+                {
+                    var isSelected = _selectedLevels.Contains(level);
+                    <button class="@GetLogLevelClass(level) @(isSelected ? "" : "off")"
+                            title="Show/hide @level entries"
+                            @onclick="() => ToggleLogLevel(level)">
+                        @(isSelected ? "✓ " : "")@GetShortLevel(level)
+                    </button>
+                }
             </div>
 
             <div class="log-terminal" @ref="_logContainerRef">
                 <div class="log-content">
-                    @foreach (var log in LogService.GetLogsFor(_activeTab).Where(log => !_hideDebug || log.Level is not "Debug"))
+                    @foreach (var log in LogService.GetLogsFor(_activeTab).Where(log => string.IsNullOrEmpty(log.Level) || _selectedLevels.Contains(log.Level)))
                     {
                         <div class="log-line"><span class="log-time">[@FormatTimestamp(log.Timestamp)]</span> <span class="log-level @GetLogLevelClass(log.Level)">[@GetShortLevel(log.Level)]</span> <span class="log-msg">@log.RenderedMessage</span></div>
                     }
@@ -183,7 +190,14 @@
         : ServerManager.Status;
 
     private string _activeTab = "Launcher";
-    private bool _hideDebug = true;
+    private readonly string[] _allLevels = { "Verbose", "Debug", "Information", "Warning", "Error", "Fatal" };
+
+    // Debug starts hidden (the old 🐛 toggle hid exactly this level).
+    private readonly HashSet<string> _selectedLevels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Verbose", "Information", "Warning", "Error", "Fatal"
+    };
+
     private ClaimsPrincipal? _user;
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
@@ -355,6 +369,18 @@
             Solace.LauncherUI.ServerStatus.Stopping => "status-stopping",
             _ => "status-offline"
         };
+
+    private void ToggleLogLevel(string level)
+    {
+        if (_selectedLevels.Contains(level))
+        {
+            _selectedLevels.Remove(level);
+        }
+        else
+        {
+            _selectedLevels.Add(level);
+        }
+    }
 
     private string GetShortLevel(string? level)
         => level switch

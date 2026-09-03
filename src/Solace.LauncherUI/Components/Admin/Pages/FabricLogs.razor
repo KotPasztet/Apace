@@ -48,12 +48,24 @@
     <div class="card-header d-flex align-items-center justify-content-between">
         <span>▸ Fabric Server Logs</span>
         <div>
-            <button class="btn btn-sm @(_hideDebug ? "btn-secondary" : "btn-outline-secondary")" @onclick="() => _hideDebug = !_hideDebug" title="Show/hide debug entries">🐛 Debug</button>
-            <button class="btn btn-sm btn-secondary ms-2" @onclick="RefreshLogs" title="Reload entire log file">↺ Refresh</button>
+            <button class="btn btn-sm btn-secondary" @onclick="RefreshLogs" title="Reload entire log file">↺ Refresh</button>
             <button class="btn btn-sm btn-secondary ms-2" @onclick="CopyLogs" title="Copy visible log content to clipboard">📋 Copy</button>
         </div>
     </div>
     <div class="card-body">
+        <div class="log-filter mb-3">
+            <span class="log-filter-label">Levels:</span>
+            @foreach (var level in _allLevels)
+            {
+                var isSelected = _selectedLevels.Contains(level);
+                <button class="@GetLogLevelClass(level) @(isSelected ? "" : "off")"
+                        title="Show/hide @level entries"
+                        @onclick="() => ToggleLogLevel(level)">
+                    @(isSelected ? "✓ " : "")@GetShortLevel(level)
+                </button>
+            }
+        </div>
+
         @if (_errorMessage is not null)
         {
             <div class="alert alert-warning text-center py-4">
@@ -92,7 +104,17 @@
 
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
-    private bool _hideDebug = true;
+
+    // Same level set as ServerStatus; Minecraft severities (TRACE/INFO/WARN/
+    // ERROR/FATAL/DEBUG) map onto these through GetMinecraftLevelClass.
+    private readonly string[] _allLevels = { "Verbose", "Debug", "Information", "Warning", "Error", "Fatal" };
+
+    // Debug starts hidden (the old 🐛 toggle hid exactly this level).
+    private readonly HashSet<string> _selectedLevels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Verbose", "Information", "Warning", "Error", "Fatal"
+    };
+
     private string? _errorMessage;
     private bool _logFileExists;
     private string _logFilePath = "";
@@ -236,6 +258,55 @@
         return "";
     }
 
+    // Inverse of GetMinecraftLevelClass, used by the level filter.
+    private static string GetLevelName(string levelClass)
+        => levelClass switch
+        {
+            "log-vrb" => "Verbose",
+            "log-dbg" => "Debug",
+            "log-inf" => "Information",
+            "log-wrn" => "Warning",
+            "log-err" => "Error",
+            "log-ftl" => "Fatal",
+            _ => ""
+        };
+
+    private void ToggleLogLevel(string level)
+    {
+        if (_selectedLevels.Contains(level))
+        {
+            _selectedLevels.Remove(level);
+        }
+        else
+        {
+            _selectedLevels.Add(level);
+        }
+    }
+
+    private static string GetLogLevelClass(string level)
+        => level switch
+        {
+            "Verbose" => "log-vrb",
+            "Debug" => "log-dbg",
+            "Information" => "log-inf",
+            "Warning" => "log-wrn",
+            "Error" => "log-err",
+            "Fatal" => "log-ftl",
+            _ => ""
+        };
+
+    private static string GetShortLevel(string level)
+        => level switch
+        {
+            "Verbose" => "VRB",
+            "Debug" => "DBG",
+            "Information" => "INF",
+            "Warning" => "WRN",
+            "Error" => "ERR",
+            "Fatal" => "FTL",
+            _ => level.Length >= 3 ? level.Substring(0, 3).ToUpperInvariant() : "UNK"
+        };
+
     private async Task PollLoopAsync(CancellationToken ct)
     {
         _pollTimer = new PeriodicTimer(TimeSpan.FromSeconds(3));
@@ -325,9 +396,11 @@
         return TimeZoneInfo.ConvertTimeFromUtc(utc, _userTimeZone).ToString("HH:mm:ss");
     }
 
-    // Debug entries are hidden by default; the 🐛 toggle in the header shows them.
+    // Debug entries are hidden by default. Filtering runs on the log-* class a
+    // line was parsed into; unparsed lines (stack-trace continuations, raw
+    // output) carry no class and are always shown.
     private IEnumerable<(string timestamp, string threadLevel, string message, string levelClass)> GetVisibleLines()
-        => _hideDebug ? _lines.Where(l => l.levelClass != "log-dbg") : _lines;
+        => _lines.Where(l => l.levelClass.Length == 0 || _selectedLevels.Contains(GetLevelName(l.levelClass)));
 
     private async Task RefreshLogs()
     {

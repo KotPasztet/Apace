@@ -37,6 +37,61 @@
 .log-err { color: #f44336 !important; }
 .log-ftl { color: #fff !important; background: #c62828 !important; padding: 0 4px !important; }
 
+/* Per-level log filter pills — reuse the log-* palette; .off must stay last */
+.log-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.log-filter-label {
+    color: #9a9ab0 !important;
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-right: 2px;
+}
+
+.log-filter button {
+    font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    padding: 4px 10px !important;
+    border: 2px solid transparent !important;
+    border-radius: 0 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    transition: all 0.1s !important;
+}
+
+.log-filter button.log-vrb { background: #3a3a3a !important; border-color: #555 !important; color: #bbb !important; }
+.log-filter button.log-dbg { background: #1b4a6b !important; border-color: #64b5f6 !important; color: #c8e6ff !important; }
+.log-filter button.log-inf { background: #2e5c2e !important; border-color: #4caf50 !important; color: #d7ffd7 !important; }
+.log-filter button.log-wrn { background: #6b5410 !important; border-color: #ffb300 !important; color: #ffe9b3 !important; }
+.log-filter button.log-err { background: #6b2420 !important; border-color: #f44336 !important; color: #ffd2ce !important; }
+.log-filter button.log-ftl { background: #c62828 !important; border-color: #ff6659 !important; color: #fff !important; }
+
+.log-filter button:hover:not(.off) {
+    filter: brightness(1.15);
+}
+
+.log-filter button.off {
+    background: #1a1a1a !important;
+    border-color: #3a3a3a !important;
+    color: #5a5a5a !important;
+    opacity: 0.75 !important;
+}
+
+.log-filter button.off:hover {
+    background: #2a2a2a !important;
+    color: #9a9ab0 !important;
+    filter: none;
+}
+
 /* Log tab buttons — plain <button> elements inside .nav-pills */
 .nav-pills button {
     padding: 8px 18px !important;
