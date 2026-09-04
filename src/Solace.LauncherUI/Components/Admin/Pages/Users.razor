@@ -3,6 +3,8 @@
 @using Microsoft.AspNetCore.Identity
 @using System.Security.Claims
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.WebUtilities
+@using Solace.LauncherUI.Components.Admin.Shared
 @using Solace.LauncherUI.Data
 @using Solace.LauncherUI.Utils
 @attribute [Authorize(Policy = Permissions.ViewUsers)]
@@ -11,26 +13,49 @@
 @inject RoleManager<ApplicationRole> RoleManager
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
 
 <PageTitle>User Management - Apace</PageTitle>
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
-        <img class="nav-icon" src="/images/sign_icon.png" alt="" /> User Management
+        <img class="nav-icon" src="/images/earth_icon.png" alt="" /> User Management
     </div>
 
-    <div class="input-group" style="max-width: 400px;">
-        <span class="input-group-text">⌕</span>
-        <input type="text" class="form-control" placeholder="Search username or email..." @bind="_searchTerm"
-               @bind:after="ResetAndLoad" />
-        @if (!string.IsNullOrEmpty(_searchTerm))
-        {
-            <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
-                ✕
-            </button>
-        }
-    </div>
+    @if (_activeTab == Tab.Users)
+    {
+        <div class="input-group" style="max-width: 400px;">
+            <span class="input-group-text">⌕</span>
+            <input type="text" class="form-control" placeholder="Search username or email..." @bind="_searchTerm"
+                   @bind:after="ResetAndLoad" />
+            @if (!string.IsNullOrEmpty(_searchTerm))
+            {
+                <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                    ✕
+                </button>
+            }
+        </div>
+    }
 </div>
+
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+        <button type="button" class="nav-link @(_activeTab == Tab.Users ? "active" : "")"
+                @onclick="() => SetTab(Tab.Users)">Users</button>
+    </li>
+    @if (_canLinkPlayers)
+    {
+        <li class="nav-item">
+            <button type="button" class="nav-link @(_activeTab == Tab.LinkedAccounts ? "active" : "")"
+                    @onclick="() => SetTab(Tab.LinkedAccounts)">Linked Accounts</button>
+        </li>
+    }
+</ul>
+
+<div class="tab-content border border-top-0 p-4">
+@if (_activeTab == Tab.Users)
+{
+    <div class="tab-pane fade show active">
 
 @if (_users == null)
 {
@@ -130,6 +155,15 @@ else
         </nav>
     }
 }
+    </div>
+}
+else if (_canLinkPlayers)
+{
+    <div class="tab-pane fade show active">
+        <LinkedAccountsPanel />
+    </div>
+}
+</div>
 
 @if (_isEditing)
 {
@@ -242,6 +276,16 @@ else
     }
 
 @code {
+    // Tabs (linked accounts live on this page too, gated on Permissions.LinkPlayers)
+    private enum Tab
+    {
+        Users,
+        LinkedAccounts
+    }
+
+    private Tab _activeTab = Tab.Users;
+    private bool _canLinkPlayers;
+
     private List<ApplicationUser>? _users;
     private List<ApplicationRole> _roles = new();
     private Dictionary<string, List<string>> _userRolesMap = new();
@@ -273,7 +317,32 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadPermissions();
+
+        // Deep link to the linked accounts tab; also the target of the old
+        // /Admin/LinkedAccounts route, which now only redirects here.
+        if (_canLinkPlayers && QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query)
+                .TryGetValue("tab", out var tab) &&
+            string.Equals(tab.ToString(), "linked", StringComparison.OrdinalIgnoreCase))
+        {
+            _activeTab = Tab.LinkedAccounts;
+        }
+
         await LoadData();
+    }
+
+    private void SetTab(Tab tab)
+    {
+        if (_activeTab == tab)
+        {
+            return;
+        }
+
+        _activeTab = tab;
+
+        // Keep the tab in the URL so refreshes and shared links reopen it
+        Navigation.NavigateTo(tab == Tab.LinkedAccounts
+            ? Navigation.GetUriWithQueryParameter("tab", "linked")
+            : Navigation.GetUriWithQueryParameter("tab", (string?)null));
     }
 
     private async Task LoadPermissions()
@@ -285,6 +354,7 @@ else
         _canAssignRoles = user.HasPermission(Permissions.AssignRoles);
         _canDeleteUsers = user.HasPermission(Permissions.DeleteUsers);
         _canEditAccountInfo = user.HasPermission(Permissions.EditAcountInfo);
+        _canLinkPlayers = user.HasPermission(Permissions.LinkPlayers);
 
         _roles = await RoleManager.Roles.ToListAsync();
         var currentUserRoles = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
