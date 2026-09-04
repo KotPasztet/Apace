@@ -2,6 +2,7 @@
 using Npgsql;
 using Serilog;
 using System.Diagnostics;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Solace.EventBus.Client;
@@ -85,44 +86,81 @@ internal static class Program
         ITileDataSource tileDataSource;
         if (options.MapTilerApiKey is not null)
         {
+            // A transient maptiler outage (unreachable api, timeouts, 5xx, rate
+            // limiting) must not take the renderer down: the data source fails
+            // per request at runtime, so tiles simply stop rendering until the
+            // api is reachable again. Only a definitive rejection (a 4xx status
+            // - an invalid key) is fatal.
+            const int verifyAttempts = 3;
+            const int verifyTimeoutSeconds = 10;
+            const int verifyRetryDelaySeconds = 3;
+
             Log.Information("Verifying maptiler api key");
 
             var httpClient = new HttpClient();
-            HttpResponseMessage response;
-            try
+            HttpResponseMessage? response = null;
+            Exception? connectError = null;
+            for (int attempt = 1; attempt <= verifyAttempts; attempt++)
             {
-                response = await httpClient.GetAsync($"https://api.maptiler.com/tiles/v3/tiles.json?key={options.MapTilerApiKey}");
-            }
-            catch (HttpRequestException ex)
-            {
-                Log.Fatal($"Could not connect to maptiler api: {ex}");
-                Log.CloseAndFlush();
-                return 1;
+                using var timeoutSource = new CancellationTokenSource(TimeSpan.FromSeconds(verifyTimeoutSeconds));
+                try
+                {
+                    response = await httpClient.GetAsync($"https://api.maptiler.com/tiles/v3/tiles.json?key={options.MapTilerApiKey}", timeoutSource.Token);
+                    break;
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+                {
+                    connectError = ex;
+                    Log.Warning($"Could not connect to maptiler api (attempt {attempt}/{verifyAttempts}): {ex.Message}");
+                }
+
+                if (attempt < verifyAttempts)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(verifyRetryDelaySeconds));
+                }
             }
 
-            if (!response.IsSuccessStatusCode)
+            int maxZoom = 15;
+            if (response is null)
             {
-                Log.Fatal($"Maptiler api key not valid, response status code: {response.StatusCode}");
-                Log.CloseAndFlush();
-                return 1;
+                Log.Warning($"Could not reach the maptiler api after {verifyAttempts} attempts, starting anyway (tiles will fail to render until it is reachable again): {connectError?.Message}");
+            }
+            else if (!response.IsSuccessStatusCode)
+            {
+                // 408/429 are transient, every other 4xx means the key is bad.
+                bool keyRejected = (int)response.StatusCode >= 400 && (int)response.StatusCode < 500
+                    && response.StatusCode is not (HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests);
+
+                if (keyRejected)
+                {
+                    Log.Fatal($"Maptiler api key not valid, response status code: {response.StatusCode}");
+                    Log.CloseAndFlush();
+                    return 1;
+                }
+
+                Log.Warning($"Maptiler api returned status code {response.StatusCode}, starting anyway");
+                response.Dispose();
+                response = null;
             }
 
-            var json = await JsonSerializer.DeserializeAsync<JsonObject>(response.Content.ReadAsStream());
+            if (response is not null)
+            {
+                var json = await JsonSerializer.DeserializeAsync<JsonObject>(response.Content.ReadAsStream());
 
-            int maxZoom;
-            if (json is null || !json.TryGetPropertyValue("maxzoom", out JsonNode? maxZoomNode) || maxZoomNode is not JsonValue maxZoomValue || maxZoomValue.GetValueKind() != JsonValueKind.Number)
-            {
-                Log.Warning("Invalid maptiler response");
-                maxZoom = 15;
-            }
-            else
-            {
-                maxZoom = maxZoomValue.GetValue<int>();
+                if (json is null || !json.TryGetPropertyValue("maxzoom", out JsonNode? maxZoomNode) || maxZoomNode is not JsonValue maxZoomValue || maxZoomValue.GetValueKind() != JsonValueKind.Number)
+                {
+                    Log.Warning("Invalid maptiler response");
+                }
+                else
+                {
+                    maxZoom = maxZoomValue.GetValue<int>();
+                }
+
+                Log.Information("Verified maptiler api key");
+                response.Dispose();
             }
 
             tileDataSource = new MaptilerTileDataSource(options.MapTilerApiKey, maxZoom, httpClient);
-
-            Log.Information("Verified maptiler api key");
         }
         else
         {
