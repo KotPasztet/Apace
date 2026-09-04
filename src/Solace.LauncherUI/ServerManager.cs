@@ -19,6 +19,16 @@ public sealed class ServerComponent
 
     public ServerStatus Status { get; set; } = ServerStatus.Offline;
 
+    /// <summary>
+    /// Set by the <see cref="ServerManager"/> when it launched the component
+    /// itself during this panel session. While set, an unexpected death of the
+    /// process is followed by an automatic restart (with backoff). Cleared on a
+    /// deliberate stop (Stop/KillAll), so a user initiated shutdown is never
+    /// undone; a component that was already running when the panel started is
+    /// never restarted either.
+    /// </summary>
+    public bool AutoRestart { get; internal set; }
+
     public ServerComponent(string name, string exeName, Func<Settings, Serilog.ILogger, Process?> startAction, int startupDelayMs = 0, Func<Settings, bool>? isEnabled = null)
     {
         Name = name;
@@ -66,6 +76,31 @@ public sealed class ServerManager : IDisposable
     private readonly Lock _statusLock = new Lock();
 
     private CancellationTokenSource? _operationTokenSource;
+
+    // ---- Component crash supervision (Tile Renderer) ----
+    // The Tile Renderer exits whenever its data source is unavailable (it used
+    // to exit fatally on a maptiler outage at startup), which left tiles
+    // unrendered until somebody pressed start again. When the manager itself
+    // started the component, a death detected by RefreshComponentStatuses is
+    // now followed by an automatic restart after a bounded backoff. A component
+    // the user stopped on purpose (or one that was already running when the
+    // panel started, i.e. never started by this session) is left alone.
+    private static readonly int[] RestartBackoffMs = [5_000, 15_000, 30_000];
+    private const int RestartBackoffCapMs = 60_000;
+    // After running this long a (re)started component counts as stable again
+    // and the backoff sequence starts over from the beginning.
+    private const int RestartStableAfterMs = 3 * 60_000;
+
+    private sealed class RestartState
+    {
+        public bool SeenOnline;         // the process was observed running since the last (re)start
+        public long OnlineSince;        // Environment.TickCount64 of the first Online observation
+        public int ConsecutiveFailures; // restart attempts in a row without reaching RestartStableAfterMs
+        public int InFlight;            // Interlocked guard: one restart attempt at a time
+    }
+
+    private readonly Lock _restartLock = new Lock();
+    private readonly Dictionary<string, RestartState> _restartStates = new();
 
     private readonly LogsLogService _logsLogService;
 
@@ -142,6 +177,8 @@ public sealed class ServerManager : IDisposable
                     ServerStatus.Stopping => isRunning ? ServerStatus.Stopping : ServerStatus.Offline,
                     _ => isRunning ? ServerStatus.Online : ServerStatus.Offline,
                 };
+
+                SuperviseComponent(comp, settings);
             }
 
             if (comp.Status is ServerStatus.Online && comp.IsEnabled(settings))
@@ -163,6 +200,162 @@ public sealed class ServerManager : IDisposable
         }
 
         Status = newStatus;
+    }
+
+    /// <summary>
+    /// Watches a component for an unexpected death and schedules an automatic
+    /// restart for it. Called from <see cref="RefreshComponentStatuses"/> (driven
+    /// by the ServerStatus page refresh timer), so a component is only
+    /// supervised while the panel is actually looking at component statuses.
+    /// </summary>
+    private void SuperviseComponent(ServerComponent comp, Settings settings)
+    {
+        if (!comp.AutoRestart)
+        {
+            return;
+        }
+
+        RestartState state;
+        lock (_restartLock)
+        {
+            if (!_restartStates.TryGetValue(comp.ExeName, out state!))
+            {
+                state = new RestartState();
+                _restartStates[comp.ExeName] = state;
+            }
+        }
+
+        long now = Environment.TickCount64;
+
+        lock (_restartLock)
+        {
+            if (comp.Status is ServerStatus.Online)
+            {
+                if (!state.SeenOnline)
+                {
+                    state.SeenOnline = true;
+                    state.OnlineSince = now;
+                }
+                else if (now - state.OnlineSince >= RestartStableAfterMs)
+                {
+                    state.ConsecutiveFailures = 0;
+                }
+
+                return;
+            }
+
+            // Only a component that actually ran and is gone now gets restarted
+            // (a start action that never produced a process keeps failing
+            // forever and must not be retried in a loop).
+            bool shouldRestart = state.SeenOnline
+                && Volatile.Read(ref state.InFlight) == 0
+                && comp.Status is ServerStatus.Offline
+                && comp.IsEnabled(settings);
+
+            if (!shouldRestart)
+            {
+                return;
+            }
+        }
+
+        StartComponentRestart(comp, state);
+    }
+
+    private void StartComponentRestart(ServerComponent comp, RestartState state)
+    {
+        if (Interlocked.Exchange(ref state.InFlight, 1) != 0)
+        {
+            return;
+        }
+
+        // Fire and forget: the backoff wait must not block the caller of
+        // RefreshComponentStatuses (the UI timer / start flow).
+        _ = RestartComponentAsync(comp, state);
+    }
+
+    private async Task RestartComponentAsync(ServerComponent comp, RestartState state)
+    {
+        var logger = Log.Logger;
+        try
+        {
+            int failures;
+            int delayMs;
+            lock (_restartLock)
+            {
+                state.SeenOnline = false;
+                state.OnlineSince = 0;
+                state.ConsecutiveFailures++;
+                failures = state.ConsecutiveFailures;
+                delayMs = failures <= RestartBackoffMs.Length ? RestartBackoffMs[failures - 1] : RestartBackoffCapMs;
+            }
+
+            logger.Information($"{comp.Name} exited unexpectedly, restarting (attempt {failures})");
+
+            await Task.Delay(delayMs);
+
+            var settings = Settings.Instance;
+
+            bool launch;
+            lock (_statusLock)
+            {
+                // Abort when the component was stopped on purpose (Stop/KillAll
+                // clear AutoRestart), when it is disabled now, when somebody
+                // else brought it back up, while the panel is shutting down, or
+                // while a start/patch lock forbids starting things.
+                launch = comp.AutoRestart
+                    && comp.IsEnabled(settings)
+                    && Status is not (ServerStatus.Stopping or ServerStatus.Offline)
+                    && !StartLocked
+                    && !PatchLocked
+                    && comp.Status is ServerStatus.Offline;
+            }
+
+            if (!launch || ProcessUtils.GetProgramProcesses(comp.ExeName).Any())
+            {
+                logger.Debug($"Skipping automatic restart of {comp.Name}");
+                return;
+            }
+
+            // "Starting" keeps the other start paths (Start All, the per
+            // component start button) from launching a duplicate process while
+            // this restart is in flight.
+            comp.Status = ServerStatus.Starting;
+            OnStatusChanged?.Invoke();
+
+            logger.Information($"Restarting {comp.Name}");
+            comp.StartAction(settings, logger);
+
+            if (await WaitForProcessStartAsync(comp.ExeName, CancellationToken.None))
+            {
+                // Remember that it ran even if it dies again before the next
+                // status refresh - otherwise a fast crash loop would only ever
+                // get a single restart.
+                lock (_restartLock)
+                {
+                    state.SeenOnline = true;
+                    state.OnlineSince = Environment.TickCount64;
+                }
+
+                comp.Status = ServerStatus.Online;
+                AnyOnline = true;
+                logger.Information($"{comp.Name} was restarted");
+            }
+            else
+            {
+                comp.Status = ServerStatus.Offline;
+                logger.Error($"{comp.Name} failed to start after crash, look into logs/{comp.Name}/logxxx for more info");
+            }
+        }
+        catch (Exception ex)
+        {
+            comp.Status = ServerStatus.Offline;
+            logger.Error(ex, $"Automatic restart of {comp.Name} failed");
+        }
+        finally
+        {
+            Volatile.Write(ref state.InFlight, 0);
+            OnStatusChanged?.Invoke();
+        }
     }
 
     public IDisposable? AcquireStartLock()
@@ -317,6 +510,11 @@ public sealed class ServerManager : IDisposable
                 if (await WaitForProcessStartAsync(comp.ExeName, cts.Token))
                 {
                     comp.Status = ServerStatus.Online;
+                    if (shouldStart)
+                    {
+                        // We launched it ourselves, so a later crash is ours to fix.
+                        comp.AutoRestart = true;
+                    }
                 }
                 else
                 {
@@ -386,6 +584,13 @@ public sealed class ServerManager : IDisposable
 
             cancellationToken = InitOperation(cancellationToken);
             Status = ServerStatus.Stopping;
+
+            // A deliberate stop must never be undone by the crash supervisor,
+            // so drop the restart flags before anything is killed.
+            foreach (var comp in Components)
+            {
+                comp.AutoRestart = false;
+            }
         }
 
         // The Minecraft Fabric/"MC Java" server is a child of Buildplate
@@ -457,6 +662,12 @@ public sealed class ServerManager : IDisposable
         {
             cancellationToken = InitOperation(cancellationToken);
             Status = ServerStatus.Stopping;
+
+            // Same as in Stop(): killing everything on purpose must not be undone.
+            foreach (var comp in Components)
+            {
+                comp.AutoRestart = false;
+            }
         }
 
         foreach (var comp in Components)
@@ -546,6 +757,8 @@ public sealed class ServerManager : IDisposable
             {
                 comp.Status = ServerStatus.Online;
                 AnyOnline = true;
+                // We launched it ourselves, so a later crash is ours to fix.
+                comp.AutoRestart = true;
             }
             else
             {
