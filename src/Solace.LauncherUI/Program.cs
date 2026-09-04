@@ -32,6 +32,14 @@ public partial class Program
     public static readonly string DataDirRelative = Path.Combine("..", "data");
     public static readonly string DataDir = Path.GetFullPath(DataDirRelative);
 
+    // The Buildplate launcher resolves its --persistentFabricDir argument against
+    // ITS OWN working directory (the components dir), so its ./persistent_fabric
+    // default would put the persistent Fabric server's data next to the components
+    // instead of next to the panel's own files (where it is volume mounted in the
+    // docker image). An absolute path derived from this panel's working directory
+    // is therefore passed to it instead.
+    public static readonly string PersistentFabricDir = Path.GetFullPath("persistent_fabric");
+
     public static string Address { get; private set; } = "";
 
     public static string LoggerAddress => Address + "/api/logs/create";
