@@ -95,6 +95,9 @@ The client connects to the **API Port** from Server Options on your PC's IP — 
 default to `1808` (matching the Docker port mapping; the in-code fallback is `8080`) —
 make sure that port is reachable from the phone (and published if you run Apace in Docker).
 
+Playing away from your home network? [docs/tailscale.md](docs/tailscale.md) covers reaching
+the server over Tailscale instead of port forwarding.
+
 ---
 
 ## Finding Your IP Address
