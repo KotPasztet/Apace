@@ -110,6 +110,10 @@
                     {
                         <div class="mb-3">
                             <label class="form-label">MapTiler API Key</label>
+                            <div class="form-text text-white">
+                                You can create a free API key on the
+                                <a href="https://cloud.maptiler.com/account/keys/" target="_blank">MapTiler account keys page</a>.
+                            </div>
                             <InputText @bind-Value="SettingsModel.MapTilerApiKey" class="form-control" />
                             <ValidationMessage For="@(() => SettingsModel.MapTilerApiKey)" />
                         </div>
