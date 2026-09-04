@@ -21,6 +21,7 @@ public sealed class PersistentProcessManager
 #pragma warning restore CA1707
     private const int CONTROL_CHANNEL_PORT = 25564;
     private const string PERSISTENT_BRIDGE_DIR_NAME = "vienna-buildplate-persistent-bridge";
+    private const string SERVER_PROPERTIES_MAX_TICK_TIME_KEY = "max-tick-time";
 
     private readonly string _javaCmd;
     private readonly string _fabricJarName;
@@ -170,7 +171,7 @@ public sealed class PersistentProcessManager
                 .Append(CultureInfo.InvariantCulture, $"vienna-event-bus-address={_eventBusConnectionString}\n")
                 .Append(CultureInfo.InvariantCulture, $"vienna-event-bus-queue-name={PERSISTENT_QUEUE_NAME}\n")
                 .ToString();
-            await File.WriteAllTextAsync(Path.Combine(workDir.FullName, "server.properties"), serverProperties);
+            await WriteServerPropertiesAsync(new FileInfo(Path.Combine(workDir.FullName, "server.properties")), serverProperties);
 
             var worldDir = new DirectoryInfo(Path.Combine(workDir.FullName, "world"));
             if (!worldDir.TryCreate())
@@ -444,6 +445,116 @@ public sealed class PersistentProcessManager
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Writes the persistent server's <c>server.properties</c>. On first start
+    /// the generated properties are written as is (with the vanilla tick
+    /// watchdog disabled). On later starts an existing file is merged instead of
+    /// being overwritten, so user edits survive restarts: the keys the server
+    /// needs to function are updated in place with the values the server
+    /// requires, everything else (including a user chosen
+    /// <c>max-tick-time</c>) is left untouched and <c>max-tick-time=-1</c> is
+    /// only added when the key is missing. The file is only rewritten when its
+    /// content would actually change.
+    /// </summary>
+    private async Task WriteServerPropertiesAsync(FileInfo file, string generatedProperties)
+    {
+        // Values of these keys are enforced on every start, because the server
+        // (and the bridge / the connector plugin) does not work without them.
+        // requiredKeyOrder keeps the generated order, so keys missing from an
+        // existing file are appended in a stable order (hash based collections
+        // do not guarantee a stable iteration order).
+        Dictionary<string, string> requiredProperties = [];
+        List<string> requiredKeyOrder = [];
+        foreach (string generatedLine in generatedProperties.Split('\n'))
+        {
+            string trimmedGeneratedLine = generatedLine.Trim();
+            int generatedSeparatorIndex = trimmedGeneratedLine.IndexOf('=');
+            if (generatedSeparatorIndex <= 0)
+            {
+                continue;
+            }
+
+            string generatedKey = trimmedGeneratedLine[..generatedSeparatorIndex].Trim();
+            if (requiredProperties.TryAdd(generatedKey, trimmedGeneratedLine[(generatedSeparatorIndex + 1)..].Trim()))
+            {
+                requiredKeyOrder.Add(generatedKey);
+            }
+        }
+
+        // File.Exists (not FileInfo.Exists) is used on purpose, FileInfo caches
+        // the result of its first Exists check.
+        string? existingContent = File.Exists(file.FullName) ? await File.ReadAllTextAsync(file.FullName) : null;
+        string content;
+        if (existingContent is null)
+        {
+            // Fresh working directory, nothing to preserve. The watchdog has to
+            // be disabled, because buildplate world import/export legitimately
+            // stalls the server thread for longer than the default 60000 ms.
+            content = $"{generatedProperties}{SERVER_PROPERTIES_MAX_TICK_TIME_KEY}=-1\n";
+        }
+        else
+        {
+            HashSet<string> missingRequiredKeys = [.. requiredKeyOrder];
+            bool maxTickTimePresent = false;
+            List<string> lines = [];
+            string[] existingLines = existingContent.Split('\n');
+            for (int index = 0; index < existingLines.Length; index++)
+            {
+                string line = existingLines[index].TrimEnd('\r');
+                if (index == existingLines.Length - 1 && line.Length == 0)
+                {
+                    break; // trailing newline at the end of the file
+                }
+
+                string trimmedLine = line.Trim();
+                int separatorIndex = trimmedLine.IndexOf('=');
+                string? key = separatorIndex > 0 ? trimmedLine[..separatorIndex].Trim() : null;
+                if (key == SERVER_PROPERTIES_MAX_TICK_TIME_KEY)
+                {
+                    maxTickTimePresent = true;
+                }
+
+                // Required keys are replaced in place with their enforced value
+                // (keeping their position; every occurrence is replaced, because
+                // a duplicated key would win as the last one), all other lines
+                // (comments, blank lines, unknown and user added keys) are kept
+                // as they are.
+                if (key is not null && requiredProperties.TryGetValue(key, out string? enforcedValue))
+                {
+                    missingRequiredKeys.Remove(key);
+                    lines.Add($"{key}={enforcedValue}");
+                }
+                else
+                {
+                    lines.Add(line);
+                }
+            }
+
+            if (!maxTickTimePresent)
+            {
+                lines.Add($"{SERVER_PROPERTIES_MAX_TICK_TIME_KEY}=-1");
+            }
+
+            foreach (string requiredKey in requiredKeyOrder)
+            {
+                if (missingRequiredKeys.Remove(requiredKey))
+                {
+                    lines.Add($"{requiredKey}={requiredProperties[requiredKey]}");
+                }
+            }
+
+            content = string.Join("\n", lines) + "\n";
+        }
+
+        if (content == existingContent)
+        {
+            _logger.Debug("Persistent server server.properties is up to date");
+            return;
+        }
+
+        await File.WriteAllTextAsync(file.FullName, content);
     }
 
     /// <summary>
