@@ -48,7 +48,9 @@ internal static class BuildplateLauncher
             return null;
         }
         
-        var arguments = new List<string>(9)
+        MigrateLegacyPersistentFabricDir(logger);
+
+        var arguments = new List<string>(10)
         {
             $"--eventbus=localhost:{settings.EventBusPort}",
             $"--publicAddress={settings.IPv4}",
@@ -57,6 +59,7 @@ internal static class BuildplateLauncher
             $"--serverTemplateDir={Path.GetFullPath(Path.Combine(Program.StaticDataDir, "server_template_dir"))}",
             $"--fabricJarName={ServerJarName}",
             $"--connectorPluginJar={connectorPluginPath}",
+            $"--persistentFabricDir={Program.PersistentFabricDir}",
             $"--dir={Program.StaticDataDir}",
             $"--logger-url={Program.LoggerAddress}",
         };
@@ -67,5 +70,43 @@ internal static class BuildplateLauncher
             CreateNoWindow = false,
             UseShellExecute = true,
         });
+    }
+
+    /// <summary>
+    /// Copies the persistent server's <c>server.properties</c> from the old
+    /// default location inside the components directory to the new one, so hand
+    /// edited values survive the move. Runs before the launcher is started,
+    /// because it writes the file itself on the first start of a fresh working
+    /// directory. Skipped when the source file does not exist (fresh install or
+    /// the old directory is already gone) or when the target already has the
+    /// file (the migration already ran, or the target directory was set up
+    /// independently of the components directory).
+    /// </summary>
+    private static void MigrateLegacyPersistentFabricDir(ILogger logger)
+    {
+        try
+        {
+            // File.Exists (not FileInfo.Exists) is used, because FileInfo caches
+            // the result of its first Exists check (same reasoning as in the
+            // buildplate launcher's server.properties handling).
+            string legacyPropertiesPath = Path.Combine(Program.ProgramsDir, "persistent_fabric", "server.properties");
+            string propertiesPath = Path.Combine(Program.PersistentFabricDir, "server.properties");
+
+            if (!File.Exists(legacyPropertiesPath) || File.Exists(propertiesPath))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(Program.PersistentFabricDir);
+            File.Copy(legacyPropertiesPath, propertiesPath, overwrite: false);
+            logger.Information($"Migrated the persistent Fabric server server.properties from {legacyPropertiesPath} to {propertiesPath}");
+        }
+        catch (Exception exception)
+        {
+            // The launcher generates the file when it is missing, so a failed
+            // migration only means hand edited values are lost, not a broken
+            // server.
+            logger.Warning(exception, "Could not migrate the persistent Fabric server server.properties from the components directory");
+        }
     }
 }
