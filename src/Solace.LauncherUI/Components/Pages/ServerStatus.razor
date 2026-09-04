@@ -210,6 +210,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Refresh before anything else (and before the auth lookup): the page
+        // is prerendered, so the initial HTML would otherwise show Offline or
+        // Starting until the refresh timer below fires for the first time.
+        ServerManager.RefreshComponentStatuses();
+        await RefreshJavaServerStatusAsync();
+
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _user = authState.User;
 
@@ -231,43 +237,21 @@
         _statusRefreshTimer = new Timer(async _ =>
         {
             ServerManager.RefreshComponentStatuses();
-            RefreshJavaServerStatus();
+            await RefreshJavaServerStatusAsync();
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
     }
 
-    private void RefreshJavaServerStatus()
+    private async Task RefreshJavaServerStatusAsync()
     {
-        // The persistent Fabric server and bridge are plain "java" processes
-        // managed by the Buildplate Launcher (PersistentProcessManager).
-        bool javaRunning = ProcessUtils.GetProgramProcesses("java").Any();
-        if (!javaRunning)
-        {
-            _javaServerOnline = false;
-            _javaServerStarting = false;
-            return;
-        }
+        // Readiness is latched in the ServerManager singleton (banner seen or
+        // Fabric port reachable), not re-derived from the live log ring buffer:
+        // the marker lines are evicted from that buffer during busy output and
+        // it is empty after a LauncherUI restart.
+        await ServerManager.RefreshJavaServerStatusAsync();
 
-        // A running java process only means the server is booting. The Fabric
-        // server is only usable once it prints its "Done ... For help" banner,
-        // so stay in Starting until that line appears in the Java Server logs.
-        // Each new capture session ("Capturing Java process output") resets the
-        // readiness marker so a restart goes back to Starting.
-        bool ready = false;
-        foreach (var logEvent in LogService.GetLogsFor("Java Server"))
-        {
-            if (logEvent.RenderedMessage.Contains("Capturing Java process output"))
-            {
-                ready = false;
-            }
-            else if (logEvent.RenderedMessage.Contains("For help, type"))
-            {
-                ready = true;
-            }
-        }
-
-        _javaServerOnline = ready;
-        _javaServerStarting = !ready;
+        _javaServerOnline = ServerManager.JavaServerRunning && ServerManager.JavaServerReady;
+        _javaServerStarting = ServerManager.JavaServerRunning && !ServerManager.JavaServerReady;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

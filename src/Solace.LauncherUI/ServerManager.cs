@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using Serilog;
 using Solace.Common.Utils;
 using Solace.LauncherUI.Programs;
@@ -66,6 +68,45 @@ public sealed class ServerManager : IDisposable
     private CancellationTokenSource? _operationTokenSource;
 
     private readonly LogsLogService _logsLogService;
+
+    // ---- Java server (persistent Fabric server) readiness ----
+    // The Fabric server and its bridge are plain "java" child processes of the
+    // Buildplate Launcher, so they are not tracked Components of their own and
+    // their stdout is piped into the "Java Server" log component. That log is a
+    // 500 entry ring buffer per component, so the marker lines are evicted again
+    // during busy output - readiness is therefore latched here (singleton state,
+    // it survives a page refresh and a busy log) instead of being re-derived
+    // from the log on every refresh.
+    private const string JavaServerComponent = "Java Server";
+    private const string JavaServerReadyMarker = "For help, type";
+    private const string JavaServerCaptureMarker = "Capturing Java process output";
+
+    // Only a fresh *Fabric* capture restarts the boot: the bridge process is
+    // started right after the Fabric one and can restart on its own later, so
+    // its capture line must not un-ready an already booted server.
+    private const string JavaServerFabricCaptureMarker = "[Fabric] " + JavaServerCaptureMarker;
+
+    // PersistentProcessManager.PERSISTENT_FABRIC_PORT (LauncherUI does not
+    // reference Solace.Buildplate, so the value is duplicated here).
+    private const int JavaServerPort = 25565;
+    private const int JavaServerProbeIntervalMs = 1000;
+    private const int JavaServerProbeTimeoutMs = 250;
+
+    private readonly Lock _javaServerLock = new Lock();
+    private bool _javaServerRunning;
+    private int _javaServerReady;
+    private long _javaLogLastSeenTicks;
+    private long _javaProbedAt;
+
+    /// <summary>Whether a "java" process (Fabric server or bridge) is running at all.</summary>
+    public bool JavaServerRunning => _javaServerRunning;
+
+    /// <summary>
+    /// Whether the persistent Fabric server finished booting: it either printed
+    /// its "Done ... For help" banner or its server port accepted a connection.
+    /// Updated by <see cref="RefreshJavaServerStatusAsync"/>.
+    /// </summary>
+    public bool JavaServerReady => Volatile.Read(ref _javaServerReady) != 0;
 
     public ServerManager(LogsLogService logsLogService)
     {
@@ -554,6 +595,122 @@ public sealed class ServerManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Refreshes the Java server readiness state: whether a "java" process is
+    /// running and whether the persistent Fabric server finished booting. The
+    /// "Java Server" log entries are inspected incrementally (only what arrived
+    /// since the previous call), so a busy log does not make this expensive.
+    /// </summary>
+    public async Task RefreshJavaServerStatusAsync()
+    {
+        bool running = ProcessUtils.GetProgramProcesses("java").Any();
+
+        lock (_javaServerLock)
+        {
+            _javaServerRunning = running;
+
+            // A dead java process means the next one is a new boot: drop the
+            // readiness so the indicator goes back to Starting.
+            if (!running)
+            {
+                Volatile.Write(ref _javaServerReady, 0);
+            }
+        }
+
+        ScanJavaServerLogs();
+
+        if (running && Volatile.Read(ref _javaServerReady) == 0 && ShouldProbeJavaServerPort())
+        {
+            // Fallback for a latch that was never armed (LauncherUI restarted
+            // while the server was already up, so the banner line was never
+            // seen): the Fabric server listens on its port once it is ready.
+            if (await ProbeJavaServerPortAsync())
+            {
+                Volatile.Write(ref _javaServerReady, 1);
+            }
+        }
+    }
+
+    private void ScanJavaServerLogs()
+    {
+        // GetLogsFor returns a snapshot, so entries can keep arriving while the
+        // ones since the previous scan are inspected. Entries older than the
+        // cursor are skipped; entries sharing its timestamp are inspected again,
+        // which is harmless because the newest marker decides the latch.
+        lock (_javaServerLock)
+        {
+            long lastSeenTicks = _javaLogLastSeenTicks;
+            bool ready = Volatile.Read(ref _javaServerReady) != 0;
+            bool changed = false;
+
+            foreach (LogEvent logEvent in _logsLogService.GetLogsFor(JavaServerComponent))
+            {
+                long ticks = logEvent.Timestamp.Ticks;
+                if (ticks < lastSeenTicks)
+                {
+                    continue;
+                }
+
+                string? message = logEvent.RenderedMessage;
+                if (message is null)
+                {
+                    continue;
+                }
+
+                if (message.Contains(JavaServerFabricCaptureMarker))
+                {
+                    ready = false;
+                    changed = true;
+                }
+                else if (message.Contains(JavaServerReadyMarker))
+                {
+                    ready = true;
+                    changed = true;
+                }
+
+                _javaLogLastSeenTicks = ticks;
+            }
+
+            // Only written when a marker was seen, so a concurrent probe result
+            // is never overwritten.
+            if (changed)
+            {
+                Volatile.Write(ref _javaServerReady, ready ? 1 : 0);
+            }
+        }
+    }
+
+    private bool ShouldProbeJavaServerPort()
+    {
+        lock (_javaServerLock)
+        {
+            long now = Environment.TickCount64;
+            if (now - _javaProbedAt < JavaServerProbeIntervalMs)
+            {
+                return false;
+            }
+
+            _javaProbedAt = now;
+            return true;
+        }
+    }
+
+    private static async Task<bool> ProbeJavaServerPortAsync()
+    {
+        using var timeoutSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(JavaServerProbeTimeoutMs));
+        try
+        {
+            using var probe = new TcpClient();
+            await probe.ConnectAsync(IPAddress.Loopback, JavaServerPort, timeoutSource.Token);
+            return probe.Connected;
+        }
+        catch (Exception exception) when (exception is SocketException or OperationCanceledException or ObjectDisposedException)
+        {
+            // Refused, timed out or filtered - the server is not ready (yet).
+            return false;
+        }
+    }
+
     private bool IsJavaServerReady()
     {
         // The persistent Fabric server and bridge are plain "java" processes
@@ -561,20 +718,22 @@ public sealed class ServerManager : IDisposable
         // the server is booting; it is ready once its "Done ... For help" banner
         // appears in the Java Server logs. Each new capture session ("Capturing
         // Java process output") resets the marker so a restart goes back to
-        // not-ready. Mirrors the heuristic on the Server Status page.
+        // not-ready. Deliberately a log-only check (unlike the latched
+        // JavaServerReady property) so the startup wait below still blocks
+        // until the banner actually appeared.
         if (!ProcessUtils.GetProgramProcesses("java").Any())
         {
             return false;
         }
 
         bool ready = false;
-        foreach (var logEvent in _logsLogService.GetLogsFor("Java Server"))
+        foreach (var logEvent in _logsLogService.GetLogsFor(JavaServerComponent))
         {
-            if (logEvent.RenderedMessage?.Contains("Capturing Java process output") == true)
+            if (logEvent.RenderedMessage?.Contains(JavaServerCaptureMarker) == true)
             {
                 ready = false;
             }
-            else if (logEvent.RenderedMessage?.Contains("For help, type") == true)
+            else if (logEvent.RenderedMessage?.Contains(JavaServerReadyMarker) == true)
             {
                 ready = true;
             }
