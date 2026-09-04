@@ -3,8 +3,8 @@ set -e
 
 # Apace — Minecraft Earth replacement server
 # Auto-installer for Linux and macOS
-# Usage: curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash          (Docker, recommended)
-#        curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker  (direct download)
+# Usage: curl .../install.sh | bash          (Docker, recommended)
+#        curl .../install.sh | bash -s -- --no-docker  (direct download)
 
 RED='\033[1;31m'
 GRN='\033[1;32m'
@@ -123,22 +123,47 @@ else
     fi
 
     PERSISTENT="/opt/apace-persistent"
-    sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs,fabric-data}
+    sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs}
     if [ ! -f "$PERSISTENT/config.json" ]; then
-        # ApiPort=1808 matches the compose port mapping (code default is 8080)
-        echo '{"ApiPort":1808}' | sudo tee "$PERSISTENT/config.json" > /dev/null
+        echo '{}' | sudo tee "$PERSISTENT/config.json" > /dev/null
     fi
     sudo chown -R 1654:1654 "$PERSISTENT" 2>/dev/null || sudo chmod -R 777 "$PERSISTENT" 2>/dev/null
 
     if $DOCKER compose version &>/dev/null 2>&1; then
         COMPOSE="$DOCKER compose"
     else
-        COMPOSE="$DOCKER-compose"
+        # Legacy "docker-compose" v1 (Python, EOL) has a well-known bug
+        # (KeyError: 'ContainerConfig') when recreating a container from an
+        # image built with modern BuildKit — it expects a legacy image
+        # config field that no longer exists. Try to get the proper V2
+        # plugin installed instead of falling back to v1 silently.
+        echo -e "${YLW}Docker Compose V2 plugin not found, attempting to install it...${RST}"
+        if command -v apt &>/dev/null; then
+            sudo apt update && sudo apt install -y docker-compose-plugin 2>/dev/null || true
+        elif command -v dnf &>/dev/null; then
+            sudo dnf install -y docker-compose-plugin 2>/dev/null || true
+        elif command -v pacman &>/dev/null; then
+            sudo pacman -S --noconfirm docker-compose 2>/dev/null || true
+        fi
+
+        if $DOCKER compose version &>/dev/null 2>&1; then
+            COMPOSE="$DOCKER compose"
+            echo -e "${GRN}Docker Compose V2 installed.${RST}"
+        else
+            echo -e "${YLW}Falling back to legacy docker-compose (v1). This is deprecated and can fail on container recreation — consider installing the 'docker-compose-plugin' package manually.${RST}"
+            COMPOSE="$DOCKER-compose"
+        fi
     fi
 
     echo "Pulling Apace image..."
     $COMPOSE pull
     echo "Starting Apace..."
+    # Always tear down any existing container(s) before bringing them back
+    # up, rather than letting compose try to recreate-in-place. This avoids
+    # the legacy docker-compose v1 "KeyError: 'ContainerConfig'" bug
+    # entirely (and is harmless/fast on V2 too, or on a fresh install where
+    # nothing exists yet to tear down).
+    $COMPOSE down --remove-orphans 2>/dev/null || true
     $COMPOSE up -d
 
     IP=$(hostname -I 2>/dev/null | awk '{print $1}')
