@@ -34,6 +34,17 @@ and starts the container.
 
 To start Apace again later, run `run.sh` / `run.ps1` from `~/apace`.
 
+## Updating
+
+**Linux / macOS:**
+```bash
+curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash
+```
+It repairs older installs, backs the persistent data up to `/opt/apace-persistent-backups` (newest 3 kept),
+pulls the newest image and restarts. Flags: `--dir <path>`, `--tag <main|dev>`, `--backup-only`, `--no-backup`, `--yes`,
+`--rollback [--restore-backup <file|latest>]`. If an update misbehaves, run it again with `--rollback`
+(add `--restore-backup latest` to also restore the pre-update data). On Windows, re-run `install.ps1`.
+
 ## Ports (Docker)
 
 | Port | Protocol | Purpose |
