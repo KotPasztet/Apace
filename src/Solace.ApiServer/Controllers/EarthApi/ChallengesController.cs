@@ -12,6 +12,8 @@ using Solace.ApiServer.Utils;
 using Solace.Common;
 using Solace.Common.Utils;
 using Solace.DB;
+using Solace.DB.Models.Player;
+using DBRewards = Solace.DB.Models.Common.Rewards;
 using Rewards = Solace.ApiServer.Types.Common.Rewards;
 
 namespace Solace.ApiServer.Controllers.EarthApi;
@@ -23,6 +25,7 @@ internal sealed class ChallengesController : ControllerBase
 {
     private const int DailyChallengeCount = 3;
     private const string DailyGroupId = "c1a1beef-0d01-4b1a-8d1e-000000000001";
+    private const string DailyLoginGroupId = "d4111000-0000-4000-8000-000000000000";
     private const string DailyReferenceId = "2619913d-6504-4c74-9fc9-e03649a70efc";
     private const string TreasureHuntReferenceId = "2b64c950-f80b-4491-b81d-bf90cee88db1";
     private const string BestDefenseReferenceId = "06eb0e50-b18d-43e8-9aad-422203ffdf28";
@@ -36,6 +39,17 @@ internal sealed class ChallengesController : ControllerBase
     internal const string ActiveSeasonId = "season_17";
     internal const string DefaultActiveSeasonChallengeId = "f0532069-a70a-4a01-8611-f770bb46d9cd";
 
+    private static readonly string[] DailyLoginChallengeIds =
+    [
+        "d4111000-0000-4000-8000-000000000001",
+        "d4111000-0000-4000-8000-000000000002",
+        "d4111000-0000-4000-8000-000000000003",
+        "d4111000-0000-4000-8000-000000000004",
+        "d4111000-0000-4000-8000-000000000005",
+        "d4111000-0000-4000-8000-000000000006",
+        "d4111000-0000-4000-8000-000000000007",
+    ];
+
     private sealed record ChallengeRecord(
         string ReferenceId,
         string? ParentId,
@@ -43,7 +57,7 @@ internal sealed class ChallengesController : ControllerBase
         string Duration,
         string Type,
         string Category,
-        Rarity? Rarity,
+        string? Rarity,
         int Order,
         string EndTimeUtc,
         string State,
@@ -136,15 +150,21 @@ internal sealed class ChallengesController : ControllerBase
         string seasonEndTime = TimeFormatter.FormatTime(endOfToday + 14 * 24 * 60 * 60 * 1000);
         long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+        // keeps today's daily login token alive so the sign-in challenges can be claimed from this list
+        await TokenUtils.EnsureDailyLoginToken(playerId, cancellationToken);
+
         ChallengeProgressVersion progress;
+        TokenClaims tokenClaims;
         try
         {
             EarthDB.Results results = await new EarthDB.Query(false)
                 .Get("challenges", playerId, typeof(ChallengeProgressVersion))
+                .Get("tokenClaims", playerId, typeof(TokenClaims))
                 .ExecuteAsync(Program.DB, cancellationToken);
 
             progress = results.Get<ChallengeProgressVersion>("challenges");
             progress.EnsureDate(now);
+            tokenClaims = results.Get<TokenClaims>("tokenClaims");
         }
         catch (EarthDB.DatabaseException ex)
         {
@@ -164,6 +184,7 @@ internal sealed class ChallengesController : ControllerBase
         string activeSeasonChallengeId = SelectActiveSeasonChallengeId(progress, progress.ActiveSeasonChallengeId);
 
         var challenges = BuildSeasonChallenges(seasonEndTime, progress, activeSeasonChallengeId);
+        AddDailyLoginChallenges(challenges, dailyEndTime, tokenClaims, now);
         if (!dailyClaimed)
         {
             challenges[DailyGroupId] = new ChallengeRecord(
@@ -207,7 +228,7 @@ internal sealed class ChallengesController : ControllerBase
                 "PersonalTimed",
                 "Regular",
                 "retention",
-                Rarity.COMMON,
+                "Common",
                 index + 1,
                 dailyEndTime,
                 "Active",
@@ -246,7 +267,7 @@ internal sealed class ChallengesController : ControllerBase
                 "PersonalContinuous",
                 "Regular",
                 "retention",
-                Rarity.COMMON,
+                "Common",
                 index + 1,
                 dailyEndTime,
                 "Active",
@@ -277,6 +298,55 @@ internal sealed class ChallengesController : ControllerBase
         }));
         return TypedResults.Content(resp, "application/json");
     }
+
+    private static void AddDailyLoginChallenges(Dictionary<string, object> challenges, string endTimeUtc, TokenClaims tokenClaims, long now)
+    {
+        string today = DateTimeOffset.FromUnixTimeMilliseconds(now).UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        int currentDay = TokenUtils.GetDailyLoginCycleDay(tokenClaims, today);
+        bool claimedToday = TokenUtils.IsDailyLoginClaimedToday(tokenClaims, today);
+        Rewards rewards = Utils.Rewards.FromDBRewardsModel(DailyLoginRewards()).ToApiResponse();
+
+        for (int index = 0; index < DailyLoginChallengeIds.Length; index++)
+        {
+            int day = index + 1;
+            bool claimed = day < currentDay || day == currentDay && claimedToday;
+            string state = claimed ? "Claimed" : day == currentDay ? "Active" : "Locked";
+
+            challenges[DailyLoginChallengeIds[index]] = new ChallengeRecord(
+                DailyLoginChallengeIds[index],
+                null,
+                DailyLoginGroupId,
+                "SignIn",
+                "Regular",
+                "retention",
+                "common",
+                index,
+                endTimeUtc,
+                state,
+                claimed,
+                claimed ? 100 : 0,
+                claimed ? 1 : 0,
+                1,
+                index == 0 ? [] : [DailyLoginChallengeIds[index - 1]],
+                "And",
+                rewards,
+                new Dictionary<string, object>
+                {
+                    ["day"] = day,
+                    ["isFinalReward"] = day == 7,
+                });
+        }
+    }
+
+    internal static bool TryGetDailyLoginDay(string challengeId, out int day)
+    {
+        int index = Array.IndexOf(DailyLoginChallengeIds, challengeId);
+        day = index + 1;
+        return index >= 0;
+    }
+
+    private static DBRewards DailyLoginRewards()
+        => new(0, 25, null, new Dictionary<string, int?> { [CommonAdventureCrystalId] = 1 }, [], []);
 
     private static Dictionary<string, object> BuildSeasonChallenges(string seasonEndTime, ChallengeProgressVersion progress, string activeSeasonChallengeId)
     {
