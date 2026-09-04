@@ -112,6 +112,9 @@ public sealed class ServerManager : IDisposable
     // during busy output - readiness is therefore latched here (singleton state,
     // it survives a page refresh and a busy log) instead of being re-derived
     // from the log on every refresh.
+    // The latch is fed by the OnLogReceived subscription taken in the
+    // constructor, so it advances even when no page is open (a page timer is
+    // not guaranteed to be running while the server boots).
     private const string JavaServerComponent = "Java Server";
     private const string JavaServerReadyMarker = "For help, type";
     private const string JavaServerCaptureMarker = "Capturing Java process output";
@@ -139,7 +142,8 @@ public sealed class ServerManager : IDisposable
     /// <summary>
     /// Whether the persistent Fabric server finished booting: it either printed
     /// its "Done ... For help" banner or its server port accepted a connection.
-    /// Updated by <see cref="RefreshJavaServerStatusAsync"/>.
+    /// Updated live by the <see cref="LogsLogService.OnLogReceived"/>
+    /// subscription and by <see cref="RefreshJavaServerStatusAsync"/>.
     /// </summary>
     public bool JavaServerReady => Volatile.Read(ref _javaServerReady) != 0;
 
@@ -156,6 +160,17 @@ public sealed class ServerManager : IDisposable
             new("Tappables Generator", TappablesGenerator.ExeName, TappablesGenerator.Run),
             new("Tile Renderer", TileRenderer.ExeName, TileRenderer.Run, 0, s => s.EnableTileRenderingLabel ?? true)
         ];
+
+        // Feed the readiness latch from the log stream itself, independent of
+        // any page: the ServerStatus page only refreshes while it is open, so
+        // without this subscription the "For help, type" banner could be
+        // evicted from the 500 entry ring buffer before anybody ever looked at
+        // it and the startup wait would run into its full timeout.
+        _logsLogService.OnLogReceived += ScanJavaServerLogs;
+
+        // Pick up whatever is already in the buffer (this singleton can be
+        // created long after the server started printing into it).
+        ScanJavaServerLogs();
 
         RefreshComponentStatuses();
     }
@@ -695,7 +710,10 @@ public sealed class ServerManager : IDisposable
     }
 
     public void Dispose()
-        => _operationTokenSource?.Dispose();
+    {
+        _logsLogService.OnLogReceived -= ScanJavaServerLogs;
+        _operationTokenSource?.Dispose();
+    }
 
     private async Task StartInternal(Serilog.ILogger logger, CancellationToken cancellationToken)
     {
@@ -844,6 +862,12 @@ public sealed class ServerManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Applies the ready/reset markers of the "Java Server" log component to
+    /// the readiness latch. Also the handler of
+    /// <see cref="LogsLogService.OnLogReceived"/>, so it runs for every log
+    /// line that arrives, not only when a page refresh asks for it.
+    /// </summary>
     private void ScanJavaServerLogs()
     {
         // GetLogsFor returns a snapshot, so entries can keep arriving while the
@@ -924,37 +948,6 @@ public sealed class ServerManager : IDisposable
         }
     }
 
-    private bool IsJavaServerReady()
-    {
-        // The persistent Fabric server and bridge are plain "java" processes
-        // managed by the Buildplate Launcher. A running java process only means
-        // the server is booting; it is ready once its "Done ... For help" banner
-        // appears in the Java Server logs. Each new capture session ("Capturing
-        // Java process output") resets the marker so a restart goes back to
-        // not-ready. Deliberately a log-only check (unlike the latched
-        // JavaServerReady property) so the startup wait below still blocks
-        // until the banner actually appeared.
-        if (!ProcessUtils.GetProgramProcesses("java").Any())
-        {
-            return false;
-        }
-
-        bool ready = false;
-        foreach (var logEvent in _logsLogService.GetLogsFor(JavaServerComponent))
-        {
-            if (logEvent.RenderedMessage?.Contains(JavaServerCaptureMarker) == true)
-            {
-                ready = false;
-            }
-            else if (logEvent.RenderedMessage?.Contains(JavaServerReadyMarker) == true)
-            {
-                ready = true;
-            }
-        }
-
-        return ready;
-    }
-
     private async Task WaitForJavaServerReadyAsync(Serilog.ILogger logger, CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -963,7 +956,13 @@ public sealed class ServerManager : IDisposable
 
         while (true)
         {
-            if (IsJavaServerReady())
+            // The latch is normally kept up to date by the OnLogReceived
+            // subscription, but this refresh also re-arms it through the port
+            // probe for a server that was already up before this panel session
+            // started (its banner line is then not in the log buffer anymore).
+            await RefreshJavaServerStatusAsync();
+
+            if (JavaServerReady)
             {
                 return;
             }
