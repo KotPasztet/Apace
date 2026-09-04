@@ -57,6 +57,46 @@
     </div>
 }
 
+@if (_resourcePackPending)
+{
+    <div class="alert alert-warning">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <strong>Resource pack missing</strong><br />
+                <small>The vanilla resource pack (<code>staticdata/resourcepacks/vanilla.zip</code>) is served to game clients. The server can start without it, but clients will get no overrides.</small>
+                @if (!string.IsNullOrEmpty(_resourcePackError))
+                {
+                    <br />
+                    <small class="text-danger">@_resourcePackError</small>
+                }
+            </div>
+            <div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="resourcePackRights" @bind="_resourcePackRightsConfirmed" />
+                    <label class="form-check-label" for="resourcePackRights">
+                        I confirm I own a licensed copy of Minecraft: Earth / Bedrock and accept the applicable Terms
+                    </label>
+                </div>
+                <button class="btn btn-warning btn-sm" @onclick="DownloadResourcePack"
+                        disabled="@(IsButtonDisabled(Permissions.EditServerOptions) || !_resourcePackRightsConfirmed || _downloadingResourcePack)">
+                    ↓ Download resource pack
+                </button>
+                <button type="button" class="btn btn-link btn-sm" @onclick="DismissResourcePack" disabled="@_downloadingResourcePack">
+                    Not now
+                </button>
+            </div>
+        </div>
+        @if (_downloadingResourcePack)
+        {
+            <div class="progress mt-2" style="height: 8px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                     style="width: @(_resourcePackDownloadProgress * 100)%"></div>
+            </div>
+            <small class="text-muted">Downloading resource pack... @((_resourcePackDownloadProgress * 100).ToString("F0"))%</small>
+        }
+    </div>
+}
+
 <div class="section-title">Components</div>
 <div class="comp-grid mb-4">
     @foreach (var comp in ServerManager.Components)
@@ -202,6 +242,11 @@
     private ElementReference _logContainerRef;
     private bool _scrollerInitialized;
     private bool _eulaPending;
+    private bool _resourcePackPending;
+    private bool _resourcePackRightsConfirmed;
+    private bool _downloadingResourcePack;
+    private float _resourcePackDownloadProgress;
+    private string? _resourcePackError;
     private bool _javaServerOnline;
     private bool _javaServerStarting;
     private Timer? _eulaCheckTimer;
@@ -222,13 +267,20 @@
         LogService.OnLogReceived += HandleUpdate;
         ServerManager.OnStatusChanged += HandleUpdate;
 
-        // Poll EULA status every 2 seconds during server startup
+        // Poll EULA + resource pack prompt status every 2 seconds during server startup
         _eulaCheckTimer = new Timer(async _ =>
         {
             var pending = Solace.LauncherUI.FileChecker.EulaPending;
-            if (_eulaPending != pending)
+            // The resource pack state is not synced while a download is running:
+            // a partially written file stays invalid anyway, and a fully written
+            // one would hide the alert before the handler reports the result.
+            var resourcePackPending = _downloadingResourcePack
+                ? _resourcePackPending
+                : Solace.LauncherUI.FileChecker.ResourcePackPending;
+            if (_eulaPending != pending || _resourcePackPending != resourcePackPending)
             {
                 _eulaPending = pending;
+                _resourcePackPending = resourcePackPending;
                 await InvokeAsync(StateHasChanged);
             }
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
@@ -333,6 +385,53 @@
     {
         FileChecker.AcceptEula();
         _eulaPending = false;
+    }
+
+    private async Task DownloadResourcePack()
+    {
+        _downloadingResourcePack = true;
+        _resourcePackDownloadProgress = 0;
+        _resourcePackError = null;
+
+        try
+        {
+            await FileChecker.DownloadResourcePackAsync(new Progress<float>(progress =>
+            {
+                _resourcePackDownloadProgress = progress;
+                InvokeAsync(StateHasChanged);
+            }));
+
+            // The download never throws — it logs and leaves the file absent or
+            // invalid, so the pending state decides between success and failure.
+            if (FileChecker.ResourcePackPending)
+            {
+                _resourcePackError = $"Download failed — '{FileChecker.ResourcePackPath}' is still missing or invalid. Try again later or add the file manually.";
+            }
+            else
+            {
+                _resourcePackPending = false;
+                _resourcePackRightsConfirmed = false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _resourcePackError = "Download cancelled.";
+        }
+        catch (Exception ex)
+        {
+            _resourcePackError = ex.Message;
+        }
+        finally
+        {
+            _downloadingResourcePack = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void DismissResourcePack()
+    {
+        FileChecker.DismissResourcePackPrompt();
+        _resourcePackPending = false;
     }
 
     private async Task StartComponent(string exeName)
