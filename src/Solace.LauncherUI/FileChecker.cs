@@ -302,7 +302,11 @@ internal static class FileChecker
         var urls = new[]
         {
             $"https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
-            $"https://web.archive.org/web/2/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
+            // Pinned Wayback Machine snapshot from when the official CDN was
+            // still up. The "if_" suffix requests the raw archived content
+            // (no injected toolbar/banner HTML), which is required for this
+            // to come back as the actual binary instead of a wrapper page.
+            $"https://web.archive.org/web/20210624200250if_/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
         };
 
         foreach (var url in urls)
