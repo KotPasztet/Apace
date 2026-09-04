@@ -27,6 +27,50 @@ internal static class FileChecker
         }
     }
 
+    // Resource pack prompt mechanism — exposed to panel UI.
+    //
+    // Unlike the EULA gate this never blocks startup: vanilla.zip is optional
+    // (game clients ship the pack embedded, this copy only serves overrides),
+    // so CheckAsync keeps its non-fatal semantics and merely arms the prompt.
+    //
+    // State machine:
+    //  - CheckAsync arms the prompt when the file is missing or undersized
+    //    (and re-arms a prompt dismissed earlier in this panel session).
+    //  - ResourcePackPending re-stats the file on every read, so the panel's
+    //    2 s poll clears the alert as soon as the file becomes valid — whether
+    //    it appeared by download or manual placement.
+    //  - DismissResourcePackPrompt() silences it for the current panel session
+    //    (static flag, so it re-arms on the next panel restart) or until the
+    //    next CheckAsync that still finds the file invalid.
+    private static bool _resourcePackIssueDetected;
+    private static string? _resourcePackPath;
+    private static bool _resourcePackDismissed;
+
+    public static bool ResourcePackPending => _resourcePackIssueDetected && !_resourcePackDismissed && !ResourcePackFileIsValid();
+    public static string? ResourcePackPath => _resourcePackPath;
+
+    public static void DismissResourcePackPrompt() => _resourcePackDismissed = true;
+
+    private static void FlagResourcePackProblem(string path)
+    {
+        _resourcePackIssueDetected = true;
+        _resourcePackPath = path;
+        // A fresh detection re-arms a prompt dismissed earlier in this session.
+        _resourcePackDismissed = false;
+    }
+
+    private const string ResourcePackId = "dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35";
+    private const long MinResourcePackSize = 100_000_000; // ~131MB expected (131885348B)
+
+    private static string GetResourcePackPath()
+        => Path.GetFullPath(Path.Combine(Program.StaticDataDir, "resourcepacks", "vanilla.zip"));
+
+    private static bool ResourcePackFileIsValid()
+    {
+        var info = new FileInfo(GetResourcePackPath());
+        return info.Exists && info.Length >= MinResourcePackSize;
+    }
+
     private static readonly string[] expectedStaticFiles =
     [
         "catalog/itemEfficiencyCategories.json",
@@ -141,16 +185,23 @@ internal static class FileChecker
 
         logger.Debug("All static files exist");
 
-        var resourcePack = new FileInfo(Path.GetFullPath(Path.Combine(Program.StaticDataDir, "resourcepacks", "vanilla.zip")));
+        var resourcePackPath = GetResourcePackPath();
+        var resourcePack = new FileInfo(resourcePackPath);
         if (!resourcePack.Exists)
         {
-            logger.Error($"Resourcepack file '{resourcePack.FullName}' does not exist");
-            await DownloadResourcePackAsync(resourcePack.FullName, logger, cancellationToken);
+            logger.Error($"Resourcepack file '{resourcePackPath}' does not exist");
+            FlagResourcePackProblem(resourcePackPath);
         }
-        else if (resourcePack.Length < 100_000_000)
+        else if (resourcePack.Length < MinResourcePackSize)
         {
-            logger.Error($"Resourcepack file '{resourcePack.FullName}' is invalid, expected size: 131885348B, actual size: {resourcePack.Length}B");
-            await DownloadResourcePackAsync(resourcePack.FullName, logger, cancellationToken);
+            logger.Error($"Resourcepack file '{resourcePackPath}' is invalid, expected size: 131885348B, actual size: {resourcePack.Length}B");
+            FlagResourcePackProblem(resourcePackPath);
+        }
+
+        if (_resourcePackIssueDetected)
+        {
+            // Informational only — the pack is optional, so startup continues.
+            logger.Information("Resource pack is not downloaded automatically — use the panel prompt to download it or place the file manually");
         }
 
         if (checkImporter)
@@ -292,17 +343,21 @@ internal static class FileChecker
     }
 
     /// <summary>
-    /// Auto-downloads vanilla.zip resourcepack. Not critical — server runs without it.
-    /// Clients have the resourcepack embedded, this is only needed for overrides.
+    /// Downloads vanilla.zip on demand (panel "Server Status" prompt).
+    /// Not critical — server runs without it. Clients have the resourcepack
+    /// embedded, this is only needed for overrides.
+    /// Does not throw: failures are logged and the file is left absent/invalid,
+    /// so callers should re-check <see cref="ResourcePackPending"/>.
     /// </summary>
-    private static async Task DownloadResourcePackAsync(string destPath, ILogger logger, CancellationToken cancellationToken)
+    public static Task DownloadResourcePackAsync(IProgress<float>? progress = null, CancellationToken cancellationToken = default)
+        => DownloadResourcePackAsync(GetResourcePackPath(), Log.Logger, progress, cancellationToken);
+
+    private static async Task DownloadResourcePackAsync(string destPath, ILogger logger, IProgress<float>? progress, CancellationToken cancellationToken)
     {
-        const string resourcePackId = "dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35";
-        const long minValidSize = 100_000_000; // ~131MB expected
         var urls = new[]
         {
-            $"https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
-            $"https://web.archive.org/web/2/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}",
+            $"https://cdn.mceserv.net/availableresourcepack/resourcepacks/{ResourcePackId}",
+            $"https://web.archive.org/web/2/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{ResourcePackId}",
         };
 
         foreach (var url in urls)
@@ -319,19 +374,34 @@ internal static class FileChecker
                 }
 
                 // Check Content-Length header before downloading the body
-                if (response.Content.Headers.ContentLength is long contentLength && contentLength < minValidSize)
+                if (response.Content.Headers.ContentLength is long contentLength && contentLength < MinResourcePackSize)
                 {
                     logger.Warning($"Resourcepack at {url} is too small ({contentLength} bytes), skipping");
                     continue;
                 }
 
+                progress?.Report(0);
+
                 Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+                long? totalBytes = response.Content.Headers.ContentLength;
                 await using var fs = File.OpenWriteNew(destPath);
-                await response.Content.CopyToAsync(fs, cancellationToken);
+                await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                var buffer = new byte[81920];
+                long downloadedBytes = 0;
+                int bytesRead;
+                while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    await fs.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                    downloadedBytes += bytesRead;
+                    if (progress is not null && totalBytes > 0)
+                    {
+                        progress.Report((float)downloadedBytes / totalBytes.Value);
+                    }
+                }
                 await fs.FlushAsync(cancellationToken);
 
                 var fileInfo = new FileInfo(destPath);
-                if (fileInfo.Length < minValidSize)
+                if (fileInfo.Length < MinResourcePackSize)
                 {
                     logger.Warning($"Downloaded resourcepack is too small ({fileInfo.Length} bytes), deleting");
                     File.Delete(destPath);
@@ -349,8 +419,8 @@ internal static class FileChecker
             }
         }
 
-        logger.Warning("Could not download resourcepack automatically. The server will work without it.");
+        logger.Warning("Could not download resourcepack. The server will work without it.");
         logger.Warning($"To add it manually, download from Internet Archive and place at: {destPath}");
-        logger.Warning($"  Archive search: https://web.archive.org/web/*/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{resourcePackId}");
+        logger.Warning($"  Archive search: https://web.archive.org/web/*/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{ResourcePackId}");
     }
 }
