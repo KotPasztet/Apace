@@ -92,6 +92,8 @@ To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Window
 
 No Docker, or building from source? Full instructions: [Installation.md](Installation.md).
 
+Want to play away from home without opening router ports? See [docs/tailscale.md](docs/tailscale.md).
+
 ## Community
 
 Questions, setup help, and development news — join the Discord: **https://discord.gg/5K8HJukMSX**
