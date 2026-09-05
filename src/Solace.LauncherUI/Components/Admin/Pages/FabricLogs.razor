@@ -142,10 +142,9 @@
         if (!string.IsNullOrWhiteSpace(configured))
             return configured;
 
-        // Default: persistent_fabric/logs/latest.log relative to ProgramsDir
-        // ProgramsDir = ../components/, Fabric work dir = ./persistent_fabric
-        return Path.GetFullPath(Path.Combine(
-            Program.ProgramsDir, "persistent_fabric", "logs", "latest.log"));
+        // Default: logs/latest.log inside the persistent Fabric dir (already an
+        // absolute path resolved against this panel's working directory).
+        return Path.Combine(Program.PersistentFabricDir, "logs", "latest.log");
     }
 
     private async Task LoadFullFileAsync()
