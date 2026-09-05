@@ -28,7 +28,7 @@ if [ -d "$PERSISTENT_DIR/config.json" ]; then
 fi
 
 if [ ! -f "$PERSISTENT_DIR/config.json" ]; then
-    # ApiPort=1808 matches the compose port mapping (code default is 8080)
+    # ApiPort=1808 matches the compose port mapping (and the code default)
     echo '{"ApiPort":1808}' | sudo tee "$PERSISTENT_DIR/config.json" > /dev/null
     echo "  ✓ config.json (utworzony, ApiPort=1808)"
 else

@@ -24,8 +24,8 @@ The ObjectStore (default 5396) and the Fabric server (25565) are never published
 ObjectStore only listens on loopback and its objects reach the phone through the game
 API's tile endpoints, so there is nothing extra to open.
 
-`1808` is the API Port written to `config.json` by the installers (the in-code fallback
-is `8080`). The Bedrock port is `19132` unless you set `BRIDGE_PORT` in
+`1808` is the API Port default — written to `config.json` by the installers and also
+the in-code fallback. The Bedrock port is `19132` unless you set `BRIDGE_PORT` in
 `docker-compose.yml` — if you did, that value must match **Buildplate Bridge Port** in
 Server Options.
 

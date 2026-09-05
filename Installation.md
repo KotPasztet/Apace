@@ -92,7 +92,7 @@ The patcher is built into the panel — **Patcher** page. No separate download.
 4. Install the patched file on your phone, open the app, and sign in with your panel account
 
 The client connects to the **API Port** from Server Options on your PC's IP — fresh installs
-default to `1808` (matching the Docker port mapping; the in-code fallback is `8080`) —
+default to `1808` (matching both the Docker port mapping and the in-code default) —
 make sure that port is reachable from the phone (and published if you run Apace in Docker).
 
 Playing away from your home network? [docs/tailscale.md](docs/tailscale.md) covers reaching

@@ -125,7 +125,7 @@ else
     PERSISTENT="/opt/apace-persistent"
     sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs,fabric-data}
     if [ ! -f "$PERSISTENT/config.json" ]; then
-        # ApiPort=1808 matches the compose port mapping (code default is 8080)
+        # ApiPort=1808 matches the compose port mapping (and the code default)
         echo '{"ApiPort":1808}' | sudo tee "$PERSISTENT/config.json" > /dev/null
     fi
     sudo chown -R 1654:1654 "$PERSISTENT" 2>/dev/null || sudo chmod -R 777 "$PERSISTENT" 2>/dev/null
