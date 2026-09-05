@@ -5,6 +5,7 @@ Apace is a self-hosted Minecraft Earth replacement server. Fastest way to run it
 ## Requirements
 
 - **Linux / macOS:** [Docker](https://docs.docker.com/desktop/setup/install/mac-install/) (Docker Desktop or the engine); **Windows:** [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
+- **Android (Termux):** no Docker needed — see [QUICKINSTALL-TERMUX.md](QUICKINSTALL-TERMUX.md)
 - ~4 GB free RAM, and a phone on the **same network** as the server
 
 ## Install
