@@ -21,7 +21,7 @@ public sealed class ObjectStoreClient : IAsyncDisposable
         }
     }
 
-    private const int MaxConcurrentCommands = 32;
+    private const int MaxConcurrentCommands = 256;
 
     private readonly string _host;
     private readonly int _port;
@@ -82,8 +82,15 @@ public sealed class ObjectStoreClient : IAsyncDisposable
     private async Task<object?> EnqueueCommand(CommandType type, object data)
     {
         var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var state = new CommandState();
 
-        _ = Task.Run(() => ExecuteCommandAsync(type, data, tcs));
+        // Armed at enqueue time, before the command even queues for a slot, and kept in sync with the
+        // caller's WaitAsync deadline below: when the caller gives up this token fires too, so the
+        // semaphore wait is cancelled and an abandoned command can never wake up later and grab a slot.
+        var queueCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+        queueCts.CancelAfter(TimeSpan.FromSeconds(60));
+
+        _ = Task.Run(() => ExecuteCommandAsync(type, data, tcs, queueCts, state));
 
         try
         {
@@ -91,7 +98,19 @@ public sealed class ObjectStoreClient : IAsyncDisposable
         }
         catch (TimeoutException)
         {
-            Log.Error($"ObjectStore command {type} (data {data}) timed out after 60s");
+            // Nobody observes the TCS from here on; complete it so the abandoned command's late
+            // completion cannot surface as an unobserved task exception.
+            tcs.TrySetCanceled();
+
+            if (state.Started)
+            {
+                Log.Error($"ObjectStore command {type} (data {data}) timed out after 60s waiting for response");
+            }
+            else
+            {
+                Log.Error($"ObjectStore command {type} (data {data}) timed out after 60s while queued");
+            }
+
             return null;
         }
         catch (Exception ex)
@@ -101,17 +120,23 @@ public sealed class ObjectStoreClient : IAsyncDisposable
         }
     }
 
-    private async Task ExecuteCommandAsync(CommandType type, object data, TaskCompletionSource<object?> tcs)
+    private async Task ExecuteCommandAsync(CommandType type, object data, TaskCompletionSource<object?> tcs, CancellationTokenSource queueCts, CommandState state)
     {
         try
         {
-            await _commandSlots.WaitAsync(_cts.Token);
+            await _commandSlots.WaitAsync(queueCts.Token);
         }
         catch (Exception ex)
         {
             tcs.TrySetException(ex);
             return;
         }
+        finally
+        {
+            queueCts.Dispose();
+        }
+
+        state.Started = true;
 
         try
         {
@@ -127,6 +152,13 @@ public sealed class ObjectStoreClient : IAsyncDisposable
             {
             }
         }
+    }
+
+    private sealed class CommandState
+    {
+        // Set as soon as the command owns a semaphore slot, so the caller can tell
+        // "never ran" (queued) timeouts from "ran but no reply" timeouts.
+        public volatile bool Started;
     }
 
     private async Task RunCommandAsync(CommandType type, object data, TaskCompletionSource<object?> tcs)
