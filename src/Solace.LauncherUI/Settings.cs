@@ -15,7 +15,7 @@ public sealed class Settings
 
     public static readonly Settings Default = new Settings()
     {
-        ApiPort = 8080,
+        ApiPort = 1808,
         EventBusPort = 5532,
         ObjectStorePort = 5396,
         IPv4 = "192.168.x.x",

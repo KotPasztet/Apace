@@ -119,7 +119,7 @@ if ($Mode -eq "--no-docker") {
     Write-Host "Setting up persistent storage..."
     $dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs", "fabric-data")
     foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path "$PERSISTENT\$d" | Out-Null }
-    # ApiPort=1808 matches the compose port mapping (code default is 8080)
+    # ApiPort=1808 matches the compose port mapping (and the code default)
     if (-not (Test-Path "$PERSISTENT\config.json")) { '{"ApiPort":1808}' | Out-File -FilePath "$PERSISTENT\config.json" -Encoding utf8 }
 
     $compose = Get-Content docker-compose.yml -Raw

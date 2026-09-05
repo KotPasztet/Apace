@@ -68,6 +68,6 @@ Instead of booting a whole new Minecraft server (JVM pair) **per buildplate**, v
 | Port | Purpose |
 |------|---------|
 | `5000` | launcher UI / dashboard (panel) |
-| `1808` | public HTTP API (configurable, default on fresh installs `1808`; code default `8080`) |
+| `1808` | public HTTP API (configurable; default `1808`, also on fresh installs) |
 | `5532` | event bus (TCP) — orchestrator ↔ connector plugin |
 | `19132/udp` | **single shared** bridge Bedrock port (all instances) |
