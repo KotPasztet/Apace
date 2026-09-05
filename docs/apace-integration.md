@@ -671,15 +671,15 @@ Set in the container image and/or `docker-compose.yml`:
 | `COMPlus_gcServer` | `0` | Workstation GC (fewer threads) |
 | `COMPlus_gcConcurrent` | `1` | Concurrent GC |
 | `DOTNET_GCHeapHardLimit` | `536870912` (512 MB) | Cap the orchestrator heap |
-| `ASPNETCORE_URLS` | `http://0.0.0.0:5000` | Public API endpoint |
+| `ASPNETCORE_URLS` | `http://0.0.0.0:5000` | Web panel / launcher UI endpoint |
 | `SOLACE_LOG_CLIENT_REQUESTS` | `1` | Log client requests |
 
 ### Exposed ports (v2 — all shared)
 
 | Port | Protocol | Service |
 |---|---|---|
-| `5000` | TCP | Public HTTP API (ASP.NET Core) |
-| `1808` | TCP | Launcher UI / dashboard |
+| `5000` | TCP | Launcher UI / web panel (ASP.NET Core) |
+| `1808` | TCP | Public HTTP game API (`ApiPort` from config.json) |
 | `5532` | TCP | Event bus (orchestrator ↔ Java connector plugin) |
 | `19132` | UDP | **Single** shared bridge Bedrock port |
 | `25565` | TCP | Fabric internal port (local container only, **not** published) |
