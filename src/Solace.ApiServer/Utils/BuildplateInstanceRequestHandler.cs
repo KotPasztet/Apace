@@ -236,6 +236,13 @@ public sealed class BuildplateInstanceRequestHandler
 
         Log.Information("HandleLoad: fetching object store data {ObjectId}", buildplate.ServerDataObjectId);
         byte[]? serverData = await _objectStoreClient.GetAsync(buildplate.ServerDataObjectId);
+        if (serverData is null)
+        {
+            Log.Warning($"Data object {buildplate.ServerDataObjectId} for buildplate {buildplateId} could not be loaded from object store; retrying once");
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            serverData = await _objectStoreClient.GetAsync(buildplate.ServerDataObjectId);
+        }
+
         Log.Information("HandleLoad: object store done ({Bytes} bytes)", serverData?.Length.ToString() ?? "null");
         if (serverData is null)
         {
