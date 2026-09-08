@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a bug on Solace
+about: Report a bug on Apace
 title: "[Bug]"
 labels: bug
 assignees: ''

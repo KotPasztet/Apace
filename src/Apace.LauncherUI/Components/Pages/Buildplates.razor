@@ -282,7 +282,7 @@
                     <p>Select export format for <strong>@_exportBp?.Name</strong>:</p>
 
                     <select class="form-select" @bind="_exportFormat" disabled="@_isExporting">
-                        <option value="Solace">Apace/Vienna (.zip)</option>
+                        <option value="Apace">Apace/Vienna (.zip)</option>
                         <option value="Earth">Project Earth (.json)</option>
                     </select>
 
@@ -351,7 +351,7 @@
     private bool _showExportModal = false;
     private bool _isExporting = false;
     private Buildplate? _exportBp;
-    private string _exportFormat = "Solace";
+    private string _exportFormat = "Apace";
     private string? _exportErrorMessage;
 
     protected override async Task OnInitializedAsync()
@@ -599,7 +599,7 @@ BuildplateLauncher.ExeName))
     private void RequestExport(Buildplate bp)
     {
         _exportBp = bp;
-        _exportFormat = "Solace";
+        _exportFormat = "Apace";
         _exportErrorMessage = null;
         _showExportModal = true;
     }
@@ -625,7 +625,7 @@ BuildplateLauncher.ExeName))
         _isExporting = true;
         _exportErrorMessage = null;
 
-        bool solaceFormat = _exportFormat is "Solace";
+        bool apaceFormat = _exportFormat is "Apace";
 
         Stream fileStream;
         try
@@ -640,7 +640,7 @@ BuildplateLauncher.ExeName))
 
             await using var importer = await Importer.CreateFromSettings(Settings.Instance, Log.Logger, createEventBus: false);
 
-            if (solaceFormat)
+            if (apaceFormat)
             {
                 var data = await importer.ObjectStoreClient.GetAsync(_exportBp.ServerDataObjectId);
 
@@ -725,7 +725,7 @@ BuildplateLauncher.ExeName))
 
             using var streamRef = new DotNetStreamReference(fileStream);
 
-            string extension = solaceFormat ? "zip" : "json";
+            string extension = apaceFormat ? "zip" : "json";
             string fileName = $"{_exportBp.Name.Replace(" ", "_")}_export.{extension}";
 
             await JSRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);

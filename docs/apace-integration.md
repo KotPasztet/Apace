@@ -672,7 +672,7 @@ Set in the container image and/or `docker-compose.yml`:
 | `COMPlus_gcConcurrent` | `1` | Concurrent GC |
 | `DOTNET_GCHeapHardLimit` | `536870912` (512 MB) | Cap the orchestrator heap |
 | `ASPNETCORE_URLS` | `http://0.0.0.0:5000` | Web panel / launcher UI endpoint |
-| `SOLACE_LOG_CLIENT_REQUESTS` | `1` | Log client requests |
+| `APACE_LOG_CLIENT_REQUESTS` | `1` | Log client requests |
 
 ### Exposed ports (v2 — all shared)
 
