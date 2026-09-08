@@ -1,0 +1,36 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Apace.BuildplateRenderer/Apace.BuildplateRenderer.csproj" />
+    <Project Path="src/Apace.KillHelper/Apace.KillHelper.csproj" />
+    <Project Path="src/Apace.LauncherUI/Apace.LauncherUI.csproj" />
+  </Folder>
+  <Folder Name="/repos/">
+    <Project Path="repos/Minecraft_Earth_Patcher/src/Core/MCEPatcher.Core.csproj" />
+  </Folder>
+  <Project Path="src/Apace.ApiServer/Apace.ApiServer.csproj">
+  </Project>
+  <Project Path="src/Apace.Buildplate/Apace.Buildplate.csproj">
+  </Project>
+  <Project Path="src/Apace.BuildplateImporter/Apace.BuildplateImporter.csproj" />
+  <Project Path="src/Apace.Common/Apace.Common.csproj">
+  </Project>
+  <Project Path="src/Apace.DB/Apace.DB.csproj">
+  </Project>
+  <Project Path="src/Apace.EventBus.Client/Apace.EventBus.Client.csproj">
+  </Project>
+  <Project Path="src/Apace.EventBus.Server/Apace.EventBus.Server.csproj">
+  </Project>
+  <Project Path="src/Apace.ObjectStore.Client/Apace.ObjectStore.Client.csproj">
+  </Project>
+  <Project Path="src/Apace.ObjectStore.Server/Apace.ObjectStore.Server.csproj">
+  </Project>
+  <Project Path="src/Apace.PreviewGenerator/Apace.PreviewGenerator.csproj">
+  </Project>
+  <Project Path="src/Apace.StaticData/Apace.StaticData.csproj" />
+  <Project Path="src/Apace.TappablesGenerator/Apace.TappablesGenerator.csproj">
+  </Project>
+  <Project Path="src/Apace.TileRenderer/Apace.TileRenderer.csproj" />
+</Solution>

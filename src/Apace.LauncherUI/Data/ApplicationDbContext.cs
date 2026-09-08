@@ -1,0 +1,52 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Apace.LauncherUI.Models.Db;
+
+namespace Apace.LauncherUI.Data;
+
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    : IdentityDbContext<ApplicationUser, ApplicationRole, string>(options)
+{
+    public DbSet<DbBuildplatePreview> BuildplatePreviews { get; set; }
+
+    public DbSet<DbLinkedGameAccount> LinkedGameAccounts { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        builder.Entity<DbBuildplatePreview>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.HasIndex(e => new { e.PlayerId, e.BuildplateId })
+                .HasDatabaseName("IX_Player_Buildplate")
+                .IsUnique();
+
+            entity.Property(e => e.PreviewData)
+                .IsRequired()
+                .HasColumnType("BLOB");
+        });
+
+        builder.Entity<DbLinkedGameAccount>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.PanelUserId)
+                .IsRequired();
+
+            entity.Property(e => e.PlayerId)
+                .IsRequired();
+
+            entity.HasIndex(e => new { e.PanelUserId, e.PlayerId })
+                .HasDatabaseName("IX_PanelUser_Player")
+                .IsUnique();
+        });
+    }
+}

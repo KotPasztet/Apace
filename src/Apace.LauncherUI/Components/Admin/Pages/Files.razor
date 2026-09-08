@@ -1,0 +1,494 @@
+@page "/Admin/Files"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Components.Forms
+@using Apace.LauncherUI.Controllers
+@using Apace.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.ViewFiles)]
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject AntiforgeryStateProvider AntiforgeryState
+
+<PageTitle>Files - Apace</PageTitle>
+
+<div class="card mb-4">
+    <div class="card-body text-center">
+        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.7rem; letter-spacing: 2px;">Server Files</h6>
+        <div class="d-flex align-items-center justify-content-center mt-2">
+            <h2 class="display-4 mb-0" style="font-size: 1.8rem; border-bottom: none; padding-bottom: 0;">FILE BROWSER</h2>
+        </div>
+        <small class="text-muted mt-3 d-block">@CurrentDisplayPath</small>
+    </div>
+</div>
+
+@if (_editOpen)
+{
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span>▸ Editing @(_editRoot)/@(_editPath)</span>
+            <div>
+                <button class="btn btn-sm btn-primary" @onclick="SaveEditAsync" disabled="@(!CanSave)">💾 Save</button>
+                <button class="btn btn-sm btn-secondary ms-2" @onclick="ReloadEditAsync" title="Discard changes and reload from disk">↺ Revert</button>
+                <button class="btn btn-sm btn-secondary ms-2" @onclick="CloseEdit" title="Close without saving">✕ Close</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <textarea class="form-control file-editor" rows="@EditorRows" @bind="_editContent" spellcheck="false"></textarea>
+            <div class="form-text">Saving creates a .bak backup of the current file (the newest 3 backups are kept).</div>
+            @if (_saveMessage is not null)
+            {
+                <div class="alert alert-success py-2 mb-2">@_saveMessage</div>
+            }
+            @if (_saveError is not null)
+            {
+                <div class="alert alert-danger py-2 mb-2">@_saveError</div>
+            }
+            @if (_requiresRestart)
+            {
+                <div class="alert alert-warning py-2 mb-2">⚠️ ApiServer restart required for the change to take effect.</div>
+            }
+        </div>
+    </div>
+}
+
+@if (_viewOpen)
+{
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span>▸ @(_viewRoot)/@(_viewPath)</span>
+            <div>
+                <button class="btn btn-sm btn-secondary" @onclick="CopyViewAsync" title="Copy file content to clipboard">📋 Copy</button>
+                <button class="btn btn-sm btn-secondary ms-2" @onclick="CloseView" title="Close the file preview">✕ Close</button>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (_viewTruncated)
+            {
+                <div class="alert alert-warning py-2">File is larger than 512 KB — showing the first 512 KB only. Use download for the full file.</div>
+            }
+            <div class="log-terminal file-view">
+                <div class="log-content"><pre class="file-view-text">@_viewContent</pre></div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span>▸ @RootLabels.GetValueOrDefault(_root, _root)</span>
+        <div>
+            <button class="btn btn-sm btn-secondary" @onclick="UpAsync" disabled="@(_segments.Count == 0)" title="Go one level up">↰ Up</button>
+            <button class="btn btn-sm btn-secondary ms-2" @onclick="() => LoadAsync()" title="Reload directory">↺ Refresh</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <label class="form-label mb-0">Root:</label>
+            <select class="form-select" style="max-width: 260px;" @bind:get="_root" @bind:set="OnRootSet">
+                @foreach (var knownRoot in RootLabels)
+                {
+                    <option value="@knownRoot.Key">@knownRoot.Value</option>
+                }
+            </select>
+        </div>
+
+        <nav aria-label="Path" class="mb-3">
+            <ol class="breadcrumb file-breadcrumb mb-0">
+                <li class="breadcrumb-item"><button @onclick="() => GoToRootAsync()" disabled="@(_segments.Count == 0)">@_root</button></li>
+                @for (var i = 0; i < _segments.Count; i++)
+                {
+                    var index = i;
+                    <li class="breadcrumb-item"><button @onclick="() => GoToSegmentAsync(index)" disabled="@(i == _segments.Count - 1)">@_segments[index]</button></li>
+                }
+            </ol>
+        </nav>
+
+        @if (string.Equals(_root, "data", StringComparison.OrdinalIgnoreCase))
+        {
+            <div class="alert alert-warning py-2">⚠️ Databases are live — download only.</div>
+        }
+
+        @if (_error is not null)
+        {
+            <div class="alert alert-warning text-center py-4">
+                <span style="font-size: 1.5rem;" class="d-block mb-2">⚠️</span>
+                <span class="text-muted" style="white-space: pre-wrap;">@_error</span>
+            </div>
+        }
+        else if (_loading)
+        {
+            <div class="alert alert-light text-center py-4 text-muted">Loading…</div>
+        }
+        else if (_entries.Count == 0)
+        {
+            <div class="alert alert-light text-center py-4">
+                <span style="font-size: 1.5rem;" class="d-block mb-2">📂</span>
+                <span class="text-muted">This directory is empty.</span>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th style="width: 110px;">Size</th>
+                            <th style="width: 170px;">Modified</th>
+                            <th style="width: 280px;" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in _entries)
+                        {
+                            <tr>
+                                <td class="text-break">
+                                    @if (entry.IsDir)
+                                    {
+                                        <button class="btn btn-link p-0 file-name-link" title="Open @entry.Name" @onclick="() => OpenDirectoryAsync(entry.Name)">📁 @entry.Name/</button>
+                                    }
+                                    else
+                                    {
+                                        <span>📄 @entry.Name</span>
+                                    }
+                                </td>
+                                <td>@(entry.IsDir ? "—" : FormatSize(entry.Size))</td>
+                                <td class="text-nowrap">@entry.Mtime</td>
+                                <td class="text-end text-nowrap">
+                                    @if (!entry.IsDir)
+                                    {
+                                        <button class="btn btn-sm btn-secondary" title="View as text" @onclick="() => ViewFileAsync(entry)">👁 View</button>
+                                        if (CanEdit && FilesController.IsEditable(_root, EntryPath(entry.Name)))
+                                        {
+                                            <button class="btn btn-sm btn-primary" title="Edit this file" @onclick="() => EditFileAsync(entry)">✎ Edit</button>
+                                        }
+                                        <a class="btn btn-sm btn-secondary" title="Download" href="@DownloadUrl(entry.Name)">⬇ Download</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Must stay in sync with the allow-list in FilesController (which is the authority -
+    // this only decides whether the Edit button is offered).
+    private static readonly Dictionary<string, string> RootLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["launcher"] = "Launcher (panel)",
+        ["components"] = "Components",
+        ["staticdata"] = "Static data",
+        ["data"] = "Data (databases)",
+        ["persistent_fabric"] = "Persistent Fabric",
+    };
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private IJSObjectReference? _module;
+    private bool _canEdit;
+    private bool _loading = true;
+    private string _root = "components";
+    private string _path = "";
+    private string? _error;
+    private List<FilesController.FileEntry> _entries = [];
+
+    private bool _viewOpen;
+    private bool _viewTruncated;
+    private string _viewRoot = "";
+    private string _viewPath = "";
+    private string _viewContent = "";
+
+    private bool _editOpen;
+    private bool _saving;
+    private string _editRoot = "";
+    private string _editPath = "";
+    private string _editContent = "";
+    private string _editOriginal = "";
+    private string? _saveMessage;
+    private string? _saveError;
+    private bool _requiresRestart;
+
+    private List<string> _segments => [.. _path.Split('/', StringSplitOptions.RemoveEmptyEntries)];
+
+    private bool CanEdit => _canEdit;
+
+    private bool CanSave => !_saving && _editContent != _editOriginal;
+
+    private int EditorRows => Math.Clamp(_editContent.AsSpan().Count('\n') + 2, 10, 40);
+
+    private string CurrentDisplayPath
+        => _path.Length == 0 ? _root : $"{_root} / {_path.Replace("/", " / ")}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _canEdit = authState.User.HasPermission(Permissions.EditFiles);
+    }
+
+    // The listing is fetched through JS interop, which only exists once the circuit is up,
+    // so the request module is imported and the first load happens after the initial render
+    // (the page is prerendered first).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Components/Admin/Pages/Files.razor.js");
+            await LoadAsync();
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_module is not null)
+            {
+                await _module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // circuit is already gone
+        }
+    }
+
+    private async Task OnRootSet(string root)
+    {
+        if (string.Equals(_root, root, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _root = root;
+        _path = "";
+        CloseView();
+        CloseEdit();
+        await LoadAsync();
+    }
+
+    private async Task GoToRootAsync()
+    {
+        _path = "";
+        CloseView();
+        CloseEdit();
+        await LoadAsync();
+    }
+
+    private async Task GoToSegmentAsync(int index)
+    {
+        var segments = _segments;
+        _path = string.Join('/', segments.Take(index + 1));
+        CloseView();
+        CloseEdit();
+        await LoadAsync();
+    }
+
+    private async Task UpAsync()
+    {
+        var segments = _segments;
+        if (segments.Count == 0)
+        {
+            return;
+        }
+
+        _path = segments.Count == 1 ? "" : string.Join('/', segments.Take(segments.Count - 1));
+        CloseView();
+        CloseEdit();
+        await LoadAsync();
+    }
+
+    private async Task OpenDirectoryAsync(string name)
+    {
+        _path = EntryPath(name);
+        CloseView();
+        CloseEdit();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        var (ok, error, payload) = await RequestAsync<List<FilesController.FileEntry>>(
+            $"/api/files/list?root={Uri.EscapeDataString(_root)}&path={Uri.EscapeDataString(_path)}");
+
+        if (ok && payload is not null)
+        {
+            _entries = payload;
+        }
+        else
+        {
+            _entries = [];
+            _error = error;
+        }
+
+        _loading = false;
+    }
+
+    private async Task ViewFileAsync(FilesController.FileEntry entry)
+    {
+        var (ok, error, payload) = await RequestAsync<FilesController.ViewResultDto>(
+            $"/api/files/view?root={Uri.EscapeDataString(_root)}&path={Uri.EscapeDataString(EntryPath(entry.Name))}");
+
+        if (ok && payload is not null)
+        {
+            CloseEdit();
+            _viewRoot = _root;
+            _viewPath = EntryPath(entry.Name);
+            _viewContent = payload.Content;
+            _viewTruncated = payload.Truncated;
+            _viewOpen = true;
+        }
+        else
+        {
+            _error = error;
+        }
+    }
+
+    private void CloseView() => _viewOpen = false;
+
+    private async Task CopyViewAsync()
+        => await JS.InvokeVoidAsync("navigator.clipboard.writeText", _viewContent);
+
+    private async Task EditFileAsync(FilesController.FileEntry entry)
+    {
+        var (ok, error, payload) = await RequestAsync<FilesController.ViewResultDto>(
+            $"/api/files/view?root={Uri.EscapeDataString(_root)}&path={Uri.EscapeDataString(EntryPath(entry.Name))}");
+
+        if (ok && payload is not null)
+        {
+            CloseView();
+            _editRoot = _root;
+            _editPath = EntryPath(entry.Name);
+            _editContent = payload.Content;
+            _editOriginal = payload.Content;
+            _saveMessage = null;
+            _saveError = null;
+            _requiresRestart = false;
+            _editOpen = true;
+        }
+        else
+        {
+            _error = error;
+        }
+    }
+
+    private async Task ReloadEditAsync()
+    {
+        var (ok, error, payload) = await RequestAsync<FilesController.ViewResultDto>(
+            $"/api/files/view?root={Uri.EscapeDataString(_editRoot)}&path={Uri.EscapeDataString(_editPath)}");
+
+        if (ok && payload is not null)
+        {
+            _editContent = payload.Content;
+            _editOriginal = payload.Content;
+            _saveMessage = null;
+            _saveError = null;
+        }
+        else
+        {
+            _saveError = error;
+        }
+    }
+
+    private void CloseEdit() => _editOpen = false;
+
+    private async Task SaveEditAsync()
+    {
+        _saving = true;
+        _saveMessage = null;
+        _saveError = null;
+
+        var (ok, error, payload) = await RequestAsync<FilesController.SaveResultDto>(
+            $"/api/files/save?root={Uri.EscapeDataString(_editRoot)}&path={Uri.EscapeDataString(_editPath)}",
+            JsonSerializer.Serialize(new FilesController.SaveRequestDto(_editContent), JsonOptions));
+
+        if (ok && payload is not null)
+        {
+            _editOriginal = _editContent;
+            _saveMessage = $"Saved {payload.Size} bytes.{(payload.BackupName is null ? "" : $" Backup created: {payload.BackupName}")}";
+
+            // api_config.json is read by the ApiServer at startup only.
+            _requiresRestart = string.Equals(_editRoot, "components", StringComparison.OrdinalIgnoreCase)
+                               && string.Equals(_editPath, "api_config.json", StringComparison.OrdinalIgnoreCase);
+        }
+        else
+        {
+            _saveError = error;
+        }
+
+        _saving = false;
+    }
+
+    private string EntryPath(string name)
+        => _path.Length == 0 ? name : $"{_path}/{name}";
+
+    private string DownloadUrl(string name)
+        => $"/api/files/download?root={Uri.EscapeDataString(_root)}&path={Uri.EscapeDataString(EntryPath(name))}";
+
+    private static string FormatSize(long bytes)
+        => bytes switch
+        {
+            >= 1L << 30 => $"{bytes / (double)(1L << 30):F1} GB",
+            >= 1L << 20 => $"{bytes / (double)(1L << 20):F1} MB",
+            >= 1L << 10 => $"{bytes / (double)(1L << 10):F1} KB",
+            _ => $"{bytes} B"
+        };
+
+    private async Task<(bool ok, string? error, T? payload)> RequestAsync<T>(string url, string? jsonBody = null)
+    {
+        if (_module is null)
+        {
+            return (false, "Not connected to the server yet - reload the page.", default);
+        }
+
+        try
+        {
+            // Antiforgery token rendered during prerendering (PasskeySubmit pattern) -
+            // the save POST never goes out without it.
+            var token = AntiforgeryState.GetAntiforgeryToken()?.Value;
+
+            var response = await _module.InvokeAsync<FetchResponse>(
+                "request", url, jsonBody is null ? "GET" : "POST", jsonBody, token);
+
+            if (response.Status is >= 200 and < 300)
+            {
+                var payload = string.IsNullOrWhiteSpace(response.Text)
+                    ? default
+                    : JsonSerializer.Deserialize<T>(response.Text, JsonOptions);
+
+                return (true, null, payload);
+            }
+
+            return (false, Shorten(response.Status, response.Text), default);
+        }
+        catch (Exception ex) when (ex is not JSDisconnectedException)
+        {
+            return (false, ex.Message, default);
+        }
+    }
+
+    private static string Shorten(int status, string text)
+    {
+        text = (text ?? "").Trim();
+        if (text.Length > 300)
+        {
+            text = text[..300] + "...";
+        }
+
+        return status == 0 ? text : $"HTTP {status}: {text}";
+    }
+
+    private sealed record FetchResponse(
+        [property: JsonPropertyName("status")] int Status,
+        [property: JsonPropertyName("text")] string Text);
+}

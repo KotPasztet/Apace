@@ -1,0 +1,305 @@
+@page "/Admin/Players"
+@using Microsoft.AspNetCore.Authorization
+@using Serilog
+@using System.Security.Claims
+@using Apace.DB
+@using Apace.DB.Models.Player
+@using Apace.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.ViewPlayers)]
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Player Management - Apace</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+            <img class="nav-icon" src="/images/mob_of_me_icon.png" alt="" /> Players
+        </div>
+        <p class="text-muted small mb-0 mt-1">Manage accounts and player statistics</p>
+    </div>
+    <span class="badge badge-subtle" style="font-size: 0.75rem; padding: 6px 12px;">
+        Total: @(_players?.Count ?? 0)
+    </span>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger">⚠ @_errorMessage</div>
+}
+
+@if (_players is null)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+}
+else if (!_players.Any())
+{
+    <div class="alert alert-info">No players found.</div>
+}
+else
+{
+    <!-- Desktop table -->
+    <div class="card d-none d-md-block">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>ID</th>
+                        <th>Level</th>
+                        <th>Rubies</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var player in _players)
+                    {
+                        <tr @key="player.Id">
+                            @if (_editingId == player.Id)
+                            {
+                                <td>
+                                    <input class="form-control form-control-sm" style="min-width: 160px;" @bind="_editUsername" />
+                                </td>
+                                <td><code style="font-size: 0.7rem;">@player.Id</code></td>
+                                <td>
+                                    <input type="number" min="1" class="form-control form-control-sm" style="width: 80px;" @bind="_editLevel" />
+                                </td>
+                                <td>
+                                    <input type="number" min="0" class="form-control form-control-sm" style="width: 100px;" @bind="_editTotalRubies" />
+                                </td>
+                                <td style="text-align: right;">
+                                    <button class="btn btn-success btn-sm" @onclick="() => SaveEditAsync(player)">Save</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="CancelEdit">Cancel</button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="fw-bold">@(player.Username ?? "—")</td>
+                                <td><code style="font-size: 0.7rem; color: #9a9ab0;">@player.Id</code></td>
+                                <td><span class="badge bg-primary">Lvl @player.Profile.Level</span></td>
+                                <td>
+                                    <span style="color: #e57373;">💎</span> @player.Profile.Rubies.Total
+                                </td>
+                                <td style="text-align: right;">
+                                    @if (HasPermission(Permissions.ManagePlayers))
+                                    {
+                                        <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-outline btn-sm" title="View Buildplates">
+                                            <img class="nav-icon" src="/images/buildplate_icon.png" alt="" />
+                                        </a>
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(player)">Edit</button>
+                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="d-md-none d-flex flex-column gap-3">
+        @foreach (var player in _players)
+        {
+            <div class="card" @key="player.Id">
+                <div class="card-body">
+                    @if (_editingId == player.Id)
+                    {
+                        <div class="mb-2">
+                            <label class="form-label">Username</label>
+                            <input class="form-control" @bind="_editUsername" />
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Level</label>
+                                <input type="number" min="1" class="form-control" @bind="_editLevel" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Rubies</label>
+                                <input type="number" min="0" class="form-control" @bind="_editTotalRubies" />
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm flex-grow-1" @onclick="() => SaveEditAsync(player)">Save</button>
+                            <button class="btn btn-secondary btn-sm flex-grow-1" @onclick="CancelEdit">Cancel</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="fw-bold">@(player.Username ?? "—")</div>
+                                <code style="font-size: 0.65rem; color: #9a9ab0;">@player.Id</code>
+                            </div>
+                            <span class="badge bg-primary">Lvl @player.Profile.Level</span>
+                        </div>
+                        <div class="mb-3" style="color: #e57373;">💎 @player.Profile.Rubies.Total Rubies</div>
+
+                        @if (HasPermission(Permissions.ManagePlayers))
+                        {
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-outline btn-sm flex-grow-1">Buildplates</a>
+                                <button class="btn btn-outline-secondary btn-sm flex-grow-1" @onclick="() => StartEdit(player)">Edit</button>
+                                <button class="btn btn-outline-danger btn-sm flex-grow-1" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private ClaimsPrincipal? _user;
+    private EarthDB? _earthDB;
+    private List<(string Id, string? Username, Profile Profile)>? _players;
+    private string? _errorMessage;
+    
+    // Edit State
+    private string? _editingId;
+    private string? _editUsername;
+    private int _editLevel = 1;
+    private int _editTotalRubies = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User;
+
+        try
+        {
+            _earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
+            using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+            _players = await DataUtils.GetFullProfilesAsync(_earthDB, liveDb, default).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex.ToString());
+            _errorMessage = "Database connection failed.";
+        }
+    }
+
+    private void StartEdit((string Id, string? Username, Profile Profile) player)
+    {
+        _editingId = player.Id;
+        _editUsername = player.Username ?? "";
+        _editLevel = player.Profile.Level;
+        _editTotalRubies = player.Profile.Rubies.Total;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+    }
+
+    private async Task SaveEditAsync((string Id, string? Username, Profile Profile) player)
+    {
+        if (!HasPermission(Permissions.ManagePlayers))
+        {
+            return;
+        }
+
+        if (_earthDB is null || _players is null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_editUsername))
+        {
+            player.Username = _editUsername;
+        }
+
+        _editLevel = int.Max(_editLevel, 1);
+        _editTotalRubies = int.Max(_editTotalRubies, 0);
+
+        int difference = _editTotalRubies - player.Profile.Rubies.Total;
+        
+        if (difference > 0)
+        {
+            player.Profile.Rubies.Purchased += difference;
+        }
+        else if (difference < 0)
+        {
+            int removeAmount = -difference;
+            
+            int takeFromPurchased = Math.Min(player.Profile.Rubies.Purchased, removeAmount);
+            player.Profile.Rubies.Purchased -= takeFromPurchased;
+            removeAmount -= takeFromPurchased;
+
+            player.Profile.Rubies.Earned = Math.Max(0, player.Profile.Rubies.Earned - removeAmount);
+        }
+
+        // todo: triger proper level up
+        player.Profile.Level = _editLevel;
+
+        var pIdx = _players.FindIndex(p => p.Id == player.Id);
+        if (pIdx != -1)
+        {
+            _players[pIdx] = (player.Id, _editUsername, player.Profile);
+        }
+
+        using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+        if (liveDb is not null)
+        {
+            await DataUtils.UpdateUsernameAsync(player.Id, _editUsername, liveDb);
+        }
+        
+        await DataUtils.UpdateProfileAsync(_earthDB, player.Id, player.Profile);
+
+        _editingId = null;
+    }
+
+    private async Task DeletePlayerAsync(string id, string? username)
+    {
+        if (!HasPermission(Permissions.ManagePlayers))
+        {
+            return;
+        }
+
+        if (_earthDB is null || _players is null)
+        {
+            return;
+        }
+
+        string confirmText = string.IsNullOrEmpty(username)
+            ? $"Are you sure you want to permanently delete player with id '{id}'?"
+            : $"Are you sure you want to permanently delete player '{username}', id: {id}?";
+
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmText);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+        
+            await DataUtils.DeletePlayerAsync(_earthDB, liveDb, id);
+
+            if (_players != null)
+            {
+                var playerToRemove = _players.FirstOrDefault(p => p.Id == id);
+                if (playerToRemove.Id != null)
+                {
+                    _players.Remove(playerToRemove);
+                }
+            }
+
+            Log.Information("Deleted player {PlayerId}", id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to delete player {PlayerId}", id);
+            _errorMessage = "Failed to delete player. Check logs for details.";
+        }
+    }
+
+    private bool HasPermission(string permission)
+        => _user?.HasPermission(permission) ?? false;
+}

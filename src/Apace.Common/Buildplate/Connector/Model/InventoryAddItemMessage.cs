@@ -1,0 +1,11 @@
+﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
+namespace Apace.Buildplate.Connector.Model;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
+
+public sealed record InventoryAddItemMessage(
+     string PlayerId,
+     string ItemId,
+     int Count,
+     string? InstanceId,
+     int Wear
+);

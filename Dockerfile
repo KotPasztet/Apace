@@ -200,7 +200,7 @@ RUN set -eux; \
     chmod +x /app/launcher/Launcher; \
     test -f /app/launcher/Launcher.dll; \
     echo "Checking ApiServer runtime output..."; \
-    ls -lah /app/components | grep -E 'ApiServer|Solace.ApiServer' || true; \
+    ls -lah /app/components | grep -E 'ApiServer|Apace.ApiServer' || true; \
     test -f /app/components/ApiServer.dll; \
     test -f /app/components/ApiServer.runtimeconfig.json; \
     test -f /app/components/ApiServer.deps.json; \
