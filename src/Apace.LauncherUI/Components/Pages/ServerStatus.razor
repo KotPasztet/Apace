@@ -1,0 +1,491 @@
+@page "/ServerStatus"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using Apace.LauncherUI.Utils
+@inject AuthenticationStateProvider AuthStateProvider
+@inject LogsLogService LogService
+@inject ServerManager ServerManager
+@inject IJSRuntime JS
+
+<PageTitle>Server Status - Apace</PageTitle>
+
+<script>
+    window.initLogScroller = (container) => {
+        if (!container) return;
+
+        container.scrollTop = container.scrollHeight;
+
+        let isScrolledToBottom = true;
+
+        container.addEventListener('scroll', () => {
+            isScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 10;
+        });
+
+        const observer = new MutationObserver(() => {
+            if (isScrolledToBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+
+        observer.observe(container, { childList: true, subtree: true });
+    };
+</script>
+
+<div class="card mb-4">
+    <div class="card-body text-center">
+        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.7rem; letter-spacing: 2px;">System Status</h6>
+        <div class="d-flex align-items-center justify-content-center mt-2">
+            <div class="status-dot @GetStatusClass(_currentStatus) mr-2"></div>
+            <h2 class="display-4 mb-0" style="font-size: 1.8rem; border-bottom: none; padding-bottom: 0;">@_currentStatus.ToString().ToUpper()</h2>
+        </div>
+        <small class="text-muted mt-3 d-block">Last updated: @FormatCurrentTime()</small>
+    </div>
+</div>
+
+@if (_eulaPending)
+{
+    <div class="alert alert-warning">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <strong>Mojang EULA must be accepted</strong><br />
+                <small>The Minecraft server requires you to accept the End User License Agreement.</small>
+            </div>
+            <button class="btn btn-warning btn-sm" @onclick="AcceptEula">
+                ✓ Accept EULA
+            </button>
+        </div>
+    </div>
+}
+
+@if (_resourcePackPending)
+{
+    <div class="alert alert-warning">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <strong>Resource pack missing</strong><br />
+                <small>The vanilla resource pack (<code>staticdata/resourcepacks/vanilla.zip</code>) is served to game clients. The server can start without it, but clients will get no overrides.</small>
+                @if (!string.IsNullOrEmpty(_resourcePackError))
+                {
+                    <br />
+                    <small class="text-danger">@_resourcePackError</small>
+                }
+            </div>
+            <div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="resourcePackRights" @bind="_resourcePackRightsConfirmed" />
+                    <label class="form-check-label" for="resourcePackRights">
+                        I confirm I own a licensed copy of Minecraft: Earth / Bedrock and accept the applicable Terms
+                    </label>
+                </div>
+                <button class="btn btn-warning btn-sm" @onclick="DownloadResourcePack"
+                        disabled="@(IsButtonDisabled(Permissions.EditServerOptions) || !_resourcePackRightsConfirmed || _downloadingResourcePack)">
+                    ↓ Download resource pack
+                </button>
+                <button type="button" class="btn btn-link btn-sm" @onclick="DismissResourcePack" disabled="@_downloadingResourcePack">
+                    Not now
+                </button>
+            </div>
+        </div>
+        @if (_downloadingResourcePack)
+        {
+            <div class="progress mt-2" style="height: 8px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                     style="width: @(_resourcePackDownloadProgress * 100)%"></div>
+            </div>
+            <small class="text-muted">Downloading resource pack... @((_resourcePackDownloadProgress * 100).ToString("F0"))%</small>
+        }
+    </div>
+}
+
+<div class="section-title">Components</div>
+<div class="comp-grid mb-4">
+    @foreach (var comp in ServerManager.Components)
+    {
+        <div class="comp-card">
+            <div class="comp-info">
+                <div class="status-dot @GetStatusClass(comp.Status)"></div>
+                <div>
+                    <div class="comp-name">@comp.Name</div>
+                    <div class="comp-status">@comp.Status.ToString()</div>
+                </div>
+            </div>
+
+            @if (comp.Status is LauncherUI.ServerStatus.Offline)
+            {
+                <button class="btn btn-success btn-sm" style="width: 34px; height: 34px; padding: 0; justify-content: center;"
+                        title="Start Component"
+                        disabled="@(IsButtonDisabled(Permissions.StartServer) || !ServerManager.CanStart || _currentStatus is LauncherUI.ServerStatus.Starting or LauncherUI.ServerStatus.Stopping)"
+                        @onclick="() => StartComponent(comp.ExeName)">
+                    ▶
+                </button>
+            }
+        </div>
+    }
+
+    <div class="comp-card">
+        <div class="comp-info">
+            <div class="status-dot @(_javaServerOnline ? "status-online" : _javaServerStarting ? "status-starting" : "status-offline")"></div>
+            <div>
+                <div class="comp-name">Java Server</div>
+                <div class="comp-status">@(_javaServerOnline ? "Online" : _javaServerStarting ? "Starting" : "Offline")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!IsButtonDisabled(Permissions.StartServer) || !IsButtonDisabled(Permissions.RestartServer) ||
+    !IsButtonDisabled(Permissions.StopServer))
+{
+    <div class="section-title mt-4">Controls</div>
+    <div class="row gap-2 mb-4">
+        <div class="col">
+            <button class="btn btn-success btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
+                    disabled="@(IsButtonDisabled(Permissions.StartServer) || !ServerManager.CanStart)"
+                    @onclick="() => StartServer()">
+                <span style="font-size: 1.5rem;">▶</span>
+                <span style="font-size: 0.8rem;">Start All</span>
+            </button>
+        </div>
+        <div class="col">
+            <button class="btn btn-warning btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
+                    disabled="@(IsButtonDisabled(Permissions.RestartServer) || !ServerManager.CanRestart)"
+                    @onclick="() => RestartServer()">
+                <span style="font-size: 1.5rem; font-weight: 900; line-height: 1;">↺</span>
+                <span style="font-size: 0.8rem; font-weight: 700;">Restart</span>
+            </button>
+        </div>
+        <div class="col">
+            <button class="btn btn-danger btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
+                    disabled="@(IsButtonDisabled(Permissions.StopServer) || !ServerManager.CanStop)"
+                    @onclick="() => StopServer()">
+                <span style="font-size: 1.5rem;">■</span>
+                <span style="font-size: 0.8rem;">Stop</span>
+            </button>
+        </div>
+        <div class="col-12 mt-2">
+            <button class="btn btn-outline-danger btn-lg w-100 d-flex flex-column align-items-center justify-content-center"
+                    disabled="@IsButtonDisabled(Permissions.StopServer)" @onclick="() => KillAll()">
+                <span style="font-size: 1.5rem; font-weight: 900;">✕</span>
+                <span style="font-size: 0.8rem; font-weight: bold;">KILL ALL PROCESSES</span>
+            </button>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">▸ Live Logs</div>
+    <div class="card-body">
+        @if (HasPermission(Permissions.ViewServerLogs))
+        {
+            <div class="nav-pills mb-2" style="overflow-x: auto;">
+                @foreach (var component in LogService.GetKnownComponents())
+                {
+                    <button class="@(_activeTab == component ? "active" : "")"
+                            @onclick="() => _activeTab = component">
+                        @component
+                    </button>
+                }
+            </div>
+
+            <div class="log-filter mb-3">
+                <span class="log-filter-label">Levels:</span>
+                @foreach (var level in _allLevels)
+                {
+                    var isSelected = _selectedLevels.Contains(level);
+                    <button class="@GetLogLevelClass(level) @(isSelected ? "" : "off")"
+                            title="Show/hide @level entries"
+                            @onclick="() => ToggleLogLevel(level)">
+                        @(isSelected ? "✓ " : "")@GetShortLevel(level)
+                    </button>
+                }
+            </div>
+
+            <div class="log-terminal" @ref="_logContainerRef">
+                <div class="log-content">
+                    @foreach (var log in LogService.GetLogsFor(_activeTab).Where(log => string.IsNullOrEmpty(log.Level) || _selectedLevels.Contains(log.Level)))
+                    {
+                        <div class="log-line"><span class="log-time">[@FormatTimestamp(log.Timestamp)]</span> <span class="log-level @GetLogLevelClass(log.Level)">[@GetShortLevel(log.Level)]</span> <span class="log-msg">@log.RenderedMessage</span></div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-light text-center py-4">
+                <span style="font-size: 1.5rem;" class="d-block mb-2">🔒</span>
+                <span class="text-muted">Log access restricted</span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // The system stays in Starting until the Fabric server is fully booted —
+    // both while the java process is loading AND in the window after the
+    // launcher components report Online but before the java process has even
+    // been spawned (otherwise the status flickers Online → Starting).
+    // Offline/Stopping pass through unchanged.
+    private Apace.LauncherUI.ServerStatus _currentStatus => !_javaServerOnline && ServerManager.Status is LauncherUI.ServerStatus.Online or LauncherUI.ServerStatus.PartiallyOnline
+        ? LauncherUI.ServerStatus.Starting
+        : ServerManager.Status;
+
+    private string _activeTab = "Launcher";
+    private readonly string[] _allLevels = { "Verbose", "Debug", "Information", "Warning", "Error", "Fatal" };
+
+    // Debug starts hidden (the old 🐛 toggle hid exactly this level).
+    private readonly HashSet<string> _selectedLevels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Verbose", "Information", "Warning", "Error", "Fatal"
+    };
+
+    private ClaimsPrincipal? _user;
+    private ElementReference _logContainerRef;
+    private bool _scrollerInitialized;
+    private bool _eulaPending;
+    private bool _resourcePackPending;
+    private bool _resourcePackRightsConfirmed;
+    private bool _downloadingResourcePack;
+    private float _resourcePackDownloadProgress;
+    private string? _resourcePackError;
+    private bool _javaServerOnline;
+    private bool _javaServerStarting;
+    private Timer? _eulaCheckTimer;
+    private Timer? _statusRefreshTimer;
+    private TimeZoneInfo? _userTimeZone;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Refresh before anything else (and before the auth lookup): the page
+        // is prerendered, so the initial HTML would otherwise show Offline or
+        // Starting until the refresh timer below fires for the first time.
+        ServerManager.RefreshComponentStatuses();
+        await RefreshJavaServerStatusAsync();
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User;
+
+        LogService.OnLogReceived += HandleUpdate;
+        ServerManager.OnStatusChanged += HandleUpdate;
+
+        // Poll EULA + resource pack prompt status every 2 seconds during server startup
+        _eulaCheckTimer = new Timer(async _ =>
+        {
+            var pending = Apace.LauncherUI.FileChecker.EulaPending;
+            // The resource pack state is not synced while a download is running:
+            // a partially written file stays invalid anyway, and a fully written
+            // one would hide the alert before the handler reports the result.
+            var resourcePackPending = _downloadingResourcePack
+                ? _resourcePackPending
+                : Apace.LauncherUI.FileChecker.ResourcePackPending;
+            if (_eulaPending != pending || _resourcePackPending != resourcePackPending)
+            {
+                _eulaPending = pending;
+                _resourcePackPending = resourcePackPending;
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+
+        // Refresh component statuses every 3s (BuildplateLauncher Starting → Online)
+        _statusRefreshTimer = new Timer(async _ =>
+        {
+            ServerManager.RefreshComponentStatuses();
+            await RefreshJavaServerStatusAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
+    }
+
+    private async Task RefreshJavaServerStatusAsync()
+    {
+        // Readiness is latched in the ServerManager singleton (banner seen or
+        // Fabric port reachable), not re-derived from the live log ring buffer:
+        // the marker lines are evicted from that buffer during busy output and
+        // it is empty after a LauncherUI restart.
+        await ServerManager.RefreshJavaServerStatusAsync();
+
+        _javaServerOnline = ServerManager.JavaServerRunning && ServerManager.JavaServerReady;
+        _javaServerStarting = ServerManager.JavaServerRunning && !ServerManager.JavaServerReady;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // The page is statically prerendered, so JS interop is only available
+        // once the circuit exists — resolve the browser time zone here instead
+        // of in OnInitializedAsync.
+        if (firstRender && _userTimeZone is null)
+        {
+            _userTimeZone = await GetUserTimeZoneAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+
+        if (HasPermission(Permissions.ViewServerLogs) && !_scrollerInitialized)
+        {
+            await JS.InvokeVoidAsync("initLogScroller", _logContainerRef);
+            _scrollerInitialized = true;
+        }
+    }
+
+    private async Task<TimeZoneInfo> GetUserTimeZoneAsync()
+    {
+        var tzId = await JS.InvokeAsync<string>("eval", "Intl.DateTimeFormat().resolvedOptions().timeZone");
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(tzId);
+        }
+        catch
+        {
+            return TimeZoneInfo.Local;
+        }
+    }
+
+    private string FormatTimestamp(DateTime utc)
+        => _userTimeZone is null
+            ? utc.ToString("HH:mm:ss")
+            : TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), _userTimeZone).ToString("HH:mm:ss");
+
+    // "Last updated" must show the *user's* wall-clock time, not the server's
+    // (the container runs in UTC while the browser may be in any timezone).
+    private string FormatCurrentTime()
+        => _userTimeZone is null
+            ? DateTime.Now.ToString("t")
+            : TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _userTimeZone).ToString("t");
+
+    private async void HandleUpdate()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        LogService.OnLogReceived -= HandleUpdate;
+        ServerManager.OnStatusChanged -= HandleUpdate;
+        _eulaCheckTimer?.Dispose();
+        _statusRefreshTimer?.Dispose();
+    }
+
+    private async Task StartServer()
+        => await ServerManager.Start();
+
+    private async Task StopServer()
+        => await ServerManager.Stop();
+
+    private async Task RestartServer()
+        => await ServerManager.Restart();
+
+    private async Task KillAll()
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to force kill all server processes?");
+
+        if (confirmed)
+        {
+            await ServerManager.KillAll();
+        }
+    }
+
+    private void AcceptEula()
+    {
+        FileChecker.AcceptEula();
+        _eulaPending = false;
+    }
+
+    private async Task DownloadResourcePack()
+    {
+        _downloadingResourcePack = true;
+        _resourcePackDownloadProgress = 0;
+        _resourcePackError = null;
+
+        try
+        {
+            await FileChecker.DownloadResourcePackAsync(new Progress<float>(progress =>
+            {
+                _resourcePackDownloadProgress = progress;
+                InvokeAsync(StateHasChanged);
+            }));
+
+            // The download never throws — it logs and leaves the file absent or
+            // invalid, so the pending state decides between success and failure.
+            if (FileChecker.ResourcePackPending)
+            {
+                _resourcePackError = $"Download failed — '{FileChecker.ResourcePackPath}' is still missing or invalid. Try again later or add the file manually.";
+            }
+            else
+            {
+                _resourcePackPending = false;
+                _resourcePackRightsConfirmed = false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _resourcePackError = "Download cancelled.";
+        }
+        catch (Exception ex)
+        {
+            _resourcePackError = ex.Message;
+        }
+        finally
+        {
+            _downloadingResourcePack = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void DismissResourcePack()
+    {
+        FileChecker.DismissResourcePackPrompt();
+        _resourcePackPending = false;
+    }
+
+    private async Task StartComponent(string exeName)
+        => await ServerManager.EnsureComponentsOnline(exeName);
+
+    private bool HasPermission(string permission)
+        => _user?.HasPermission(permission) ?? false;
+
+    private bool IsButtonDisabled(string permission)
+        => !HasPermission(permission);
+
+    private string GetStatusClass(Apace.LauncherUI.ServerStatus status)
+        => status switch
+        {
+            Apace.LauncherUI.ServerStatus.Online => "status-online",
+            Apace.LauncherUI.ServerStatus.PartiallyOnline => "status-online",
+            Apace.LauncherUI.ServerStatus.Starting => "status-starting",
+            Apace.LauncherUI.ServerStatus.Stopping => "status-stopping",
+            _ => "status-offline"
+        };
+
+    private void ToggleLogLevel(string level)
+    {
+        if (_selectedLevels.Contains(level))
+        {
+            _selectedLevels.Remove(level);
+        }
+        else
+        {
+            _selectedLevels.Add(level);
+        }
+    }
+
+    private string GetShortLevel(string? level)
+        => level switch
+        {
+            "Verbose" => "VRB",
+            "Debug" => "DBG",
+            "Information" => "INF",
+            "Warning" => "WRN",
+            "Error" => "ERR",
+            "Fatal" => "FTL",
+            _ => level?.Length >= 3 ? level.Substring(0, 3).ToUpperInvariant() : "UNK"
+        };
+
+    private string GetLogLevelClass(string? level)
+        => level switch
+        {
+            "Verbose" => "log-vrb",
+            "Debug" => "log-dbg",
+            "Information" => "log-inf",
+            "Warning" => "log-wrn",
+            "Error" => "log-err",
+            "Fatal" => "log-ftl",
+            _ => ""
+        };
+}

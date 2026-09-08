@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-Solace_LauncherUI-157240ba-1021-45b3-9a98-e9c28d696417</UserSecretsId>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <AssemblyName>Launcher</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="Data\app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <!-- Default Apace icon used by the client patcher -->
+    <None Include="..\..\images\Apace_Favicon.png" Link="images\Apace_Favicon.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Copy server JARs to staticdata on build/publish -->
+  <Target Name="CopyServerJars" AfterTargets="Build" Condition="!Exists('$(OutDir)staticdata\server_jars\fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar')">
+    <MakeDir Directories="$(OutDir)staticdata\server_jars" />
+    <Copy SourceFiles="..\..\server_jars\buildplate-connector-plugin-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
+          DestinationFolder="$(OutDir)staticdata\server_jars"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="..\..\server_jars\fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
+          DestinationFolder="$(OutDir)staticdata\server_jars"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Also copy on publish -->
+  <Target Name="CopyServerJarsPublish" AfterTargets="Publish">
+    <MakeDir Directories="$(PublishDir)staticdata\server_jars" />
+    <Copy SourceFiles="..\..\server_jars\buildplate-connector-plugin-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
+          DestinationFolder="$(PublishDir)staticdata\server_jars"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="..\..\server_jars\fountain-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
+          DestinationFolder="$(PublishDir)staticdata\server_jars"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Blazor3D" Version="0.210-alpha" />
+    <PackageReference Include="MCeToJava" Version="1.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.7">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Net.Codecrete.QrCodeGenerator" Version="2.1.0" />
+    <PackageReference Include="Serilog" Version="4.4.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Apace.BuildplateImporter/Apace.BuildplateImporter.csproj" />
+    <ProjectReference Include="../Apace.BuildplateRenderer/Apace.BuildplateRenderer.csproj" />
+    <ProjectReference Include="../Apace.Common/Apace.Common.csproj" />
+    <ProjectReference Include="../Apace.DB/Apace.DB.csproj" />
+    <ProjectReference Include="../Apace.ObjectStore.Client/Apace.ObjectStore.Client.csproj" />
+    <ProjectReference Include="../../repos/Minecraft_Earth_Patcher/src/Core/MCEPatcher.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -15,11 +15,11 @@
 POST /api/buildplates/start (lub podobny kontroler)
 ```
 
-Kod: `BuildplatesController` w `src/Solace.ApiServer/` → wywoluje `BuildplateInstancesManager` → wysyla `RequestAsync("buildplates", "start")` do event busa.
+Kod: `BuildplatesController` w `src/Apace.ApiServer/` → wywoluje `BuildplateInstancesManager` → wysyla `RequestAsync("buildplates", "start")` do event busa.
 
 ### Krok 2: InstanceManager odbiera zadanie "start"
 
-Plik: `src/Solace.Buildplate/Launcher/InstanceManager.cs`
+Plik: `src/Apace.Buildplate/Launcher/InstanceManager.cs`
 
 - `InstanceManager.CreateAsync()` (linie 58-239) rejestruje `RequestHandler` na kolejce `"buildplates"`
 - Gdy przychodzi request typu `"start"` (linia 67), deserializuje `StartRequest` (linie 32-39):
@@ -32,7 +32,7 @@ Plik: `src/Solace.Buildplate/Launcher/InstanceManager.cs`
 
 ### Krok 3: Starter przydziela porty i uruchamia Instance
 
-Plik: `src/Solace.Buildplate/Launcher/Starter.cs`
+Plik: `src/Apace.Buildplate/Launcher/Starter.cs`
 
 - `StartInstance()` (linie 45-65):
   - Tworzy katalog tymczasowy `CreateInstanceBaseDir()` (linia 47) w `/tmp/vienna-buildplate-instance_{instanceId}`
@@ -44,7 +44,7 @@ Plik: `src/Solace.Buildplate/Launcher/Starter.cs`
 
 ### Krok 4: Instance.RunAsync — przygotowanie plikow
 
-Plik: `src/Solace.Buildplate/Launcher/Instance.cs`
+Plik: `src/Apace.Buildplate/Launcher/Instance.cs`
 
 - `Instance.Run()` (linie 22-35) — metoda statyczna, tworzy obiekt, czeka na `_threadStartedSemaphore`, uruchamia `RunAsync()`
 - `RunAsync()` (linie 117-304):
@@ -162,7 +162,7 @@ Kazde wywolanie `Instance.RunAsync()` spawnuje DOKLADNIE 2 procesy potomne:
 | Wlasciwosc | Wartosc |
 |---|---|
 | Klasa/metoda | `Instance.StartServerProcessAsync()` (linia 865) |
-| Plik | `src/Solace.Buildplate/Launcher/Instance.cs` |
+| Plik | `src/Apace.Buildplate/Launcher/Instance.cs` |
 | Komenda | `java -jar {fabricJarName} -nogui` |
 | Katalog roboczy | `{baseDir}/server/` |
 | Shell execute | `true` (otwiera nowe okno terminala) |
@@ -173,7 +173,7 @@ Kazde wywolanie `Instance.RunAsync()` spawnuje DOKLADNIE 2 procesy potomne:
 | Wlasciwosc | Wartosc |
 |---|---|
 | Klasa/metoda | `Instance.StartBridgeProcessAsync()` (linia 919) |
-| Plik | `src/Solace.Buildplate/Launcher/Instance.cs` |
+| Plik | `src/Apace.Buildplate/Launcher/Instance.cs` |
 | Komenda | `java -jar {fountainBridgeJar} -port {Port} -serverAddress 127.0.0.1 -serverPort {_serverInternalPort} -connectorPluginJar ... -connectorPluginClass ... -connectorPluginArg {JSON} -useUUIDAsUsername` |
 | Katalog roboczy | `{baseDir}/bridge/` |
 | Shell execute | `true` (otwiera nowe okno terminala) |
@@ -192,7 +192,7 @@ Starter.StartInstance()                               # Starter.cs linia 45
 
 ### Zarzadzanie procesami
 
-- `ConsoleProcess` (`src/Solace.Common/ConsoleProcess.cs`): opakowuje `System.Diagnostics.Process`
+- `ConsoleProcess` (`src/Apace.Common/ConsoleProcess.cs`): opakowuje `System.Diagnostics.Process`
 - Bridge nie spawnuje procesu Java — **laczy sie** z juz dzialajacym serwerem
 - `_runningInstanceCount` w `InstanceManager` (linia 17) sluzy wylacznie do drenazu przy shutdown — **brak twardego limitu instancji**
 
@@ -402,8 +402,8 @@ public final class Inventory {
 [Apace C# EventBus Server] ← TCP:5532 (localhost) → [ViennaConnectorPlugin (Java)]
 ```
 
-- EventBusServer: `src/Solace.EventBus.Server/`, nasluchuje na `127.0.0.1:5532`
-- EventBusClient: `src/Solace.EventBus.Client/EventBusClient.cs`
+- EventBusServer: `src/Apace.EventBus.Server/`, nasluchuje na `127.0.0.1:5532`
+- EventBusClient: `src/Apace.EventBus.Client/EventBusClient.cs`
 - Protokol: **TCP, ASCII, newline-delimited**
 - Wszystkie dane payloadu: **JSON**
 

@@ -28,7 +28,7 @@ function Invoke-ProjectPublish {
 
 git submodule update --init --recursive
 
-$projects = "Solace.ApiServer", "Solace.Buildplate", "Solace.EventBus.Server", "Solace.ObjectStore.Server", "Solace.TappablesGenerator", "Solace.TileRenderer"
+$projects = "Apace.ApiServer", "Apace.Buildplate", "Apace.EventBus.Server", "Apace.ObjectStore.Server", "Apace.TappablesGenerator", "Apace.TileRenderer"
 
 foreach ($buildProfile in $profiles) {
     $publishDir = "./build/$configuration/$buildProfile"
@@ -46,19 +46,19 @@ foreach ($buildProfile in $profiles) {
     }
 
     Invoke-ProjectPublish `
-        -ProjectPath "./src/Solace.LauncherUI/Solace.LauncherUI.csproj" `
+        -ProjectPath "./src/Apace.LauncherUI/Apace.LauncherUI.csproj" `
         -OutDir "$publishDir/launcher" `
         -Configuration $configuration `
         -BuildProfile $buildProfile
 
     if ($buildProfile -like "*win*") {
         Invoke-ProjectPublish `
-            -ProjectPath "./src/Solace.KillHelper/Solace.KillHelper.csproj" `
+            -ProjectPath "./src/Apace.KillHelper/Apace.KillHelper.csproj" `
             -OutDir "$publishDir/components" `
             -Configuration $configuration `
             -BuildProfile $buildProfile
         Invoke-ProjectPublish `
-            -ProjectPath "./src/Solace.KillHelper/Solace.KillHelper.csproj" `
+            -ProjectPath "./src/Apace.KillHelper/Apace.KillHelper.csproj" `
             -OutDir "$publishDir/launcher" `
             -Configuration $configuration `
             -BuildProfile $buildProfile
@@ -67,7 +67,7 @@ foreach ($buildProfile in $profiles) {
     Copy-Item -Path "staticdata" -Destination "$publishDir/staticdata" -Recurse -Force
 
     # Copy server JARs from repo root into the staticdata directory that the launcher reads at runtime.
-    # (The MSBuild copy targets in Solace.LauncherUI.csproj copy to $(PublishDir)/staticdata,
+    # (The MSBuild copy targets in Apace.LauncherUI.csproj copy to $(PublishDir)/staticdata,
     # but the launcher resolves StaticDataDir as ../staticdata relative to the exe — i.e. the
     # parent publishDir/staticdata, not the launcher subdirectory.)
     New-Item -ItemType Directory -Force -Path "$publishDir/staticdata/server_jars" | Out-Null
@@ -95,14 +95,14 @@ try {
     
     if ($isWin) {
         $originalTitle = $Host.UI.RawUI.WindowTitle
-        $Host.UI.RawUI.WindowTitle = "Solace Launcher"
+        $Host.UI.RawUI.WindowTitle = "Apace Launcher"
 
         $fullPath = Join-Path $launcherDir "Launcher.exe"
         $launcher = Start-Process -FilePath $fullPath -PassThru
         Wait-Process -Id $launcher.Id
     } elseif ($isLin -or $isMac) {
         $originalTitle = $null
-        Write-Host "`e]0;Solace Launcher`a"
+        Write-Host "`e]0;Apace Launcher`a"
 
         $fullPath = Join-Path $launcherDir "Launcher"
         if (Test-Path $fullPath) {

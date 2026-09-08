@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Apace.Common\Apace.Common.csproj" />
+    <ProjectReference Include="..\Apace.DB\Apace.DB.csproj" />
+    <ProjectReference Include="..\Apace.EventBus.Client\Apace.EventBus.Client.csproj" />
+    <ProjectReference Include="..\Apace.ObjectStore.Client\Apace.ObjectStore.Client.csproj" />
+  </ItemGroup>
+
+</Project>

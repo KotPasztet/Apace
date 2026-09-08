@@ -1,0 +1,12 @@
+﻿using System.Text.Json.Serialization;
+
+namespace Apace.ApiServer.Types.Workshop;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum State
+{
+    [JsonStringEnumMemberName("Empty")] EMPTY,
+    [JsonStringEnumMemberName("Active")] ACTIVE,
+    [JsonStringEnumMemberName("Completed")] COMPLETED,
+    [JsonStringEnumMemberName("Locked")] LOCKED
+}
