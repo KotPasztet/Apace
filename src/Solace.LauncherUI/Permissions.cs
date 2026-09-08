@@ -45,6 +45,11 @@ internal static class Permissions
     [PermissionInfo("Patcher", "Generate patched Minecraft Earth clients (APK/IPA)")]
     public const string UsePatcher = "patcher.use";
 
+    [PermissionInfo("Files", "Browse and download server files")]
+    public const string ViewFiles = "files.view";
+    [PermissionInfo("Files", "Edit server config files")]
+    public const string EditFiles = "files.edit";
+
     public static readonly ImmutableArray<string> All;
     public static readonly ImmutableArray<PermissionDescriptor> AllWithInfo;
 

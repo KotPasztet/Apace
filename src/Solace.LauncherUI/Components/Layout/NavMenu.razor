@@ -37,6 +37,15 @@
                         </div>
                     }
 
+                    @if (HasPermission(Permissions.ViewFiles))
+                    {
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Admin/Files">
+                                <img class="nav-icon" src="/images/xp_single_icon.png" alt="" aria-hidden="true" /> Files
+                            </NavLink>
+                        </div>
+                    }
+
                     @if (HasPermission(Permissions.EditServerOptions))
                     {
                         <div class="nav-item">

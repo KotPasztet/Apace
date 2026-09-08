@@ -1,0 +1,73 @@
+/* Files page — reuses the global .log-terminal / .log-content Minecraft terminal
+   styling for file previews; only layout tweaks live here. */
+
+/* File preview terminal: a bit taller than the log viewer */
+.file-view {
+    height: 480px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.file-view-text {
+    color: #e0e0e0 !important;
+    font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    font-size: 0.65rem !important;
+    line-height: 1.6 !important;
+    margin: 0 !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: break-word !important;
+    word-break: break-all !important;
+}
+
+/* Config editor */
+.file-editor {
+    font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    font-size: 0.7rem !important;
+    line-height: 1.5 !important;
+    min-height: 280px !important;
+    background: #0a0a0a !important;
+    color: #e0e0e0 !important;
+    border: 3px solid #2a2a2a !important;
+    border-radius: 0 !important;
+    resize: vertical !important;
+}
+
+/* Breadcrumb navigation */
+.file-breadcrumb {
+    font-size: 0.8rem !important;
+    align-items: center;
+}
+
+.file-breadcrumb button {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    color: #64b5f6 !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+}
+
+.file-breadcrumb button:hover:not(:disabled) {
+    text-decoration: underline !important;
+}
+
+.file-breadcrumb button:disabled {
+    color: #9a9ab0 !important;
+    cursor: default !important;
+}
+
+.file-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+    color: #5a5a5a !important;
+}
+
+/* File names in the listing */
+.file-name-link {
+    color: #64b5f6 !important;
+    text-decoration: none !important;
+    font-size: 0.9rem !important;
+}
+
+.file-name-link:hover {
+    text-decoration: underline !important;
+}
