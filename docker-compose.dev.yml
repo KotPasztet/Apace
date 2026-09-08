@@ -33,7 +33,7 @@ services:
       - COMPlus_gcConcurrent=1
       - DOTNET_GCHeapHardLimit=536870912
       - ASPNETCORE_URLS=http://0.0.0.0:5000
-      - SOLACE_LOG_CLIENT_REQUESTS=1
+      - APACE_LOG_CLIENT_REQUESTS=1
 
     deploy:
       resources:

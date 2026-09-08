@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for Solace
+about: Suggest an idea for Apace
 title: "[Feature request]"
 labels: enhancement
 assignees: ''
