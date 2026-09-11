@@ -1,8 +1,10 @@
 ﻿using Asp.Versioning;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System.Text.RegularExpressions;
+using Apace.ApiServer.Authentication;
 using Apace.ApiServer.Models;
 using Apace.ApiServer.Utils;
 using Apace.Common.Utils;
@@ -12,7 +14,16 @@ namespace Apace.ApiServer.Controllers;
 [ApiVersion("1.1")]
 internal sealed partial class SigninController : ApaceControllerBase
 {
+    private const double SessionTokenValidityHours = 12; // TODO: make configurable
+
     private static Config config => Program.config;
+
+    private readonly ITimeLimitedDataProtector _protector;
+
+    public SigninController(IDataProtectionProvider dataProtectionProvider)
+    {
+        _protector = dataProtectionProvider.CreateProtector(GenoaAuthenticationHandler.DataProtectionPurpose).ToTimeLimitedDataProtector();
+    }
 
     [GeneratedRegex("^[0-9A-F]{15,16}$")]
     private static partial Regex GetUserIdRegex();
@@ -65,8 +76,9 @@ internal sealed partial class SigninController : ApaceControllerBase
 
         await TokenUtils.EnsureDailyLoginToken(userId.ToLowerInvariant(), cancellationToken);
 
-        // TODO: generate secure session token
-        string token = userId.ToUpperInvariant();
+        // the session token is a data-protected, time-limited wrapper around the user id
+        // (verified by GenoaAuthenticationHandler) instead of the raw, forgeable user id
+        string token = _protector.Protect(userId.ToUpperInvariant(), TimeSpan.FromHours(SessionTokenValidityHours));
 
         return EarthJson(new Dictionary<string, object?>()
         {

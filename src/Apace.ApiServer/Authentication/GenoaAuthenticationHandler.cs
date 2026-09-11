@@ -1,16 +1,26 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 
 namespace Apace.ApiServer.Authentication;
 
-public class GenoaAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+public sealed class GenoaAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    public GenoaAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder) { }
+    public const string DataProtectionPurpose = "Apace.Genoa.AuthTokens";
+
+    private readonly ITimeLimitedDataProtector _protector;
+
+    public GenoaAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, IDataProtectionProvider dataProtectionProvider)
+        : base(options, logger, encoder)
+    {
+        _protector = dataProtectionProvider.CreateProtector(DataProtectionPurpose).ToTimeLimitedDataProtector();
+    }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -34,7 +44,7 @@ public class GenoaAuthenticationHandler : AuthenticationHandler<AuthenticationSc
             return AuthenticateResult.Fail("Missing Authorization Header");
         }
 
-        string? id;
+        string? encryptedToken;
         try
         {
             if (!Request.Headers.TryGetValue("Authorization", out StringValues authorization))
@@ -45,7 +55,7 @@ public class GenoaAuthenticationHandler : AuthenticationHandler<AuthenticationSc
             var authHeader = AuthenticationHeaderValue.Parse(authorization.ToString());
             if (authHeader.Scheme == "Genoa")
             {
-                id = authHeader.Parameter;
+                encryptedToken = authHeader.Parameter;
             }
             else
             {
@@ -57,13 +67,26 @@ public class GenoaAuthenticationHandler : AuthenticationHandler<AuthenticationSc
             return AuthenticateResult.Fail("Invalid Authorization Header");
         }
 
-        if (id is null)
+        if (encryptedToken is null)
         {
             return AuthenticateResult.Fail("Invalid Authorization Header");
         }
 
+        // the token is a data-protected, time-limited wrapper around the user id (issued by SigninController),
+        // previously the raw user id was accepted, which allowed anyone to impersonate any user
+        string decryptedUserId;
+        try
+        {
+            decryptedUserId = _protector.Unprotect(encryptedToken);
+        }
+        catch (Exception ex) when (ex is CryptographicException or ArgumentException)
+        {
+            Logger.LogWarning("Genoa authentication failed: invalid or expired session token ({Message})", ex.Message);
+            return AuthenticateResult.Fail("Invalid or expired session token.");
+        }
+
         // should be lower probably, so it is
-        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, id.ToLowerInvariant()), };
+        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, decryptedUserId.ToLowerInvariant()), };
 
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         var principal = new ClaimsPrincipal(identity);

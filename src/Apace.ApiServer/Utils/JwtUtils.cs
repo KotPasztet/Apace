@@ -50,6 +50,12 @@ internal static class JwtUtils
     public static Token<TData>? Verify<TData>(string token, byte[] secret, bool allowExpired = false)
         where TData : ITokenData<TData>
     {
+        // an absent token is a normal case (e.g. an RST2 request without a device token), not a verification failure
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return null;
+        }
+
         try
         {
             var claims = jwtHandler.ValidateToken(token, new TokenValidationParameters()
