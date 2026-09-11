@@ -78,9 +78,15 @@ echo "Downloading latest Apace release..."
 mkdir -p "$APACE_DIR"
 cd "$APACE_DIR"
 
-RELEASE_URL=$(curl -sS https://api.github.com/repos/KotPasztet/Apace/releases/latest | grep "browser_download_url.*linux-$DISTRO_ARCH" | head -1 | cut -d'"' -f4)
+RELEASES_JSON=$(curl -sS https://api.github.com/repos/KotPasztet/Apace/releases/latest)
+# Newer releases ship a dedicated Apace-termux-<arch>.zip (same glibc build as the
+# linux- one, named for visibility); older ones only have Apace-linux-<arch>.zip.
+RELEASE_URL=$(echo "$RELEASES_JSON" | grep "browser_download_url.*termux-$DISTRO_ARCH" | head -1 | cut -d'"' -f4)
 if [ -z "$RELEASE_URL" ]; then
-    echo -e "${RED}No release found for linux-$DISTRO_ARCH.${RST}"
+    RELEASE_URL=$(echo "$RELEASES_JSON" | grep "browser_download_url.*linux-$DISTRO_ARCH" | head -1 | cut -d'"' -f4)
+fi
+if [ -z "$RELEASE_URL" ]; then
+    echo -e "${RED}No release found for termux-$DISTRO_ARCH / linux-$DISTRO_ARCH.${RST}"
     exit 1
 fi
 
