@@ -1,4 +1,9 @@
 @page "/About"
+@rendermode InteractiveServer
+@using Apace.LauncherUI.Utils
+@implements IDisposable
+@inject UpdateCheckService UpdateCheck
+@inject IJSRuntime JS
 
 <PageTitle>About - Apace</PageTitle>
 
@@ -11,6 +16,82 @@
         </p>
 
         <hr class="my-5" />
+
+        <div class="card mb-5 text-start">
+            <div class="card-body p-4">
+                <h3 style="font-size: 1rem; color: #81c784;">Version</h3>
+
+                <div class="small mb-3">
+                    <div class="d-flex justify-content-between border-bottom py-1">
+                        <span class="text-muted">Channel</span>
+                        <span>@UpdateCheck.Channel</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom py-1">
+                        <span class="text-muted">Running build</span>
+                        <code>@UpdateCheckService.ShortSha(UpdateCheck.CurrentSha)</code>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom py-1">
+                        <span class="text-muted">Latest on channel</span>
+                        <code>@UpdateCheckService.ShortSha(UpdateCheck.LatestSha)</code>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Last checked</span>
+                        <span>@LastCheckedLabel</span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge @StateBadge.Class">@StateBadge.Label</span>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CheckNowAsync" disabled="@_checkingNow">
+                        @(_checkingNow ? "Checking…" : "Check now")
+                    </button>
+                </div>
+
+                @if (UpdateCheck.State == UpdateCheckState.CheckFailed && UpdateCheck.LastChecked is not null)
+                {
+                    <p class="text-muted small mt-2 mb-0">The last check failed — this build may be outdated.</p>
+                }
+
+                @if (UpdateCheck.State == UpdateCheckState.UpdateAvailable)
+                {
+                    <hr />
+                    <h4 style="font-size: 0.85rem; color: #ffb74d;" class="mb-2">How to update</h4>
+                    @if (UpdateCheck.Channel is "main" or "dev")
+                    {
+                        <p class="small mb-1">
+                            Run this on the host, from the directory containing <code>docker-compose.yml</code>:
+                        </p>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <code class="flex-grow-1 text-break small">@DockerUpdateCommand</code>
+                            <button class="btn btn-sm btn-secondary" @onclick='() => CopyCommandAsync(DockerUpdateCommand)' title="Copy to clipboard">
+                                @(_copiedCommand == DockerUpdateCommand ? "✓ Copied" : "📋 Copy")
+                            </button>
+                        </div>
+                        <p class="small text-muted mb-0">
+                            Or manually: <code>docker compose pull &amp;&amp; docker compose up -d</code>
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="small mb-1">Run this on the host machine:</p>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <code class="flex-grow-1 text-break small">@BareMetalUpdateCommand</code>
+                            <button class="btn btn-sm btn-secondary" @onclick='() => CopyCommandAsync(BareMetalUpdateCommand)' title="Copy to clipboard">
+                                @(_copiedCommand == BareMetalUpdateCommand ? "✓ Copied" : "📋 Copy")
+                            </button>
+                        </div>
+                        <p class="small mb-1">On Termux (no options needed):</p>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <code class="flex-grow-1 text-break small">@TermuxUpdateCommand</code>
+                            <button class="btn btn-sm btn-secondary" @onclick='() => CopyCommandAsync(TermuxUpdateCommand)' title="Copy to clipboard">
+                                @(_copiedCommand == TermuxUpdateCommand ? "✓ Copied" : "📋 Copy")
+                            </button>
+                        </div>
+                        <p class="small text-muted mb-0">Restart the panel afterwards to run the new build.</p>
+                    }
+                }
+            </div>
+        </div>
 
         <div class="card mb-5 text-start">
             <div class="card-body p-4">
@@ -51,3 +132,80 @@
 
     </div>
 </div>
+
+@code {
+    private bool _checkingNow;
+    private string? _copiedCommand;
+    private Timer? _copiedResetTimer;
+
+    private string LastCheckedLabel
+        => UpdateCheck.LastChecked is null
+            ? "never"
+            : $"{UpdateCheck.LastChecked:yyyy-MM-dd HH:mm} UTC";
+
+    private (string Label, string Class) StateBadge => UpdateCheck.State switch
+    {
+        UpdateCheckState.UpToDate => ("Up to date", "bg-success"),
+        UpdateCheckState.UpdateAvailable => ("Update available", "bg-warning text-dark"),
+        UpdateCheckState.CheckFailed => ("Check failed", "bg-secondary"),
+        _ => ("Not checked yet", "bg-secondary"),
+    };
+
+    // The update script always targets the repo's main branch; --tag dev moves
+    // a main-channel install to the dev image (and keeps a dev install on dev).
+    private string DockerUpdateCommand => UpdateCheck.Channel == "dev"
+        ? "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes --tag dev"
+        : "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes";
+
+    private string BareMetalUpdateCommand
+        => "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker";
+
+    private string TermuxUpdateCommand
+        => "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install-termux.sh | bash";
+
+    protected override void OnInitialized()
+    {
+        UpdateCheck.OnStateChanged += HandleStateChanged;
+    }
+
+    private async void HandleStateChanged()
+        => await InvokeAsync(StateHasChanged);
+
+    private async Task CheckNowAsync()
+    {
+        if (_checkingNow)
+        {
+            return;
+        }
+
+        _checkingNow = true;
+        try
+        {
+            await UpdateCheck.CheckNowAsync();
+        }
+        finally
+        {
+            _checkingNow = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task CopyCommandAsync(string command)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", command);
+        _copiedCommand = command;
+        _copiedResetTimer?.Dispose();
+        _copiedResetTimer = new Timer(async _ =>
+        {
+            _copiedCommand = null;
+            await InvokeAsync(StateHasChanged);
+        }, null, 2000, Timeout.Infinite);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        UpdateCheck.OnStateChanged -= HandleStateChanged;
+        _copiedResetTimer?.Dispose();
+    }
+}

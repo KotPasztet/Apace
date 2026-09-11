@@ -2,6 +2,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 ARG TARGETARCH
+# Commit SHA of the source the image is built from. Passed by CI
+# (docker-image*.yml build-args); surfaced to the runtime stage as the OCI
+# revision label and the APACE_COMMIT env var, which the panel's update check
+# falls back to when the SDK-baked assembly SHA is missing.
+ARG SOURCE_COMMIT
 # TARGETARCH is injected by docker buildx. Map to our RID suffixes.
 # Also detect at runtime for non-buildkit builds.
 RUN set -eux; \
@@ -64,6 +69,11 @@ RUN set -eux; \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
 ARG TARGETARCH
+
+# Commit SHA of the source the image was built from (redeclared for this stage).
+ARG SOURCE_COMMIT
+
+LABEL org.opencontainers.image.revision=${SOURCE_COMMIT}
 
 RUN set -eux; \
     if [ -z "$TARGETARCH" ]; then \
@@ -240,6 +250,9 @@ ENV COMPlus_gcServer=0
 ENV COMPlus_gcConcurrent=1
 ENV DOTNET_GCHeapHardLimit=536870912
 ENV ASPNETCORE_URLS=http://0.0.0.0:5000
+# Consumed by the panel's update check when the assembly's baked-in commit SHA
+# is missing or truncated (see UpdateCheckService).
+ENV APACE_COMMIT=${SOURCE_COMMIT}
 
 EXPOSE 5000 1808 5532 19132/udp
 
