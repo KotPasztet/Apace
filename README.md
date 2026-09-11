@@ -90,11 +90,25 @@ Then:
 
 To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Windows) from the `~/apace` directory.
 
-No Docker, or building from source? Full instructions: [Installation.md](Installation.md).
+## Guides
 
-Want to play away from home without opening router ports? See [docs/tailscale.md](docs/tailscale.md).
+* **Updating** — one command keeps an existing install current; your data and `config.json` are preserved and backed up (newest 3 kept), and `--rollback` reverts if an update misbehaves:
 
-Coming from the original Solace server? Bring your players and buildplates along: [docs/solace-migration.md](docs/solace-migration.md).
+  ```bash
+  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes
+  ```
+
+  Flags, backup rotation and rollback details: [QUICKINSTALL.md → Updating](QUICKINSTALL.md#updating).
+* **Migrating from Solace** — `scripts/migrate-from-solace.py` brings your accounts (username + password), player progress, inventory and buildplates into Apace; only active login sessions are lost. Both servers must be stopped — **do a dry run first**. Guide: [docs/solace-migration.md](docs/solace-migration.md).
+* **Termux (Android)** — host the server on an Android phone straight from [Termux](https://f-droid.org/packages/com.termux/); no Docker needed, the installer sets up a minimal Ubuntu via proot-distro:
+
+  ```bash
+  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install-termux.sh | bash
+  ```
+
+  Requirements and first run: [QUICKINSTALL-TERMUX.md](QUICKINSTALL-TERMUX.md).
+* **No Docker / building from source** — full manual instructions: [Installation.md](Installation.md).
+* **Play away from home** — no router ports needed, via Tailscale: [docs/tailscale.md](docs/tailscale.md).
 
 ## Community
 
