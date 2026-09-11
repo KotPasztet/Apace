@@ -1,4 +1,4 @@
-﻿<html>
+<html>
 <head>
     <title>Login</title>
     <script src="/js/jquery-3.6.3.min.js"></script>
@@ -11,33 +11,31 @@
         <input id="password" type="password" /><br />
         <input type="submit" />
     </form>
+    <div id="errorMsg" style="color: red; display: none;"></div>
     <script>$(document).ready(() => {
-          const params = window.location.href.split('?', 2)[1].split('&').map(param => {
-            const parts = param.split('=')
-            return [parts[0], decodeURIComponent(parts[1])]
-          }).reduce((params, param) => {
-            params[param[0]] = param[1]
-            return params
-          }, {})
+          const urlParams = new URLSearchParams(window.location.search);
 
-          const username = params['username']
-          const userToken = params['userToken']
+          const username = urlParams.get('username');
+          const userToken = urlParams.get('userToken');
 
           $('#username').val(username).prop('disabled', true)
 
           $('#loginForm').submit(() => {
             $.post('./reauthenticate', { userToken: userToken, password: $('#password').val() }).then(response => {
+              $('#errorMsg').hide().text('')
               external.Property('DAToken', `<EncryptedData xmlns=\"http://www.w3.org/2001/04/xmlenc#\" Id=\"BinaryDAToken0\"><CipherData><CipherValue>${response.token}</CipherValue></CipherData></EncryptedData>`)
               external.Property('DAStartTime', response.tokenIssuedAt)
               external.Property('DAExpires', response.tokenExpires)
               external.Property('DASessionKey', response.sessionKey)
-              external.Property('FirstName', response.username)
-              external.Property('LastName', response.username)
+              external.Property('FirstName', response.firstName)
+              external.Property('LastName', response.lastName)
               external.Property('SigninName', response.username)
               external.Property('Username', response.username)
               external.Property('CID', response.userId)
               external.Property('PUID', response.userId)
               external.FinalNext()
+            }).fail(() => {
+              $('#errorMsg').text('Incorrect password, please try again.').show()
             })
 
             return false

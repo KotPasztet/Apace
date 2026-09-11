@@ -173,8 +173,54 @@ internal sealed partial class LoginController : ApaceControllerBase
     }
 
     [HttpPost("ppsecure/reauthenticate")]
-    public async Task<IActionResult> Reauthenticate([FromForm] string userToken, [FromForm] string password, CancellationToken cancellationToken)
-        => throw new NotImplementedException(); // TODO
+    public async Task<Results<ContentHttpResult, NotFound<string>, BadRequest<string>, ForbidHttpResult>> Reauthenticate([FromForm] string userToken, [FromForm] string password, CancellationToken cancellationToken)
+    {
+        password = password.Trim();
+
+        if (string.IsNullOrEmpty(userToken) || string.IsNullOrEmpty(password))
+        {
+            return TypedResults.BadRequest("Invalid user or password");
+        }
+
+        // the client lands here with its expired (or otherwise stale) token, so expired tokens are expected
+        Tokens.Live.UserToken? tokenData;
+        try
+        {
+            tokenData = JwtUtils.Verify<Tokens.Live.UserToken>(userToken, config.Login.UserTokenSecretBytes, allowExpired: true)?.Data;
+        }
+        catch (FormatException ex)
+        {
+            Log.Warning($"Reauthenticate rejected: the user token contains malformed credential data: {ex.Message}");
+            return TypedResults.Forbid();
+        }
+
+        if (tokenData is null)
+        {
+            Log.Warning("Reauthenticate rejected: the supplied user token could not be verified (invalid signature, wrong secret or malformed)");
+            return TypedResults.Forbid();
+        }
+
+        byte[] saltBytes = Convert.FromBase64String(tokenData.PasswordSalt);
+        byte[] expectedHashBytes = Convert.FromBase64String(tokenData.PasswordHash);
+        byte[] passwordCheckHash = HashPassword(password, saltBytes);
+
+        if (!passwordCheckHash.AsSpan().SequenceEqual(expectedHashBytes))
+        {
+            Log.Warning($"Reauthenticate failed: incorrect password for user {tokenData.Username} ({tokenData.UserId})");
+            return TypedResults.Forbid();
+        }
+
+        var account = await _dbContext.Accounts
+            .FirstOrDefaultAsync(account => account.Id == tokenData.UserId, cancellationToken);
+
+        if (account is null)
+        {
+            Log.Warning($"Reauthenticate failed: account {tokenData.Username} ({tokenData.UserId}) not found");
+            return TypedResults.NotFound("Account not found");
+        }
+
+        return JsonCamelCase(CreateLoginResponse(account));
+    }
 
     [HttpPost("ppsecure/deviceaddcredential.srf")]
     public ContentHttpResult DeviceAddCredential()
@@ -185,6 +231,21 @@ internal sealed partial class LoginController : ApaceControllerBase
     [HttpPost("RST2.srf")]
     public async Task<Results<ContentHttpResult, BadRequest>> RST2()
     {
+        try
+        {
+            return await ProcessRst2();
+        }
+        catch (Exception ex)
+        {
+            // a malformed or unexpected request must never leak an unhandled exception (HTTP 500) to the client,
+            // otherwise it can never get back to a login/reauthenticate screen
+            Log.Warning($"RST2 rejected: the request could not be processed: {ex.GetType().Name}: {ex.Message}");
+            return TypedResults.BadRequest();
+        }
+    }
+
+    private async Task<Results<ContentHttpResult, BadRequest>> ProcessRst2()
+    {
         var cancellationToken = Request.HttpContext.RequestAborted;
 
         var request = new XmlDocument();
@@ -194,8 +255,9 @@ internal sealed partial class LoginController : ApaceControllerBase
             rq = await Request.Body.ReadAsString(cancellationToken);
             request.LoadXml(rq);
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Warning($"RST2 rejected: the request body is not valid XML: {ex.Message}");
             return TypedResults.BadRequest();
         }
 
@@ -375,11 +437,16 @@ internal sealed partial class LoginController : ApaceControllerBase
             string deviceTokenString = string.Empty;
             if (deviceDATokenXMLString is not null)
             {
-                var deviceTokenXml = new XmlDocument();
-                deviceTokenXml.LoadXml(deviceDATokenXMLString);
-                if (deviceTokenXml is not null)
+                try
                 {
+                    var deviceTokenXml = new XmlDocument();
+                    deviceTokenXml.LoadXml(deviceDATokenXMLString);
                     deviceTokenString = deviceTokenXml.SelectSingleNode("/EncryptedData/CipherData/CipherValue")?.InnerText ?? string.Empty;
+                }
+                catch (XmlException ex)
+                {
+                    Log.Warning($"RST2 rejected: the device token (DeviceDAToken) is not valid XML: {ex.Message}");
+                    return TypedResults.BadRequest();
                 }
             }
 
@@ -390,7 +457,7 @@ internal sealed partial class LoginController : ApaceControllerBase
             string? requestType2 = request.SelectSingleNode("/S:Envelope/S:Body/ps:RequestMultipleSecurityTokens/wst:RequestSecurityToken[2]/wst:RequestType/text()", nsmgr)?.InnerText;
             string? appliesTo2 = request.SelectSingleNode("/S:Envelope/S:Body/ps:RequestMultipleSecurityTokens/wst:RequestSecurityToken[2]/wsp:AppliesTo/wsa:EndpointReference/wsa:Address/text()", nsmgr)?.InnerText;
 
-            if (requestCount is not 2 || requestType1 is not "http://schemas.xmlsoap.org/ws/2005/02/trust/Issue" || appliesTo1 is not "http://Passport.NET/tb" || requestType2 is not "http://schemas.xmlsoap.org/ws/2005/02/trust/Issue" || appliesTo2 is not "cobrandid=90023&scope=service%3A%3Auser.auth.xboxlive.com%3A%3Ambi_ssl" || userTokenString is null)
+            if (requestCount is not 2 || requestType1 is not "http://schemas.xmlsoap.org/ws/2005/02/trust/Issue" || appliesTo1 is not "http://Passport.NET/tb" || requestType2 is not "http://schemas.xmlsoap.org/ws/2005/02/trust/Issue" || appliesTo2 is not "cobrandid=90023&scope=service%3A%3Auser.auth.xboxlive.com%3A%3Ambi_ssl" || string.IsNullOrEmpty(userTokenString))
             {
                 return TypedResults.BadRequest();
             }
@@ -402,8 +469,165 @@ internal sealed partial class LoginController : ApaceControllerBase
 
             if (userToken is null || userToken.Expired is true)
             {
-                // TODO
-                throw new NotImplementedException();
+                if (userToken is null)
+                {
+                    Log.Warning("RST2 rejected: the user token could not be verified (invalid signature, wrong secret or malformed), the client is redirected to the login page");
+                }
+                else
+                {
+                    Log.Warning($"RST2 rejected: the user token expired (user: {userToken.Data.Username}, id: {userToken.Data.UserId}), the client is redirected to the reauthenticate page");
+                }
+
+                var headerValidity = ValidityDatePair.Create(config.Login.SoapHeaderValidityMinutes);
+                string nonce = GenerateNonce();
+
+                string scheme = Request.IsHttps ? "https" : "http";
+                string host = Request.Host.Value!;
+                string path = Request.Path.Value ?? "";
+
+                if (path.EndsWith("RST2.srf", StringComparison.OrdinalIgnoreCase))
+                {
+                    path = path[..^"RST2.srf".Length];
+                }
+
+                if (!path.EndsWith('/'))
+                {
+                    path += "/";
+                }
+
+                // an expired token is re-used to point the client at the reauthenticate page,
+                // anything else (unknown/unverifiable token) falls back to the full login page
+                string reauthenticateURL = userToken != null
+                    ? $"{scheme}://{host}{path}ppsecure/reauthenticateStart?username={HttpUtility.UrlEncode(userToken.Data.Username)}&userToken={HttpUtility.UrlEncode(userTokenString)}"
+                    : $"{scheme}://{host}{path}ppsecure/InlineConnect.srf";
+
+                var reauthenticateURLDocument = new XmlDocument();
+                var ppEle = CreateElement(reauthenticateURLDocument, "psf", "pp");
+                {
+                    var inlineauthurlEle = CreateElement(reauthenticateURLDocument, "psf", "inlineauthurl");
+                    inlineauthurlEle.InnerText = reauthenticateURL;
+                    ppEle.AppendChild(inlineauthurlEle);
+                }
+
+                reauthenticateURLDocument.AppendChild(ppEle);
+
+                string reauthenticateURLDocumentCipherText = DoAESEncryption(config.Login.UserTokenSessionKeyBytes, nonce, reauthenticateURLDocument.OuterXml);
+
+                var response = new XmlDocument();
+                var envelope = CreateElement(response, "S", "Envelope");
+                {
+                    var header = CreateElement(response, "S", "Header");
+                    {
+                        var security = CreateElement(response, "wsse", "Security");
+                        {
+                            var timestamp = CreateElement(response, "wsu", "Timestamp");
+                            {
+                                var created = CreateElement(response, "wsu", "Created");
+                                created.InnerText = headerValidity.IssuedStr;
+                                timestamp.AppendChild(created);
+
+                                var expires = CreateElement(response, "wsu", "Expires");
+                                expires.InnerText = headerValidity.ExpiresStr;
+                                timestamp.AppendChild(expires);
+                            }
+
+                            security.AppendChild(timestamp);
+
+                            XmlElement derivedKeyToken = response.CreateElement("wssc", "DerivedKeyToken", "http://schemas.xmlsoap.org/ws/2005/02/sc");
+                            derivedKeyToken.SetAttribute("xmlns:wssc", "http://schemas.xmlsoap.org/ws/2005/02/sc");
+                            derivedKeyToken.SetAttribute("xmlns:ns1", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
+
+                            XmlAttribute idAttr = response.CreateAttribute("ns1", "Id", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
+                            idAttr.Value = "EncKey";
+                            derivedKeyToken.Attributes.Append(idAttr);
+                            derivedKeyToken.SetAttribute("Algorithm", "urn:liveid:SP800-108CTR-HMAC-SHA256");
+                            {
+                                XmlElement nonceEle = response.CreateElement("wssc", "Nonce", "http://schemas.xmlsoap.org/ws/2005/02/sc");
+                                nonceEle.InnerText = nonce;
+                                derivedKeyToken.AppendChild(nonceEle);
+                            }
+
+                            security.AppendChild(derivedKeyToken);
+                        }
+
+                        header.AppendChild(security);
+
+                        var encryptedPP = CreateElement(response, "psf", "EncryptedPP");
+                        {
+                            var encryptedData = CreateElement(response, "e", "EncryptedData");
+                            encryptedData.SetAttribute("Id", "EncPsf");
+                            encryptedData.SetAttribute("Type", "http://www.w3.org/2001/04/xmlenc#Element");
+
+                            var encryptionMethod = CreateElement(response, "e", "EncryptionMethod");
+                            encryptionMethod.SetAttribute("Algorithm", "http://www.w3.org/2001/04/xmlenc#aes256-cbc");
+                            encryptedData.AppendChild(encryptionMethod);
+
+                            var keyInfo = CreateElement(response, "ds", "KeyInfo");
+                            {
+                                var securityTokenReference = CreateElement(response, "wsse", "SecurityTokenReference");
+                                {
+                                    var reference = CreateElement(response, "wsse", "Reference");
+                                    reference.SetAttribute("URI", "#EncKey");
+                                    securityTokenReference.AppendChild(reference);
+                                }
+
+                                keyInfo.AppendChild(securityTokenReference);
+                            }
+
+                            encryptedData.AppendChild(keyInfo);
+
+                            var cipherData = CreateElement(response, "e", "CipherData");
+                            {
+                                var cipherValue = CreateElement(response, "e", "CipherValue");
+                                cipherValue.InnerText = reauthenticateURLDocumentCipherText;
+                                cipherData.AppendChild(cipherValue);
+                            }
+
+                            encryptedData.AppendChild(cipherData);
+                        }
+
+                        header.AppendChild(encryptedPP);
+                    }
+
+                    envelope.AppendChild(header);
+
+                    var body = CreateElement(response, "S", "Body");
+                    {
+                        var fault = CreateElement(response, "S", "Fault");
+                        {
+                            var detail = CreateElement(response, "S", "Detail");
+                            {
+                                var error = CreateElement(response, "psf", "error");
+                                {
+                                    var value = CreateElement(response, "psf", "value");
+                                    value.InnerText = "0";
+                                    error.AppendChild(value);
+
+                                    var internalError = CreateElement(response, "psf", "internalerror");
+                                    {
+                                        var code = CreateElement(response, "psf", "code");
+                                        code.InnerText = "0";
+                                        internalError.AppendChild(code);
+                                    }
+
+                                    error.AppendChild(internalError);
+                                }
+
+                                detail.AppendChild(error);
+                            }
+
+                            fault.AppendChild(detail);
+                        }
+
+                        body.AppendChild(fault);
+                    }
+
+                    envelope.AppendChild(body);
+                }
+
+                response.AppendChild(envelope);
+
+                return TypedResults.Content(response.OuterXml);
             }
             else
             {

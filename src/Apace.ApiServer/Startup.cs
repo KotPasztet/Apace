@@ -1,5 +1,6 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +45,13 @@ public class Startup
 
         services.AddAuthentication("GenoaAuth")
             .AddScheme<AuthenticationSchemeOptions, GenoaAuthenticationHandler>("GenoaAuth", null);
+
+        // the Genoa session tokens (SigninController <-> GenoaAuthenticationHandler) are data-protected,
+        // the keys must persist or every restart would invalidate all issued session tokens
+        string dataProtectionKeysPath = Path.Combine(Environment.CurrentDirectory, "data", "dataprotection-keys");
+        Directory.CreateDirectory(dataProtectionKeysPath);
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 
         services.AddDbContext<LiveDbContext>(options => options.UseSqlite(Configuration.GetConnectionString("LiveDBConnection")));
     }

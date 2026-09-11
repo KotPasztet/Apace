@@ -156,15 +156,36 @@ public static class Program
         try
         {
             const string configFileName = "api_config.json";
-            if (!File.Exists(configFileName))
+            if (File.Exists(configFileName))
             {
-                config = Config.Default;
-                File.WriteAllText(configFileName, Json.SerializeIndented(config));
-                Log.Information($"Configuration file not found or invalid, created with default values: {Path.GetFullPath(configFileName)}");
+                try
+                {
+                    // an existing configuration is used as-is, the secrets in it must survive updates
+                    config = Json.Deserialize<Config>(File.ReadAllText(configFileName));
+                }
+                catch (System.Text.Json.JsonException ex)
+                {
+                    Log.Warning($"Configuration file is invalid: {ex.Message}");
+                    config = null;
+                }
             }
-            else
+
+            if (config is null)
             {
-                config = Json.Deserialize<Config>(File.ReadAllText(configFileName)) ?? Config.Default;
+                // missing, empty or unparseable configuration gets fresh random secrets (the old hardcoded defaults
+                // were the public upstream Solace secrets, so anyone could forge tokens for servers using them)
+                config = Config.Default;
+                try
+                {
+                    File.WriteAllText(configFileName, Json.SerializeIndented(config));
+                }
+                catch (Exception writeEx)
+                {
+                    Log.Warning($"Could not persist the generated configuration: {writeEx.Message}");
+                }
+
+                Log.Warning($"Configuration file not found or invalid, created with random secrets: {Path.GetFullPath(configFileName)} " +
+                            $"(tokens issued before are no longer valid, clients will be sent through the login flow again)");
             }
         }
         catch (Exception ex)
