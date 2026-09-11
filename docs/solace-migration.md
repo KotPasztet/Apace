@@ -1,13 +1,69 @@
 # Migrating from Solace
 
-Already running a Solace server and want to move to Apace? The migration script
-(`scripts/migrate-from-solace.py`) copies your players, their progress and their
-buildplates into an Apace data directory. It is a single Python 3 script using
-only the standard library — no install step, and it can run against the Docker
-data directory on the VPS or a plain install elsewhere.
+Already running a Solace server and want to move to Apace? The migration moves
+your players, their progress and their buildplates into an Apace data
+directory.
 
-The one-line idea: **stop both servers, run the script once, start Apace —
+The one-line idea: **stop both servers, run the migration once, start Apace —
 players log in with their old username and password and find their stuff.**
+
+## Quick migration (recommended)
+
+One command detects your Solace install, installs Apace if it is missing, stops
+both servers, always shows a dry-run plan first and migrates after a single
+confirmation:
+
+**Linux / macOS / Termux / VPS:**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 | iex
+```
+
+What the wrapper does:
+
+1. Finds Solace automatically (`~/solace/solace-server`, `~/solace`, `~/Solace`,
+   `$SOLACE_DIR` — or `%USERPROFILE%\solace\solace-server` on Windows).
+2. Makes sure Python 3 is available (offers to install it on Linux/Termux).
+3. Installs Apace if it is not installed yet (Docker if possible, otherwise the
+   bare-metal / Termux installer), and stops the freshly started stack.
+4. Stops Solace (systemd unit `solace.service` where present) and Apace.
+5. Always runs the converter's `--dry-run` first and shows you the plan.
+6. After your confirmation, migrates (the converter backs up the Apace target
+   first) and prints the next steps.
+
+Options (pass after `bash -s --` on Linux, or download the script and run it
+with flags on Windows):
+
+| Flag | Meaning |
+|---|---|
+| `--solace-dir <path>` / `-SolaceDir <path>` | Solace directory (skips auto-detect) |
+| `--target <dir>` / `-Target <dir>` | Apace persistent data dir (default: `/opt/apace-persistent` on Docker, `~/apace` bare, `C:\apace-persistent` on Windows Docker) |
+| `--docker` / `--no-docker` / `-Docker` / `-NoDocker` | Force the install mode |
+| `--dry-run` / `-DryRun` | Show the plan and stop — write nothing |
+| `--no-backup` / `-NoBackup` | Skip the pre-migration backup |
+| `--yes` / `-y` / `-Yes` | No prompts |
+
+Example — a VPS where Solace lives in a custom place:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash -s -- \
+    --solace-dir /home/me/solace/solace-server --target /opt/apace-persistent
+```
+
+```powershell
+iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 -OutFile migrate-from-solace.ps1
+.\migrate-from-solace.ps1 -SolaceDir "$env:USERPROFILE\solace\solace-server" -Target C:\apace-persistent
+```
+
+The wrapper never modifies or deletes anything in the Solace directory (it is
+only ever read), and it never deletes the Solace install — retiring it is a
+manual step for after you have verified Apace.
 
 ## What migrates
 
@@ -47,7 +103,15 @@ have written.
   schema Apace expects, panel users are skipped with a clear message —
   recreate them in Apace. (Everything else still migrates.)
 
-## Prerequisites
+## Manual migration (the converter directly)
+
+The quick migration above is only an orchestrator; the conversion itself is
+`scripts/migrate-from-solace.py` — a single Python 3 script using only the
+standard library, so it has no install step and can run on any machine that
+reaches the data directories. Use it directly when you need exact control
+(for example when the wrappers cannot detect your layout):
+
+### Prerequisites
 
 1. **Both servers must be stopped.** The script reads Solace's SQLite files
    directly; migrating a running server can produce torn data. Stop the
@@ -57,7 +121,7 @@ have written.
    that can reach the data directories; on Windows use `py -3`).
 3. Enough disk space for the backup the script creates by default.
 
-## Dry run first
+### Dry run first
 
 Always start with `--dry-run` — it validates the Solace layout, cross-checks
 every account id, and prints the full plan (per-table row counts, objects to
@@ -80,7 +144,7 @@ python3 scripts/migrate-from-solace.py \
 The script asks for confirmation before touching anything; `--yes` skips the
 prompt (use it in automation only after you have read a dry run).
 
-## What the script does
+### What the script does
 
 1. Validates the Solace layout (`data/earth.db`, `staticdata/`,
    `data/object_store/`, panel `app.db`) and verifies all required earth.db
@@ -134,9 +198,11 @@ old server can always be brought back up as-is.
 
 ## Windows note
 
-Solace-on-Windows installs live under `%USERPROFILE%\solace\solace-server`.
-Run the script with `py -3 scripts\migrate-from-solace.py --dry-run` from the
-Apace checkout and pass `--target` pointing at your Apace data directory. The
-final `chown` step is skipped on Windows; if the target is a Linux Docker
-volume, run one more `chown -R 1654:1654` from the VPS (or `docker compose up`
-and let the container fix ownership) afterwards.
+Solace-on-Windows installs live under `%USERPROFILE%\solace\solace-server`; the
+PowerShell one-liner at the top of this guide detects it, stops the Solace
+panel processes and asks before killing anything. Run the converter directly
+with `py -3 scripts\migrate-from-solace.py --dry-run` from the Apace checkout
+and pass `--target` pointing at your Apace data directory. The final `chown`
+step is skipped on Windows; if the target is a Linux Docker volume, run one
+more `chown -R 1654:1654` from the VPS (or `docker compose up` and let the
+container fix ownership) afterwards.

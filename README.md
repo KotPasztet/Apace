@@ -99,7 +99,13 @@ To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Window
   ```
 
   Flags, backup rotation and rollback details: [QUICKINSTALL.md → Updating](QUICKINSTALL.md#updating).
-* **Migrating from Solace** — `scripts/migrate-from-solace.py` brings your accounts (username + password), player progress, inventory and buildplates into Apace; only active login sessions are lost. Both servers must be stopped — **do a dry run first**. Guide: [docs/solace-migration.md](docs/solace-migration.md).
+* **Migrating from Solace** — one command detects your old Solace install, installs Apace if it is missing, stops both servers and carries your accounts (username + password), player progress, inventory and buildplates over; only active login sessions are lost. A dry-run plan is always shown first, and the Solace directory is never modified:
+
+  ```bash
+  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash
+  ```
+
+  Windows (PowerShell): `iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 | iex`. Flags and the manual converter: [docs/solace-migration.md](docs/solace-migration.md).
 * **Termux (Android)** — host the server on an Android phone straight from [Termux](https://f-droid.org/packages/com.termux/); no Docker needed, the installer sets up a minimal Ubuntu via proot-distro:
 
   ```bash
