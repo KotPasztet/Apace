@@ -4,11 +4,13 @@
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.WebUtilities
 @using Apace.LauncherUI.Controllers
 @using Apace.LauncherUI.Utils
 @attribute [Authorize(Policy = Permissions.ViewFiles)]
 @implements IAsyncDisposable
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 @inject AntiforgeryStateProvider AntiforgeryState
 
@@ -76,7 +78,17 @@
     </div>
 }
 
-<div class="card">
+<ul class="nav nav-tabs" role="tablist">
+    @foreach (var tab in Tabs)
+    {
+        <li class="nav-item" role="presentation">
+            <button type="button" class="nav-link @(string.Equals(_tab.Key, tab.Key, StringComparison.Ordinal) ? "active" : "")"
+                    @onclick="() => SetTabAsync(tab)">@tab.Label</button>
+        </li>
+    }
+</ul>
+
+<div class="card files-tab-card">
     <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
         <span>▸ @RootLabels.GetValueOrDefault(_root, _root)</span>
         <div>
@@ -85,15 +97,19 @@
         </div>
     </div>
     <div class="card-body">
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-            <label class="form-label mb-0">Root:</label>
-            <select class="form-select" style="max-width: 260px;" @bind:get="_root" @bind:set="OnRootSet">
-                @foreach (var knownRoot in RootLabels)
+        @if (_tab.Roots.Length > 1)
+        {
+            @* Tabs group logical areas; where one tab spans two controller roots this
+               compact switch picks the root actually sent to FilesController. *@
+            <div class="nav-pills mb-3" style="overflow-x: auto;">
+                @foreach (var tabRoot in _tab.Roots)
                 {
-                    <option value="@knownRoot.Key">@knownRoot.Value</option>
+                    <button type="button" class="@(string.Equals(_root, tabRoot, StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+                            title="@RootLabels.GetValueOrDefault(tabRoot, tabRoot)"
+                            @onclick="() => SelectRootAsync(tabRoot)">@RootLabels.GetValueOrDefault(tabRoot, tabRoot)</button>
                 }
-            </select>
-        </div>
+            </div>
+        }
 
         <nav aria-label="Path" class="mb-3">
             <ol class="breadcrumb file-breadcrumb mb-0">
@@ -189,12 +205,25 @@
         ["persistent_fabric"] = "Persistent Fabric",
     };
 
+    // Logical groupings over the controller roots; the root names stay the API contract
+    // (FilesController.RootDirectories) - the page only maps tab + sub-root onto the
+    // `root` query parameter. The Key values are also the URL state (?tab=java|data|panel).
+    private sealed record FilesTab(string Key, string Label, string[] Roots);
+
+    private static readonly List<FilesTab> Tabs =
+    [
+        new("java", "Java Server", ["persistent_fabric"]),
+        new("data", "Server Data", ["staticdata", "data"]),
+        new("panel", "Panel & Components", ["launcher", "components"]),
+    ];
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private IJSObjectReference? _module;
     private bool _canEdit;
     private bool _loading = true;
-    private string _root = "components";
+    private FilesTab _tab = Tabs[0];
+    private string _root = Tabs[0].Roots[0];
     private string _path = "";
     private string? _error;
     private List<FilesController.FileEntry> _entries = [];
@@ -230,6 +259,18 @@
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _canEdit = authState.User.HasPermission(Permissions.EditFiles);
+
+        // Deep links (?tab=…&root=…) reopen the same view. An unknown tab falls back to
+        // the tab that owns the requested root, then to the first tab; a root that does
+        // not belong to the resolved tab falls back to that tab's default root.
+        var query = QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query);
+        var tabKey = query.TryGetValue("tab", out var tabValue) ? tabValue.ToString() : null;
+        var rootKey = query.TryGetValue("root", out var rootValue) ? rootValue.ToString() : null;
+
+        _tab = Tabs.FirstOrDefault(t => string.Equals(t.Key, tabKey, StringComparison.OrdinalIgnoreCase))
+               ?? TabOfRoot(rootKey)
+               ?? Tabs[0];
+        _root = RootOfTab(rootKey);
     }
 
     // The listing is fetched through JS interop, which only exists once the circuit is up,
@@ -260,19 +301,61 @@
         }
     }
 
-    private async Task OnRootSet(string root)
+    private async Task SetTabAsync(FilesTab tab)
     {
-        if (string.Equals(_root, root, StringComparison.Ordinal))
+        if (string.Equals(_tab.Key, tab.Key, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _tab = tab;
+        _root = tab.Roots[0];
+        await OnSelectionChangedAsync();
+    }
+
+    private async Task SelectRootAsync(string root)
+    {
+        if (string.Equals(_root, root, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         _root = root;
+        await OnSelectionChangedAsync();
+    }
+
+    // Tab / sub-root switches reset the browsing position (like the old root selector did)
+    // and mirror the selection into the URL so refreshes and shared links restore the view.
+    private async Task OnSelectionChangedAsync()
+    {
         _path = "";
         CloseView();
         CloseEdit();
+        SyncUrl();
         await LoadAsync();
     }
+
+    private void SyncUrl()
+    {
+        // The sub-root only exists on tabs that span more than one controller root
+        // (a null value removes the parameter).
+        var parameters = new Dictionary<string, object?>
+        {
+            ["tab"] = _tab.Key,
+            ["root"] = _tab.Roots.Length > 1 ? _root : null,
+        };
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(parameters));
+    }
+
+    private static FilesTab? TabOfRoot(string? root)
+        => string.IsNullOrEmpty(root)
+            ? null
+            : Tabs.FirstOrDefault(t => t.Roots.Contains(root, StringComparer.OrdinalIgnoreCase));
+
+    private string RootOfTab(string? root)
+        => !string.IsNullOrEmpty(root) && _tab.Roots.Contains(root, StringComparer.OrdinalIgnoreCase)
+            ? root
+            : _tab.Roots[0];
 
     private async Task GoToRootAsync()
     {

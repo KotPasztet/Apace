@@ -1,6 +1,12 @@
 /* Files page — reuses the global .log-terminal / .log-content Minecraft terminal
    styling for file previews; only layout tweaks live here. */
 
+/* Tab strip above the browser: the card drops its top border so the active tab
+   underline and the card read as one block (same look as the Users page tabs). */
+.files-tab-card {
+    border-top: none !important;
+}
+
 /* File preview terminal: a bit taller than the log viewer */
 .file-view {
     height: 480px !important;
