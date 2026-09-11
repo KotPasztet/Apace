@@ -26,6 +26,9 @@ services:
     volumes:
       - /opt/apace-persistent/launcher-data:/app/launcher/Data
       - /opt/apace-persistent/config.json:/app/launcher/config.json
+      # ApiServer login secrets — must survive image updates (lives in the container
+      # layer otherwise, so every update rotates the secrets and kills sessions)
+      - /opt/apace-persistent/api-config/api_config.json:/app/components/api_config.json
       - /opt/apace-persistent/launcher-logs:/app/launcher/logs
       - /opt/apace-persistent/data:/app/data
       - /opt/apace-persistent/dataprotection-keys:/root/.aspnet/DataProtection-Keys

@@ -23,7 +23,9 @@ iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
 The installer installs Docker if it's missing, downloads `docker-compose.yml` into `~/apace`,
 creates the persistent volumes under `/opt/apace-persistent` (`C:\apace-persistent` on Windows:
 worlds, accounts, logs), writes a default `config.json` with the API port already set to 1808,
-and starts the container.
+and starts the container. The ApiServer's own config (`api_config.json`, which holds the JWT
+login secrets) is persisted too, under `/opt/apace-persistent/api-config/` — without it the
+secrets would reset on every image update and every player would have to log in again.
 
 ## First run
 
