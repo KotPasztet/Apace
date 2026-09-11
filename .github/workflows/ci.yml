@@ -1,10 +1,15 @@
-name: Developer Build
+name: Lint
 
 on:
-  workflow_dispatch:
+  push:
+  pull_request:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -60,65 +65,3 @@ jobs:
           else
             echo "::notice::skipping missing script: scripts/migrate-from-solace.py"
           fi
-
-  build_and_dev_release:
-    needs: lint
-    if: github.ref_name == 'dev'
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        include:
-          - os: win
-            arch: x64
-          - os: win
-            arch: arm64
-          - os: linux
-            arch: x64
-          - os: linux
-            arch: arm64
-          - os: osx
-            arch: x64
-          - os: osx
-            arch: arm64
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: dev
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Build
-        shell: pwsh
-        run: |
-          ./publish.ps1 -profiles framework-dependent-${{ matrix.os }}-${{ matrix.arch }}
-
-      - name: Zip build
-        shell: pwsh
-        run: |
-          Compress-Archive `
-            -Path "build/Release/framework-dependent-${{ matrix.os }}-${{ matrix.arch }}/*" `
-            -DestinationPath "Apace-Dev-${{ matrix.os }}-${{ matrix.arch }}.zip"
-
-      - name: Update Dev Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: dev-build
-          name: "Apace Development Build"
-          prerelease: true
-          files: Apace-Dev-${{ matrix.os }}-${{ matrix.arch }}.zip
-          generate_release_notes: true
-          body: |
-            ⚠️ **Warning:** This is a manually triggered developer snapshot. It may contain unfinished features or bugs.
-            
-            **Source Branch:** ${{ github.ref_name }}
-            **Commit SHA:** ${{ github.sha }}
-            
-            ---
-            ![Apace Banner](https://raw.githubusercontent.com/KotPasztet/Apace/main/images/Apace_Banner.png)

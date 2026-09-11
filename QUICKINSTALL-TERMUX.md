@@ -22,6 +22,9 @@ Apace release into `~/apace`, writes `launcher/config.json` (`ApiPort: 1808`) an
 data directories. Re-running the same command **updates** Apace: worlds, accounts and
 `config.json` are kept.
 
+The release now also ships a dedicated **`Apace-termux-arm64.zip`** asset — the exact same
+build as `Apace-linux-arm64.zip`, just named for Termux users browsing the releases page.
+
 ## First run
 
 ```bash

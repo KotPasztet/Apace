@@ -9,7 +9,62 @@ permissions:
   attestations: write
 
 jobs:
+  lint:
+    name: Lint install scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Syntax-check shell scripts (bash -n)
+        run: |
+          status=0
+          for f in install.sh install-termux.sh run.sh setup-dirs.sh \
+                   scripts/update.sh scripts/tailscale-setup.sh scripts/entrypoint.sh; do
+            if [ -f "$f" ]; then
+              bash -n "$f" || status=1
+            else
+              echo "::notice::skipping missing script: $f"
+            fi
+          done
+          exit $status
+
+      - name: Install shellcheck
+        run: |
+          if ! command -v shellcheck >/dev/null; then
+            sudo apt-get update -qq || true
+            sudo apt-get install -y -qq shellcheck || echo "::warning::shellcheck could not be installed"
+          fi
+
+      - name: Shellcheck shell scripts (advisory)
+        run: |
+          if ! command -v shellcheck >/dev/null; then
+            echo "::notice::shellcheck not available — skipped"
+            exit 0
+          fi
+          found=0
+          for f in install.sh install-termux.sh run.sh setup-dirs.sh \
+                   scripts/update.sh scripts/tailscale-setup.sh scripts/entrypoint.sh; do
+            if [ -f "$f" ]; then
+              shellcheck "$f" || found=1
+            fi
+          done
+          if [ "$found" -eq 1 ]; then
+            echo "::warning::shellcheck reported issues above (advisory — not failing the build)"
+          else
+            echo "shellcheck: no findings"
+          fi
+
+      - name: Compile-check Python scripts
+        run: |
+          if [ -f scripts/migrate-from-solace.py ]; then
+            python3 -m py_compile scripts/migrate-from-solace.py
+          else
+            echo "::notice::skipping missing script: scripts/migrate-from-solace.py"
+          fi
+
   prepare_version:
+    needs: lint
     runs-on: windows-latest
     outputs:
       next_tag: ${{ steps.versioning.outputs.next_tag }}
@@ -122,6 +177,14 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Add Termux asset alias (same bytes as linux-arm64)
+        run: |
+          if [ ! -f artifacts/Apace-linux-arm64.zip ]; then
+            echo "artifacts/Apace-linux-arm64.zip is missing — the linux-arm64 build must have failed"
+            exit 1
+          fi
+          cp artifacts/Apace-linux-arm64.zip artifacts/Apace-termux-arm64.zip
 
       - name: Attest artifacts
         uses: actions/attest-build-provenance@v2
