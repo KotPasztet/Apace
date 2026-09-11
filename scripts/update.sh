@@ -231,7 +231,7 @@ heal_layout() {
     local -a missing=()
     head_ "Checking the persistent data layout"
     echo "→ Ensuring $PERSISTENT and its subdirs exist (older installs may miss some)"
-    for d in launcher-data launcher-logs data dataprotection-keys resourcepacks server-template-dir logs fabric-data; do
+    for d in launcher-data launcher-logs data dataprotection-keys resourcepacks server-template-dir logs fabric-data api-config; do
         if [ ! -d "$PERSISTENT/$d" ]; then missing+=("$PERSISTENT/$d"); fi
     done
     if [ "${#missing[@]}" -gt 0 ]; then
@@ -251,6 +251,22 @@ heal_layout() {
     else
         echo "→ Seeding $cfg with {\"ApiPort\":1808} (it was missing)"
         printf '{"ApiPort":1808}\n' | $AS_ROOT tee "$cfg" >/dev/null
+    fi
+
+    # api_config.json (the ApiServer login secrets) is mounted as a single FILE. If
+    # the host file is missing, Docker creates a DIRECTORY at that path on the next
+    # start and the ApiServer cannot write its config — seed an empty file instead
+    # (the ApiServer fills in its defaults; existing secrets must survive updates).
+    acfg="$PERSISTENT/api-config/api_config.json"
+    if [ -d "$acfg" ]; then
+        warn "→ $acfg is a DIRECTORY (Docker created it for the file mount) — removing it"
+        $AS_ROOT rm -rf "$acfg"
+    fi
+    if [ -f "$acfg" ]; then
+        echo "  api-config/api_config.json present — left untouched (the login secrets in it must survive updates)"
+    else
+        echo "→ Seeding $acfg as an empty file (the ApiServer fills in its defaults)"
+        $AS_ROOT touch "$acfg"
     fi
 
     # Drift prevention: the panel can listen on a non-default bridge port while

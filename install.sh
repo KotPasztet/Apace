@@ -123,10 +123,19 @@ else
     fi
 
     PERSISTENT="/opt/apace-persistent"
-    sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs,fabric-data}
+    sudo mkdir -p "$PERSISTENT"/{launcher-data,launcher-logs,data,dataprotection-keys,resourcepacks,server-template-dir,logs,fabric-data,api-config}
     if [ ! -f "$PERSISTENT/config.json" ]; then
         # ApiPort=1808 matches the compose port mapping (and the code default)
         echo '{"ApiPort":1808}' | sudo tee "$PERSISTENT/config.json" > /dev/null
+    fi
+    # api_config.json (ApiServer login secrets) is bind-mounted as a single FILE:
+    # if the host file is missing, Docker creates a DIRECTORY at that path and the
+    # ApiServer cannot write its config — seed it empty (the ApiServer fills it in).
+    if [ -d "$PERSISTENT/api-config/api_config.json" ]; then
+        sudo rm -rf "$PERSISTENT/api-config/api_config.json"
+    fi
+    if [ ! -f "$PERSISTENT/api-config/api_config.json" ]; then
+        sudo touch "$PERSISTENT/api-config/api_config.json"
     fi
     sudo chown -R 1654:1654 "$PERSISTENT" 2>/dev/null || sudo chmod -R 777 "$PERSISTENT" 2>/dev/null
 

@@ -117,10 +117,14 @@ if ($Mode -eq "--no-docker") {
     }
 
     Write-Host "Setting up persistent storage..."
-    $dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs", "fabric-data")
+    $dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs", "fabric-data", "api-config")
     foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path "$PERSISTENT\$d" | Out-Null }
     # ApiPort=1808 matches the compose port mapping (and the code default)
     if (-not (Test-Path "$PERSISTENT\config.json")) { '{"ApiPort":1808}' | Out-File -FilePath "$PERSISTENT\config.json" -Encoding utf8 }
+    # api_config.json (ApiServer login secrets) is bind-mounted as a single FILE: seed it
+    # empty so Docker does not create a directory at the mount path (the ApiServer fills it in).
+    if (Test-Path "$PERSISTENT\api-config\api_config.json" -PathType Container) { Remove-Item -Recurse -Force "$PERSISTENT\api-config\api_config.json" }
+    if (-not (Test-Path "$PERSISTENT\api-config\api_config.json")) { New-Item -ItemType File -Force -Path "$PERSISTENT\api-config\api_config.json" | Out-Null }
 
     $compose = Get-Content docker-compose.yml -Raw
     $compose = $compose -replace '/opt/apace-persistent/', 'C:/apace-persistent/'
