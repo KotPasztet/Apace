@@ -71,6 +71,10 @@ public partial class Program
         builder.Services.AddSingleton<ServerManager>();
         builder.Services.AddSingleton<PatcherService>();
 
+        var updateCheckService = new UpdateCheckService();
+        builder.Services.AddSingleton(updateCheckService);
+        Log.Information("Apace {Channel} {Commit}", updateCheckService.Channel, UpdateCheckService.ShortSha(updateCheckService.CurrentSha));
+
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
@@ -199,6 +203,9 @@ public partial class Program
             {
                 Address = "http://localhost:5000";
             }
+
+            // First update check ~30 s after startup, then every 6 h (UpdateCheckService).
+            updateCheckService.Start();
         });
 
         // Apply database migrations and initialize built-in roles

@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@using Apace.LauncherUI.Utils
+@inject UpdateCheckService UpdateCheck
 
 <div class="page">
     <div class="sidebar">
@@ -11,6 +13,10 @@
                 <span class="dmb-moon">☀ LIGHT</span>
                 <span class="dmb-sun">🌙 DARK</span>
             </button>
+            @if (UpdateCheck.State == UpdateCheckState.UpdateAvailable)
+            {
+                <a href="/About" class="update-chip" title="A newer Apace version is available — see the About page for update instructions">▲ Update available</a>
+            }
             <a href="/About" class="topbar-link">About</a>
         </div>
 

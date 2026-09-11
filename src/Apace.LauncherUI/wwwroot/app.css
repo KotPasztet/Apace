@@ -523,6 +523,25 @@ html.dark .dmb-sun { display: inline; }
     color: #aed581;
     text-decoration: none;
 }
+/* Subtle warning chip shown in the topbar while a newer build is available
+   (UpdateCheckService) — links to the About page for update instructions. */
+.topbar .update-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    background: rgba(184, 134, 11, 0.18);
+    border: 1px solid #b8860b;
+    color: #ffcc66;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-decoration: none;
+}
+.topbar .update-chip:hover {
+    color: #ffe0a3;
+    border-color: #e0b45a;
+    text-decoration: none;
+}
 .theme-btn {
     background: linear-gradient(180deg, #7cb342, #558b2f);
     color: #fff;
