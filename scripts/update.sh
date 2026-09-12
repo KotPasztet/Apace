@@ -2,13 +2,22 @@
 set -euo pipefail
 
 # Apace — Minecraft Earth replacement server
-# Self-update for Docker installs: backs up the persistent data, pulls a new
-# image and restarts the container. Supports rolling the image (and data) back.
+# Self-update for Docker installs: keeps ITSELF current (always runs the newest
+# updater logic, even on legacy installs), backs up the persistent data,
+# refreshes docker-compose.yml when it is outdated, pulls a new image and
+# restarts the container. Supports rolling the image (and data) back.
 #
 # It works on installs made by OLDER versions too: nothing this script would
 # have created is assumed to exist — the layout is detected by FEATURE
 # (missing persistent subdirs, config.json stored as a directory, compose
-# without the BRIDGE_PORT parameter, installer-injected platform line).
+# without the BRIDGE_PORT parameter or the api_config.json mount,
+# installer-injected platform line, non-default persistent data root).
+#
+# Update channels (default --tag):
+#   - the newest GitHub RELEASE: release.yml publishes a matching versioned
+#     image (ghcr.io/kotpasztet/apace:vX.Y.Z), resolved via the GitHub API
+#   - dev installs (compose image :dev) STAY ON DEV unless --tag is explicit
+#   - --tag main|dev|latest|vX.Y.Z overrides the default
 #
 # Usage: curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash
 #        bash update.sh --rollback
@@ -22,17 +31,27 @@ BLD='\033[1m'
 RST='\033[0m'
 
 APACE_DIR="$HOME/apace"
-TAG=""              # empty = keep the tag the compose file already uses
+TAG=""              # empty = automatic (latest release; dev installs stay on dev)
 MODE="update"       # update | backup-only | rollback
 RESTORE_BACKUP=""   # tarball path, or "latest"
 MAKE_BACKUP=1
 ASSUME_YES=0
+REFRESH_COMPOSE=0   # --refresh-compose
+NO_SELF_UPDATE=0    # --no-self-update (also appended internally when re-execing)
+
+APACE_REPO_RAW="https://raw.githubusercontent.com/KotPasztet/Apace"
+APACE_REPO_API="https://api.github.com/repos/KotPasztet/Apace"
+SELF_UPDATE_URL="$APACE_REPO_RAW/main/scripts/update.sh"
 
 STATE_FILE=""       # <dir>/.apace-update.json, set once the install dir is known
 BACKUP_DIR=""       # <parent-of-persistent-root>/apace-persistent-backups
 LAST_BACKUP=""      # tarball created by backup_tarball
 BACKUP_KEEP=3
 CONTAINER_UID=1654  # uid of the 'app' user inside the image
+TARGET_TAG=""       # image tag this update moves to ("" = keep the current one)
+WILL_REFRESH=0      # do_update sets this once it knows the compose file is outdated
+COMPOSE_BAK_KEEP=3
+DL_COMPOSE=""       # temp file used by download_compose
 
 err()   { echo -e "${RED}$*${RST}" >&2; }
 warn()  { echo -e "${YLW}$*${RST}"; }
@@ -48,16 +67,23 @@ usage() {
     echo ""
     echo "Options:"
     echo "  --dir <path>            Install root holding docker-compose.yml (default: ~/apace)"
-    echo "  --tag <main|dev>        Image tag to move to (default: keep the current one)"
+    echo "  --tag <main|dev|vX.Y.Z> Image tag to move to."
+    echo "                            default: the newest GitHub release (vX.Y.Z image);"
+    echo "                            dev installs stay on dev unless --tag is explicit"
+    echo "  --refresh-compose       Re-download docker-compose.yml for the target version"
+    echo "                          (also happens automatically when the local one predates"
+    echo "                          a required feature, e.g. the api_config.json mount)"
     echo "  --backup-only           Back up the persistent data and exit"
     echo "  --rollback              Go back to the image that ran before the last update"
     echo "  --restore-backup <f>    With --rollback: also restore a data backup (file path, or 'latest')"
     echo "  --no-backup             Skip the pre-update backup (NOT recommended)"
+    echo "  --no-self-update        Do not fetch the newest updater from main first"
     echo "  --yes                   Do not ask for confirmation"
     echo "  -h, --help              This help"
     echo ""
 }
 
+ORIG_ARGS=("$@")
 # ─── Flags ────────────────────────────────────────────────────────────────
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -66,17 +92,58 @@ while [ $# -gt 0 ]; do
         --backup-only)    MODE="backup-only"; shift ;;
         --rollback)       MODE="rollback"; shift ;;
         --restore-backup) [ $# -ge 2 ] || die "--restore-backup needs a file name or 'latest'"; RESTORE_BACKUP="$2"; shift 2 ;;
+        --refresh-compose) REFRESH_COMPOSE=1; shift ;;
         --no-backup)      MAKE_BACKUP=0; shift ;;
+        --no-self-update) NO_SELF_UPDATE=1; shift ;;
         --yes|-y)         ASSUME_YES=1; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                usage >&2; die "unknown option: $1" ;;
     esac
 done
 
-case "$TAG" in ""|main|dev) ;; *) die "--tag must be 'main' or 'dev' (got '$TAG')" ;; esac
+case "$TAG" in ""|main|dev|latest) ;; v[0-9]*|[0-9]*) ;; *) die "--tag must be 'main', 'dev', 'latest' or a version like v0.1.3 (got '$TAG')" ;; esac
+# "0.1.3" and "v0.1.3" are the same image tag
+if [[ "$TAG" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then TAG="v${TAG#v}"; fi
 if [ -n "$RESTORE_BACKUP" ] && [ "$MODE" != "rollback" ]; then
     die "--restore-backup only makes sense together with --rollback"
 fi
+
+# ─── Downloads ─────────────────────────────────────────────────────────────
+fetch() { # $1 = URL, $2 = destination file; succeeds only on a real download
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL --max-time 30 -o "$2" "$1" >/dev/null 2>&1
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -T 30 -O "$2" "$1" >/dev/null 2>&1
+    else
+        return 1
+    fi
+}
+
+# ─── Self-update: always run the newest updater logic ──────────────────────
+maybe_self_update() {
+    [ "$NO_SELF_UPDATE" -eq 1 ] && return 0
+    local self="${BASH_SOURCE[0]:-$0}" tmp
+    case "$self" in
+        /dev/stdin|/dev/fd/*) return 0 ;;  # piped run: this copy IS the newest main-branch updater
+    esac
+    if [ ! -f "$self" ] || [ ! -r "$self" ]; then return 0; fi
+    tmp=$(mktemp 2>/dev/null) || return 0
+    if ! fetch "$SELF_UPDATE_URL" "$tmp" || [ ! -s "$tmp" ]; then
+        warn "Warning: could not fetch the newest updater (offline?) — continuing with the local copy"
+        rm -f "$tmp"
+        return 0
+    fi
+    if command -v cmp >/dev/null 2>&1 && cmp -s "$tmp" "$self"; then
+        rm -f "$tmp"
+        return 0
+    fi
+    echo "→ The updater itself has a newer version — restarting with it"
+    chmod u+x "$tmp" 2>/dev/null || true
+    # exec replaces this process: same arguments, plus the loop breaker
+    exec bash "$tmp" ${ORIG_ARGS[@]+"${ORIG_ARGS[@]}"} --no-self-update
+}
+
+maybe_self_update
 
 confirm() { # $1 = prompt; succeeds on "y"
     if [ "$ASSUME_YES" -eq 1 ]; then return 0; fi
@@ -155,68 +222,76 @@ trim() { # strips whitespace, CR, quotes and trailing comments
     printf '%s' "$s"
 }
 
-# ─── Parse image / volumes / ports out of the existing compose file ───────
-IMAGE_REF=""
-IMAGE_NAME=""
-IMAGE_TAG=""
-PANEL_PORT=""       # host port reaching the panel (container port 5000)
-BIND_HOSTS=""       # every bind-mount host path, newline separated
+# ─── Parse image / volumes / ports out of the compose file ────────────────
+# Runs once at startup and again after a compose refresh.
+parse_compose() {
+    IMAGE_REF=""
+    IMAGE_NAME=""
+    IMAGE_TAG=""
+    PANEL_PORT=""       # host port reaching the panel (container port 5000)
+    BIND_HOSTS=""       # every bind-mount host path, newline separated
+    PERSISTENT=""
 
-img_line=$(grep -E '^[[:space:]]*image:[[:space:]]*[^#]' "$COMPOSE_FILE" | head -n1 || true)
-[ -n "$img_line" ] || die "no 'image:' line in $COMPOSE_FILE — this does not look like an Apace compose file; re-run install.sh"
-IMAGE_REF=$(trim "${img_line#*image:}")
-if [[ "$IMAGE_REF" == *@* ]]; then
-    IMAGE_NAME="${IMAGE_REF%%@*}"; IMAGE_TAG="${IMAGE_REF##*@}"
-else
-    last="${IMAGE_REF##*/}"
-    if [[ "$last" == *:* ]]; then IMAGE_NAME="${IMAGE_REF%:*}"; IMAGE_TAG="${last##*:}"; else IMAGE_NAME="$IMAGE_REF"; IMAGE_TAG="latest"; fi
-fi
-
-while IFS= read -r entry; do
-    if [ -n "$entry" ]; then
-        entry=$(trim "$entry")
-        case "$entry" in
-            *:*)
-                host="${entry%:*}"
-                # named volumes (no path separator) are not bind mounts
-                case "$host" in */*|[A-Za-z]:/*|./*|../*) BIND_HOSTS="$BIND_HOSTS$host"$'\n' ;; esac
-                ;;
-        esac
+    local img_line entry host cont last
+    img_line=$(grep -E '^[[:space:]]*image:[[:space:]]*[^#]' "$COMPOSE_FILE" | head -n1 || true)
+    [ -n "$img_line" ] || die "no 'image:' line in $COMPOSE_FILE — this does not look like an Apace compose file; re-run install.sh"
+    IMAGE_REF=$(trim "${img_line#*image:}")
+    if [[ "$IMAGE_REF" == *@* ]]; then
+        IMAGE_NAME="${IMAGE_REF%%@*}"; IMAGE_TAG="${IMAGE_REF##*@}"
+    else
+        last="${IMAGE_REF##*/}"
+        if [[ "$last" == *:* ]]; then IMAGE_NAME="${IMAGE_REF%:*}"; IMAGE_TAG="${last##*:}"; else IMAGE_NAME="$IMAGE_REF"; IMAGE_TAG="latest"; fi
     fi
-done < <(read_section volumes)
 
-while IFS= read -r entry; do
-    if [ -n "$entry" ]; then
-        entry=$(trim "$entry")
-        case "$entry" in
-            *:*)
-                host="${entry%:*}"; cont="${entry##*:}"; cont="${cont%%/*}"
-                case "$host" in *'$'*) continue ;; esac   # "${VAR:-19132}" — not resolvable here
-                if [ "$cont" = "5000" ] && [ -z "$PANEL_PORT" ]; then PANEL_PORT="$host"; fi
-                ;;
-        esac
+    while IFS= read -r entry; do
+        if [ -n "$entry" ]; then
+            entry=$(trim "$entry")
+            case "$entry" in
+                *:*)
+                    host="${entry%:*}"
+                    # named volumes (no path separator) are not bind mounts
+                    case "$host" in */*|[A-Za-z]:/*|./*|../*) BIND_HOSTS="$BIND_HOSTS$host"$'\n' ;; esac
+                    ;;
+            esac
+        fi
+    done < <(read_section volumes)
+
+    while IFS= read -r entry; do
+        if [ -n "$entry" ]; then
+            entry=$(trim "$entry")
+            case "$entry" in
+                *:*)
+                    host="${entry%:*}"; cont="${entry##*:}"; cont="${cont%%/*}"
+                    case "$host" in *'$'*) continue ;; esac   # "${VAR:-19132}" — not resolvable here
+                    if [ "$cont" = "5000" ] && [ -z "$PANEL_PORT" ]; then PANEL_PORT="$host"; fi
+                    ;;
+            esac
+        fi
+    done < <(read_section ports)
+
+    # Persistent data root = the most common parent directory of the bind mounts.
+    # Works for /opt/apace-persistent, C:/apace-persistent and arbitrary layouts
+    # (Coolify, custom paths) without hardcoding anything.
+    PERSISTENT=$(printf '%s' "$BIND_HOSTS" | awk '
+        NF {
+            d = $0
+            sub(/\/[^\/]*$/, "", d)
+            c[d]++
+        }
+        END {
+            best = ""; bn = -1
+            for (d in c) if (c[d] > bn || (c[d] == bn && length(d) > length(best))) { bn = c[d]; best = d }
+            print best
+        }')
+    [ -n "$PERSISTENT" ] || die "could not detect the persistent data root from the volumes in $COMPOSE_FILE"
+    if [ -z "$PANEL_PORT" ]; then
+        PANEL_PORT="5000"
+        warn "could not find a published panel port in the compose file — assuming 5000"
     fi
-done < <(read_section ports)
+}
 
-# Persistent data root = the most common parent directory of the bind mounts.
-# Works for /opt/apace-persistent, C:/apace-persistent and arbitrary layouts
-# (Coolify, custom paths) without hardcoding anything.
-PERSISTENT=$(printf '%s' "$BIND_HOSTS" | awk '
-    NF {
-        d = $0
-        sub(/\/[^\/]*$/, "", d)
-        c[d]++
-    }
-    END {
-        best = ""; bn = -1
-        for (d in c) if (c[d] > bn || (c[d] == bn && length(d) > length(best))) { bn = c[d]; best = d }
-        print best
-    }')
-[ -n "$PERSISTENT" ] || die "could not detect the persistent data root from the volumes in $COMPOSE_FILE"
-if [ -z "$PANEL_PORT" ]; then
-    PANEL_PORT="5000"
-    warn "could not find a published panel port in the compose file — assuming 5000"
-fi
+parse_compose
+INITIAL_IMAGE_TAG="$IMAGE_TAG"   # what the install ran before this invocation
 
 head_ "Install root:    $APACE_DIR"
 head_ "Compose file:    $COMPOSE_FILE"
@@ -224,6 +299,42 @@ head_ "Image:           $IMAGE_REF"
 head_ "Persistent data: $PERSISTENT"
 head_ "Panel port:      $PANEL_PORT"
 echo ""
+
+# ─── Update target: which image tag is this run moving to? ─────────────────
+latest_release_tag() { # prints e.g. v0.1.3; fails when it cannot be resolved
+    local f t=""
+    f=$(mktemp 2>/dev/null) || return 1
+    if fetch "$APACE_REPO_API/releases/latest" "$f"; then
+        t=$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$f" | head -n1 || true)
+    fi
+    rm -f "$f"
+    case "$t" in v[0-9]*|[0-9][0-9]*) printf '%s' "$t"; return 0 ;; esac
+    return 1
+}
+
+resolve_target_tag() { # sets TARGET_TAG ("" = keep the current tag)
+    TARGET_TAG=""
+    if [ -n "$TAG" ] && [ "$TAG" != "latest" ]; then
+        TARGET_TAG="$TAG"
+        echo "Channel: explicit --tag $TARGET_TAG"
+        return 0
+    fi
+    if [ -z "$TAG" ] && [ "$IMAGE_TAG" = "dev" ]; then
+        # dev channel: stay on the rolling dev image unless asked otherwise
+        TARGET_TAG="dev"
+        echo "Channel: dev (dev installs stay on dev unless --tag is given explicitly)"
+        return 0
+    fi
+    if TARGET_TAG=$(latest_release_tag); then
+        echo "Channel: release — the newest release is $TARGET_TAG"
+        return 0
+    fi
+    TARGET_TAG=""
+    if [ "$TAG" = "latest" ]; then
+        die "could not resolve the newest release via the GitHub API (offline or rate-limited)"
+    fi
+    return 1
+}
 
 # ─── Heal old layouts (idempotent, feature-detected) ───────────────────────
 heal_layout() {
@@ -302,14 +413,6 @@ heal_layout() {
         fi
     fi
     echo ""
-
-    if ! grep -q 'BRIDGE_PORT' "$COMPOSE_FILE"; then
-        warn "note: this compose file predates the configurable bridge port (no \${BRIDGE_PORT:-19132} line)."
-        warn "      Apace still runs, but re-download the compose file to pick up the new mapping —"
-        warn "      and re-add your platform: line if the installer had injected one:"
-        warn "        curl -sSLo '$COMPOSE_FILE' https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml"
-        echo ""
-    fi
 }
 
 # ─── Backups ───────────────────────────────────────────────────────────────
@@ -423,7 +526,8 @@ write_state() { # $1 = image ref to roll back to
     {
         printf '{\n'
         printf '  "previousDigest": "%s",\n' "$1"
-        printf '  "previousTag": "%s",\n' "$IMAGE_TAG"
+        printf '  "previousTag": "%s",\n' "$INITIAL_IMAGE_TAG"
+        printf '  "newTag": "%s",\n' "$TARGET_TAG"
         printf '  "backup": "%s",\n' "$LAST_BACKUP"
         printf '  "updatedAt": "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         printf '}\n'
@@ -476,22 +580,183 @@ report_failure() {
     exit 1
 }
 
-# ─── Update flow ───────────────────────────────────────────────────────────
-do_update() {
-    local new_ref new_digest
-    if [ -n "$TAG" ] && [ "$TAG" != "$IMAGE_TAG" ]; then
-        new_ref="$IMAGE_NAME:$TAG"
+# ─── Compose refresh ───────────────────────────────────────────────────────
+# Legacy installs keep whatever docker-compose.yml their installer downloaded —
+# missing the api_config.json mount, the ${BRIDGE_PORT:-19132} parameter, or
+# newer volumes. When the local file predates a feature the target version
+# needs, download the compose file FOR THE TARGET TAG and re-apply everything
+# the installer/user had changed locally. Any ambiguity → keep the old file
+# and print manual instructions; never guess paths.
+refresh_needed() {
+    [ "$REFRESH_COMPOSE" -eq 1 ] && return 0
+    grep -q 'api_config.json' "$COMPOSE_FILE" 2>/dev/null || return 0
+    grep -q 'BRIDGE_PORT' "$COMPOSE_FILE" 2>/dev/null || return 0
+    return 1
+}
+
+download_compose() { # $1 = git ref (release tag or branch); sets DL_COMPOSE
+    local ref="$1" name alt
+    if [ "$ref" = "dev" ]; then
+        name="docker-compose.dev.yml"; alt="docker-compose.yml"
     else
-        new_ref="$IMAGE_REF"
-        if [ -z "$TAG" ]; then
-            echo "Keeping the image tag the compose file already uses ($IMAGE_TAG)"
+        name="docker-compose.yml"; alt="docker-compose.dev.yml"
+    fi
+    DL_COMPOSE=$(mktemp 2>/dev/null) || return 1
+    rm -f "$DL_COMPOSE"
+    if fetch "$APACE_REPO_RAW/$ref/$name" "$DL_COMPOSE" && [ -s "$DL_COMPOSE" ] \
+       && grep -qE '^[[:space:]]*image:' "$DL_COMPOSE"; then
+        return 0
+    fi
+    if fetch "$APACE_REPO_RAW/$ref/$alt" "$DL_COMPOSE" && [ -s "$DL_COMPOSE" ] \
+       && grep -qE '^[[:space:]]*image:' "$DL_COMPOSE"; then
+        return 0
+    fi
+    rm -f "$DL_COMPOSE"
+    DL_COMPOSE=""
+    return 1
+}
+
+# Apply the local mutations the downloaded compose cannot know about.
+rewrite_downloaded_compose() { # $1 = downloaded file, $2 = destination; fails on ambiguity
+    local src="$1" dst="$2" body plat
+    body="$(cat "$src")" || return 1
+    [ -n "$body" ] || return 1
+
+    # 1) persistent-root path: installs made anywhere other than the Linux
+    #    default (Windows PowerShell, custom prefixes, Coolify-style layouts)
+    #    point the bind mounts elsewhere — copy the detected root over the
+    #    stock /opt/apace-persistent.
+    if [ "$PERSISTENT" != "/opt/apace-persistent" ]; then
+        case "$PERSISTENT" in
+            *$'\n'*|*\"*|*\'*) return 1 ;;   # quote/newline in the path — refuse to rewrite
+        esac
+        body="${body//\/opt\/apace-persistent\//$PERSISTENT/}"
+        if printf '%s' "$body" | grep -qF '/opt/apace-persistent'; then
+            return 1   # rewrite incomplete — never leave a half-rewritten file behind
         fi
     fi
 
+    # 2) the platform: line the Linux/Windows installers inject after image:
+    #    (absence in the old file means the installer deliberately added none —
+    #    the image is multi-arch, so do not invent one)
+    if grep -qE '^[[:space:]]*platform:[[:space:]]*[^#]' "$COMPOSE_FILE" 2>/dev/null; then
+        plat=$(awk '/^[[:space:]]*platform:/ { sub(/^[[:space:]]*platform:[[:space:]]*/, ""); sub(/[[:space:]]*(#.*)?$/, ""); print; exit }' "$COMPOSE_FILE")
+        plat=$(trim "$plat")
+        case "$plat" in
+            linux/amd64|linux/arm64) : ;;
+            *)
+                # unusable old value — fall back to what this host is
+                plat=""
+                case "$(uname -m)" in
+                    x86_64|amd64)  plat="linux/amd64" ;;
+                    aarch64|arm64) plat="linux/arm64" ;;
+                esac
+                if [ -z "$plat" ]; then return 1; fi
+                ;;
+        esac
+        if ! printf '%s' "$body" | grep -qE '^[[:space:]]*platform:'; then
+            body=$(printf '%s\n' "$body" | awk -v plat="$plat" '
+                { print }
+                /^[[:space:]]*image:/ && !done { printf "    platform: %s\n", plat; done=1 }')
+        fi
+    fi
+
+    # 3) a customized panel port (host side) — otherwise the refresh would move
+    #    the panel to :5000 and the user's URL would stop working
+    if [ -n "$PANEL_PORT" ] && [ "$PANEL_PORT" != "5000" ]; then
+        body="${body//\"5000:5000\"/\"$PANEL_PORT:5000\"}"
+        if ! printf '%s' "$body" | grep -qF "\"$PANEL_PORT:5000\""; then
+            return 1
+        fi
+    fi
+
+    printf '%s\n' "$body" > "$dst" || return 1
+
+    # sanity: the refreshed file must contain the features that triggered this
+    grep -q 'BRIDGE_PORT' "$dst" || return 1
+    grep -q 'api_config.json' "$dst" || return 1
+    return 0
+}
+
+refresh_fallback() { # $1 = reason the refresh was abandoned
+    warn "  !! compose refresh skipped: $1 — keeping the existing $COMPOSE_FILE"
+    warn "     To refresh it by hand (then re-apply your platform: line / paths):"
+    warn "       cp '$COMPOSE_FILE' '$APACE_DIR/compose.bak-manual'"
+    warn "       curl -sSLo '$COMPOSE_FILE' $APACE_REPO_RAW/${TARGET_TAG:-main}/$(basename "$COMPOSE_FILE")"
+}
+
+refresh_compose() { # returns non-zero (old file kept) on any problem
+    local ts cand bak
+    echo "→ Refreshing the compose file from version ${TARGET_TAG:-main} of the repo"
+    if ! download_compose "${TARGET_TAG:-main}"; then
+        refresh_fallback "could not download the compose file for ${TARGET_TAG:-main} (offline?)"
+        return 1
+    fi
+    cand="$APACE_DIR/.compose.apace-new"
+    rm -f "$cand"
+    if ! rewrite_downloaded_compose "$DL_COMPOSE" "$cand"; then
+        rm -f "$cand" "$DL_COMPOSE"
+        refresh_fallback "the local adjustments (persistent-root paths, platform, panel port) could not be applied unambiguously"
+        return 1
+    fi
+    rm -f "$DL_COMPOSE"
+    if ! $COMPOSE -f "$cand" config --quiet >/dev/null 2>&1; then
+        rm -f "$cand"
+        refresh_fallback "the refreshed compose file did not pass '$COMPOSE config' validation"
+        return 1
+    fi
+    # keep the old file (rotation: newest $COMPOSE_BAK_KEEP)
+    ts=$(date -u +%Y%m%dT%H%M%SZ)
+    bak="$APACE_DIR/compose.bak-$ts"
+    if [ -w "$APACE_DIR" ] && [ -w "$COMPOSE_FILE" ]; then
+        cp -p "$COMPOSE_FILE" "$bak" || { rm -f "$cand"; refresh_fallback "could not back up the current compose file"; return 1; }
+    else
+        $AS_ROOT cp -p "$COMPOSE_FILE" "$bak" || { rm -f "$cand"; refresh_fallback "could not back up the current compose file"; return 1; }
+    fi
+    local old
+    # shellcheck disable=SC2044
+    for old in $(ls -1t "$APACE_DIR"/compose.bak-* 2>/dev/null | tail -n +"$((COMPOSE_BAK_KEEP + 1))"); do
+        $AS_ROOT rm -f "$old"
+    done
+    if [ -w "$APACE_DIR" ] && [ -w "$COMPOSE_FILE" ]; then
+        mv "$cand" "$COMPOSE_FILE"
+    else
+        $AS_ROOT mv "$cand" "$COMPOSE_FILE"
+    fi
+    ok "  compose file refreshed (previous copy kept as $(basename "$bak"))"
+    # re-read image / ports / volumes from the refreshed file
+    parse_compose
+    return 0
+}
+
+# ─── Update flow ───────────────────────────────────────────────────────────
+do_update() {
+    local new_ref new_digest
+    if ! resolve_target_tag; then
+        warn "could not resolve the newest release (offline / GitHub API rate limit) — staying on the current tag ($IMAGE_TAG)"
+    fi
+    if [ -n "$TARGET_TAG" ]; then
+        new_ref="$IMAGE_NAME:$TARGET_TAG"
+    else
+        new_ref="$IMAGE_REF"
+    fi
+
     heal_layout
+
+    WILL_REFRESH=0
+    if refresh_needed; then WILL_REFRESH=1; fi
+
     detect_running_image
     echo -e "Currently running: ${BLD}${ROLLBACK_REF:-unknown}${RST}"
+    if [ -n "$TARGET_TAG" ]; then
+        echo -e "Update target:     ${BLD}$new_ref${RST}"
+    else
+        echo "Update target:     keep $IMAGE_REF (refresh its bits only)"
+    fi
     echo "About to: stop the container (flushes the SQLite WAL), back up $PERSISTENT,"
+    if [ "$WILL_REFRESH" -eq 1 ]; then
+        echo "refresh docker-compose.yml from ${TARGET_TAG:-main} (the old copy is kept as compose.bak-*),"
+    fi
     echo "pull $new_ref and start it again. Downtime: a few minutes."
     if [ "$MAKE_BACKUP" -eq 0 ]; then
         warn "!! --no-backup given: NO data backup will be taken."
@@ -505,6 +770,12 @@ do_update() {
     if [ "$MAKE_BACKUP" -eq 1 ]; then
         echo "→ Creating the backup directory $BACKUP_DIR"
         $AS_ROOT mkdir -p "$BACKUP_DIR"
+    fi
+
+    if [ "$WILL_REFRESH" -eq 1 ]; then
+        # on failure this keeps the old compose file and prints manual instructions
+        refresh_compose || true
+        if [ -n "$TARGET_TAG" ]; then new_ref="$IMAGE_NAME:$TARGET_TAG"; fi
     fi
 
     LAST_BACKUP=""
@@ -544,6 +815,9 @@ do_update() {
         ok "Apace updated!"
         echo -e "  Previous image: ${BLD}${ROLLBACK_REF:-unknown}${RST}"
         echo -e "  New image:      ${BLD}${new_digest:-$IMAGE_REF}${RST}"
+        if [ -n "$TARGET_TAG" ]; then
+            echo -e "  Release tag:    ${BLD}$TARGET_TAG${RST}"
+        fi
         echo -e "  Backup:         ${BLD}${LAST_BACKUP:-none}${RST}"
         if [ -n "$LAST_BACKUP" ]; then
             echo "  If anything looks wrong: bash $0 --dir $APACE_DIR --rollback"
@@ -637,7 +911,7 @@ do_rollback() {
         echo ""
         ok "Rolled back to $prev"
         echo "  The image line in $COMPOSE_FILE now points at the old digest; a later"
-        echo "  update.sh run (or --tag main) moves it back to a normal tag."
+        echo "  update.sh run (or --tag <version>) moves it back to a normal tag."
     else
         report_failure
     fi
