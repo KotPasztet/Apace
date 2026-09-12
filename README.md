@@ -15,11 +15,17 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 > **Actively developed.** The server is functional — maps, buildplates, challenges, daily rewards, adventures, crafting, and more are working.
 
 > [!TIP]
-> ### ✨ What's new in v0.1.0
+> ### ✨ What's new in v0.1.3
 >
-> The **persistent-server architecture** is now released. Instead of booting a whole new Minecraft server for every buildplate, **one persistent Fabric server** hosts all of them as **on-demand dimensions** — created in ~1 s, with world data imported and exported on the fly. Every player connects through a **single shared Bedrock port** (`19132/udp`), and the **client patcher** (APK & IPA) is built straight into the panel.
+> - **Apace** — the project is now called Apace everywhere (namespaces, panel, branding), with upstream [Solace](https://github.com/Earth-Restored/Solace) attribution preserved.
+> - **No more forced logouts** — expired login tokens are handled with a proper reauthenticate flow, login secrets are randomized per install, and `api_config.json` survives container updates.
+> - **One-click self-update** from the panel (Docker and bare metal), with **versioned release images** (`ghcr.io/kotpasztet/apace:vX.Y.Z`) and a self-updating `update.sh` with backup and rollback.
+> - **File browser in the panel** — browse the Java server, server data and panel files, and safely edit `config.json`, `server.properties` and more, with automatic `.bak` backups.
+> - **Steadier buildplates** — ObjectStore concurrency raised to 256, cached map tiles with `304` responses, user `server.properties` preserved, and persistent Fabric data kept on the volume.
+> - **Runs on your phone** — Termux quick install without Docker, plus a **one-command migration from Solace** that carries accounts, progress and buildplates over.
+> - **Solace v0.0.7 features ported** — daily sign-in challenges, buildplate export, linked accounts, log level filters, configurable bridge port and local-login-only.
 >
-> Buildplates load **3471% faster**, and 15 concurrent buildplates now need **~1.9 GB of RAM instead of 24 GB**. Details in the table below.
+> Full list: [CHANGELOG.md](CHANGELOG.md). The v0.1 **persistent-server architecture** (one Fabric server hosting every buildplate as an on-demand dimension, single shared Bedrock port `19132/udp`, client patcher built into the panel) is unchanged — see the table below and the v0.1.0 notes in [CHANGELOG.md](CHANGELOG.md).
 
 ## Disclaimer
 
