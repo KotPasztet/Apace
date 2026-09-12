@@ -1,5 +1,56 @@
 # Changelog
 
+## v0.1.3 — 2026-09-12
+
+> Scope: everything between **v0.1.2** and **v0.1.3**
+> (39 commits, base: `v0.1.2` @ `dafd0d8`, 2026-09-04).
+> Headlines: **Solace is now Apace** (full rebrand), logins that survive deploys, a **one-click self-updating** install, and a much more capable panel.
+
+---
+
+## 🎨 Rebrand: Solace → Apace
+
+- Projects, namespaces and assemblies renamed `Solace.*` → `Apace.*`; all user-facing strings and branding images follow.
+- Upstream attribution to [Solace](https://github.com/Earth-Restored/Solace) is preserved; legacy upstream installers and unused Solace images were removed.
+
+## 🔐 Login & sessions
+
+- **Expired login tokens no longer trap players**: the RST2 endpoint returns a well-formed SOAP fault instead of a 500, and the client's **reauthenticate flow** issues fresh Live tokens (port of the upstream Solace fixes).
+- **Per-install random secrets** are generated when `api_config.json` is missing or invalid — the public upstream secrets are no longer shipped.
+- `api_config.json` **persists across Docker updates**, so the JWT login secrets (and with them every session) survive redeploys — **no more forced logouts on every release**.
+
+## 🧱 Buildplates & server stability
+
+- ObjectStore **command concurrency raised to 256**, queued commands are cancelled on timeout, command responses are flushed reliably, and buildplate loads **retry the first fetch once**.
+- **Tile cache with ETag/`304` responses** for the map; the tile renderer **auto-restarts after a crash** and tolerates transient MapTiler outages.
+- User `server.properties` are **preserved** (the `max-tick-time` watchdog is disabled on the wrapper instead), and the **persistent Fabric server keeps its data on the persistent volume** across container updates.
+
+## 🖥️ Panel
+
+- **File browser** with tabs **Java Server / Server Data / Panel**: browse, download/upload, and safely edit an allow-list of text configs (`config.json`, `api_config.json`, `server.properties`, `eula.txt`) with a rotating `.bak` backup before every save; new `files.view` permission.
+- **One-click self-update** from the panel — docker via the socket or bare metal via the installers — backed by an **update-available indicator** (channel, running/latest version, Check now, copyable update commands).
+- **Log level filters** in live logs (alongside the 🐛 debug toggle), **linked accounts** folded into **Manage Users**, and the **Java-server status indicator** now reflects real readiness.
+- **Resource-pack download prompt** on a fresh start, a **MapTiler link** above the API-key field, and the **default API port is now `1808`**.
+- Startup is more resilient: pending EF model changes no longer crash boot, the Java-server wait no longer depends on the evictable log buffer, and Fabric log paths follow the moved persistent directory.
+
+## 📦 Installs, updates & CI
+
+- **Termux (Android)**: no-Docker quick install via proot-distro (`install-termux.sh`) and a dedicated `Apace-termux-arm64.zip` release asset.
+- **One-command Solace migration** (`scripts/migrate-from-solace.sh` / `.ps1`): auto-detects the old Solace install, installs Apace if it is missing, and carries accounts, player progress, inventory and buildplates over (dry-run plan first; the Solace directory is never modified).
+- **Backwards-compatible self-updating `update.sh`** with backup rotation and `--rollback`, and **versioned release images** (`ghcr.io/kotpasztet/apace:vX.Y.Z`) alongside the rolling `:main` tag.
+- **CI**: the release workflow syntax-checks (`bash -n`) and shellchecks install scripts and compile-checks the migration script; new Tailscale and integration-port docs.
+
+## ✨ Features ported from Solace v0.0.7
+
+- **Local-login-only option** for the Earth API sign-in.
+- **Buildplate export** from the panel.
+- **Log level filtering** in live logs.
+- **Linked accounts** (in-game profile ↔ admin panel account).
+- **Configurable bridge (public) port** for buildplates.
+- **Daily sign-in challenges**, and the **daily-login streak now advances on claim and resets after a missed day**.
+
+---
+
 ## v0.1.0 — 2026-09-02
 
 > Scope: everything between **v0.0.3** and **v0.1.0**
