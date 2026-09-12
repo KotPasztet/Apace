@@ -75,6 +75,10 @@ public partial class Program
         builder.Services.AddSingleton(updateCheckService);
         Log.Information("Apace {Channel} {Commit}", updateCheckService.Channel, UpdateCheckService.ShortSha(updateCheckService.CurrentSha));
 
+        // Detects whether this install can update itself (docker socket flow or
+        // bare-metal release zip) and runs the flow from the About page.
+        builder.Services.AddSingleton<SelfUpdateService>();
+
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();

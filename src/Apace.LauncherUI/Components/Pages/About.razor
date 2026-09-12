@@ -1,11 +1,38 @@
 @page "/About"
 @rendermode InteractiveServer
+@using System.Security.Claims
 @using Apace.LauncherUI.Utils
 @implements IDisposable
 @inject UpdateCheckService UpdateCheck
+@inject SelfUpdateService SelfUpdate
+@inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JS
 
 <PageTitle>About - Apace</PageTitle>
+
+<script>
+    // Same auto-scrolling log box as the ServerStatus page (only scrolls while
+    // the user is already at the bottom).
+    window.initAboutLogScroller = (container) => {
+        if (!container) return;
+
+        container.scrollTop = container.scrollHeight;
+
+        let isScrolledToBottom = true;
+
+        container.addEventListener('scroll', () => {
+            isScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 10;
+        });
+
+        const observer = new MutationObserver(() => {
+            if (isScrolledToBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+
+        observer.observe(container, { childList: true, subtree: true });
+    };
+</script>
 
 <div class="d-flex justify-content-center">
     <div class="text-center" style="max-width: 640px;">
@@ -45,11 +72,55 @@
                     <button class="btn btn-sm btn-outline-secondary" @onclick="CheckNowAsync" disabled="@_checkingNow">
                         @(_checkingNow ? "Checking…" : "Check now")
                     </button>
+                    @if (ShowUpdateButton)
+                    {
+                        <button class="btn btn-sm btn-warning" @onclick="() => _confirmOpen = true" disabled="@SelfUpdate.IsBusy" title="@UpdateButtonTitle">
+                            ⬆ Update now
+                        </button>
+                    }
                 </div>
+
+                @if (ShowUpdateUnavailableReason)
+                {
+                    <p class="text-muted small mt-2 mb-0">
+                        One-click update is not available here: @SelfUpdate.UnavailableReason — use the commands below.
+                    </p>
+                }
 
                 @if (UpdateCheck.State == UpdateCheckState.CheckFailed && UpdateCheck.LastChecked is not null)
                 {
                     <p class="text-muted small mt-2 mb-0">The last check failed — this build may be outdated.</p>
+                }
+
+                @if (SelfUpdate.State != SelfUpdateState.Idle)
+                {
+                    <hr />
+                    <h4 style="font-size: 0.85rem; color: #ffb74d;" class="mb-2">@ProgressTitle</h4>
+
+                    @if (SelfUpdate.DownloadProgress is not null)
+                    {
+                        <div class="progress mb-2" style="height: 6px;">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width:@(DownloadProgressPercent)%"></div>
+                        </div>
+                    }
+
+                    @if (SelfUpdate.State == SelfUpdateState.Failed && SelfUpdate.Error is not null)
+                    {
+                        <div class="alert alert-danger small py-2 mb-2">@SelfUpdate.Error</div>
+                    }
+                    else if (SelfUpdate.Result is not null)
+                    {
+                        <div class="alert alert-success small py-2 mb-2">@SelfUpdate.Result</div>
+                    }
+
+                    <div class="log-terminal mt-2" style="max-height: 220px;" @ref="_logContainer">
+                        <div class="log-content">
+                            @foreach (var line in SelfUpdate.GetLog())
+                            {
+                                <div class="log-line"><span class="log-msg">@line</span></div>
+                            }
+                        </div>
+                    </div>
                 }
 
                 @if (UpdateCheck.State == UpdateCheckState.UpdateAvailable)
@@ -133,10 +204,51 @@
     </div>
 </div>
 
+@if (_confirmOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); position: fixed; inset: 0; z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 480px; margin: 10vh auto;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Apace now?</h5>
+                    <button type="button" class="btn-close" @onclick="() => _confirmOpen = false"></button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <p class="mb-2">
+                        @UpdateConfirmationSummary
+                    </p>
+                    <ul class="small text-muted mb-0">
+                        <li>All data is preserved — @UpdateDataSafetyNote.</li>
+                        @if (SelfUpdate.Mode == SelfUpdateMode.Docker)
+                        {
+                            <li>Apace goes offline for about a minute and comes back at the same address.</li>
+                            <li>This page will disconnect while the container is recreated — just reload it afterwards.</li>
+                        }
+                        else
+                        {
+                            <li>Running server components are stopped; restart the panel afterwards to run the new build.</li>
+                        }
+                        <li>Progress is streamed into the log on this page.</li>
+                    </ul>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button class="btn btn-secondary" @onclick="() => _confirmOpen = false">Cancel</button>
+                    <button class="btn btn-warning" @onclick="BeginUpdate">Yes, update now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool _checkingNow;
     private string? _copiedCommand;
     private Timer? _copiedResetTimer;
+
+    private ClaimsPrincipal? _user;
+    private bool _confirmOpen;
+    private bool _scrollerInitialized;
+    private ElementReference _logContainer;
 
     private string LastCheckedLabel
         => UpdateCheck.LastChecked is null
@@ -163,12 +275,70 @@
     private string TermuxUpdateCommand
         => "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install-termux.sh | bash";
 
-    protected override void OnInitialized()
+    // The button lives as long as no run is in progress or has finished — a
+    // finished run either replaced this panel (docker) or demands a restart
+    // (bare metal), so there is nothing left to click.
+    private bool ShowUpdateButton
+        => UpdateCheck.State == UpdateCheckState.UpdateAvailable
+            && HasPermission(Permissions.UpdateServer)
+            && SelfUpdate.CanSelfUpdate
+            && SelfUpdate.State is SelfUpdateState.Idle or SelfUpdateState.Failed;
+
+    private bool ShowUpdateUnavailableReason
+        => UpdateCheck.State == UpdateCheckState.UpdateAvailable
+            && HasPermission(Permissions.UpdateServer)
+            && !SelfUpdate.CanSelfUpdate
+            && SelfUpdate.State == SelfUpdateState.Idle;
+
+    private string UpdateButtonTitle => SelfUpdate.Mode == SelfUpdateMode.Docker
+        ? "Runs docker compose pull + up -d on this very stack"
+        : "Downloads the release zip and extracts it over the install directory";
+
+    private string ProgressTitle => SelfUpdate.State switch
     {
+        SelfUpdateState.Running => "Updating…",
+        SelfUpdateState.Recreating => "Recreating the container…",
+        SelfUpdateState.Failed => "Update failed",
+        SelfUpdateState.NeedsRestart => "Update applied — restart needed",
+        _ => "Update finished",
+    };
+
+    private string UpdateConfirmationSummary => SelfUpdate.Mode == SelfUpdateMode.Docker
+        ? $"Run 'docker compose pull' and 'docker compose up -d' on this stack, moving the panel from {UpdateCheckService.ShortSha(UpdateCheck.CurrentSha)} to {UpdateCheckService.ShortSha(UpdateCheck.LatestSha)}?"
+        : $"Download the release zip and extract it over the install directory, moving the panel from {UpdateCheckService.ShortSha(UpdateCheck.CurrentSha)} to {UpdateCheckService.ShortSha(UpdateCheck.LatestSha)}?";
+
+    private string UpdateDataSafetyNote => SelfUpdate.Mode == SelfUpdateMode.Docker
+        ? "every persistent path is a bind mount, verified before anything is recreated"
+        : "data, logs and config files are never touched by the extraction";
+
+    private int DownloadProgressPercent
+        => SelfUpdate.DownloadProgress is float progress ? (int)Math.Round(progress * 100) : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User;
+
         UpdateCheck.OnStateChanged += HandleStateChanged;
+        SelfUpdate.OnStateChanged += HandleStateChanged;
+        SelfUpdate.OnLogLine += HandleLogLine;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // JS interop is only available once the circuit exists (the page is
+        // statically prerendered), and the log box appears later than the page.
+        if (!_scrollerInitialized && SelfUpdate.State != SelfUpdateState.Idle)
+        {
+            await JS.InvokeVoidAsync("initAboutLogScroller", _logContainer);
+            _scrollerInitialized = true;
+        }
     }
 
     private async void HandleStateChanged()
+        => await InvokeAsync(StateHasChanged);
+
+    private async void HandleLogLine(string line)
         => await InvokeAsync(StateHasChanged);
 
     private async Task CheckNowAsync()
@@ -190,6 +360,12 @@
         }
     }
 
+    private void BeginUpdate()
+    {
+        _confirmOpen = false;
+        SelfUpdate.Begin();
+    }
+
     private async Task CopyCommandAsync(string command)
     {
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", command);
@@ -203,9 +379,14 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    private bool HasPermission(string permission)
+        => _user?.HasPermission(permission) ?? false;
+
     public void Dispose()
     {
         UpdateCheck.OnStateChanged -= HandleStateChanged;
+        SelfUpdate.OnStateChanged -= HandleStateChanged;
+        SelfUpdate.OnLogLine -= HandleLogLine;
         _copiedResetTimer?.Dispose();
     }
 }

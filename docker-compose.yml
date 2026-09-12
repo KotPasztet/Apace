@@ -37,6 +37,11 @@ services:
       - /opt/apace-persistent/logs:/app/logs
       # persistent data for the single shared Fabric server (all dimensions/worlds)
       - /opt/apace-persistent/fabric-data:/app/launcher/persistent_fabric
+      # SECURITY: the docker socket is root-equivalent on the host. It is mounted
+      # on purpose so the panel can run its "Update now" self-update (About page,
+      # SelfUpdateService: docker compose pull + up -d on this very stack).
+      # Remove this line if you prefer the panel to never touch docker.
+      - /var/run/docker.sock:/var/run/docker.sock
 
     environment:
       - DOTNET_SYSTEM_NET_DISABLEIPV6=1
@@ -46,6 +51,9 @@ services:
       - ASPNETCORE_URLS=http://0.0.0.0:5000
       - APACE_LOG_CLIENT_REQUESTS=1
       - APACE_CHANNEL=main
+      # Host bridge port mapping, mirrored into the container so the panel's
+      # in-place self-update re-publishes the same port (SelfUpdateService).
+      - BRIDGE_PORT=${BRIDGE_PORT:-19132}
 
     deploy:
       resources:

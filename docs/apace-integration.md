@@ -673,6 +673,7 @@ Set in the container image and/or `docker-compose.yml`:
 | `DOTNET_GCHeapHardLimit` | `536870912` (512 MB) | Cap the orchestrator heap |
 | `ASPNETCORE_URLS` | `http://0.0.0.0:5000` | Web panel / launcher UI endpoint |
 | `APACE_LOG_CLIENT_REQUESTS` | `1` | Log client requests |
+| `BRIDGE_PORT` | `${BRIDGE_PORT:-19132}` | Host UDP bridge port mapping, mirrored into the container so the panel's in-place self-update re-publishes the same port |
 
 ### Exposed ports (v2 — all shared)
 
