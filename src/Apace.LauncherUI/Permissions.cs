@@ -13,6 +13,8 @@ internal static class Permissions
     public const string StopServer = "server.stop";
     [PermissionInfo("Server", "Edit the server options")]
     public const string EditServerOptions = "server.options.edit";
+    [PermissionInfo("Server", "Run the in-panel self-update (About page)")]
+    public const string UpdateServer = "server.update";
     [PermissionInfo("Server", "View the logs of the server")]
     public const string ViewServerLogs = "server.view.logs";
     [PermissionInfo("Server", "View Fabric server logs")]

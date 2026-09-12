@@ -95,6 +95,24 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
+# Docker CLI + compose plugin (CLIENT ONLY — no daemon, no containerd). The
+# panel uses them through the docker socket mounted by docker-compose*.yml to
+# run the in-place self-update from its About page (SelfUpdateService):
+# "docker compose pull" + "docker compose up -d" on the stack it is part of.
+# This is root-equivalent access to the host by design — see the SECURITY note
+# on the socket mount in the compose files.
+RUN set -eux; \
+    . /etc/os-release; \
+    install -m 0755 -d /etc/apt/keyrings; \
+    curl -fsSL "https://download.docker.com/linux/debian/gpg" -o /etc/apt/keyrings/docker.asc; \
+    chmod a+r /etc/apt/keyrings/docker.asc; \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian ${VERSION_CODENAME} stable" > /etc/apt/sources.list.d/docker.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin; \
+    rm -rf /var/lib/apt/lists/*; \
+    docker --version; \
+    docker compose version
+
 # aapt2 wrapper (generated inline, like entrypoint.sh).
 # apktool 3.x passes a few modern aapt2 flags unconditionally - most notably
 # --no-compile-sdk-metadata - but the aapt2 shipped in Debian (package "aapt")
@@ -159,6 +177,11 @@ RUN set -eux; \
 WORKDIR /app
 
 COPY --from=build /src/build/Release/latest/ .
+
+# Compose files, baked in for the panel's in-place self-update
+# (SelfUpdateService picks the one matching APACE_CHANNEL and runs
+# "docker compose -f /app/compose/<file> pull && up -d" on the running stack).
+COPY docker-compose.yml docker-compose.dev.yml /app/compose/
 
 # Save baked-in mods to a backup location so they survive volume mounts.
 # At runtime, volume mounts (like Coolify's server-template-dir) override
