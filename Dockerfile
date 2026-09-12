@@ -10,7 +10,7 @@ ARG SOURCE_COMMIT
 # TARGETARCH is injected by docker buildx. Map to our RID suffixes.
 # Also detect at runtime for non-buildkit builds.
 RUN set -eux; \
-    if [ -z "$TARGETARCH" ]; then \
+    if [ -z "${TARGETARCH:-}" ]; then \
         TARGETARCH=$(uname -m); \
     fi; \
     case "$TARGETARCH" in \
@@ -76,7 +76,7 @@ ARG SOURCE_COMMIT
 LABEL org.opencontainers.image.revision=${SOURCE_COMMIT}
 
 RUN set -eux; \
-    if [ -z "$TARGETARCH" ]; then \
+    if [ -z "${TARGETARCH:-}" ]; then \
         TARGETARCH=$(uname -m); \
     fi; \
     case "$TARGETARCH" in \
@@ -95,20 +95,23 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Docker CLI + compose plugin (CLIENT ONLY — no daemon, no containerd). The
-# panel uses them through the docker socket mounted by docker-compose*.yml to
-# run the in-place self-update from its About page (SelfUpdateService):
-# "docker compose pull" + "docker compose up -d" on the stack it is part of.
-# This is root-equivalent access to the host by design — see the SECURITY note
-# on the socket mount in the compose files.
+# Docker CLI + compose v2 plugin, installed from the BASE DISTRO's own apt
+# repos (docker.io + docker-compose-v2; universe is already enabled in the
+# base image's sources — our other apt packages, e.g. aapt, come from there
+# too). The panel uses them through the docker socket mounted by
+# docker-compose*.yml to run the in-place self-update from its About page
+# (SelfUpdateService): "docker compose pull" + "docker compose up -d" on the
+# stack it is part of. No daemon runs inside the container — only the mounted
+# host socket is used (docker.io ships the engine binaries, but nothing here
+# starts dockerd). This is root-equivalent access to the host by design — see
+# the SECURITY note on the socket mount in the compose files.
+# Deliberately NOT Docker's download.docker.com repo: its URL is distro- and
+# suite-specific, and a hardcoded suite has broken CI when the base image
+# didn't match (e.g. debian repo with a noble codename). Distro packages
+# always match the base image.
 RUN set -eux; \
-    . /etc/os-release; \
-    install -m 0755 -d /etc/apt/keyrings; \
-    curl -fsSL "https://download.docker.com/linux/debian/gpg" -o /etc/apt/keyrings/docker.asc; \
-    chmod a+r /etc/apt/keyrings/docker.asc; \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian ${VERSION_CODENAME} stable" > /etc/apt/sources.list.d/docker.list; \
     apt-get update; \
-    apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin; \
+    apt-get install -y --no-install-recommends docker.io docker-compose-v2; \
     rm -rf /var/lib/apt/lists/*; \
     docker --version; \
     docker compose version
