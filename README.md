@@ -104,6 +104,8 @@ To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Window
   curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes
   ```
 
+  Windows (PowerShell): `irm https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1 | iex`.
+
   Flags, backup rotation and rollback details: [QUICKINSTALL.md → Updating](QUICKINSTALL.md#updating).
 * **Migrating from Solace** — one command detects your old Solace install, installs Apace if it is missing, stops both servers and carries your accounts (username + password), player progress, inventory and buildplates over; only active login sessions are lost. A dry-run plan is always shown first, and the Solace directory is never modified:
 
