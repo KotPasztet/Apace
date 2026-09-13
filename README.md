@@ -99,21 +99,28 @@ To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Window
 ## Guides
 
 * **Updating** — one command keeps an existing install current; your data and `config.json` are preserved and backed up (newest 3 kept), and `--rollback` reverts if an update misbehaves:
-
+Linux (Bash):
   ```bash
   curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes
   ```
 
-  Windows (PowerShell): `irm https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1 | iex`.
+  Windows (PowerShell):
+  ```powershell
+  irm https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1 | iex
+  ```
 
   Flags, backup rotation and rollback details: [QUICKINSTALL.md → Updating](QUICKINSTALL.md#updating).
 * **Migrating from Solace** — one command detects your old Solace install, installs Apace if it is missing, stops both servers and carries your accounts (username + password), player progress, inventory and buildplates over; only active login sessions are lost. A dry-run plan is always shown first, and the Solace directory is never modified:
-
+Linux (Bash):
   ```bash
   curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash
   ```
 
-  Windows (PowerShell): `iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 | iex`. Flags and the manual converter: [docs/solace-migration.md](docs/solace-migration.md).
+  Windows (PowerShell):
+  ```powershell
+  iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 | iex
+  ```
+  Flags and the manual converter: [docs/solace-migration.md](docs/solace-migration.md).
 * **Termux (Android)** — host the server on an Android phone straight from [Termux](https://f-droid.org/packages/com.termux/); no Docker needed, the installer sets up a minimal Ubuntu via proot-distro:
 
   ```bash
