@@ -1,6 +1,7 @@
 @page "/About"
 @rendermode InteractiveServer
 @using System.Security.Claims
+@using System.Runtime.InteropServices
 @using Apace.LauncherUI.Utils
 @implements IDisposable
 @inject UpdateCheckService UpdateCheck
@@ -265,12 +266,44 @@
 
     // The update script always targets the repo's main branch; --tag dev moves
     // a main-channel install to the dev image (and keeps a dev install on dev).
-    private string DockerUpdateCommand => UpdateCheck.Channel == "dev"
-        ? "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes --tag dev"
-        : "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes";
+    // Windows hosts get the PowerShell twin of update.sh (same channels, backup
+    // and rollback; it auto-detects Docker vs bare-metal installs), which can
+    // only take arguments when the script is materialised first.
+    private static bool IsWindowsHost
+        => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+    private const string WindowsUpdateScriptUrl
+        = "https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1";
+
+    private string DockerUpdateCommand
+    {
+        get
+        {
+            if (IsWindowsHost)
+            {
+                return UpdateCheck.Channel == "dev"
+                    ? $"& ([scriptblock]::Create((irm {WindowsUpdateScriptUrl}))) -Tag dev"
+                    : $"irm {WindowsUpdateScriptUrl} | iex";
+            }
+
+            return UpdateCheck.Channel == "dev"
+                ? "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes --tag dev"
+                : "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes";
+        }
+    }
 
     private string BareMetalUpdateCommand
-        => "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker";
+    {
+        get
+        {
+            if (IsWindowsHost)
+            {
+                return $"irm {WindowsUpdateScriptUrl} | iex";
+            }
+
+            return "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker";
+        }
+    }
 
     private string TermuxUpdateCommand
         => "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install-termux.sh | bash";
