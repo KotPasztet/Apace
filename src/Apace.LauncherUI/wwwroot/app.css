@@ -1652,46 +1652,6 @@ fieldset:disabled {
     display: none;
 }
 
-/* Ore scrollbars. ore-scrollbar.js adds html.ore-scrollbars once it's running,
-   then draws the track and thumb itself. Without the script the native
-   scrollbars above still work. */
-html.ore-scrollbars,
-html.ore-scrollbars * {
-    scrollbar-width: none;
-}
-
-html.ore-scrollbars::-webkit-scrollbar,
-html.ore-scrollbars *::-webkit-scrollbar {
-    display: none;
-}
-
-.ore-sb {
-    position: fixed;
-    display: none;
-    background: #0E0E0F;
-    user-select: none;
-    touch-action: none;
-}
-
-.ore-sb-thumb {
-    position: absolute;
-    box-sizing: border-box;
-    border-style: solid;
-    border-color: transparent;
-    border-width: 4px 6px 10px 4px;
-    border-image: url('ApaceUI/scrollbar-thumb.png') 2 3 5 2 fill / 4px 6px 10px 4px stretch;
-    image-rendering: pixelated;
-    cursor: pointer;
-}
-
-.ore-sb-thumb:hover {
-    filter: brightness(1.12);
-}
-
-.ore-sb.dragging .ore-sb-thumb {
-    filter: brightness(0.85);
-}
-
 /* Buildplate preview container */
 .preview-container {
     background: #0a0a0a !important;
