@@ -86,11 +86,11 @@ else
                                 <td style="text-align: right;">
                                     @if (HasPermission(Permissions.ManagePlayers))
                                     {
-                                        <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-outline btn-sm" title="View Buildplates">
+                                        <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-secondary btn-sm" title="View Buildplates">
                                             <img class="nav-icon" src="/images/buildplate_icon.png" alt="" />
                                         </a>
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(player)">Edit</button>
-                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
+                                        <button class="btn btn-secondary btn-sm" @onclick="() => StartEdit(player)">Edit</button>
+                                        <button class="btn btn-danger btn-sm" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
                                     }
                                 </td>
                             }
@@ -142,9 +142,9 @@ else
                         @if (HasPermission(Permissions.ManagePlayers))
                         {
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-outline btn-sm flex-grow-1">Buildplates</a>
-                                <button class="btn btn-outline-secondary btn-sm flex-grow-1" @onclick="() => StartEdit(player)">Edit</button>
-                                <button class="btn btn-outline-danger btn-sm flex-grow-1" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
+                                <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-secondary btn-sm flex-grow-1">Buildplates</a>
+                                <button class="btn btn-secondary btn-sm flex-grow-1" @onclick="() => StartEdit(player)">Edit</button>
+                                <button class="btn btn-danger btn-sm flex-grow-1" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
                             </div>
                         }
                     }

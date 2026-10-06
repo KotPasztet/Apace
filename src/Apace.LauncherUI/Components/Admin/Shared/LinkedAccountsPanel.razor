@@ -52,7 +52,7 @@ else
             {
                 var linkCount = LinkedFor(account.Id).Count;
 
-                <button class="btn btn-sm @(account.Id == _selectedPanelUserId ? "btn-primary" : "btn-outline-secondary")"
+                <button class="btn btn-sm @(account.Id == _selectedPanelUserId ? "btn-primary" : "btn-secondary")"
                         @onclick="async () => await SelectPanelUser(account.Id)">
                     @(account.UserName ?? account.Id)
                     <span class="badge @(account.Id == _selectedPanelUserId ? "bg-light text-dark" : "bg-secondary") ms-1">@linkCount</span>
@@ -129,15 +129,15 @@ else
                                     }
                                 </td>
                                 <td style="text-align: right;">
-                                    <button class="btn btn-outline btn-sm" @onclick="() => SelectPlayer(link.PlayerId)">
+                                    <button class="btn btn-secondary btn-sm" @onclick="() => SelectPlayer(link.PlayerId)">
                                         <img class="nav-icon" src="/images/buildplate_icon.png" alt="" /> Buildplates
                                     </button>
 
                                     @if (_canManagePlayers)
                                     {
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => OpenCredentialsModal(link.PlayerId)">Credentials</button>
+                                        <button class="btn btn-secondary btn-sm" @onclick="() => OpenCredentialsModal(link.PlayerId)">Credentials</button>
                                     }
-                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => UnlinkAsync(link)">Unlink</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => UnlinkAsync(link)">Unlink</button>
                                 </td>
                             </tr>
                         }
@@ -165,7 +165,7 @@ else
 
                     @if (_canManagePlayers)
                     {
-                        <a href="/Admin/Players/@_selectedPlayerId/Buildplates" class="btn btn-outline btn-sm">Manage</a>
+                        <a href="/Admin/Players/@_selectedPlayerId/Buildplates" class="btn btn-secondary btn-sm">Manage</a>
                     }
                 </div>
             </div>

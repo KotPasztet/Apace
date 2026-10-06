@@ -30,7 +30,7 @@
                    @bind:after="ResetAndLoad" />
             @if (!string.IsNullOrEmpty(_searchTerm))
             {
-                <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                <button class="btn btn-secondary" type="button" @onclick="ClearSearch">
                     ✕
                 </button>
             }
@@ -592,14 +592,14 @@ else if (_canLinkPlayers)
         var (user, isProtected) = item;
         var canManage = (_canEditAccountInfo || _canAssignRoles) && !isProtected;
 
-        <button class="btn btn-sm @(canManage ? "btn-outline-primary" : "btn-outline-secondary")"
+        <button class="btn btn-sm @(canManage ? "btn-primary" : "btn-secondary")"
                 @onclick="() => EditUser(user, !canManage)">
             @(canManage ? "Edit" : "View")
         </button>
 
         @if (_canDeleteUsers && !isProtected)
         {
-            <button class="btn btn-sm btn-outline-danger ms-1" @onclick="() => ConfirmDelete(user)">
+            <button class="btn btn-sm btn-danger ms-1" @onclick="() => ConfirmDelete(user)">
                 Delete
             </button>
         }

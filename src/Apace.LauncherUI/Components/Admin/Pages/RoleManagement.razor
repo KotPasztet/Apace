@@ -511,14 +511,14 @@ else
     {
         var (role, canManage) = item;
 
-        <button class="btn btn-sm @(canManage ? "btn-outline-primary" : "btn-outline-secondary")"
+        <button class="btn btn-sm @(canManage ? "btn-primary" : "btn-secondary")"
                 @onclick="() => EditRole(role)">
             @(canManage ? "Edit" : "View")
         </button>
 
         @if (canManage)
         {
-            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(role)">Delete</button>
+            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(role)">Delete</button>
             if (role.Position > 0 && role.Position > _userMinPosition + 1)
             {
                 <button class="btn btn-sm btn-light" @onclick="() => MoveUp(role)">▲</button>

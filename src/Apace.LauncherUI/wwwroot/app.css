@@ -24,6 +24,10 @@
     font-display: block;
 }
 
+html {
+    font-size: 14px;
+}
+
 html, body {
     font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 700;
@@ -79,7 +83,7 @@ a:hover, .btn-link:hover {
 }
 
 .content {
-    padding-top: 1.1rem;
+    padding-top: 0.8rem;
     position: relative;
     z-index: 1;
 }
@@ -350,8 +354,8 @@ main {
 }
 
 .sidebar {
-    width: 260px;
-    min-width: 260px;
+    width: 220px;
+    min-width: 220px;
     background: rgba(26, 26, 26, 0.95) !important;
     background-image: none !important;
     border-right: 3px solid #3a3a3a;
@@ -382,20 +386,20 @@ main {
 
 .sidebar .top-row {
     background-color: transparent;
-    padding: 20px 16px;
+    padding: 14px 12px;
     text-align: center;
     border-bottom: 3px solid #3a3a3a;
     min-height: unset;
 }
 
 main > .top-row {
-    height: 56px;
-    min-height: 56px;
+    height: 46px;
+    min-height: 46px;
     background: rgba(26, 26, 26, 0.95) !important;
     border-bottom: 3px solid #3a3a3a;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     backdrop-filter: blur(4px);
     position: sticky;
     top: 0;
@@ -417,7 +421,7 @@ main > .top-row a:hover {
 
 .content {
     flex: 1;
-    padding: 24px;
+    padding: 18px;
 }
 
 .content::-webkit-scrollbar,
@@ -428,7 +432,7 @@ main > .top-row a:hover {
 
 .content::-webkit-scrollbar-track,
 .nav-scrollable::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: transparent;
 }
 
 .content::-webkit-scrollbar-thumb,
@@ -439,11 +443,13 @@ main > .top-row a:hover {
 
 /* dark-mode toggle button (sun/moon), wired to existing toggleDarkMode() */
 .dark-mode-btn {
-    background: linear-gradient(180deg, #7cb342, #558b2f);
+    background: #3B8526;
     color: #fff;
-    border: 2px solid #33691e;
-    box-shadow: 0 4px 0 #1a3a0a;
-    padding: 6px 14px;
+    border-style: solid;
+    border-color: transparent;
+    border-width: 4px 4px 8px 4px;
+    border-image: url('ApaceUI/button-accent-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
+    padding: 0 10px;
     cursor: pointer;
     font-size: 0.7rem;
     text-transform: uppercase;
@@ -457,13 +463,15 @@ main > .top-row a:hover {
 }
 
 .dark-mode-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 0 #1a3a0a;
+    background: #4B9736;
+    border-image-source: url('ApaceUI/button-accent-hover.png');
 }
 
 .dark-mode-btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 0 #1a3a0a;
+    background: #236212;
+    border-width: 4px;
+    border-image: url('ApaceUI/checkbox-checked-pressed.png') 4 / 4px stretch;
+    margin-top: 4px;
 }
 
 .dmb-sun { display: none; }
@@ -473,7 +481,7 @@ html.dark .dmb-sun { display: inline; }
 /* ---- Aliases to match demo class names exactly ---- */
 /* ---- Sidebar brand area and nav aliases ---- */
 .sidebar-brand {
-    padding: 20px 16px;
+    padding: 14px 12px;
     text-align: center;
     border-bottom: 3px solid #3a3a3a;
 }
@@ -484,8 +492,8 @@ html.dark .dmb-sun { display: inline; }
 }
 .sidebar-nav .nav-icon,
 .nav-icon {
-    width: 20px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
     image-rendering: pixelated;
     flex-shrink: 0;
     opacity: 0.8;
@@ -499,14 +507,14 @@ html.dark .dmb-sun { display: inline; }
 
 
 .topbar {
-    height: 56px;
-    min-height: 56px;
+    height: 46px;
+    min-height: 46px;
     background: rgba(26, 26, 26, 0.95) !important;
     border-bottom: 3px solid #3a3a3a;
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 0 24px;
+    gap: 12px;
+    padding: 0 18px;
     backdrop-filter: blur(4px);
     position: sticky;
     top: 0;
@@ -543,11 +551,13 @@ html.dark .dmb-sun { display: inline; }
     text-decoration: none;
 }
 .theme-btn {
-    background: linear-gradient(180deg, #7cb342, #558b2f);
+    background: #3B8526;
     color: #fff;
-    border: 2px solid #33691e;
-    box-shadow: 0 4px 0 #1a3a0a;
-    padding: 6px 14px;
+    border-style: solid;
+    border-color: transparent;
+    border-width: 4px 4px 8px 4px;
+    border-image: url('ApaceUI/button-accent-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
+    padding: 0 10px;
     cursor: pointer;
     font-size: 0.7rem;
     text-transform: uppercase;
@@ -559,8 +569,8 @@ html.dark .dmb-sun { display: inline; }
     font-family: inherit;
     font-weight: 700;
 }
-.theme-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #1a3a0a; }
-.theme-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1a3a0a; }
+.theme-btn:hover { background: #4B9736; border-image-source: url('ApaceUI/button-accent-hover.png'); }
+.theme-btn:active { background: #236212; border-width: 4px; border-image: url('ApaceUI/checkbox-checked-pressed.png') 4 / 4px stretch; margin-top: 4px; }
 
 
 
@@ -628,7 +638,7 @@ html.dark .dmb-sun { display: inline; }
 
     .nav-scrollable {
         display: block;
-        height: calc(100vh - 90px);
+        height: calc(100vh - 76px);
         overflow-y: auto;
     }
 }
@@ -645,8 +655,8 @@ html.dark .dmb-sun { display: inline; }
 .nav-item .nav-link {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 20px;
+    gap: 8px;
+    padding: 9px 16px;
     color: #b0b0b0 !important;
     text-decoration: none;
     font-size: 0.82rem;
@@ -678,8 +688,8 @@ html.dark .dmb-sun { display: inline; }
 
 .nav-item .bi,
 .nav-item ::deep .bi {
-    width: 20px !important;
-    height: 20px !important;
+    width: 17px !important;
+    height: 17px !important;
     margin-right: 0 !important;
     top: 0 !important;
     opacity: 0.8;
@@ -704,12 +714,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h2, .h2 {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     color: #81c784;
     letter-spacing: 2px;
-    padding-bottom: 10px;
-    border-bottom: 4px solid #6b8e23;
-    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #6b8e23;
+    margin-bottom: 12px;
 }
 
 .display-4, .display-5 {
@@ -745,166 +755,122 @@ code {
    Buttons
    ============================================================ */
 
+/* Ore UI buttons. The bevel and bottom shadow come from the 9-slice
+   pngs in /ApaceUI, the fill color is just background-color. */
 .btn {
     border-radius: 0 !important;
+    border-style: solid;
+    border-color: transparent;
+    border-width: 4px 4px 8px 4px;
+    border-image: url('ApaceUI/button-default-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
+    padding: 2px 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 700;
-    border-width: 2px;
-    transition: all 0.1s;
+    transition: none;
 }
 
-.btn-primary {
-    background: linear-gradient(180deg, #7cb342, #558b2f) !important;
+.btn-sm {
+    padding: 0 8px;
+}
+
+.btn-lg {
+    padding: 6px 18px;
+}
+
+.btn:active,
+.btn.active {
+    border-width: 4px;
+    border-image-slice: 4;
+    border-image-width: 4px;
+    margin-top: 4px;
+}
+
+.btn-secondary, .btn-light {
+    background: #39393B !important;
     color: #fff !important;
-    border-color: #33691e !important;
-    box-shadow: 0 5px 0 #1a3a0a;
 }
 
-.btn-primary:hover {
-    background: linear-gradient(180deg, #8bc34a, #689f38) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 7px 0 #1a3a0a;
+.btn-secondary:hover, .btn-light:hover {
+    background: #47484A !important;
+    border-image-source: url('ApaceUI/button-default-hover.png');
 }
 
-.btn-primary:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 0 #1a3a0a;
+.btn-secondary:active, .btn-light:active {
+    background: #2A2B2C !important;
+    border-image-source: url('ApaceUI/checkbox-disabled.png');
 }
 
-.btn-success {
-    background: linear-gradient(180deg, #4caf50, #388e3c) !important;
+.btn-primary, .btn-success {
+    background: #3B8526 !important;
     color: #fff !important;
-    border-color: #2e7d32 !important;
-    box-shadow: 0 5px 0 #1b5e20;
+    border-image-source: url('ApaceUI/button-accent-default.png');
 }
 
-.btn-success:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 7px 0 #1b5e20;
+.btn-primary:hover, .btn-success:hover {
+    background: #4B9736 !important;
+    border-image-source: url('ApaceUI/button-accent-hover.png');
+}
+
+.btn-primary:active, .btn-success:active {
+    background: #236212 !important;
+    border-image-source: url('ApaceUI/checkbox-checked-pressed.png');
 }
 
 .btn-danger {
-    background: linear-gradient(180deg, #e53935, #c62828) !important;
+    background: #B62323 !important;
     color: #fff !important;
-    border-color: #b71c1c !important;
-    box-shadow: 0 5px 0 #8b0000;
+    border-image-source: url('ApaceUI/button-warning-default.png');
 }
 
 .btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 7px 0 #8b0000;
+    background: #C93636 !important;
+    border-image-source: url('ApaceUI/button-warning-hover.png');
+}
+
+.btn-danger:active {
+    background: #870B0B !important;
+    border-image-source: url('ApaceUI/button-warning-pressed.png');
 }
 
 .btn-warning {
-    background: linear-gradient(180deg, #ffb300, #c68400) !important;
+    background: #E6A800 !important;
     color: #000 !important;
-    border-color: #8d6000 !important;
-    box-shadow: 0 5px 0 #5a3e00;
+    border-image-source: url('ApaceUI/button-yellow-default.png');
 }
 
 .btn-warning:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 7px 0 #5a3e00;
+    background: #FFC936 !important;
+    border-image-source: url('ApaceUI/button-yellow-hover.png');
 }
 
-.btn-secondary {
-    background: linear-gradient(180deg, #5a5a5a, #3a3a3a) !important;
-    color: #e0e0e0 !important;
-    border-color: #2a2a2a !important;
-    box-shadow: 0 4px 0 #1a1a1a;
-}
-
-.btn-secondary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 0 #1a1a1a;
-}
-
-.btn-light {
-    background: #2a2a2a !important;
-    color: #e0e0e0 !important;
-    border-color: #3a3a3a !important;
-    box-shadow: 0 3px 0 #0a0a0a;
-}
-
-.btn-light:hover {
-    background: #3a3a3a !important;
-    transform: translateY(-1px);
+.btn-warning:active {
+    background: #8F6400 !important;
+    border-image-source: url('ApaceUI/button-yellow-pressed.png');
 }
 
 .btn-link {
     text-transform: none;
     letter-spacing: normal;
     border: none;
+    border-image: none;
+    padding: 0.375rem 0.75rem;
     box-shadow: none !important;
 }
 
-.btn-outline, .btn-outline-primary {
-    background: transparent !important;
-    color: #8bc34a !important;
-    border-color: #4a5d23 !important;
-    box-shadow: 0 4px 0 #1a2a0a;
-}
-
-.btn-outline:hover, .btn-outline-primary:hover {
-    background: rgba(139, 195, 74, 0.1) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 0 #1a2a0a;
-}
-
-.btn-outline-secondary {
-    background: transparent !important;
-    color: #b0b0b0 !important;
-    border-color: #4a4a4a !important;
-    box-shadow: 0 4px 0 #1a1a1a;
-}
-
-.btn-outline-secondary:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
-    transform: translateY(-2px);
-}
-
-.btn-outline-danger {
-    background: transparent !important;
-    color: #e57373 !important;
-    border-color: #5a2a2a !important;
-    box-shadow: 0 4px 0 #2a0a0a;
-}
-
-.btn-outline-danger:hover {
-    background: rgba(229, 57, 53, 0.1) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 0 #2a0a0a;
-}
-
-.btn-outline-success {
-    background: transparent !important;
-    color: #81c784 !important;
-    border-color: #2e7d32 !important;
-    box-shadow: 0 4px 0 #0a2a0a;
-}
-
-.btn-outline-success:hover {
-    background: rgba(76, 175, 80, 0.1) !important;
-    transform: translateY(-2px);
-}
-
-.btn-outline-info {
-    background: transparent !important;
-    color: #64b5f6 !important;
-    border-color: #2a4a6a !important;
-    box-shadow: 0 4px 0 #0a1a2a;
-}
-
-.btn-outline-info:hover {
-    background: rgba(100, 181, 246, 0.1) !important;
-    transform: translateY(-2px);
-}
-
-.btn:disabled, .btn.disabled {
-    opacity: 0.5;
+.btn:disabled, .btn.disabled,
+.btn-primary:disabled, .btn-success:disabled, .btn-danger:disabled,
+.btn-warning:disabled, .btn-secondary:disabled, .btn-light:disabled {
+    background: #47484A !important;
+    color: #737476 !important;
+    border-image-source: url('ApaceUI/button-default-default.png');
+    opacity: 1;
     cursor: not-allowed;
-    transform: none !important;
+    margin-top: 0;
+}
+
+.btn-link:disabled {
+    background: none !important;
 }
 
 .btn-close {
@@ -924,7 +890,7 @@ code {
     background: #1a1a1a !important;
     border: 3px solid #3a3a3a !important;
     border-radius: 0 !important;
-    box-shadow: 0 6px 0 #0a0a0a, 0 8px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 5px 0 #0a0a0a, 0 6px 16px rgba(0, 0, 0, 0.4);
     color: #d0d0d0;
 }
 
@@ -934,7 +900,7 @@ code {
     color: #81c784;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .card-header.bg-primary {
@@ -953,7 +919,7 @@ code {
 }
 
 .card.shadow-sm, .shadow-sm {
-    box-shadow: 0 6px 0 #0a0a0a, 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 5px 0 #0a0a0a, 0 6px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* ============================================================
@@ -969,18 +935,61 @@ code {
 }
 
 .form-control, .form-select {
-    background: #1a1a1a !important;
-    border: 2px solid #3a3a3a !important;
-    color: #e0e0e0 !important;
+    background: #2A2B2C !important;
+    color: #fff !important;
     border-radius: 0 !important;
+    border-style: solid;
+    border-color: transparent !important;
+    border-width: 6px 4px 4px 4px;
+    border-image: url('ApaceUI/line-default.png') 6 4 4 4 / 6px 4px 4px 4px stretch;
+    padding: 2px 8px;
     font-weight: 700;
 }
 
+.form-control:hover, .form-select:hover {
+    border-image-source: url('ApaceUI/line-hover.png');
+}
+
+/* the focus image has a thicker white edge, outset keeps the layout from jumping */
 .form-control:focus, .form-select:focus {
-    background: #20201f !important;
-    border-color: #6b8e23 !important;
-    box-shadow: 0 0 0 3px rgba(107, 142, 35, 0.25) !important;
-    color: #f0f0f0 !important;
+    background: #2A2B2C !important;
+    color: #fff !important;
+    border-image-source: url('ApaceUI/line-focus.png');
+    border-image-slice: 8 6 6 6;
+    border-image-width: 8px 6px 6px 6px;
+    border-image-outset: 2px;
+    box-shadow: none !important;
+}
+
+.form-select {
+    background-color: #39393B !important;
+    background-image: url('ApaceUI/combobox-arrow.svg') !important;
+    background-repeat: no-repeat !important;
+    background-position: right 2px center !important;
+    background-size: 24px !important;
+    border-image-source: url('ApaceUI/combobox-menulist-default.png');
+    border-image-slice: 4;
+    border-image-width: 4px;
+    padding-right: 30px;
+}
+
+.form-select:hover {
+    background-color: #47484A !important;
+    border-image-source: url('ApaceUI/checkbox-unchecked-default.png');
+}
+
+.form-select:focus {
+    background-color: #39393B !important;
+}
+
+.form-control, .form-select {
+    min-height: 37px;
+}
+
+.form-control-sm, .form-select-sm {
+    min-height: 30px;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 .form-control::placeholder {
@@ -988,8 +997,9 @@ code {
 }
 
 .form-control:disabled, .form-select:disabled {
-    background: #141414 !important;
-    color: #707070 !important;
+    background: #39393B !important;
+    color: #959698 !important;
+    border-image-source: url('ApaceUI/line-hover.png');
 }
 
 .form-control-color {
@@ -1007,26 +1017,107 @@ code {
 }
 
 .form-check-input {
-    background-color: #1a1a1a;
-    border: 2px solid #4a4a4a;
+    width: 22px;
+    height: 22px;
+    margin-top: 0;
+    background-color: #2A2B2C;
+    background-position: center;
+    background-repeat: no-repeat;
     border-radius: 0;
+    border-style: solid;
+    border-color: transparent;
+    border-width: 4px;
+    border-image: url('ApaceUI/checkbox-unchecked-default.png') 4 / 4px stretch;
 }
 
-.form-check-input:checked {
-    background-color: #4a5d23 !important;
-    border-color: #6b8e23 !important;
+.form-check-input:hover {
+    border-image-source: url('ApaceUI/checkbox-unchecked-hover.png');
+}
+
+.form-check-input:checked[type=checkbox] {
+    background-color: #3B8526 !important;
+    background-image: url('ApaceUI/checkbox-checked.svg') !important;
+    background-size: 14px 14px;
+    border-image-source: url('ApaceUI/checkbox-checked-default.png');
+}
+
+.form-check-input:checked[type=checkbox]:hover {
+    border-image-source: url('ApaceUI/checkbox-checked-hover.png');
+}
+
+.form-check-input[type=checkbox]:indeterminate {
+    background-color: #3B8526;
+    background-image: url('ApaceUI/checkbox-indeterminate.svg');
+    background-size: 14px 14px;
+    border-image-source: url('ApaceUI/checkbox-checked-default.png');
+}
+
+.form-check-input:disabled {
+    background-color: #39393B !important;
+    border-image-source: url('ApaceUI/checkbox-disabled.png');
+}
+
+.form-check-input[type=radio] {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-image: none;
+    background-color: transparent !important;
+    background-image: url('ApaceUI/radiobutton-unchecked-default.svg');
+    background-size: 100%;
+}
+
+.form-check-input[type=radio]:hover {
+    background-image: url('ApaceUI/radiobutton-unchecked-hover.svg');
+}
+
+.form-check-input[type=radio]:checked {
+    background-image: url('ApaceUI/radiobutton-checked-default.svg') !important;
+}
+
+.form-check-input[type=radio]:checked:hover {
+    background-image: url('ApaceUI/radiobutton-checked-hover.svg') !important;
+}
+
+.form-check-input[type=radio]:disabled {
+    background-image: url('ApaceUI/radiobutton-unchecked-disabled.svg') !important;
+}
+
+.form-check-input[type=radio]:checked:disabled {
+    background-image: url('ApaceUI/radiobutton-checked-disabled.svg') !important;
 }
 
 .form-switch .form-check-input {
-    width: 40px;
-    height: 20px;
+    width: 38px;
+    height: 24px;
+    border-radius: 0;
+    border: none;
+    border-image: none;
+    background-color: transparent !important;
+    background-image: url('ApaceUI/switch-off.svg') !important;
+    background-position: center !important;
+    background-size: 100% 100%;
+    transition: none;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: transparent !important;
+    background-image: url('ApaceUI/switch-on.svg') !important;
+    background-size: 100% 100% !important;
+}
+
+.form-check-label {
+    padding-top: 2px;
 }
 
 .input-group-text {
-    background: #2a2a2a !important;
-    border: 2px solid #3a3a3a !important;
+    background: #39393B !important;
     color: #8bc34a !important;
     border-radius: 0 !important;
+    border-style: solid;
+    border-color: transparent !important;
+    border-width: 4px;
+    border-image: url('ApaceUI/combobox-menulist-default.png') 4 / 4px stretch;
 }
 
 select option {
@@ -1063,7 +1154,7 @@ fieldset:disabled {
 }
 
 .table th {
-    padding: 12px 16px;
+    padding: 9px 12px;
     text-align: left;
     font-size: 0.7rem;
     text-transform: uppercase;
@@ -1075,7 +1166,7 @@ fieldset:disabled {
 }
 
 .table td {
-    padding: 11px 16px;
+    padding: 8px 12px;
     color: #d0d0d0;
 }
 
@@ -1198,28 +1289,33 @@ fieldset:disabled {
    ============================================================ */
 
 .page-link {
-    background: #1a1a1a;
+    background: #39393B;
     color: #8bc34a;
-    border: 2px solid #3a3a3a;
+    border-style: solid;
+    border-color: transparent;
+    border-width: 4px 4px 8px 4px;
+    border-image: url('ApaceUI/button-default-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
     border-radius: 0 !important;
     font-weight: 700;
+    padding: 0 10px;
 }
 
 .page-link:hover {
-    background: #2a2a2a;
+    background: #47484A;
     color: #aed581;
+    border-image-source: url('ApaceUI/button-default-hover.png');
 }
 
 .page-item.active .page-link {
-    background: linear-gradient(180deg, #7cb342, #558b2f);
-    border-color: #33691e;
+    background: #3B8526;
+    border-image-source: url('ApaceUI/button-accent-default.png');
     color: #fff;
 }
 
 .page-item.disabled .page-link {
-    background: #141414;
-    color: #5a5a5a;
-    border-color: #2a2a2a;
+    background: #47484A;
+    color: #737476;
+    border-image-source: url('ApaceUI/button-default-default.png');
 }
 
 /* nav-pills / nav-tabs (log tabs, settings tabs) */
@@ -1298,7 +1394,7 @@ fieldset:disabled {
     border: 3px solid #3a3a3a !important;
     border-top: none !important;
     background: rgba(0, 0, 0, 0.2) !important;
-    padding: 20px !important;
+    padding: 14px !important;
 }
 
 /* ============================================================
@@ -1377,19 +1473,19 @@ fieldset:disabled {
    ============================================================ */
 
 .section-title {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     color: #81c784;
     text-transform: uppercase;
     letter-spacing: 2px;
-    margin-bottom: 8px;
-    padding-bottom: 10px;
-    border-bottom: 4px solid #6b8e23;
+    margin-bottom: 6px;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #6b8e23;
 }
 
 .section-subtitle {
     color: #b0b0b0;
     font-size: 0.78rem;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     text-transform: none;
     letter-spacing: normal;
     font-weight: 700;
@@ -1398,21 +1494,21 @@ fieldset:disabled {
 .splash-hero {
     background: rgba(0, 0, 0, 0.3);
     border: 3px solid #4a5d23;
-    padding: 40px 24px;
+    padding: 28px 18px;
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     box-shadow: 0 8px 0 #1a3a0a, 0 0 40px rgba(139, 195, 74, 0.08);
 }
 
 .splash-hero img {
-    width: 80px;
-    height: 80px;
+    width: 64px;
+    height: 64px;
     image-rendering: pixelated;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .splash-hero h1 {
-    font-size: 2rem;
+    font-size: 1.7rem;
     color: #8bc34a;
     text-shadow: 0 4px 12px rgba(139, 195, 74, 0.4);
     margin-bottom: 8px;
@@ -1421,8 +1517,8 @@ fieldset:disabled {
 
 .status-indicator, .status-dot {
     display: inline-block;
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     border: 2px solid rgba(0, 0, 0, 0.4);
     border-radius: 0 !important;
     flex-shrink: 0;
@@ -1452,14 +1548,14 @@ fieldset:disabled {
 
 .comp-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
 }
 
 .comp-card {
     background: #1a1a1a;
     border: 3px solid #3a3a3a;
-    padding: 16px 20px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1497,8 +1593,8 @@ fieldset:disabled {
     background: #0a0a0a !important;
     border: 3px solid #2a2a2a !important;
     border-radius: 0 !important;
-    padding: 16px;
-    height: 350px;
+    padding: 12px;
+    height: 300px;
     overflow-y: auto;
     box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
 }
@@ -1508,16 +1604,18 @@ fieldset:disabled {
 }
 
 .log-container::-webkit-scrollbar-track, .log-terminal::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    background: transparent;
 }
 
 .log-container::-webkit-scrollbar-thumb, .log-terminal::-webkit-scrollbar-thumb {
-    background: #3a3a3a;
+    background: linear-gradient(180deg, #3a3a3a, #2e2e2e);
+    border: 1px solid #1a1a1a;
 }
 
 .log-content {
     font-family: 'Minecraft', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 0.65rem;
+    font-size: 0.9rem;
+    font-weight: 100;
     line-height: 1.6;
     letter-spacing: normal;
 }
@@ -1554,6 +1652,46 @@ fieldset:disabled {
     display: none;
 }
 
+/* Ore scrollbars. ore-scrollbar.js adds html.ore-scrollbars once it's running,
+   then draws the track and thumb itself. Without the script the native
+   scrollbars above still work. */
+html.ore-scrollbars,
+html.ore-scrollbars * {
+    scrollbar-width: none;
+}
+
+html.ore-scrollbars::-webkit-scrollbar,
+html.ore-scrollbars *::-webkit-scrollbar {
+    display: none;
+}
+
+.ore-sb {
+    position: fixed;
+    display: none;
+    background: #0E0E0F;
+    user-select: none;
+    touch-action: none;
+}
+
+.ore-sb-thumb {
+    position: absolute;
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: transparent;
+    border-width: 4px 6px 10px 4px;
+    border-image: url('ApaceUI/scrollbar-thumb.png') 2 3 5 2 fill / 4px 6px 10px 4px stretch;
+    image-rendering: pixelated;
+    cursor: pointer;
+}
+
+.ore-sb-thumb:hover {
+    filter: brightness(1.12);
+}
+
+.ore-sb.dragging .ore-sb-thumb {
+    filter: brightness(0.85);
+}
+
 /* Buildplate preview container */
 .preview-container {
     background: #0a0a0a !important;
@@ -1585,7 +1723,7 @@ fieldset:disabled {
     background: #1a1a1a !important;
     border: 3px solid #3a3a3a !important;
     border-radius: 0 !important;
-    box-shadow: 0 6px 0 #0a0a0a, 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 5px 0 #0a0a0a, 0 6px 16px rgba(0, 0, 0, 0.4) !important;
     color: #d0d0d0 !important;
 }
 
@@ -1819,6 +1957,10 @@ html.dark .drop-zone.hovering {
    ============================================================ */
 
 @media (max-width: 768px) {
+    html {
+        font-size: 13px;
+    }
+
     .page {
         flex-direction: column;
     }
@@ -1831,12 +1973,57 @@ html.dark .drop-zone.hovering {
         border-bottom: 3px solid #3a3a3a;
     }
 
+    .sidebar .top-row,
+    .sidebar-brand {
+        padding: 8px 12px;
+    }
+
+    .sidebar .navbar-brand,
+    .sidebar .top-row.navbar-dark .navbar-brand {
+        width: 55%;
+        max-width: 220px;
+    }
+
     .content {
-        padding: 16px;
+        padding: 12px;
+    }
+
+    main > .top-row,
+    .topbar {
+        height: 40px;
+        min-height: 40px;
+        padding: 0 12px;
     }
 
     .comp-grid {
         grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .comp-card {
+        padding: 10px 12px;
+    }
+
+    .splash-hero {
+        padding: 20px 12px;
+    }
+
+    .splash-hero h1 {
+        font-size: 1.4rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 7px 8px;
+    }
+
+    .log-container,
+    .log-terminal {
+        height: 240px;
+    }
+
+    .display-4, .display-5 {
+        letter-spacing: 2px;
     }
 }
 
