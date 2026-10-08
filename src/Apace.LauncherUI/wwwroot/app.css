@@ -46,12 +46,12 @@ html, body {
     border-style: solid;
     border-color: transparent;
     border-width: 4px 4px 8px 4px;
-    border-image: url('ApaceUI/button-accent-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;   
+    border-image: url('ApaceUI/UI/button-accent-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;   
 }
 
 *::-webkit-scrollbar-thumb:hover {
     background: #4B9736 !important;
-    border-image-source: url('ApaceUI/button-accent-hover.png');
+    border-image-source: url('ApaceUI/UI/button-accent-hover.png');
 }
 
 /* ---------- Base (light) theme: Apace greens on dark backdrop ----------
@@ -68,7 +68,7 @@ html, body {
 }
 
 body {
-    background-image: url('https://sqlylxcnoqehorlgmztm.supabase.co/storage/v1/object/public/icons/backgrounds/splash_screen.png');
+    background-image: url('ApaceUI/Backgrounds/dark.png');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -450,7 +450,7 @@ main > .top-row a:hover {
     border-style: solid;
     border-color: transparent;
     border-width: 4px 4px 8px 4px;
-    border-image: url('ApaceUI/button-accent-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
+    border-image: url('ApaceUI/UI/button-accent-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
     padding: 0 10px;
     cursor: pointer;
     font-size: 0.7rem;
@@ -466,13 +466,13 @@ main > .top-row a:hover {
 
 .dark-mode-btn:hover {
     background: #4B9736;
-    border-image-source: url('ApaceUI/button-accent-hover.png');
+    border-image-source: url('ApaceUI/UI/button-accent-hover.png');
 }
 
 .dark-mode-btn:active {
     background: #236212;
     border-width: 4px;
-    border-image: url('ApaceUI/checkbox-checked-pressed.png') 4 / 4px stretch;
+    border-image: url('ApaceUI/UI/checkbox-checked-pressed.png') 4 / 4px stretch;
     margin-top: 4px;
 }
 
@@ -558,7 +558,7 @@ html.dark .dmb-sun { display: inline; }
     border-style: solid;
     border-color: transparent;
     border-width: 4px 4px 8px 4px;
-    border-image: url('ApaceUI/button-accent-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
+    border-image: url('ApaceUI/UI/button-accent-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
     padding: 0 10px;
     cursor: pointer;
     font-size: 0.7rem;
@@ -571,8 +571,8 @@ html.dark .dmb-sun { display: inline; }
     font-family: inherit;
     font-weight: 700;
 }
-.theme-btn:hover { background: #4B9736; border-image-source: url('ApaceUI/button-accent-hover.png'); }
-.theme-btn:active { background: #236212; border-width: 4px; border-image: url('ApaceUI/checkbox-checked-pressed.png') 4 / 4px stretch; margin-top: 4px; }
+.theme-btn:hover { background: #4B9736; border-image-source: url('ApaceUI/UI/button-accent-hover.png'); }
+.theme-btn:active { background: #236212; border-width: 4px; border-image: url('ApaceUI/UI/checkbox-checked-pressed.png') 4 / 4px stretch; margin-top: 4px; }
 
 
 
@@ -762,7 +762,7 @@ code {
     border-style: solid;
     border-color: transparent;
     border-width: 4px 4px 8px 4px;
-    border-image: url('ApaceUI/button-default-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
+    border-image: url('ApaceUI/UI/button-default-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
     padding: 2px 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -793,60 +793,60 @@ code {
 
 .btn-secondary:hover, .btn-light:hover {
     background: #47484A !important;
-    border-image-source: url('ApaceUI/button-default-hover.png');
+    border-image-source: url('ApaceUI/UI/button-default-hover.png');
 }
 
 .btn-secondary:active, .btn-light:active {
     background: #2A2B2C !important;
-    border-image-source: url('ApaceUI/checkbox-disabled.png');
+    border-image-source: url('ApaceUI/UI/checkbox-disabled.png');
 }
 
 .btn-primary, .btn-success {
     background: #3B8526 !important;
     color: #fff !important;
-    border-image-source: url('ApaceUI/button-accent-default.png');
+    border-image-source: url('ApaceUI/UI/button-accent-default.png');
 }
 
 .btn-primary:hover, .btn-success:hover {
     background: #4B9736 !important;
-    border-image-source: url('ApaceUI/button-accent-hover.png');
+    border-image-source: url('ApaceUI/UI/button-accent-hover.png');
 }
 
 .btn-primary:active, .btn-success:active {
     background: #236212 !important;
-    border-image-source: url('ApaceUI/checkbox-checked-pressed.png');
+    border-image-source: url('ApaceUI/UI/checkbox-checked-pressed.png');
 }
 
 .btn-danger {
     background: #B62323 !important;
     color: #fff !important;
-    border-image-source: url('ApaceUI/button-warning-default.png');
+    border-image-source: url('ApaceUI/UI/button-warning-default.png');
 }
 
 .btn-danger:hover {
     background: #C93636 !important;
-    border-image-source: url('ApaceUI/button-warning-hover.png');
+    border-image-source: url('ApaceUI/UI/button-warning-hover.png');
 }
 
 .btn-danger:active {
     background: #870B0B !important;
-    border-image-source: url('ApaceUI/button-warning-pressed.png');
+    border-image-source: url('ApaceUI/UI/button-warning-pressed.png');
 }
 
 .btn-warning {
     background: #E6A800 !important;
     color: #000 !important;
-    border-image-source: url('ApaceUI/button-yellow-default.png');
+    border-image-source: url('ApaceUI/UI/button-yellow-default.png');
 }
 
 .btn-warning:hover {
     background: #FFC936 !important;
-    border-image-source: url('ApaceUI/button-yellow-hover.png');
+    border-image-source: url('ApaceUI/UI/button-yellow-hover.png');
 }
 
 .btn-warning:active {
     background: #8F6400 !important;
-    border-image-source: url('ApaceUI/button-yellow-pressed.png');
+    border-image-source: url('ApaceUI/UI/button-yellow-pressed.png');
 }
 
 .btn-link {
@@ -863,7 +863,7 @@ code {
 .btn-warning:disabled, .btn-secondary:disabled, .btn-light:disabled {
     background: #47484A !important;
     color: #737476 !important;
-    border-image-source: url('ApaceUI/button-default-default.png');
+    border-image-source: url('ApaceUI/UI/button-default-default.png');
     opacity: 1;
     cursor: not-allowed;
     margin-top: 0;
@@ -941,20 +941,20 @@ code {
     border-style: solid;
     border-color: transparent !important;
     border-width: 6px 4px 4px 4px;
-    border-image: url('ApaceUI/line-default.png') 6 4 4 4 / 6px 4px 4px 4px stretch;
+    border-image: url('ApaceUI/UI/line-default.png') 6 4 4 4 / 6px 4px 4px 4px stretch;
     padding: 2px 8px;
     font-weight: 700;
 }
 
 .form-control:hover, .form-select:hover {
-    border-image-source: url('ApaceUI/line-hover.png');
+    border-image-source: url('ApaceUI/UI/line-hover.png');
 }
 
 /* the focus image has a thicker white edge, outset keeps the layout from jumping */
 .form-control:focus, .form-select:focus {
     background: #2A2B2C !important;
     color: #fff !important;
-    border-image-source: url('ApaceUI/line-focus.png');
+    border-image-source: url('ApaceUI/UI/line-focus.png');
     border-image-slice: 8 6 6 6;
     border-image-width: 8px 6px 6px 6px;
     border-image-outset: 2px;
@@ -963,11 +963,11 @@ code {
 
 .form-select {
     background-color: #39393B !important;
-    background-image: url('ApaceUI/combobox-arrow.svg') !important;
+    background-image: url('ApaceUI/UI/combobox-arrow.svg') !important;
     background-repeat: no-repeat !important;
     background-position: right 2px center !important;
     background-size: 24px !important;
-    border-image-source: url('ApaceUI/combobox-menulist-default.png');
+    border-image-source: url('ApaceUI/UI/combobox-menulist-default.png');
     border-image-slice: 4;
     border-image-width: 4px;
     padding-right: 30px;
@@ -975,7 +975,7 @@ code {
 
 .form-select:hover {
     background-color: #47484A !important;
-    border-image-source: url('ApaceUI/checkbox-unchecked-default.png');
+    border-image-source: url('ApaceUI/UI/checkbox-unchecked-default.png');
 }
 
 .form-select:focus {
@@ -999,7 +999,7 @@ code {
 .form-control:disabled, .form-select:disabled {
     background: #39393B !important;
     color: #959698 !important;
-    border-image-source: url('ApaceUI/line-hover.png');
+    border-image-source: url('ApaceUI/UI/line-hover.png');
 }
 
 .form-control-color {
@@ -1027,34 +1027,34 @@ code {
     border-style: solid;
     border-color: transparent;
     border-width: 4px;
-    border-image: url('ApaceUI/checkbox-unchecked-default.png') 4 / 4px stretch;
+    border-image: url('ApaceUI/UI/checkbox-unchecked-default.png') 4 / 4px stretch;
 }
 
 .form-check-input:hover {
-    border-image-source: url('ApaceUI/checkbox-unchecked-hover.png');
+    border-image-source: url('ApaceUI/UI/checkbox-unchecked-hover.png');
 }
 
 .form-check-input:checked[type=checkbox] {
     background-color: #3B8526 !important;
-    background-image: url('ApaceUI/checkbox-checked.svg') !important;
+    background-image: url('ApaceUI/UI/checkbox-checked.svg') !important;
     background-size: 14px 14px;
-    border-image-source: url('ApaceUI/checkbox-checked-default.png');
+    border-image-source: url('ApaceUI/UI/checkbox-checked-default.png');
 }
 
 .form-check-input:checked[type=checkbox]:hover {
-    border-image-source: url('ApaceUI/checkbox-checked-hover.png');
+    border-image-source: url('ApaceUI/UI/checkbox-checked-hover.png');
 }
 
 .form-check-input[type=checkbox]:indeterminate {
     background-color: #3B8526;
-    background-image: url('ApaceUI/checkbox-indeterminate.svg');
+    background-image: url('ApaceUI/UI/checkbox-indeterminate.svg');
     background-size: 14px 14px;
-    border-image-source: url('ApaceUI/checkbox-checked-default.png');
+    border-image-source: url('ApaceUI/UI/checkbox-checked-default.png');
 }
 
 .form-check-input:disabled {
     background-color: #39393B !important;
-    border-image-source: url('ApaceUI/checkbox-disabled.png');
+    border-image-source: url('ApaceUI/UI/checkbox-disabled.png');
 }
 
 .form-check-input[type=radio] {
@@ -1063,28 +1063,28 @@ code {
     border: none;
     border-image: none;
     background-color: transparent !important;
-    background-image: url('ApaceUI/radiobutton-unchecked-default.svg');
+    background-image: url('ApaceUI/UI/radiobutton-unchecked-default.svg');
     background-size: 100%;
 }
 
 .form-check-input[type=radio]:hover {
-    background-image: url('ApaceUI/radiobutton-unchecked-hover.svg');
+    background-image: url('ApaceUI/UI/radiobutton-unchecked-hover.svg');
 }
 
 .form-check-input[type=radio]:checked {
-    background-image: url('ApaceUI/radiobutton-checked-default.svg') !important;
+    background-image: url('ApaceUI/UI/radiobutton-checked-default.svg') !important;
 }
 
 .form-check-input[type=radio]:checked:hover {
-    background-image: url('ApaceUI/radiobutton-checked-hover.svg') !important;
+    background-image: url('ApaceUI/UI/radiobutton-checked-hover.svg') !important;
 }
 
 .form-check-input[type=radio]:disabled {
-    background-image: url('ApaceUI/radiobutton-unchecked-disabled.svg') !important;
+    background-image: url('ApaceUI/UI/radiobutton-unchecked-disabled.svg') !important;
 }
 
 .form-check-input[type=radio]:checked:disabled {
-    background-image: url('ApaceUI/radiobutton-checked-disabled.svg') !important;
+    background-image: url('ApaceUI/UI/radiobutton-checked-disabled.svg') !important;
 }
 
 .form-switch .form-check-input {
@@ -1094,7 +1094,7 @@ code {
     border: none;
     border-image: none;
     background-color: transparent !important;
-    background-image: url('ApaceUI/switch-off.svg') !important;
+    background-image: url('ApaceUI/UI/switch-off.svg') !important;
     background-position: center !important;
     background-size: 100% 100%;
     transition: none;
@@ -1102,7 +1102,7 @@ code {
 
 .form-switch .form-check-input:checked {
     background-color: transparent !important;
-    background-image: url('ApaceUI/switch-on.svg') !important;
+    background-image: url('ApaceUI/UI/switch-on.svg') !important;
     background-size: 100% 100% !important;
 }
 
@@ -1117,7 +1117,7 @@ code {
     border-style: solid;
     border-color: transparent !important;
     border-width: 4px;
-    border-image: url('ApaceUI/combobox-menulist-default.png') 4 / 4px stretch;
+    border-image: url('ApaceUI/UI/combobox-menulist-default.png') 4 / 4px stretch;
 }
 
 select option {
@@ -1294,7 +1294,7 @@ fieldset:disabled {
     border-style: solid;
     border-color: transparent;
     border-width: 4px 4px 8px 4px;
-    border-image: url('ApaceUI/button-default-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
+    border-image: url('ApaceUI/UI/button-default-default.png') 4 4 8 4 / 4px 4px 8px 4px stretch;
     border-radius: 0 !important;
     font-weight: 700;
     padding: 0 10px;
@@ -1303,19 +1303,19 @@ fieldset:disabled {
 .page-link:hover {
     background: #47484A;
     color: #aed581;
-    border-image-source: url('ApaceUI/button-default-hover.png');
+    border-image-source: url('ApaceUI/UI/button-default-hover.png');
 }
 
 .page-item.active .page-link {
     background: #3B8526;
-    border-image-source: url('ApaceUI/button-accent-default.png');
+    border-image-source: url('ApaceUI/UI/button-accent-default.png');
     color: #fff;
 }
 
 .page-item.disabled .page-link {
     background: #47484A;
     color: #737476;
-    border-image-source: url('ApaceUI/button-default-default.png');
+    border-image-source: url('ApaceUI/UI/button-default-default.png');
 }
 
 /* nav-pills / nav-tabs (log tabs, settings tabs) */
@@ -1701,7 +1701,7 @@ html.dark, html.dark body {
 
 html.dark body {
     background-image: linear-gradient(rgba(20, 30, 10, 0.55), rgba(20, 30, 10, 0.55)),
-        url('https://sqlylxcnoqehorlgmztm.supabase.co/storage/v1/object/public/icons/backgrounds/splash_screen.png');
+        url('ApaceUI/Backgrounds/light.png');
     background-size: cover;
     background-position: center;
 }

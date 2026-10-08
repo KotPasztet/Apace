@@ -15,7 +15,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
         <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
-            <img class="nav-icon" src="/images/mob_of_me_icon.png" alt="" /> Players
+            <img class="nav-icon" src="/ApaceUI/Icons/mob_of_me_icon.png" alt="" /> Players
         </div>
         <p class="text-muted small mb-0 mt-1">Manage accounts and player statistics</p>
     </div>
@@ -87,7 +87,7 @@ else
                                     @if (HasPermission(Permissions.ManagePlayers))
                                     {
                                         <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-secondary btn-sm" title="View Buildplates">
-                                            <img class="nav-icon" src="/images/buildplate_icon.png" alt="" />
+                                            <img class="nav-icon" src="/ApaceUI/Icons/buildplate_icon.png" alt="" />
                                         </a>
                                         <button class="btn btn-secondary btn-sm" @onclick="() => StartEdit(player)">Edit</button>
                                         <button class="btn btn-danger btn-sm" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
