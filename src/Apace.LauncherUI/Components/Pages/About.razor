@@ -70,7 +70,7 @@
 
                 <div class="d-flex align-items-center gap-3">
                     <span class="badge @StateBadge.Class">@StateBadge.Label</span>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="CheckNowAsync" disabled="@_checkingNow">
+                    <button class="btn btn-sm btn-secondary" @onclick="CheckNowAsync" disabled="@_checkingNow">
                         @(_checkingNow ? "Checking…" : "Check now")
                     </button>
                     @if (ShowUpdateButton)
@@ -177,7 +177,7 @@
 
                 <div class="mt-4 text-center">
                     <a href="https://github.com/KotPasztet/Apace/issues/new/choose" target="_blank"
-                       class="btn btn-outline-danger">
+                       class="btn btn-danger">
                         🐞 Report Bug / Request Feature
                     </a>
                 </div>
