@@ -14,7 +14,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
-        <img class="nav-icon" src="/images/locked_icon.png" alt="" /> Role Hierarchy
+        <img class="nav-icon" src="/ApaceUI/Icons/locked_icon.png" alt="" /> Role Hierarchy
     </div>
     <button class="btn btn-primary" @onclick="PrepareCreate">+ Create New Role</button>
 </div>
@@ -511,14 +511,14 @@ else
     {
         var (role, canManage) = item;
 
-        <button class="btn btn-sm @(canManage ? "btn-outline-primary" : "btn-outline-secondary")"
+        <button class="btn btn-sm @(canManage ? "btn-primary" : "btn-secondary")"
                 @onclick="() => EditRole(role)">
             @(canManage ? "Edit" : "View")
         </button>
 
         @if (canManage)
         {
-            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(role)">Delete</button>
+            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(role)">Delete</button>
             if (role.Position > 0 && role.Position > _userMinPosition + 1)
             {
                 <button class="btn btn-sm btn-light" @onclick="() => MoveUp(role)">▲</button>
