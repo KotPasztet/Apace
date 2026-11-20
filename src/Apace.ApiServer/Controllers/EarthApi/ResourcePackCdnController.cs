@@ -1,6 +1,8 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
 using Serilog;
 using Apace.ApiServer.Types;
 using Apace.ApiServer.Utils;
@@ -33,10 +35,13 @@ internal sealed class ResourcePackController : ControllerBase
 [Route("cdn/availableresourcepack/resourcepacks/dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35")]
 public class ResourcePackCdnController : ControllerBase
 {
+    private const string ResourcePackFileName = "dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35";
+
     [HttpGet, HttpHead]
-    public async Task<Results<BadRequest, FileContentHttpResult>> Get()
+    public async Task<Results<BadRequest, FileStreamHttpResult>> Get()
     {
-        string resourcePackFilePath = Path.Combine(Program.staticData.Directory, @"resourcepacks/vanilla.zip"); //resource packs are distributed as renamed zip files containing an MCpack
+        //resource packs are distributed as renamed zip files containing an MCpack
+        string resourcePackFilePath = Path.GetFullPath(Path.Combine(Program.staticData.Directory, @"resourcepacks/vanilla.zip"));
 
         if (!System.IO.File.Exists(resourcePackFilePath))
         {
@@ -44,11 +49,31 @@ public class ResourcePackCdnController : ControllerBase
             return TypedResults.BadRequest(); //we cannot serve you.
         }
 
-        // TODO: use Stream
-        byte[] fileData = await System.IO.File.ReadAllBytesAsync(resourcePackFilePath); //Namespaces
-        var cd = new System.Net.Mime.ContentDisposition { FileName = "dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35", Inline = true };
-        Response.Headers.Append("Content-Disposition", cd.ToString());
+        var fileInfo = new FileInfo(resourcePackFilePath);
 
-        return TypedResults.File(fileData, "application/octet-stream", "dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35");
+        // The previous implementation read the entire pack into memory and
+        // served it as one buffer: an interrupted download could not be
+        // resumed and had to start over, and concurrent downloads multiplied
+        // the memory usage. Serving the file as a stream with range support
+        // and caching headers makes downloads resumable and cacheable.
+        //
+        // The entity tag is derived from the pack's size and modification
+        // time, so it changes exactly when the pack file on disk changes and
+        // clients only redownload an actually modified pack (HTTP 304
+        // otherwise).
+        string etag = $"\"{fileInfo.Length:x8}-{fileInfo.LastWriteTimeUtc.Ticks:x8}\"";
+
+        Response.Headers.ContentDisposition = new ContentDispositionHeaderValue("inline") { FileName = ResourcePackFileName }.ToString();
+
+        Stream stream = new FileStream(resourcePackFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, useAsync: true);
+
+        return TypedResults.Stream(
+            stream,
+            "application/octet-stream",
+            fileDownloadName: null,
+            lastModified: fileInfo.LastWriteTimeUtc,
+            entityTag: new EntityTagHeaderValue(etag),
+            enableRangeProcessing: true
+        );
     }
 }
