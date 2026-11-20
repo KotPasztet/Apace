@@ -159,6 +159,7 @@ public sealed class ConsoleProcess : IDisposable
         }
 
         Process.Start();
+        ChildProcessJob.Add(Process);
         running = true;
 
         if (_pidFilePath != null)
