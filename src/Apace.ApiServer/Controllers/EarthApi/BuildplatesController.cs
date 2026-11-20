@@ -336,6 +336,15 @@ internal sealed class BuildplatesController : ApaceControllerBase
             return TypedResults.BadRequest();
         }
 
+        // Rate limit join attempts per player. Returns the same result as an
+        // unknown join code so a brute forcer cannot tell throttling apart
+        // from a wrong guess.
+        if (!RateLimiter.IsAllowed($"join_instance:{playerId}", 10, TimeSpan.FromMinutes(1)))
+        {
+            Log.Warning($"Player {playerId} hit the join instance rate limit");
+            return TypedResults.NotFound();
+        }
+
         using var reader = new StreamReader(Request.Body, Encoding.UTF8);
         string body = await reader.ReadToEndAsync(cancellationToken);
         Log.Debug($"Join request from {playerId}: {body}");
@@ -581,7 +590,6 @@ internal sealed class BuildplatesController : ApaceControllerBase
         return EarthJson(activeLocations);
     }
 
-    // TODO: should we restrict this to matching player ID?
     [HttpGet("multiplayer/partitions/{partitionId}/instances/{instanceId}")]
 #pragma warning disable IDE0060 // Remove unused parameter
     public async Task<Results<ContentHttpResult, BadRequest, NotFound>> GetInstanceStatus(string partitionId, string instanceId, CancellationToken cancellationToken)
@@ -596,6 +604,15 @@ internal sealed class BuildplatesController : ApaceControllerBase
         BuildplateInstancesManager.InstanceInfo? instanceInfo = buildplateInstancesManager.GetInstanceInfo(instanceId);
         if (instanceInfo is null || instanceInfo.ShuttingDown)
         {
+            return TypedResults.NotFound();
+        }
+
+        // Only the host and guests who joined with a join code may see the
+        // instance status (which contains the join code and server address).
+        // Ownerless instances (encounters) are world content and stay open.
+        if (!buildplateInstancesManager.IsParticipant(playerId, instanceId))
+        {
+            Log.Information($"Player {playerId} was denied status access to instance {instanceId}");
             return TypedResults.NotFound();
         }
 

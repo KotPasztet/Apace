@@ -280,6 +280,28 @@ public sealed class BuildplateInstancesManager
 
     private sealed record RemoveGuestRequest(string PlayerId);
 
+    // Whether a player may see the status of an instance: the host, a guest
+    // who joined with a join code, or anyone if the instance has no owner
+    // (encounters are shared world content and have no owning player).
+    public bool IsParticipant(string playerId, string instanceId)
+    {
+        lock (_instances)
+        {
+            InstanceInfo? instanceInfo = _instances.GetOrDefault(instanceId, null);
+            if (instanceInfo is null)
+            {
+                return false;
+            }
+
+            if (instanceInfo.PlayerId is null || instanceInfo.PlayerId == playerId)
+            {
+                return true;
+            }
+
+            return _guests.TryGetValue(playerId, out string? guestInstanceId) && guestInstanceId == instanceId;
+        }
+    }
+
     public async Task<string?> GetBuildplatePreviewAsync(byte[] serverData, bool night)
     {
         Log.Information("Requesting buildplate preview");
