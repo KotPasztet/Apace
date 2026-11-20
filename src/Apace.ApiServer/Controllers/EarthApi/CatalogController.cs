@@ -27,21 +27,27 @@ internal sealed class CatalogController : ApaceControllerBase
 {
     private static Catalog catalog => Program.staticData.Catalog;
 
+    // Building these responses requires mapping thousands of catalog entries;
+    // cache the results for a while (the static data they are built from is
+    // immutable after startup). Ported from Solace's CatalogResponseCacheService
+    // without the DI container, which the Apace API server does not use.
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(15);
+
     [HttpGet("inventory/catalogv3")]
     public ContentHttpResult GetItemsCatalog()
-        => EarthJson(MakeItemsCatalogApiResponse(catalog));
+        => EarthJson(CatalogResponseCache<ItemsCatalog>.GetOrCreate(() => MakeItemsCatalogApiResponse(catalog), CacheTtl));
 
     [HttpGet("recipes")]
     public ContentHttpResult GetRecipeCatalog()
-        => EarthJson(MakeRecipesCatalogApiResponse(catalog));
+        => EarthJson(CatalogResponseCache<RecipesCatalog>.GetOrCreate(() => MakeRecipesCatalogApiResponse(catalog), CacheTtl));
 
     [HttpGet("journal/catalog")]
     public ContentHttpResult GetJournalCatalog()
-        => EarthJson(MakeJournalCatalogApiResponse(catalog));
+        => EarthJson(CatalogResponseCache<JournalCatalog>.GetOrCreate(() => MakeJournalCatalogApiResponse(catalog), CacheTtl));
 
     [HttpGet("products/catalog")]
     public ContentHttpResult GetNFCBoostsCatalog()
-        => EarthJson(MakeNFCBoostsCatalogApiResponse(catalog));
+        => EarthJson(CatalogResponseCache<NFCBoost[]>.GetOrCreate(() => MakeNFCBoostsCatalogApiResponse(catalog), CacheTtl));
 
     [HttpGet("products/getProductInfo")]
     [HttpPost("products/getProductInfo")]
@@ -53,7 +59,7 @@ internal sealed class CatalogController : ApaceControllerBase
             requestedProductIds = await ReadRequestedProductIdsAsync(Request.Body, cancellationToken);
         }
 
-        NFCBoost[] products = MakeNFCBoostsCatalogApiResponse(catalog);
+        NFCBoost[] products = CatalogResponseCache<NFCBoost[]>.GetOrCreate(() => MakeNFCBoostsCatalogApiResponse(catalog), CacheTtl);
         NFCBoost[] matchingProducts = requestedProductIds.Count == 0
             ? products
             : [.. products.Where(product => requestedProductIds.Contains(product.Id))];
