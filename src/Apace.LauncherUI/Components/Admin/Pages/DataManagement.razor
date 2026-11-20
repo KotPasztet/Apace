@@ -1,0 +1,684 @@
+@page "/Admin/Data"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@using Microsoft.Data.Sqlite
+@using Serilog
+@using Apace.Common.Utils
+@using Apace.LauncherUI.Utils
+@using System.IO.Compression
+@attribute [Authorize(Policy = Permissions.ViewData)]
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject ServerManager ServerManager
+@inject IJSRuntime JS
+
+<PageTitle>Data Management - Apace</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+            <img class="nav-icon" src="/images/earth_icon.png" alt="" /> Data Management
+        </div>
+        <p class="text-muted small mb-0 mt-1">Export, import and delete server data</p>
+    </div>
+    <span class="badge badge-subtle" style="font-size: 0.75rem; padding: 6px 12px;">
+        Total: @FormatBytes(_totalSpaceB)
+    </span>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Space Usage</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 border-end">
+                <h6 class="text-muted">Total Space Used</h6>
+                <h3 class="text-primary">@FormatBytes(_totalSpaceB)</h3>
+            </div>
+            <div class="col-md-9">
+                <h6 class="text-muted">Storage Split</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>earth.db (game data)</span>
+                        <span class="badge bg-secondary rounded-pill">@FormatBytes(_earthDbB)</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>live.db (accounts)</span>
+                        <span class="badge bg-secondary rounded-pill">@FormatBytes(_liveDbB)</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>object_store (world data)</span>
+                        <span class="badge bg-secondary rounded-pill">@FormatBytes(_objectStoreB)</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (HasPermission(Permissions.ExportData))
+{
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Export Data</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">Download a full backup of the server data (earth.db, live.db and the object store) as a zip file.</p>
+            <button class="btn btn-outline-primary" @onclick="ExportData">
+                Export Data
+            </button>
+        </div>
+    </div>
+}
+
+@if (HasPermission(Permissions.EditData))
+{
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Edit Data</h5>
+        </div>
+        <div class="card-body">
+            <section class="mb-5">
+                <h6>Import Data</h6>
+                <p class="small text-muted">
+                    Merge an existing dataset into this server. Supported structures (zip these files/folders):<br />
+                    <strong>Apace export:</strong> <code>earth.db</code>, <code>live.db</code>, <code>object_store/</code> |
+                    <strong>Vienna / Project Earth:</strong> <code>db/earth.db</code>, <code>objects/</code><br />
+                    Solace servers are migrated with <code>scripts/migrate-from-solace.py</code> instead.
+                </p>
+
+                <div class="input-group">
+                    <InputFile @key="_inputFileId" OnChange="HandleFileSelected" class="form-control" accept=".zip" />
+                    @if (_selectedFile != null)
+                    {
+                        <button class="btn btn-primary" @onclick="InitiateImport">
+                            Upload &amp; Process
+                        </button>
+                    }
+                </div>
+
+                @if (_selectedFile != null)
+                {
+                    <div class="mt-3">
+                        <label class="form-label small text-muted mb-1">Conflict resolution (rows that exist on both sides)</label>
+                        <select class="form-select" style="max-width: 360px;" @bind="_mergeStrategy">
+                            <option value="@MergeStrategy.Automatic">Automatic (newer version wins)</option>
+                            <option value="@MergeStrategy.KeepCurrent">Keep current server data</option>
+                            <option value="@MergeStrategy.KeepIncoming">Keep incoming data</option>
+                        </select>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_uploadError))
+                {
+                    <div class="text-danger small mt-2">@_uploadError</div>
+                }
+                @if (!string.IsNullOrEmpty(_importSummary))
+                {
+                    <div class="text-success small mt-2">@_importSummary</div>
+                }
+            </section>
+
+            <hr />
+
+            <section class="mt-4">
+                <h6 class="text-danger">Danger Zone</h6>
+                <p class="small text-muted">
+                    Deleting all server data is a permanent action and cannot be undone. This wipes earth.db
+                    (profiles, inventories, buildplates, tiles) and the object store. Panel users and game
+                    accounts (live.db) are kept.
+                </p>
+
+                @if (!_isConfirmingDelete)
+                {
+                    <button class="btn btn-outline-danger btn-sm" @onclick="InitiateDelete">
+                        Delete All Data
+                    </button>
+                }
+                else
+                {
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <div class="me-auto">
+                            <strong>Are you absolutely sure?</strong>
+                            @if (!_canConfirmDelete)
+                            {
+                                <span class="ms-1 text-dark"> Please wait @_countdown seconds...</span>
+                            }
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-secondary me-2" @onclick="CancelDelete">Cancel</button>
+                            <button class="btn btn-sm btn-danger" disabled="@(!_canConfirmDelete)" @onclick="ExecuteDelete">
+                                Yes, Delete Everything
+                            </button>
+                        </div>
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+}
+
+@if (_isProcessing)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.7); z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-transparent border-0 text-center">
+                <div class="modal-body text-white">
+                    <div class="spinner-border text-light mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h5>@_processingAction...</h5>
+                    <p class="small text-light opacity-75">Please do not close this page.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private enum MergeStrategy
+    {
+        Automatic,
+        KeepCurrent,
+        KeepIncoming
+    }
+
+    private ClaimsPrincipal? _user;
+
+    private FileInfo _earthDB = null!;
+    private FileInfo _liveDB = null!;
+    private DirectoryInfo _objectStore = null!;
+
+    // View states - Delete
+    private bool _isConfirmingDelete = false;
+    private bool _canConfirmDelete = false;
+    private int _countdown = 5;
+
+    // View states - Import/Export
+    private bool _isProcessing = false;
+    private string _processingAction = "";
+
+    private Guid _inputFileId = Guid.NewGuid();
+
+    // import
+    private IBrowserFile? _selectedFile;
+    private string? _uploadError;
+    private string? _importSummary;
+    private MergeStrategy _mergeStrategy = MergeStrategy.Automatic;
+    private readonly long _maxAllowedSize = 1024 * 1024 * 1024;
+
+    // Size
+    private long _totalSpaceB => _earthDbB + _liveDbB + _objectStoreB;
+    private long _earthDbB = -1;
+    private long _liveDbB = -1;
+    private long _objectStoreB = -1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User;
+
+        _earthDB = new FileInfo(Settings.Instance.EarthDatabaseConnectionString!);
+        _liveDB = new FileInfo(Settings.Instance.LiveDatabaseConnectionString!);
+        _objectStore = new DirectoryInfo(Path.Combine(Program.DataDir, "object_store"));
+
+        LoadSizes();
+    }
+
+    private void LoadSizes()
+    {
+        _earthDbB = SafeLength(_earthDB);
+        _liveDbB = SafeLength(_liveDB);
+        _objectStoreB = SafeLength(_objectStore);
+    }
+
+    private static long SafeLength(FileInfo file)
+    {
+        file.Refresh();
+        return file.Exists ? file.Length : 0;
+    }
+
+    private static long SafeLength(DirectoryInfo dir)
+    {
+        dir.Refresh();
+        return dir.Exists ? dir.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => SafeLength(file)) : 0;
+    }
+
+    private bool HasPermission(string permission)
+        => _user?.HasPermission(permission) ?? false;
+
+    private void ExportData()
+    {
+        _processingAction = "Exporting Data";
+        _isProcessing = true;
+
+        try
+        {
+            NavigationManager.NavigateTo("api/data/export", forceLoad: true);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task InitiateImport()
+    {
+        if (ServerManager.AnyOnline)
+        {
+            await JS.InvokeVoidAsync("alert", "The server needs to be offline to import data.");
+            return;
+        }
+
+        if (_selectedFile is null)
+        {
+            return;
+        }
+
+        await ConfirmImportAsync();
+    }
+
+    private async Task ConfirmImportAsync()
+    {
+        if (_selectedFile is null)
+        {
+            return;
+        }
+
+        _isProcessing = true;
+        _processingAction = "Uploading";
+        _uploadError = null;
+        _importSummary = null;
+
+        try
+        {
+            await ProcessZipFileAsync(_selectedFile);
+            _selectedFile = null;
+            _inputFileId = Guid.NewGuid();
+        }
+        finally
+        {
+            _isProcessing = false;
+            LoadSizes();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task InitiateDelete()
+    {
+        if (ServerManager.AnyOnline)
+        {
+            await JS.InvokeVoidAsync("alert", "The server needs to be offline to delete data.");
+            return;
+        }
+
+        _isConfirmingDelete = true;
+        _canConfirmDelete = false;
+        _countdown = 5;
+
+        while (_countdown > 0 && _isConfirmingDelete)
+        {
+            await Task.Delay(1000);
+            _countdown--;
+            StateHasChanged();
+        }
+
+        if (_isConfirmingDelete)
+        {
+            _canConfirmDelete = true;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelDelete()
+    {
+        _isConfirmingDelete = false;
+        _canConfirmDelete = false;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (ServerManager.AnyOnline)
+        {
+            await JS.InvokeVoidAsync("alert", "The server needs to be offline to delete data.");
+            CancelDelete();
+            return;
+        }
+
+        try
+        {
+            await using (var connection = new SqliteConnection("Data Source=" + _earthDB.FullName))
+            {
+                await connection.OpenAsync();
+                foreach (string table in new[] { "objects", "tiles", "buildplates" })
+                {
+                    using var command = connection.CreateCommand();
+                    command.CommandText = $"DELETE FROM {table}";
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+
+            if (_objectStore.Exists)
+            {
+                foreach (FileInfo file in _objectStore.EnumerateFiles("*", SearchOption.AllDirectories))
+                {
+                    file.Delete();
+                }
+            }
+
+            Log.Information("Deleted all server data (earth.db tables and object store)");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to delete server data");
+        }
+
+        LoadSizes();
+        CancelDelete();
+        StateHasChanged();
+    }
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _uploadError = null;
+        _importSummary = null;
+        _selectedFile = e.File;
+
+        if (!_selectedFile.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            _uploadError = "Please select a valid .zip file.";
+            _selectedFile = null;
+        }
+    }
+
+    private async Task ProcessZipFileAsync(IBrowserFile file)
+    {
+        try
+        {
+            using var stream = file.OpenReadStream(_maxAllowedSize);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
+
+            bool isApace = archive.Entries.Any(e => e.FullName.Equals("earth.db", StringComparison.OrdinalIgnoreCase));
+            bool isVienna = archive.Entries.Any(e => e.FullName.Equals("db/earth.db", StringComparison.OrdinalIgnoreCase));
+
+            if (!isApace && !isVienna)
+            {
+                _uploadError = "Invalid ZIP structure. Expected an Apace export (earth.db, live.db, object_store/) or a Vienna export (db/earth.db, objects/).";
+                return;
+            }
+
+            _processingAction = isApace ? "Processing Apace Format" : "Processing Vienna Format";
+            StateHasChanged();
+
+            string earthDbEntryName = isApace ? "earth.db" : "db/earth.db";
+            string objectsDirName = isApace ? "object_store" : "objects";
+
+            long importedObjects = 0;
+            long importedTiles = 0;
+            long importedBuildplates = 0;
+            long importedAccounts = 0;
+
+            var earthDbEntry = archive.GetEntry(earthDbEntryName);
+            if (earthDbEntry is not null)
+            {
+                (importedObjects, importedTiles, importedBuildplates) = await ImportEarthDbAsync(earthDbEntry);
+            }
+
+            if (isApace)
+            {
+                var liveDbEntry = archive.GetEntry("live.db");
+                if (liveDbEntry is not null)
+                {
+                    importedAccounts = await ImportLiveDbAsync(liveDbEntry);
+                }
+            }
+
+            long importedFiles = 0;
+            foreach (var entry in archive.Entries)
+            {
+                if (!entry.IsDirectory && entry.FullName.StartsWith(objectsDirName, StringComparison.OrdinalIgnoreCase))
+                {
+                    string relativeName = Path.GetRelativePath(objectsDirName, entry.FullName);
+
+                    // Zip-slip guard: never extract outside the object store.
+                    if (relativeName.StartsWith("..") || Path.IsPathRooted(relativeName))
+                    {
+                        continue;
+                    }
+
+                    string destinationFileName = Path.Combine(_objectStore.FullName, relativeName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(destinationFileName)!);
+                    await entry.ExtractToFileAsync(destinationFileName, overwrite: _mergeStrategy != MergeStrategy.KeepCurrent);
+                    importedFiles++;
+                }
+            }
+
+            _importSummary = $"Imported {importedObjects} objects, {importedTiles} tiles, {importedBuildplates} buildplates, {importedAccounts} accounts and {importedFiles} object store files.";
+            Log.Information("Imported server data: {Objects} objects, {Tiles} tiles, {Buildplates} buildplates, {Accounts} accounts, {Files} files", importedObjects, importedTiles, importedBuildplates, importedAccounts, importedFiles);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error processing file");
+            _uploadError = $"Error processing file: {ex.Message}";
+        }
+    }
+
+    private async Task<(long objects, long tiles, long buildplates)> ImportEarthDbAsync(ZipArchiveEntry earthDbEntry)
+    {
+        // If the server has no earth.db yet, just drop the imported one in place.
+        if (!_earthDB.Exists)
+        {
+            await earthDbEntry.ExtractToFileAsync(_earthDB.FullName, overwrite: false);
+            await using (var connection = new SqliteConnection("Data Source=" + _earthDB.FullName))
+            {
+                await connection.OpenAsync();
+                return await CountRowsAsync(connection);
+            }
+        }
+
+        string importDbPath = Path.GetTempFileName();
+
+        try
+        {
+            await earthDbEntry.ExtractToFileAsync(importDbPath, overwrite: true);
+
+            await using var connection = new SqliteConnection("Data Source=" + _earthDB.FullName);
+            await connection.OpenAsync();
+
+            await ExecuteNonQueryAsync(connection, "ATTACH DATABASE @db AS incoming", command => command.Parameters.AddWithValue("@db", importDbPath));
+
+            try
+            {
+                long objects = 0, tiles = 0, buildplates = 0;
+
+                if (await TableExistsAsync(connection, "incoming", "objects"))
+                {
+                    string objectsSql = _mergeStrategy switch
+                    {
+                        MergeStrategy.KeepCurrent => "INSERT OR IGNORE INTO main.objects (type, id, value, version) SELECT type, id, value, version FROM incoming.objects",
+                        MergeStrategy.KeepIncoming => "INSERT OR REPLACE INTO main.objects (type, id, value, version) SELECT type, id, value, version FROM incoming.objects",
+                        // Automatic: the row with the higher version wins; ties keep the current row.
+                        _ => """
+                            INSERT OR REPLACE INTO main.objects (type, id, value, version)
+                            SELECT i.type, i.id, i.value, i.version
+                            FROM incoming.objects i
+                            WHERE NOT EXISTS (
+                                SELECT 1 FROM main.objects o
+                                WHERE o.type == i.type AND o.id == i.id AND o.version >= i.version
+                            )
+                            """
+                    };
+                    objects = await ExecuteNonQueryAsync(connection, objectsSql);
+                }
+
+                if (await TableExistsAsync(connection, "incoming", "tiles"))
+                {
+                    string conflictClause = _mergeStrategy == MergeStrategy.KeepCurrent ? "INSERT OR IGNORE" : "INSERT OR REPLACE";
+                    tiles = await ExecuteNonQueryAsync(connection, $"{conflictClause} INTO main.tiles (id, value) SELECT id, value FROM incoming.tiles");
+                }
+
+                if (await TableExistsAsync(connection, "incoming", "buildplates"))
+                {
+                    string conflictClause = _mergeStrategy == MergeStrategy.KeepCurrent ? "INSERT OR IGNORE" : "INSERT OR REPLACE";
+                    buildplates = await ExecuteNonQueryAsync(connection, $"{conflictClause} INTO main.buildplates (id, value) SELECT id, value FROM incoming.buildplates");
+                }
+
+                return (objects, tiles, buildplates);
+            }
+            finally
+            {
+                await ExecuteNonQueryAsync(connection, "DETACH DATABASE incoming");
+            }
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(importDbPath);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to delete import db file '{Path}': {Message}", importDbPath, ex.Message);
+            }
+        }
+    }
+
+    private async Task<long> ImportLiveDbAsync(ZipArchiveEntry liveDbEntry)
+    {
+        if (!_liveDB.Exists)
+        {
+            await liveDbEntry.ExtractToFileAsync(_liveDB.FullName, overwrite: false);
+            await using (var connection = new SqliteConnection("Data Source=" + _liveDB.FullName))
+            {
+                await connection.OpenAsync();
+                return await CountAccountsAsync(connection, "main");
+            }
+        }
+
+        string importDbPath = Path.GetTempFileName();
+
+        try
+        {
+            await liveDbEntry.ExtractToFileAsync(importDbPath, overwrite: true);
+
+            await using var connection = new SqliteConnection("Data Source=" + _liveDB.FullName);
+            await connection.OpenAsync();
+
+            await ExecuteNonQueryAsync(connection, "ATTACH DATABASE @db AS incoming", command => command.Parameters.AddWithValue("@db", importDbPath));
+
+            try
+            {
+                if (!await TableExistsAsync(connection, "incoming", "Accounts"))
+                {
+                    return 0;
+                }
+
+                const string accountColumns = "Id, CreatedDate, Username, ProfilePictureUrl, FirstName, LastName, PasswordSalt, PasswordHash";
+
+                // Missing accounts are always added; existing ones are only replaced on KeepIncoming.
+                long accounts = await ExecuteNonQueryAsync(connection, $"INSERT OR IGNORE INTO main.Accounts ({accountColumns}) SELECT {accountColumns} FROM incoming.Accounts");
+
+                if (_mergeStrategy == MergeStrategy.KeepIncoming)
+                {
+                    await ExecuteNonQueryAsync(connection, $"INSERT OR REPLACE INTO main.Accounts ({accountColumns}) SELECT {accountColumns} FROM incoming.Accounts");
+                }
+
+                return accounts;
+            }
+            finally
+            {
+                await ExecuteNonQueryAsync(connection, "DETACH DATABASE incoming");
+            }
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(importDbPath);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to delete import db file '{Path}': {Message}", importDbPath, ex.Message);
+            }
+        }
+    }
+
+    private static async Task<bool> TableExistsAsync(SqliteConnection connection, string schema, string table)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT COUNT(*) FROM {schema}.sqlite_master WHERE type = 'table' AND name = $table";
+        command.Parameters.AddWithValue("$table", table);
+        return (await command.ExecuteScalarAsync() as long? ?? 0) > 0;
+    }
+
+    private static async Task<long> ExecuteNonQueryAsync(SqliteConnection connection, string sql, Action<SqliteCommand>? setup = null)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandTimeout = 60;
+        command.CommandText = sql;
+        setup?.Invoke(command);
+        return await command.ExecuteNonQueryAsync();
+    }
+
+    private static async Task<(long objects, long tiles, long buildplates)> CountRowsAsync(SqliteConnection connection)
+    {
+        long objects = 0, tiles = 0, buildplates = 0;
+
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT COUNT(*) FROM objects";
+            objects = await command.ExecuteScalarAsync() as long? ?? 0;
+        }
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT COUNT(*) FROM tiles";
+            tiles = await command.ExecuteScalarAsync() as long? ?? 0;
+        }
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT COUNT(*) FROM buildplates";
+            buildplates = await command.ExecuteScalarAsync() as long? ?? 0;
+        }
+
+        return (objects, tiles, buildplates);
+    }
+
+    private static async Task<long> CountAccountsAsync(SqliteConnection connection, string schema)
+    {
+        if (!await TableExistsAsync(connection, schema, "Accounts"))
+        {
+            return 0;
+        }
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT COUNT(*) FROM {schema}.Accounts";
+        return await command.ExecuteScalarAsync() as long? ?? 0;
+    }
+
+    private static readonly string[] SizeUnits = ["B", "KB", "MB", "GB", "TB", "PB"];
+
+    private string FormatBytes(long bytes)
+    {
+        if (bytes is <= 0)
+        {
+            return "0 B";
+        }
+
+        int unitIndex = 0;
+        double displaySize = bytes;
+
+        while (displaySize >= 1024 && unitIndex < SizeUnits.Length - 1)
+        {
+            displaySize /= 1024;
+            unitIndex++;
+        }
+
+        return $"{displaySize:n2} {SizeUnits[unitIndex]}";
+    }
+}
