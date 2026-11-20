@@ -26,6 +26,8 @@ public sealed class InstanceManager
 
     private sealed record AddGuestRequest(string PlayerId, string InstanceId);
 
+    private sealed record RemoveGuestRequest(string PlayerId);
+
     [JsonConverter(typeof(JsonStringEnumConverter))]
     private enum InstanceType
     {
@@ -290,6 +292,30 @@ public sealed class InstanceManager
 
                     instanceManager._guestInstances[addGuestRequest.PlayerId] = addGuestRequest.InstanceId;
                     Log.Information($"Player {addGuestRequest.PlayerId} added as guest to instance {addGuestRequest.InstanceId}");
+                    return Json.Serialize(true);
+                }
+                else if (request.Type is "removeGuest")
+                {
+                    // Sent by the API server when a player requests their own instance
+                    // (new or reused), so their next playerLogin is routed to their own
+                    // instance instead of the host's they previously joined.
+                    RemoveGuestRequest? removeGuestRequest;
+                    try
+                    {
+                        removeGuestRequest = Json.Deserialize<RemoveGuestRequest>(request.Data);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Warning(exception, "Bad removeGuest request");
+                        return null;
+                    }
+                    if (removeGuestRequest is null || string.IsNullOrEmpty(removeGuestRequest.PlayerId))
+                    {
+                        return Json.Serialize(false);
+                    }
+
+                    instanceManager._guestInstances.TryRemove(removeGuestRequest.PlayerId, out _);
+                    Log.Information($"Player {removeGuestRequest.PlayerId} removed from guest routing");
                     return Json.Serialize(true);
                 }
                 else if (request.Type is "preview")
