@@ -12,7 +12,18 @@
 Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
 
 > [!NOTE]
-> **Actively developed.** The server is functional — maps, buildplates, challenges, daily rewards, adventures, crafting, and more are working.
+> **Actively developed.** The server is functional — maps, buildplates, **shared buildplate multiplayer**, challenges, daily rewards, adventures, crafting, and more are working.
+
+> [!TIP]
+> ### ✨ Unreleased on `dev`: Shared Buildplate Multiplayer
+>
+> - **Join a friend's buildplate** — every buildplate session gets a join code; guests scan the host's QR code and build together on the shared `19132/udp` bridge (ported from the Apace-Rework multiplayer update).
+> - **See other players in AR** — remote players appear as floating nametags at eye height with their held item below (no full skins; the Genoa client crashes on player entities).
+> - **Clean exits** — closing a buildplate returns guests to the map with "The buildplate has been closed" instead of stranding them.
+> - **Offline QR scanning** — the patched client decodes QR codes with embedded ZXing, no Google services needed.
+> - Also from the port: child JVMs can no longer outlive the launcher on Windows, and patcher jobs work from non-ASCII install paths.
+>
+> See the *Unreleased* section in [CHANGELOG.md](CHANGELOG.md) for details and known limitations.
 
 > [!TIP]
 > ### ✨ What's new in v0.1.3
@@ -51,6 +62,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | Boost Minis   | :white_check_mark: | NFC minifig activation with Mattel tag decoding                                          |
 | Tappables     | :white_check_mark: |                                                                                          |
 | Buildplates   | :white_check_mark: |                                                                                          |
+| Multiplayer    | :white_check_mark: | Shared buildplates via QR join codes (dev); AR nametags — see CHANGELOG known limitations |
 | Store         | :white_check_mark: | Tab titles do not load                                                                   |
 | Challenges    | :construction: | Daily challenge system (3 per player, deterministic rotation, progress tracking)         |
 | Seasons       | :white_check_mark: | Seasonal content support                                                                 |
