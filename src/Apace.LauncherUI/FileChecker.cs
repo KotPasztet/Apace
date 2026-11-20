@@ -59,8 +59,8 @@ internal static class FileChecker
         _resourcePackDismissed = false;
     }
 
-    private const string ResourcePackId = "dba38e59-091a-4826-b76a-a08d7de5a9e2-1301b0c257a311678123b9e7325d0d6c61db3c35";
-    private const long MinResourcePackSize = 100_000_000; // ~131MB expected (131885348B)
+    private const long MinResourcePackSize = ResourcePackDownloader.MinResourcePackSize;
+    private const long ExpectedResourcePackSize = ResourcePackDownloader.ExpectedResourcePackSize;
 
     private static string GetResourcePackPath()
         => Path.GetFullPath(Path.Combine(Program.StaticDataDir, "resourcepacks", "vanilla.zip"));
@@ -194,7 +194,7 @@ internal static class FileChecker
         }
         else if (resourcePack.Length < MinResourcePackSize)
         {
-            logger.Error($"Resourcepack file '{resourcePackPath}' is invalid, expected size: 131885348B, actual size: {resourcePack.Length}B");
+            logger.Error($"Resourcepack file '{resourcePackPath}' is invalid, expected size: {ExpectedResourcePackSize}B, actual size: {resourcePack.Length}B");
             FlagResourcePackProblem(resourcePackPath);
         }
 
@@ -346,81 +346,16 @@ internal static class FileChecker
     /// Downloads vanilla.zip on demand (panel "Server Status" prompt).
     /// Not critical — server runs without it. Clients have the resourcepack
     /// embedded, this is only needed for overrides.
-    /// Does not throw: failures are logged and the file is left absent/invalid,
-    /// so callers should re-check <see cref="ResourcePackPending"/>.
+    /// Does not throw: the outcome (including the failure reason shown in the
+    /// panel) is reported through <see cref="ResourcePackDownloadResult"/>.
+    /// See <see cref="ResourcePackDownloader"/> for how the mirrors are picked.
     /// </summary>
-    public static Task DownloadResourcePackAsync(IProgress<float>? progress = null, CancellationToken cancellationToken = default)
-        => DownloadResourcePackAsync(GetResourcePackPath(), Log.Logger, progress, cancellationToken);
+    public static Task<ResourcePackDownloadResult> DownloadResourcePackAsync(IProgress<float>? progress = null)
+        => ResourcePackDownloader.DownloadAsync(GetResourcePackPath(), Log.Logger, progress);
 
-    private static async Task DownloadResourcePackAsync(string destPath, ILogger logger, IProgress<float>? progress, CancellationToken cancellationToken)
-    {
-        var urls = new[]
-        {
-            $"https://cdn.mceserv.net/availableresourcepack/resourcepacks/{ResourcePackId}",
-            $"https://web.archive.org/web/2/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{ResourcePackId}",
-        };
+    /// <summary>True while a resource pack download is running (possibly started from another tab).</summary>
+    public static bool IsResourcePackDownloading => ResourcePackDownloader.IsDownloading;
 
-        foreach (var url in urls)
-        {
-            try
-            {
-                logger.Information($"Downloading resourcepack from {url}...");
-                using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    logger.Warning($"Download failed from {url}: HTTP {(int)response.StatusCode}");
-                    continue;
-                }
-
-                // Check Content-Length header before downloading the body
-                if (response.Content.Headers.ContentLength is long contentLength && contentLength < MinResourcePackSize)
-                {
-                    logger.Warning($"Resourcepack at {url} is too small ({contentLength} bytes), skipping");
-                    continue;
-                }
-
-                progress?.Report(0);
-
-                Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
-                long? totalBytes = response.Content.Headers.ContentLength;
-                await using var fs = File.OpenWriteNew(destPath);
-                await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                var buffer = new byte[81920];
-                long downloadedBytes = 0;
-                int bytesRead;
-                while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
-                {
-                    await fs.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                    downloadedBytes += bytesRead;
-                    if (progress is not null && totalBytes > 0)
-                    {
-                        progress.Report((float)downloadedBytes / totalBytes.Value);
-                    }
-                }
-                await fs.FlushAsync(cancellationToken);
-
-                var fileInfo = new FileInfo(destPath);
-                if (fileInfo.Length < MinResourcePackSize)
-                {
-                    logger.Warning($"Downloaded resourcepack is too small ({fileInfo.Length} bytes), deleting");
-                    File.Delete(destPath);
-                    continue;
-                }
-
-                logger.Information($"Resourcepack downloaded successfully ({fileInfo.Length} bytes) to '{destPath}'");
-                return;
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                logger.Warning($"Download from {url} failed: {ex.Message}");
-                // Clean up partial download
-                try { File.Delete(destPath); } catch { /* ignore */ }
-            }
-        }
-
-        logger.Warning("Could not download resourcepack. The server will work without it.");
-        logger.Warning($"To add it manually, download from Internet Archive and place at: {destPath}");
-        logger.Warning($"  Archive search: https://web.archive.org/web/*/https://cdn.mceserv.net/availableresourcepack/resourcepacks/{ResourcePackId}");
-    }
+    /// <summary>Cancels a running resource pack download, if any.</summary>
+    public static void CancelResourcePackDownload() => ResourcePackDownloader.Cancel();
 }

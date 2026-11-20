@@ -19,6 +19,7 @@
 ### 📦 Resource pack downloads
 
 - The pack is streamed from disk instead of being loaded into memory in full; interrupted downloads can resume (HTTP range requests, 206), unchanged packs answer 304 Not Modified via ETag/Last-Modified, and HEAD requests are served with a correct Content-Length.
+- Downloading the pack from the panel no longer fails at random. The old implementation was killed mid-download by the HTTP client's default 100 s timeout (the pack is ~131 MB), tried every mirror exactly once, and hid the reason behind a generic "still missing" error. The Wayback Machine is now queried through the CDX API to find the actual 200-status snapshots of the pack (the `/web/2/` shortcut can redirect to a capture of an error page), each mirror is retried with backoff when archive.org rate limits (429) or errors out (5xx), partial downloads are resumed with range requests instead of restarting, and the result is validated (ZIP containing `genoa.mcpack`) before it is accepted. The panel now shows the real failure reason (rate limited, stalled connection, wrong file, ...) and a running download can be cancelled — or keeps running server side when the tab is closed.
 
 ### 🛡️ Multiplayer hardening
 
