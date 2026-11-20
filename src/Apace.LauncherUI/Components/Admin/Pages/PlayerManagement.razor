@@ -89,6 +89,9 @@ else
                                         <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-outline btn-sm" title="View Buildplates">
                                             <img class="nav-icon" src="/images/buildplate_icon.png" alt="" />
                                         </a>
+                                        <a href="/Admin/Players/@player.Id/Inventory" class="btn btn-outline btn-sm" title="View Inventory">
+                                            <img class="nav-icon" src="/images/mob_of_me_icon.png" alt="" />
+                                        </a>
                                         <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(player)">Edit</button>
                                         <button class="btn btn-outline-danger btn-sm" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
                                     }
@@ -143,6 +146,7 @@ else
                         {
                             <div class="d-flex flex-wrap gap-2">
                                 <a href="/Admin/Players/@player.Id/Buildplates" class="btn btn-outline btn-sm flex-grow-1">Buildplates</a>
+                                <a href="/Admin/Players/@player.Id/Inventory" class="btn btn-outline btn-sm flex-grow-1">Inventory</a>
                                 <button class="btn btn-outline-secondary btn-sm flex-grow-1" @onclick="() => StartEdit(player)">Edit</button>
                                 <button class="btn btn-outline-danger btn-sm flex-grow-1" @onclick="() => DeletePlayerAsync(player.Id, player.Username)">Delete</button>
                             </div>
