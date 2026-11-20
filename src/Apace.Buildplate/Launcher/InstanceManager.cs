@@ -21,6 +21,10 @@ public sealed class InstanceManager
     private bool _shuttingDown;
     private readonly Lock _lock = new Lock();
     private readonly ConcurrentDictionary<string, Instance> _activeInstances = new();
+    // Guests that joined someone else's instance via a join code (playerId -> instanceId)
+    private readonly ConcurrentDictionary<string, string> _guestInstances = new();
+
+    private sealed record AddGuestRequest(string PlayerId, string InstanceId);
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     private enum InstanceType
@@ -209,6 +213,10 @@ public sealed class InstanceManager
                         }
 
                         instanceManager._activeInstances.TryRemove(instanceId, out _);
+                        foreach (var guest in instanceManager._guestInstances.Where(entry => entry.Value == instanceId).ToList())
+                        {
+                            instanceManager._guestInstances.TryRemove(guest);
+                        }
                     }).Forget();
 
                     return instanceId;
@@ -240,6 +248,16 @@ public sealed class InstanceManager
 
                     lock (instanceManager._lock)
                     {
+                        if (instanceManager._guestInstances.TryGetValue(playerId, out string? guestInstanceId))
+                        {
+                            if (instanceManager._activeInstances.ContainsKey(guestInstanceId))
+                            {
+                                Log.Information($"playerLogin for player {playerId}: routing guest to instance {guestInstanceId}");
+                                return Json.Serialize(new PlayerLoginResponse(true, guestInstanceId));
+                            }
+                            instanceManager._guestInstances.TryRemove(playerId, out _);
+                        }
+
                         Instance? instance = instanceManager._activeInstances.Values.Where(instance => instance.PlayerId == playerId).OrderByDescending(instance => instance.CreatedAt).FirstOrDefault();
                         if (instance is null)
                         {
@@ -249,6 +267,30 @@ public sealed class InstanceManager
                         Log.Information($"playerLogin for player {playerId}: routing to instance {instance.InstanceId}");
                         return Json.Serialize(new PlayerLoginResponse(true, instance.InstanceId));
                     }
+                }
+                else if (request.Type is "addGuest")
+                {
+                    // Sent by the API server when a player joins another player's
+                    // instance with a join code, so the next playerLogin from that
+                    // player is routed to the host's instance instead of their own.
+                    AddGuestRequest? addGuestRequest;
+                    try
+                    {
+                        addGuestRequest = Json.Deserialize<AddGuestRequest>(request.Data);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Warning(exception, "Bad addGuest request");
+                        return null;
+                    }
+                    if (addGuestRequest is null || string.IsNullOrEmpty(addGuestRequest.PlayerId) || !instanceManager._activeInstances.ContainsKey(addGuestRequest.InstanceId))
+                    {
+                        return Json.Serialize(false);
+                    }
+
+                    instanceManager._guestInstances[addGuestRequest.PlayerId] = addGuestRequest.InstanceId;
+                    Log.Information($"Player {addGuestRequest.PlayerId} added as guest to instance {addGuestRequest.InstanceId}");
+                    return Json.Serialize(true);
                 }
                 else if (request.Type is "preview")
                 {
