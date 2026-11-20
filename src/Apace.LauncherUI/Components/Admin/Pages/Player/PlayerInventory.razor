@@ -1,0 +1,51 @@
+@page "/Admin/Players/{PlayerId}/Inventory"
+@using Microsoft.AspNetCore.Authorization
+@using Serilog
+@using Apace.DB
+@using Apace.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.ManagePlayers)]
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Player Inventory - Apace</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <a href="/Admin/Players" class="btn btn-link p-0 mb-2">
+        ← Back to Players
+    </a>
+    <div class="d-flex align-items-baseline gap-2">
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+            <img class="nav-icon" src="/images/mob_of_me_icon.png" alt="" /> Inventory
+        </div>
+    </div>
+</div>
+<div class="d-flex align-items-baseline gap-2 mb-3">
+    <h2 class="mb-0" style="font-size: 1.25rem;">
+        Inventory for @(string.IsNullOrEmpty(_username) ? $"player {PlayerId}" : $"{_username} (ID: {PlayerId})")
+    </h2>
+</div>
+
+<PlayerInventoryViewer PlayerId="PlayerId" IsEditable="true" />
+
+@code {
+    [Parameter]
+    public string PlayerId { get; set; } = string.Empty;
+
+    private string? _username;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+            if (liveDb is not null)
+            {
+                _username = await DataUtils.GetUsername(PlayerId, liveDb);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to get username for player '{PlayerId}'", PlayerId);
+        }
+    }
+}
