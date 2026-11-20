@@ -92,7 +92,10 @@
                 <div class="progress-bar progress-bar-striped progress-bar-animated"
                      style="width: @(_resourcePackDownloadProgress * 100)%"></div>
             </div>
-            <small class="text-muted">Downloading resource pack... @((_resourcePackDownloadProgress * 100).ToString("F0"))%</small>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+                <small class="text-muted">Downloading resource pack... @((_resourcePackDownloadProgress * 100).ToString("F0"))%</small>
+                <button type="button" class="btn btn-link btn-sm p-0" @onclick="CancelResourcePackDownload">Cancel</button>
+            </div>
         }
     </div>
 }
@@ -272,8 +275,9 @@
         {
             var pending = Apace.LauncherUI.FileChecker.EulaPending;
             // The resource pack state is not synced while a download is running:
-            // a partially written file stays invalid anyway, and a fully written
-            // one would hide the alert before the handler reports the result.
+            // the pack is written to a .part file and only moved into place when
+            // complete, and a finished download would hide the alert before the
+            // handler reports the result.
             var resourcePackPending = _downloadingResourcePack
                 ? _resourcePackPending
                 : Apace.LauncherUI.FileChecker.ResourcePackPending;
@@ -389,33 +393,37 @@
 
     private async Task DownloadResourcePack()
     {
+        if (FileChecker.IsResourcePackDownloading)
+        {
+            _resourcePackError = "A resource pack download is already in progress — it may have been started from another browser tab.";
+            return;
+        }
+
         _downloadingResourcePack = true;
         _resourcePackDownloadProgress = 0;
         _resourcePackError = null;
 
         try
         {
-            await FileChecker.DownloadResourcePackAsync(new Progress<float>(progress =>
+            var result = await FileChecker.DownloadResourcePackAsync(new Progress<float>(progress =>
             {
-                _resourcePackDownloadProgress = progress;
+                _resourcePackDownloadProgress = Math.Clamp(progress, 0f, 1f);
                 InvokeAsync(StateHasChanged);
             }));
 
-            // The download never throws — it logs and leaves the file absent or
-            // invalid, so the pending state decides between success and failure.
-            if (FileChecker.ResourcePackPending)
-            {
-                _resourcePackError = $"Download failed — '{FileChecker.ResourcePackPath}' is still missing or invalid. Try again later or add the file manually.";
-            }
-            else
+            // The download never throws — the outcome (and the reason for a
+            // failure) is reported through the result. A success means a
+            // fully downloaded, validated pack is in place; a failure means
+            // the file is still missing/invalid and the reason is shown here.
+            if (result.Success || !FileChecker.ResourcePackPending)
             {
                 _resourcePackPending = false;
                 _resourcePackRightsConfirmed = false;
             }
-        }
-        catch (OperationCanceledException)
-        {
-            _resourcePackError = "Download cancelled.";
+            else
+            {
+                _resourcePackError = result.Error ?? $"Download failed — '{FileChecker.ResourcePackPath}' is still missing or invalid. Try again later or add the file manually.";
+            }
         }
         catch (Exception ex)
         {
@@ -427,6 +435,9 @@
             await InvokeAsync(StateHasChanged);
         }
     }
+
+    private void CancelResourcePackDownload()
+        => FileChecker.CancelResourcePackDownload();
 
     private void DismissResourcePack()
     {
