@@ -1,5 +1,13 @@
 # TODO
 
+## Privacy & anti-abuse (next major update, in priority order)
+
+- Cloudflare Turnstile ("Enable CF") on the account creation page, plus rate limits on registration and login (per IP / per account)
+- "Hide location" server option: player coordinates handled RAM-only for the duration of a single request, never logged (log scrubber), never written to the database, rounded to the map tile grid before use
+- Client-side (APK patch) coordinate rounding before sending, so the server never receives precise GPS at all
+- Public privacy-info endpoint + banner on the login/registration page + native APK confirmation dialog showing whether the server owner can see the player's location
+- Release integrity: reproducible builds, signed per-artifact SHA-256 manifests from CI, published public verification key, /.well-known/apace/integrity endpoint, launcher/client verification (documented honestly: full remote attestation is impossible without hardware support)
+
 - Use EFCore for earth DB, migrations are way easier that way, but also need to write an initial migration from the current schema
 - Show exceptions in launcher logs
 - Make it easier to update, deleting data/staticdata is kinda bad UX
