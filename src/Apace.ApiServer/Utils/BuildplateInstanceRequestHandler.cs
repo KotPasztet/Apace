@@ -632,6 +632,35 @@ public sealed class BuildplateInstanceRequestHandler
             return null;
         }
 
+        // Persist the player's health for instance types that use health
+        // (full-size play sessions, encounters, adventures). A health of zero
+        // means the player died: restore full health for the next session,
+        // like respawning in the original game.
+        bool usesHealth = instanceInfo.Type is BuildplateInstancesManager.InstanceType.PLAY
+            or BuildplateInstancesManager.InstanceType.SHARED_PLAY
+            or BuildplateInstancesManager.InstanceType.ENCOUNTER
+            or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE;
+        if (usesHealth && playerDisconnectedRequest.Health is float health)
+        {
+            try
+            {
+                await new EarthDB.Query(true)
+                    .Get("profile", playerDisconnectedRequest.PlayerId, typeof(Profile))
+                    .Then(results1 =>
+                    {
+                        Profile profile = results1.Get<Profile>("profile");
+                        profile.Health = health > 0 ? (int)MathF.Ceiling(health) : 20;
+                        return new EarthDB.Query(true)
+                            .Update("profile", playerDisconnectedRequest.PlayerId, profile);
+                    })
+                    .ExecuteAsync(_earthDB);
+            }
+            catch (EarthDB.DatabaseException exception)
+            {
+                Log.Warning(exception, "Could not persist player health after disconnect");
+            }
+        }
+
         bool usesBackpack = instanceInfo.Type is BuildplateInstancesManager.InstanceType.ENCOUNTER or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE;
         if (usesBackpack)
         {
@@ -749,9 +778,12 @@ public sealed class BuildplateInstanceRequestHandler
         var (useHealth, useBoosts) = instanceInfo.Type switch
         {
             BuildplateInstancesManager.InstanceType.BUILD => (false, false),
-            BuildplateInstancesManager.InstanceType.PLAY => (false, true),
+            // Full-size play sessions use health like the original game: the
+            // client shows the hearts HUD, damage applies and health persists
+            // between sessions (see HandlePlayerDisconnected).
+            BuildplateInstancesManager.InstanceType.PLAY => (true, true),
             BuildplateInstancesManager.InstanceType.SHARED_BUILD => (false, false),
-            BuildplateInstancesManager.InstanceType.SHARED_PLAY => (false, true),
+            BuildplateInstancesManager.InstanceType.SHARED_PLAY => (true, true),
             BuildplateInstancesManager.InstanceType.ENCOUNTER => (true, true),
             BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE => (true, true),
             _ => (false, false),
