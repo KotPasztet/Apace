@@ -55,6 +55,15 @@
                         </div>
                     }
 
+                    @if (HasPermission(Permissions.ViewData))
+                    {
+                        <div class="nav-item">
+                            <NavLink class="nav-link" href="Admin/Data">
+                                <img class="nav-icon" src="/images/earth_icon.png" alt="" aria-hidden="true" /> Data Management
+                            </NavLink>
+                        </div>
+                    }
+
                     @if (HasPermission(Permissions.ViewPlayers))
                     {
                         <div class="nav-item">

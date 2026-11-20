@@ -44,6 +44,13 @@ internal static class Permissions
     [PermissionInfo("Buildplates", "Manage buildplates - import, edit, delete")]
     public const string ManageBuildplates = "buildplate.manage";
 
+    [PermissionInfo("Data", "View the data management page")]
+    public const string ViewData = "data.view";
+    [PermissionInfo("Data", "Export server data (earth.db, live.db, object store)")]
+    public const string ExportData = "data.export";
+    [PermissionInfo("Data", "Import or delete server data")]
+    public const string EditData = "data.edit";
+
     [PermissionInfo("Patcher", "Generate patched Minecraft Earth clients (APK/IPA)")]
     public const string UsePatcher = "patcher.use";
 
