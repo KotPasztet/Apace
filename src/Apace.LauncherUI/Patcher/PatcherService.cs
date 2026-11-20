@@ -34,6 +34,33 @@ public sealed class PatcherService
 
     public static string WorkDir => Path.Combine(BaseDir, "work");
 
+    /// <summary>
+    /// aapt2 (run by apktool) cannot open non-ASCII paths on Windows, so when the
+    /// install directory contains e.g. Cyrillic characters, jobs run from an ASCII temp path.
+    /// </summary>
+    public static string JobsDir
+    {
+        get
+        {
+            string defaultDir = Path.Combine(BaseDir, "jobs");
+            if (IsAscii(Path.GetFullPath(defaultDir)))
+            {
+                return defaultDir;
+            }
+
+            string tempDir = Path.Combine(Path.GetTempPath(), "ApacePatcher", "jobs");
+            if (IsAscii(tempDir))
+            {
+                return tempDir;
+            }
+
+            string rootDir = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\", "ApacePatcher", "jobs");
+            return rootDir;
+        }
+    }
+
+    private static bool IsAscii(string path) => path.All(c => c < 128);
+
     /// <summary>Default Apace icon shipped with the panel (images/Apace_Favicon.png).</summary>
     public static string DefaultIconPath => Path.Combine(AppContext.BaseDirectory, "images", "Apace_Favicon.png");
 
@@ -89,7 +116,7 @@ public sealed class PatcherService
         {
             Mode = request.Mode,
             Platform = request.Platform,
-            WorkDir = Path.Combine(BaseDir, "jobs", $"{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..8]}"),
+            WorkDir = Path.Combine(JobsDir, $"{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..8]}"),
             InputPath = request.InputPath,
             InputFileName = request.InputFileName,
         };
@@ -296,6 +323,7 @@ public sealed class PatcherService
     private static IEnumerable<string> GetAndroidPatches(AndroidRequest a)
     {
         yield return "fix-official-msa-login-after-signature-change";
+        yield return "fix-qr-scanner";
         if (a.DisableSunsetTimeCheck) yield return "disable-sunset-time-check";
         if (a.DisableLicenseCheck) yield return "disable-license-check";
         if (a.DisableTelemetry) yield return "disable-telemetry";
