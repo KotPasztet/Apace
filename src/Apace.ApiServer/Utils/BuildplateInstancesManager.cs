@@ -19,6 +19,8 @@ public sealed class BuildplateInstancesManager
     private readonly Dictionary<string, HashSet<string>> _instancesByBuildplateId = [];
     private readonly Dictionary<string, string> _joinCodes = [];
     private readonly Dictionary<string, string> _instanceIdsByJoinCode = [];
+    // Players currently routed to another player's instance as guests (playerId -> host instanceId)
+    private readonly Dictionary<string, string> _guests = [];
 
     // unambiguous characters only, the code is typed in manually by players
     private const string JoinCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -94,6 +96,14 @@ public sealed class BuildplateInstancesManager
         if (encounterId is not null && type is not InstanceType.ENCOUNTER and not InstanceType.PLAYER_ADVENTURE)
         {
             throw new ArgumentException($"{nameof(encounterId)} can only be set when {nameof(type)} is {nameof(InstanceType.ENCOUNTER)} or {nameof(InstanceType.PLAYER_ADVENTURE)}.");
+        }
+
+        // The player is requesting their own instance (new or reused) - forget any
+        // guest routing left over from an earlier join so their next playerLogin is
+        // routed to this instance instead of the host's.
+        if (playerId is not null)
+        {
+            await RemoveGuestAsync(playerId);
         }
 
         await _startLock.WaitAsync();
@@ -227,10 +237,48 @@ public sealed class BuildplateInstancesManager
         Log.Information($"Adding player {playerId} as guest to instance {instanceId}");
 
         string? response = await _requestSender.RequestAsync("buildplates", "addGuest", Json.Serialize(new AddGuestRequest(playerId, instanceId)));
-        return response is not null && Json.Deserialize<bool>(response);
+        bool added = response is not null && Json.Deserialize<bool>(response);
+        if (added)
+        {
+            lock (_instances)
+            {
+                _guests[playerId] = instanceId;
+            }
+        }
+        return added;
+    }
+
+    // Forget a player's guest routing so their next playerLogin is routed to their
+    // own instance again. Called when the player requests their own instance (new
+    // or reused) after previously joining someone else's buildplate with a join code.
+    public async Task RemoveGuestAsync(string playerId)
+    {
+        lock (_instances)
+        {
+            if (!_guests.ContainsKey(playerId))
+            {
+                return;
+            }
+        }
+
+        string? response = await _requestSender.RequestAsync("buildplates", "removeGuest", Json.Serialize(new RemoveGuestRequest(playerId)));
+        if (response is not null && Json.Deserialize<bool>(response))
+        {
+            lock (_instances)
+            {
+                _guests.Remove(playerId);
+            }
+            Log.Information($"Removed player {playerId} from guest routing");
+        }
+        else
+        {
+            Log.Warning($"Could not remove player {playerId} from guest routing");
+        }
     }
 
     private sealed record AddGuestRequest(string PlayerId, string InstanceId);
+
+    private sealed record RemoveGuestRequest(string PlayerId);
 
     public async Task<string?> GetBuildplatePreviewAsync(byte[] serverData, bool night)
     {
@@ -359,6 +407,11 @@ public sealed class BuildplateInstancesManager
                         if (_joinCodes.Remove(instanceId, out string? joinCode))
                         {
                             _instanceIdsByJoinCode.Remove(joinCode);
+                        }
+
+                        foreach (var guest in _guests.Where(entry => entry.Value == instanceId).ToList())
+                        {
+                            _guests.Remove(guest.Key);
                         }
                     }
                 }
