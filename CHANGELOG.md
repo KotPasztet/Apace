@@ -1,5 +1,37 @@
 # Changelog
 
+## Unreleased (dev) — Catching up with Solace: hearts, skins, stability
+
+> Closes the remaining feature gaps found in the "fall behind Solace" audit, and adds two things Solace does not have: persistent skins and hearts in full-size play sessions.
+
+### ❤️ AR like the original game: hearts in play sessions
+
+- Full-size play sessions (PLAY and SHARED_PLAY) now use health: the client shows the hearts HUD and damage applies, like in encounters. BUILD and SHARED_BUILD stay creative.
+- Health persists between sessions: the connector plugin now reports the player's health in the `playerDisconnected` message and the API server stores it in the player profile.
+- Dying (health 0) restores full health for the next session, like respawning in the original game.
+- The connector plugin jar is now built from reconstructed sources (the shipped binary contained instance lifecycle and control channel additions that are not in upstream Project-Genoa/Vienna, so its sources were recovered by decompiling it). Future plugin changes no longer need binary-only hacks.
+
+### 🧍 Skins
+
+- Skin selections persist per player: `SetObjects` previously discarded the client's persona profile changes and `GetObjects` returned the same hardcoded profile (default wide-arm skin) to everyone.
+- Profiles are stored in the earth database; players who never changed their skin keep the built-in defaults. Writes are rate limited (30/min).
+
+### 📦 Resource pack downloads
+
+- The pack is streamed from disk instead of being loaded into memory in full; interrupted downloads can resume (HTTP range requests, 206), unchanged packs answer 304 Not Modified via ETag/Last-Modified, and HEAD requests are served with a correct Content-Length.
+
+### 🛡️ Multiplayer hardening
+
+- Join attempts are rate limited per player (10/min sliding window); a throttled request is indistinguishable from an unknown join code (both 404), so brute forcing cannot tell throttling from wrong guesses.
+- Instance status (which contains the join code and the server address) is now only visible to the instance's host and its guests. Fixes the previously documented limitation.
+
+### ⚡ Performance (port from Solace)
+
+- Catalog API responses (items, recipes, journal, products) are cached for 15 minutes instead of being rebuilt for every request — Solace's `CatalogResponseCacheService` idea, implemented without a DI container.
+- The player inventory viewer and data management (export/import/delete) were ported from Solace in the previous update.
+
+---
+
 ## Unreleased (dev) — Shared Buildplate Multiplayer
 
 > Ported from the abandoned **Apace-Rework** multiplayer update (2026-11-14) onto `dev`, with an additional guest-routing fix on top. The Java-side changes ship as prebuilt jars from Apace-Rework — this repository contains no Java sources.
@@ -23,7 +55,6 @@
 
 - AR shared anchors (`GenoaShareAnchorPacket` / `GenoaNetworkTransformPacket`) are not emulated — remote-player nametags can be offset differently per device, and held items jitter due to client-side item physics.
 - The `minecraftearth://` URI scheme registration claimed in Apace-Rework's README had no implementation and is **not** included here; QR join works through the in-app scanner only.
-- Join codes are currently returned by the instance status endpoint to any authenticated player, and the join endpoint has no rate limiting (pre-existing upstream TODOs).
 - The multiplayer changes inside the Fountain bridge and Fabric mod jars are **binary-only** (verified against the Apace-Rework builds by checksum).
 
 ---
