@@ -327,6 +327,71 @@ internal sealed class BuildplatesController : ApaceControllerBase
         return await GetNewSharedBuildplateInstanceResponse(playerId, sharedBuildplateId, sharedBuildplateInstanceRequest.FullSize ? BuildplateInstancesManager.InstanceType.SHARED_PLAY : BuildplateInstancesManager.InstanceType.SHARED_BUILD, cancellationToken);
     }
 
+    [HttpPost("multiplayer/join/instances")]
+    public async Task<Results<ContentHttpResult, NotFound, BadRequest, InternalServerError>> JoinInstance(CancellationToken cancellationToken)
+    {
+        string? playerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(playerId))
+        {
+            return TypedResults.BadRequest();
+        }
+
+        using var reader = new StreamReader(Request.Body, Encoding.UTF8);
+        string body = await reader.ReadToEndAsync(cancellationToken);
+        Log.Debug($"Join request from {playerId}: {body}");
+
+        string? joinCode = null;
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(body);
+            // the client sends the scanned code as "id"
+            if (document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                && (document.RootElement.TryGetProperty("id", out var codeElement)
+                    || document.RootElement.TryGetProperty("playerJoinCode", out codeElement))
+                && codeElement.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                joinCode = codeElement.GetString();
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return TypedResults.BadRequest();
+        }
+
+        if (string.IsNullOrWhiteSpace(joinCode))
+        {
+            return TypedResults.BadRequest();
+        }
+
+        BuildplateInstancesManager.InstanceInfo? instanceInfo = buildplateInstancesManager.GetInstanceInfoByJoinCode(joinCode);
+        if (instanceInfo is null || instanceInfo.ShuttingDown)
+        {
+            Log.Information($"Player {playerId} tried to join with unknown code {joinCode}");
+            return TypedResults.NotFound();
+        }
+
+        instanceInfo = await WaitForInstanceReadyAsync(instanceInfo.InstanceId, cancellationToken);
+        if (instanceInfo is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (instanceInfo.PlayerId != playerId && !await buildplateInstancesManager.AddGuestAsync(playerId, instanceInfo.InstanceId))
+        {
+            Log.Warning($"Could not add player {playerId} as guest to instance {instanceInfo.InstanceId}");
+            return TypedResults.NotFound();
+        }
+
+        BuildplateInstance? buildplateInstance = await InstanceInfoToApiResponse(instanceInfo, cancellationToken);
+        if (buildplateInstance is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        Log.Information($"Player {playerId} joined instance {instanceInfo.InstanceId} with code {joinCode}");
+        return EarthJson(buildplateInstance);
+    }
+
     private sealed record EncounterInstanceRequest(
         string TileId
     );
@@ -540,7 +605,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
             try
             {
                 EarthDB.Results results = await new EarthDB.Query(false)
-                        .Get("buildplates", playerId, typeof(Buildplates))
+                        .Get("buildplates", instanceInfo.PlayerId ?? playerId, typeof(Buildplates))
                         .ExecuteAsync(earthDB, cancellationToken);
                 buildplate = results.Get<Buildplates>("buildplates").GetBuildplate(instanceInfo.BuildplateId);
             }
@@ -918,7 +983,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
                 "00000000-0000-0000-0000-000000000000",
                 instanceInfo.PlayerId,
                 "2020.1217.02",
-                "CK06Yzm2",    // TODO
+                buildplateInstancesManager.GetJoinCode(instanceInfo.InstanceId),
                 new Dimension(size, size),
                 new Offset(0, offset, 0),
                 instanceInfo.Type is BuildplateInstancesManager.InstanceType.PLAY

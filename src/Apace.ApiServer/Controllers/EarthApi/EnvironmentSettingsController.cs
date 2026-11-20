@@ -36,8 +36,8 @@ internal sealed class EnvironmentSettingsController : ControllerBase
             ["enable_add_friend"] = false,
             ["social_link_launch_enabled"] = false,
             ["social_link_share_enabled"] = false,
-            ["encoded_join_enabled"] = false,
-            ["qr_code_join_enabled"] = false,
+            ["encoded_join_enabled"] = true,
+            ["qr_code_join_enabled"] = true,
             ["qr_scan_enabled"] = false,
             ["friend_qr_scan_enabled"] = false,
             ["adventure_crystals_enabled"] = true,
@@ -141,8 +141,8 @@ internal sealed class EnvironmentSettingsController : ControllerBase
             ["enable_add_friend"] = false,
             ["social_link_launch_enabled"] = false,
             ["social_link_share_enabled"] = false,
-            ["encoded_join_enabled"] = false,
-            ["qr_code_join_enabled"] = false,
+            ["encoded_join_enabled"] = true,
+            ["qr_code_join_enabled"] = true,
             ["qr_scan_enabled"] = false,
             ["friend_qr_scan_enabled"] = false
         });

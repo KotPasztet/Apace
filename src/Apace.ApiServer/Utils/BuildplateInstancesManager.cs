@@ -17,6 +17,48 @@ public sealed class BuildplateInstancesManager
     private readonly Dictionary<string, TaskCompletionSource<bool>?> _pendingInstances = [];
     private readonly Dictionary<string, InstanceInfo> _instances = [];
     private readonly Dictionary<string, HashSet<string>> _instancesByBuildplateId = [];
+    private readonly Dictionary<string, string> _joinCodes = [];
+    private readonly Dictionary<string, string> _instanceIdsByJoinCode = [];
+
+    // unambiguous characters only, the code is typed in manually by players
+    private const string JoinCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    public string GetJoinCode(string instanceId)
+    {
+        lock (_instances)
+        {
+            if (_joinCodes.TryGetValue(instanceId, out string? existing))
+            {
+                return existing;
+            }
+
+            string code;
+            do
+            {
+                code = string.Create(8, 0, (span, _) =>
+                {
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        span[i] = JoinCodeAlphabet[System.Security.Cryptography.RandomNumberGenerator.GetInt32(JoinCodeAlphabet.Length)];
+                    }
+                });
+            }
+            while (_instanceIdsByJoinCode.ContainsKey(code));
+
+            _joinCodes[instanceId] = code;
+            _instanceIdsByJoinCode[code] = instanceId;
+            return code;
+        }
+    }
+
+    public InstanceInfo? GetInstanceInfoByJoinCode(string joinCode)
+    {
+        lock (_instances)
+        {
+            string normalized = joinCode.Trim().ToUpperInvariant();
+            return _instanceIdsByJoinCode.TryGetValue(normalized, out string? instanceId) ? _instances.GetOrDefault(instanceId, null) : null;
+        }
+    }
 
     private BuildplateInstancesManager(EventBusClient eventBusClient)
     {
@@ -180,6 +222,16 @@ public sealed class BuildplateInstancesManager
         }
     }
 
+    public async Task<bool> AddGuestAsync(string playerId, string instanceId)
+    {
+        Log.Information($"Adding player {playerId} as guest to instance {instanceId}");
+
+        string? response = await _requestSender.RequestAsync("buildplates", "addGuest", Json.Serialize(new AddGuestRequest(playerId, instanceId)));
+        return response is not null && Json.Deserialize<bool>(response);
+    }
+
+    private sealed record AddGuestRequest(string PlayerId, string InstanceId);
+
     public async Task<string?> GetBuildplatePreviewAsync(byte[] serverData, bool night)
     {
         Log.Information("Requesting buildplate preview");
@@ -302,6 +354,11 @@ public sealed class BuildplateInstancesManager
 
                             var instanceIds = _instancesByBuildplateId.GetOrDefault(instanceInfo.BuildplateId);
                             instanceIds?.Remove(instanceInfo.InstanceId);
+                        }
+
+                        if (_joinCodes.Remove(instanceId, out string? joinCode))
+                        {
+                            _instanceIdsByJoinCode.Remove(joinCode);
                         }
                     }
                 }
