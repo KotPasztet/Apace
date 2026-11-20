@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased (dev) — Shared Buildplate Multiplayer
+
+> Ported from the abandoned **Apace-Rework** multiplayer update (2026-11-14) onto `dev`, with an additional guest-routing fix on top. The Java-side changes ship as prebuilt jars from Apace-Rework — this repository contains no Java sources.
+
+### 🤝 Shared buildplate multiplayer
+
+- **Join codes** — every buildplate instance gets an 8-character join code (unambiguous alphabet, generated with a CSPRNG) returned in `gameplayMetadata.playerJoinCode`, replacing the hardcoded placeholder.
+- **QR join flow** — new endpoint `POST /1/api/v1.1/multiplayer/join/instances` resolves the code scanned by the guest (`id` or `playerJoinCode` in the request body), waits for the instance to be ready, registers the guest and returns the host's instance details. The `encoded_join_enabled` / `qr_code_join_enabled` environment settings are now enabled, unlocking the join flow in the client.
+- **Guest routing** — new `addGuest` / `removeGuest` event-bus messages: the launcher routes a guest's `playerLogin` to the host's instance on the shared `19132/udp` bridge without dropping the host session, and guests polling `multiplayer/partitions/...` see the host's buildplate.
+- **AR remote players** (bridge jar) — remote players appear as floating nametags at eye height (+1.62) with their held item 0.5 blocks below, carried by invisible zero-size entities; `AddPlayerPacket` is never sent to the client, preventing Genoa crashes.
+- **Graceful guest disconnect** (Fabric mod jar) — closing a buildplate disconnects everyone still inside with "The buildplate has been closed" instead of stranding guests in an unloaded dimension.
+- **Fixed on top of the port** — guest routing is now forgotten when a player starts (or re-enters) their own instance, so joining someone's buildplate no longer hijacks subsequent logins into the host's instance.
+- **Offline QR scanning** — new `fix-qr-scanner` client patch replaces Google Mobile Vision with embedded ZXing in `AndroidBarcodeReader`, so scanning join codes works without GMS.
+
+### 🔧 Other fixes from the port
+
+- **Windows job objects** — all child processes (persistent Fabric server, Fountain bridge, java probes) are assigned to a job object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`, so they can no longer outlive the launcher after a crash or kill and keep holding ports and world files.
+- **Patcher job paths** — patch jobs fall back to `%TEMP%/ApacePatcher` and then `C:\ApacePatcher` when the install path contains non-ASCII characters (aapt2, run by apktool, cannot open such paths on Windows).
+
+### ⚠️ Known limitations
+
+- AR shared anchors (`GenoaShareAnchorPacket` / `GenoaNetworkTransformPacket`) are not emulated — remote-player nametags can be offset differently per device, and held items jitter due to client-side item physics.
+- The `minecraftearth://` URI scheme registration claimed in Apace-Rework's README had no implementation and is **not** included here; QR join works through the in-app scanner only.
+- Join codes are currently returned by the instance status endpoint to any authenticated player, and the join endpoint has no rate limiting (pre-existing upstream TODOs).
+- The multiplayer changes inside the Fountain bridge and Fabric mod jars are **binary-only** (verified against the Apace-Rework builds by checksum).
+
+---
+
 ## v0.1.3 — 2026-09-12
 
 > Scope: everything between **v0.1.2** and **v0.1.3**
