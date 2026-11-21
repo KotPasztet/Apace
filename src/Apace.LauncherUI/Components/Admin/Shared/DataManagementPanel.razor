@@ -1,4 +1,3 @@
-@page "/Admin/Data"
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
@@ -7,29 +6,18 @@
 @using Apace.Common.Utils
 @using Apace.LauncherUI.Utils
 @using System.IO.Compression
-@attribute [Authorize(Policy = Permissions.ViewData)]
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 @inject ServerManager ServerManager
 @inject IJSRuntime JS
 
-<PageTitle>Data Management - Apace</PageTitle>
-
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
-            <img class="nav-icon" src="/images/earth_icon.png" alt="" /> Data Management
-        </div>
-        <p class="text-muted small mb-0 mt-1">Export, import and delete server data</p>
-    </div>
-    <span class="badge badge-subtle" style="font-size: 0.75rem; padding: 6px 12px;">
-        Total: @FormatBytes(_totalSpaceB)
-    </span>
-</div>
-
+@* Data Management panel, embedded as a tab in System Configuration *@
 <div class="card mb-4">
-    <div class="card-header bg-light">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Space Usage</h5>
+        <span class="badge badge-subtle" style="font-size: 0.75rem; padding: 6px 12px;">
+            Total: @FormatBytes(_totalSpaceB)
+        </span>
     </div>
     <div class="card-body">
         <div class="row">
@@ -66,7 +54,7 @@
         </div>
         <div class="card-body">
             <p class="text-muted mb-3">Download a full backup of the server data (earth.db, live.db and the object store) as a zip file.</p>
-            <button class="btn btn-outline-primary" @onclick="ExportData">
+            <button type="button" class="btn btn-outline-primary" @onclick="ExportData">
                 Export Data
             </button>
         </div>
@@ -93,7 +81,7 @@
                     <InputFile @key="_inputFileId" OnChange="HandleFileSelected" class="form-control" accept=".zip" />
                     @if (_selectedFile != null)
                     {
-                        <button class="btn btn-primary" @onclick="InitiateImport">
+                        <button type="button" class="btn btn-primary" @onclick="InitiateImport">
                             Upload &amp; Process
                         </button>
                     }
@@ -133,7 +121,7 @@
 
                 @if (!_isConfirmingDelete)
                 {
-                    <button class="btn btn-outline-danger btn-sm" @onclick="InitiateDelete">
+                    <button type="button" class="btn btn-outline-danger btn-sm" @onclick="InitiateDelete">
                         Delete All Data
                     </button>
                 }
@@ -148,8 +136,8 @@
                             }
                         </div>
                         <div>
-                            <button class="btn btn-sm btn-secondary me-2" @onclick="CancelDelete">Cancel</button>
-                            <button class="btn btn-sm btn-danger" disabled="@(!_canConfirmDelete)" @onclick="ExecuteDelete">
+                            <button type="button" class="btn btn-sm btn-secondary me-2" @onclick="CancelDelete">Cancel</button>
+                            <button type="button" class="btn btn-sm btn-danger" disabled="@(!_canConfirmDelete)" @onclick="ExecuteDelete">
                                 Yes, Delete Everything
                             </button>
                         </div>

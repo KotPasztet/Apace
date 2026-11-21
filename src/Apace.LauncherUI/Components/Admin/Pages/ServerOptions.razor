@@ -1,11 +1,13 @@
 @page "/Admin/ServerOptions"
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
 @using System.Web
 @using Serilog
 @using Apace.LauncherUI.Utils
-@attribute [Authorize(Policy = Permissions.EditServerOptions)]
+@attribute [Authorize]
 @rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 
@@ -15,34 +17,53 @@
     <img class="nav-icon" src="/images/settings_icon.png" alt="" /> System Configuration
 </div>
 
+@if (!_canEditOptions && !_canViewData)
+{
+    <div class="alert alert-danger">You do not have permission to view this page.</div>
+}
+else
+{
+
 <EditForm Model="@SettingsModel" OnValidSubmit="HandleSave" FormName="SettingsForm">
     <DataAnnotationsValidator />
     <ValidationSummary class="alert alert-danger" />
 
     <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link @(activeTab == "network" ? "active" : "")"
-                    @onclick='() => activeTab = "network"'>Network</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(activeTab == "map" ? "active" : "")"
-                    @onclick='() => activeTab = "map"'>Map</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(activeTab == "database" ? "active" : "")"
-                    @onclick='() => activeTab = "database"'>Databases</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(activeTab == "gameplay" ? "active" : "")"
-                    @onclick='() => activeTab = "gameplay"'>Gameplay</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(activeTab == "data" ? "active" : "")" @onclick='() => activeTab = "data"'>Data
-                Handling</button>
+        @if (_canEditOptions)
+        {
+            <li class="nav-item">
+                <button type="button" class="nav-link @(activeTab == "network" ? "active" : "")"
+                        @onclick='() => activeTab = "network"'>Network</button>
             </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link @(activeTab == "map" ? "active" : "")"
+                        @onclick='() => activeTab = "map"'>Map</button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link @(activeTab == "database" ? "active" : "")"
+                        @onclick='() => activeTab = "database"'>Databases</button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link @(activeTab == "gameplay" ? "active" : "")"
+                        @onclick='() => activeTab = "gameplay"'>Gameplay</button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link @(activeTab == "data" ? "active" : "")" @onclick='() => activeTab = "data"'>Data
+                    Handling</button>
+            </li>
+        }
+        @if (_canViewData)
+        {
+            <li class="nav-item">
+                <button type="button" class="nav-link @(activeTab == "dataManagement" ? "active" : "")"
+                        @onclick='() => activeTab = "dataManagement"'>Data Management</button>
+            </li>
+        }
         </ul>
 
         <div class="tab-content border border-top-0 p-4">
+            @if (_canEditOptions)
+            {
             @* --- Network Tab --- *@
             <div class="tab-pane fade show @(activeTab == "network" ? "active" : "")">
                 <div class="row g-3">
@@ -246,16 +267,32 @@
                     </div>
                 }
             </div>
+            }
+
+            @if (_canViewData)
+            {
+                @* --- Data Management Tab --- *@
+                <div class="tab-pane fade show @(activeTab == "dataManagement" ? "active" : "")">
+                    <DataManagementPanel />
+                </div>
+            }
         </div>
 
-        <div class="mt-4">
-            <button type="submit" class="btn btn-primary">Save Settings</button>
-            <button type="button" class="btn btn-secondary" @onclick="ResetToDefault">Reset to Defaults</button>
-        </div>
+        @if (_canEditOptions)
+        {
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+                <button type="button" class="btn btn-secondary" @onclick="ResetToDefault">Reset to Defaults</button>
+            </div>
+        }
     </EditForm>
+
+}
 
 @code {
     private string activeTab = "network";
+    private bool _canEditOptions;
+    private bool _canViewData;
     private bool _showResourcePackDialog;
     private bool _ownsMinecraft;
     private bool _downloading;
@@ -269,6 +306,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _canEditOptions = user.HasPermission(Permissions.EditServerOptions);
+        _canViewData = user.HasPermission(Permissions.ViewData);
+
+        // Someone with only data permissions should land on the tab they can see.
+        activeTab = _canEditOptions ? "network" : "dataManagement";
+
         LoadFromSettings(await Settings.LoadAsync(Settings.DefaultPath));
         _resourcePackInstalled = MojangResourcePackService.IsInstalled;
 
