@@ -47,13 +47,52 @@ public class Startup
             .AddScheme<AuthenticationSchemeOptions, GenoaAuthenticationHandler>("GenoaAuth", null);
 
         // the Genoa session tokens (SigninController <-> GenoaAuthenticationHandler) are data-protected,
-        // the keys must persist or every restart would invalidate all issued session tokens
-        string dataProtectionKeysPath = Path.Combine(Environment.CurrentDirectory, "data", "dataprotection-keys");
+        // the keys must persist or every restart would invalidate all issued session tokens.
+        //
+        // The keys live in the data directory (../data) — the persistent /app/data volume in
+        // docker, the installation's data folder outside it — next to api_config.json.
+        // The previous location (<cwd>/data/dataprotection-keys) was inside the container's
+        // image layer in docker: every redeploy destroyed the key ring and, with it, all
+        // issued 12h Genoa session tokens (GenoaAuth 401 "was forbidden" on every Earth API
+        // call after an update). Any keys still found at the legacy location (non-docker
+        // installs) are migrated so their sessions survive the move.
+        string dataProtectionKeysPath = Path.Combine("..", "data", "dataprotection-keys");
         Directory.CreateDirectory(dataProtectionKeysPath);
+        MigrateLegacyDataProtectionKeys(Path.Combine(Environment.CurrentDirectory, "data", "dataprotection-keys"), dataProtectionKeysPath);
         services.AddDataProtection()
-            .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+            .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+            .SetApplicationName("ApiServer"); // must stay stable across image rebuilds; matches the assembly name (the historical default)
 
         services.AddDbContext<LiveDbContext>(options => options.UseSqlite(Configuration.GetConnectionString("LiveDBConnection")));
+    }
+
+    private static void MigrateLegacyDataProtectionKeys(string legacyPath, string targetPath)
+    {
+        try
+        {
+            if (!Directory.Exists(legacyPath) || Directory.EnumerateFiles(targetPath, "key-*.xml").Any())
+            {
+                return;
+            }
+
+            var keyFiles = Directory.EnumerateFiles(legacyPath, "key-*.xml").ToList();
+            if (keyFiles.Count == 0)
+            {
+                return;
+            }
+
+            foreach (string file in keyFiles)
+            {
+                File.Copy(file, Path.Combine(targetPath, Path.GetFileName(file)), overwrite: false);
+            }
+
+            Log.Information($"Migrated {keyFiles.Count} data protection key file(s) from {Path.GetFullPath(legacyPath)} to {Path.GetFullPath(targetPath)}");
+        }
+        catch (Exception ex)
+        {
+            Log.Warning($"Could not migrate data protection keys from {Path.GetFullPath(legacyPath)} to {Path.GetFullPath(targetPath)}: {ex.Message} " +
+                        "(issued session tokens will not validate — clients re-sign in on their next login)");
+        }
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
