@@ -1,5 +1,5 @@
 {
-  "Purchasable": false,
+  "Purchasable": true,
   "Data": {
     "Type": "Persona",
     "PieceType": "persona_feet",
@@ -24,8 +24,6 @@
   "Tags": [
     "93567e9e-f210-4223-add4-217bf191d665",
     "dd1a731d-6ee2-4550-a541-a3ad645b7ad7",
-    "earth_achievement",
-    "is_achievement",
     "tag.bottom",
     "1P"
   ],

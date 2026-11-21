@@ -1,5 +1,5 @@
 {
-  "Purchasable": false,
+  "Purchasable": true,
   "Data": {
     "Type": "Persona",
     "PieceType": "persona_hood",
@@ -24,8 +24,6 @@
   "Tags": [
     "81899c88-3621-4f28-9ec8-cd82686716d9",
     "67f1e263-5720-402d-827c-d673118ae17b",
-    "earth_achievement",
-    "is_achievement",
     "tag.cloak",
     "tag.superhero",
     "1P"

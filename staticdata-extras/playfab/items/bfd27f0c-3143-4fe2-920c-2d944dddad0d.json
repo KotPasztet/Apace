@@ -1,5 +1,5 @@
 {
-  "Purchasable": false,
+  "Purchasable": true,
   "Data": {
     "Type": "Persona",
     "PieceType": "persona_hand",
@@ -24,8 +24,6 @@
   "Tags": [
     "bfd27f0c-3143-4fe2-920c-2d944dddad0d",
     "2689455b-a49d-42de-8332-a4a547e47c5d",
-    "earth_achievement",
-    "is_achievement",
     "tag.gloves",
     "tag.superhero",
     "tag.green",

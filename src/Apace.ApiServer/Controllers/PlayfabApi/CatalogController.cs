@@ -52,7 +52,7 @@ internal sealed class CatalogController : ApaceControllerBase
                 new("301F442C3B63DC20", "master_player_account", "master_player_account"),
                 false, // IsStackable
                 ["android.amazonappstore", "android.googleplay",  "b.store",  "ios.store",  "nx.store",  "oculus.store.gearvr", "oculus.store.rift", "uwp.store",  "uwp.store.mobile",  "xboxone.store", "title.bedrockvanilla", "title.earth"],
-                ["230f5996-04b2-4f0e-83e5-4056c7f1d946", "4f7cdadd-a33c-489d-8969-752ca689f567", "is_achievement", "earth_achievement", "tag.animal", "1P"],
+                ["230f5996-04b2-4f0e-83e5-4056c7f1d946", "4f7cdadd-a33c-489d-8969-752ca689f567", "tag.animal", "1P"],
                 new(2020, 12, 7, 22, 46, 33, 066, DateTimeKind.Utc),
                 new(2023, 8, 10, 14, 11, 19, 81, DateTimeKind.Utc),
                 null,
