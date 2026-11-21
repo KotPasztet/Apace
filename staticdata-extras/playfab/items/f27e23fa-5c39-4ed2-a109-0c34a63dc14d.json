@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Astronaut Trousers",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "924a83ed-1dcc-46cd-a6c1-371e0f005040",
   "CreationDate": "2020-11-10T02:17:43.976Z",
   "LastModifiedDate": "2026-06-10T20:26:28.592Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "71c49ebe-b5ff-4355-b187-58c7e23c5e4a",
+      "Url": "/playfab/persona/f27e23fa-5c39-4ed2-a109-0c34a63dc14d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "65cf4652-f634-4165-903d-168d3f1666f8",

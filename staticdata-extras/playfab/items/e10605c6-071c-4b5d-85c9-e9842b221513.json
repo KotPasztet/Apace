@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Annoyed-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "acbfc42a-072c-4a46-b251-cf6cfb78736f",
   "CreationDate": "2020-05-05T23:06:11.377Z",
   "LastModifiedDate": "2026-06-10T23:46:30.581Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "60934495-f160-4de3-9342-e6a2480607b9",
+      "Url": "/playfab/persona/e10605c6-071c-4b5d-85c9-e9842b221513.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "8698a697-4a87-49ac-992c-bc500e20bfc5",

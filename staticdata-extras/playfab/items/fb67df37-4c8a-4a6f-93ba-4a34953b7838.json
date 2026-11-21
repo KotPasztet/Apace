@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Merls Sweater",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "48df8202-e68d-44c6-aabc-32e3d4e57b4b",
   "CreationDate": "2020-05-06T19:02:34.35Z",
   "LastModifiedDate": "2026-06-10T20:25:12.39Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "a85ca9fc-97cf-4c17-8a92-e85d6dea6fa5",
+      "Url": "/playfab/persona/fb67df37-4c8a-4a6f-93ba-4a34953b7838.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "973ee314-8a0b-4c16-9afc-ebfe8238d930",

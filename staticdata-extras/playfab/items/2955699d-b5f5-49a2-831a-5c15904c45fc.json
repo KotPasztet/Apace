@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Afro",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "8c750e20-0808-496c-a5c2-0216a58b4992",
   "CreationDate": "2019-08-30T01:10:59.432Z",
   "LastModifiedDate": "2026-06-10T22:06:23.128Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "5049bf52-c68f-4e97-b3a9-f51ef6688bf8",
+      "Url": "/playfab/persona/2955699d-b5f5-49a2-831a-5c15904c45fc.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "400342f6-f795-4709-907e-091050d693e5",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Bold Rabbit Jersey",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "2e266b70-d8df-4ea2-8ba0-993c7dd92b86",
   "CreationDate": "2020-05-06T23:44:22.382Z",
   "LastModifiedDate": "2026-06-10T20:25:12.401Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "c778b39f-54a7-4f2f-8c75-31b97f5d7607",
+      "Url": "/playfab/persona/237e7e9d-84e1-40ba-864a-0dfb256303ba.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "3c149caa-af79-467f-af9a-bc9cfd01b69f",

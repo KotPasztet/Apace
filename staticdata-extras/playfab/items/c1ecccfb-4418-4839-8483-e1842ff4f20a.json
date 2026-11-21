@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Short Waves",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "2eaa1624-4ab6-4392-9c9d-9142127b519f",
   "CreationDate": "2019-08-30T01:10:23.511Z",
   "LastModifiedDate": "2026-06-10T18:49:15.514Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "df0579cd-27ac-4c2f-b657-cb9d02b6670c",
+      "Url": "/playfab/persona/c1ecccfb-4418-4839-8483-e1842ff4f20a.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "ddb3253e-5e47-4381-986e-89ee3a0e686a",

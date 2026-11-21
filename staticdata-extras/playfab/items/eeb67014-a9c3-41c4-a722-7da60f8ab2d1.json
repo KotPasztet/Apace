@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Gap Tooth",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "9cbdf9fc-8d3f-4f3c-9793-d455f77e4a1a",
   "CreationDate": "2019-08-30T01:10:42.067Z",
   "LastModifiedDate": "2026-06-10T23:46:31.336Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "99dc7bf1-deb3-4eac-9aa3-0bb623d3843b",
+      "Url": "/playfab/persona/eeb67014-a9c3-41c4-a722-7da60f8ab2d1.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "09d7f2c2-c0c7-41d9-ab9c-6fd9e28f9fcc",

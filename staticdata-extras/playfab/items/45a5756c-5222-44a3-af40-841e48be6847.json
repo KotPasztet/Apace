@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Racecar Suit Shades",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "279c51f7-717a-4160-b453-ba5824027ff9",
   "CreationDate": "2020-08-20T22:36:57.22Z",
   "LastModifiedDate": "2026-06-10T20:26:28.363Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "82124a57-cb48-4eea-8176-d0ee6385d2f4",
+      "Url": "/playfab/persona/45a5756c-5222-44a3-af40-841e48be6847.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "75eb8e2c-7f1d-4c50-b30a-097e287dab12",

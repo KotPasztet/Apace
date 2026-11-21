@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Buzzcut",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "a6f61d28-e1de-46ba-82f2-27226ea1aa0a",
   "CreationDate": "2019-08-30T01:04:24.823Z",
   "LastModifiedDate": "2026-06-10T18:49:15.351Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "24d30d02-2f2c-4357-a239-c459dd8caaf2",
+      "Url": "/playfab/persona/c52276e1-53f1-44ca-97c7-d52198db8d69.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "e7a75f49-935b-4af1-b537-9a6dc6464d06",

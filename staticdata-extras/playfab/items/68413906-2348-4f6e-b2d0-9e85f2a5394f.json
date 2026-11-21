@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Lower Framed Glasses",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f853b084-93dc-4400-94ca-b487587fc54f",
   "CreationDate": "2019-08-30T01:09:31.417Z",
   "LastModifiedDate": "2026-06-10T18:49:58.233Z",
@@ -40,7 +40,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "b0778323-0ba7-4a8f-aa95-afb91aca9cbd",
+      "Url": "/playfab/persona/68413906-2348-4f6e-b2d0-9e85f2a5394f.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "7fbb53fa-a328-4190-9e0f-b0aac1c8cd87",

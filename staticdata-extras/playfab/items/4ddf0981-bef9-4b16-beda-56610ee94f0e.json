@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Chewing",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "bafb24ac-6e84-466b-8a99-e2fd4d5946ee",
   "CreationDate": "2019-08-30T01:11:37.354Z",
   "LastModifiedDate": "2026-06-10T23:46:31.242Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "187ee7bc-6fcf-44df-aa23-967761cb8544",
+      "Url": "/playfab/persona/4ddf0981-bef9-4b16-beda-56610ee94f0e.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "2c19d13c-006b-46b4-89ca-34abd2831e10",

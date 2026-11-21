@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Side Swept",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "0a481106-c2f4-4941-b4fc-7083706023df",
   "CreationDate": "2019-08-30T01:10:50.807Z",
   "LastModifiedDate": "2026-06-10T22:06:06.388Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "db182ed9-e492-44ae-8e43-7d6ca8d3aeb1",
+      "Url": "/playfab/persona/645d6e6b-4c01-4aae-9c5d-c3d2ebf73d1d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "577cfe5e-be8c-4080-9b82-1ba9ba097835",

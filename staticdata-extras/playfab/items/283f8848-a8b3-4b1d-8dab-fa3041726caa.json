@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Crying-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f1271eda-3c59-44ab-a9ba-5a92d14013fc",
   "CreationDate": "2019-08-30T01:07:08.931Z",
   "LastModifiedDate": "2026-06-10T23:46:30.576Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "dd9c4858-53be-4eb8-9ce7-c5f2b1e458c6",
+      "Url": "/playfab/persona/283f8848-a8b3-4b1d-8dab-fa3041726caa.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "3e703eff-4804-476b-8ab8-c8498f3d3b7c",

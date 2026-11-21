@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Noble Cloak",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "ff4b29a1-366b-4eef-84ca-18f7c80ff7f6",
   "CreationDate": "2020-07-21T03:48:26.105Z",
   "LastModifiedDate": "2026-06-10T20:25:57.301Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "01a77062-fbe7-48c2-9812-7a366d5c816e",
+      "Url": "/playfab/persona/8f66da13-a950-4683-a097-1979f1c46177.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "bcaece3e-04b6-4476-8bd0-f6d3990d0733",

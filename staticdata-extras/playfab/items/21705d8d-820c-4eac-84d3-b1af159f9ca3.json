@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Highwayman's Mask",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "84cd504a-c5a7-4006-8997-d37ec49faa32",
   "CreationDate": "2020-05-28T22:53:44.789Z",
   "LastModifiedDate": "2026-06-10T20:27:43.934Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "1a34b25c-9d63-48d9-9076-91e341f68f0d",
+      "Url": "/playfab/persona/21705d8d-820c-4eac-84d3-b1af159f9ca3.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "acf44b25-e770-4b09-afa4-351d7c48fee4",

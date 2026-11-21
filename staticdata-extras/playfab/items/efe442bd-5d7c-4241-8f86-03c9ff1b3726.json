@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Scream",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "c3358434-4d51-4db0-9dc7-1a81efb44d3c",
   "CreationDate": "2019-08-30T01:10:40.106Z",
   "LastModifiedDate": "2026-06-11T02:17:58.632Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "ceb97008-3378-47c0-91a4-727070d62a46",
+      "Url": "/playfab/persona/efe442bd-5d7c-4241-8f86-03c9ff1b3726.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "662d4b30-b064-40a5-8c24-9ca35e368a3b",

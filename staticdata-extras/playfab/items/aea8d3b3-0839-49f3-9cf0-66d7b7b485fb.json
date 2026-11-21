@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Toon-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "2de546b7-b702-41f4-a3ef-2b2017febab7",
   "CreationDate": "2019-08-30T01:07:08.354Z",
   "LastModifiedDate": "2026-06-10T23:46:31.147Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "69433376-7567-40cf-997b-1f162a515273",
+      "Url": "/playfab/persona/aea8d3b3-0839-49f3-9cf0-66d7b7b485fb.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "f80b46e8-3d2c-4e14-9c50-b3e47646badb",

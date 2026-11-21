@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Freckled",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "524df3e6-637c-488c-9d95-f07699eede4a",
   "CreationDate": "2019-08-30T01:07:45.13Z",
   "LastModifiedDate": "2026-06-10T22:03:13.649Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "453161f4-d87b-4f92-be32-04cacf2605ad",
+      "Url": "/playfab/persona/ebfd92ed-33da-487d-bd41-8ec78cec2e8d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "a57ac1a8-9321-4f64-b325-1eb997d0d7b5",

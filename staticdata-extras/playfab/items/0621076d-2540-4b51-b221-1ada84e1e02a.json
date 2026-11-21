@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Long Waves",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "0101b81f-a140-438a-afbd-6b42c2bf49b7",
   "CreationDate": "2019-08-30T01:10:20.858Z",
   "LastModifiedDate": "2026-06-10T22:05:18.511Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "27f942b3-73b4-4756-8d49-eaf8bb9587d5",
+      "Url": "/playfab/persona/0621076d-2540-4b51-b221-1ada84e1e02a.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "6a6d3394-1824-47e2-92c9-46dc1a1cefa7",

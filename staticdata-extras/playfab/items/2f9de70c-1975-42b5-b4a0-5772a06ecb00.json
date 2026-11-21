@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Rogue Archer Trousers",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "344b4995-da52-40f7-842b-22f843d16559",
   "CreationDate": "2020-06-09T19:33:22.308Z",
   "LastModifiedDate": "2026-06-10T20:24:43.939Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "d52df8a5-43bb-4ab1-b42e-39f694c1fbbd",
+      "Url": "/playfab/persona/2f9de70c-1975-42b5-b4a0-5772a06ecb00.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "96a0e4a9-4710-4704-a7a8-dcb7e6aead28",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Tongue",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "1efc0c96-a09d-4678-91e2-1db98a3526d7",
   "CreationDate": "2019-08-30T01:07:58.086Z",
   "LastModifiedDate": "2026-06-10T23:46:31.67Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "064ff183-019b-4c43-87af-31f4cfbd89e3",
+      "Url": "/playfab/persona/993610c2-6d20-484e-94ac-56f16f68baba.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "4158ea9a-baf6-46ad-a865-7410094d6ab0",

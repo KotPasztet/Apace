@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Muddy Pants",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "d34f405c-885c-492d-912c-8a1f251d0de1",
   "CreationDate": "2020-12-07T22:51:49.433Z",
   "LastModifiedDate": "2026-06-10T20:29:01.861Z",
@@ -45,7 +45,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "c7733268-0b46-4cb5-9c46-de7c436c83d7",
+      "Url": "/playfab/persona/9f858224-4a91-42ee-a583-c043e1ee0f7f.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "03c86513-cae5-4aa6-8aaa-bed86dbbfaea",

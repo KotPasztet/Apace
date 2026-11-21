@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Pirate Trousers",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "5d74d1fd-6918-44cb-a82e-deb7d8270293",
   "CreationDate": "2020-10-01T18:49:00.725Z",
   "LastModifiedDate": "2026-06-10T20:26:28.378Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "2b04f470-0a61-4c83-bc02-60bb777d28cb",
+      "Url": "/playfab/persona/e9033215-0ed6-40d1-a69f-37aa1571c8eb.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "05ba3df7-bde7-43a7-bbf9-1e48f07beccd",

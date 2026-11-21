@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wrap Tunic",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "b0f076d7-3ab6-4337-9fab-5370d3f94b10",
   "CreationDate": "2019-08-30T01:08:46.536Z",
   "LastModifiedDate": "2026-06-10T20:26:28.763Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "bbed1bbb-4aaf-430c-80c7-c9524f85d7fa",
+      "Url": "/playfab/persona/faa8daec-3bc4-42f9-9d8d-2edf57ce4a5a.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "6bd8f976-a0d1-45e7-a19a-428b711ad43b",

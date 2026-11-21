@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wind Turbine",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "dbae4b1f-0c0d-4e5b-860b-f59cb068399b",
   "CreationDate": "2020-12-16T19:34:38.824Z",
   "LastModifiedDate": "2026-06-10T20:29:15.546Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "650e585c-e22d-4757-bd6a-72bf96986493",
+      "Url": "/playfab/persona/c5459c3d-d8da-48c1-afba-89d63eaea78c.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "689ff47a-777b-438d-ba92-23589f60a0b4",

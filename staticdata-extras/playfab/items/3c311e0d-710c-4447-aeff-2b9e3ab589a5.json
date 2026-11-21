@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Racecar Suit Top",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "06a16ef5-8f0e-4ce9-96ff-21a063a90b7d",
   "CreationDate": "2020-06-22T18:59:08.827Z",
   "LastModifiedDate": "2026-06-10T20:25:43.564Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "0e00c538-fedb-43d0-a233-d30d6fad8d5a",
+      "Url": "/playfab/persona/3c311e0d-710c-4447-aeff-2b9e3ab589a5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "86a6697a-de5c-4278-823e-906c964114b9",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Astronaut Boots",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "7ab97b77-2680-419f-9c82-0337d99f7227",
   "CreationDate": "2020-11-24T00:43:06.814Z",
   "LastModifiedDate": "2026-06-10T20:29:15.709Z",
@@ -47,7 +47,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "25d1cff4-2728-4a1f-a454-8b6efcee9cc5",
+      "Url": "/playfab/persona/5d7abb16-8a02-499b-83a7-102bfe233c51.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "838c09be-19af-46c9-a3de-a6761c3225f9",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Giant",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "1e1720ca-e57d-4374-9145-7e05e608e49e",
   "CreationDate": "2019-08-30T01:10:46.013Z",
   "LastModifiedDate": "2026-06-10T23:46:31.333Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "12e3b726-0635-43df-a95a-fc8eb269be5a",
+      "Url": "/playfab/persona/b133d891-b4e0-46c8-ad29-a680adf32b0d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "43fc3bd8-e296-421c-af61-6e5b9f205fc4",

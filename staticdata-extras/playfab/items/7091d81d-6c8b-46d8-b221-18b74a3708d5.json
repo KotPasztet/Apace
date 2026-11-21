@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Blouse",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "e47aa8db-adf5-4381-b74a-e0495f8a1117",
   "CreationDate": "2019-08-30T01:04:07.48Z",
   "LastModifiedDate": "2026-06-10T18:49:58.015Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "4d8d0609-61db-4b9b-b1f1-5bb4ccdc8653",
+      "Url": "/playfab/persona/7091d81d-6c8b-46d8-b221-18b74a3708d5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "ef3073d2-b82e-4866-b231-4fbeb3396df2",

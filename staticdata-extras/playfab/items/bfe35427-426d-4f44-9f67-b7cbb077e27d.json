@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Spiky Pompadour",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "4abce41e-05ba-4550-ac7e-063d48806a94",
   "CreationDate": "2019-08-30T01:11:44.962Z",
   "LastModifiedDate": "2026-06-10T22:06:23.128Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "30659b1f-1e66-4f5c-b1e4-12e0cf0020b4",
+      "Url": "/playfab/persona/bfe35427-426d-4f44-9f67-b7cbb077e27d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "ec8de4cb-7df9-4784-bc9f-1c8bfb8046c2",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Vex Wings",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "2cea8f3e-f82d-4f01-a076-6efdbd9d6a15",
   "CreationDate": "2020-05-18T16:39:33.333Z",
   "LastModifiedDate": "2026-06-10T22:03:45.422Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "83173f5d-1c06-4d98-b0a0-f8780e1fac1e",
+      "Url": "/playfab/persona/8c722223-a061-48ae-98a6-d9d8b21f0686.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "14bc7f82-6f09-47b9-ab44-1450b21fd8ca",

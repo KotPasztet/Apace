@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Scar-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "fa062275-6e1e-4c53-bffd-647582d22d9d",
   "CreationDate": "2019-08-30T01:09:41.709Z",
   "LastModifiedDate": "2026-06-10T23:46:30.996Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "32999cce-f4c9-4b2c-bdf3-a8f045ffdc5f",
+      "Url": "/playfab/persona/2a0f3e25-8cdd-46c8-a151-5b2d98e8cfa4.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "d2789c0b-73d5-4ead-83bb-167a92fcaaf6",

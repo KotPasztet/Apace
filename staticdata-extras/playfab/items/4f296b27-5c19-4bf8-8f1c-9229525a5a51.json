@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Cowbell Necklace",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "d22c54f1-90da-4b82-b98d-972191b03b50",
   "CreationDate": "2020-05-18T16:47:50.021Z",
   "LastModifiedDate": "2026-06-10T22:03:29.34Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "930f989f-4b5a-4df7-9907-dc5305103e4d",
+      "Url": "/playfab/persona/4f296b27-5c19-4bf8-8f1c-9229525a5a51.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "b923b5f9-76cb-4963-83b7-5fb6271c6119",

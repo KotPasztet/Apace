@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Long Braid",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "78f12c00-4490-4e45-b680-c40de7f50d24",
   "CreationDate": "2019-11-04T23:16:26.476Z",
   "LastModifiedDate": "2026-06-10T22:06:07.137Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "703d3989-4f65-4680-9ff7-d58d222b9796",
+      "Url": "/playfab/persona/f376dd31-9025-4aa5-89c1-17c196e18bf5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "db31d68b-5c43-408c-9600-0291244f149e",

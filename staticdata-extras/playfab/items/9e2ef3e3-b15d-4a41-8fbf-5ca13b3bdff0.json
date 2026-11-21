@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Winged Pig Boots",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f2ee9d61-57e5-46e9-a225-f3396a246849",
   "CreationDate": "2020-11-10T06:33:02.003Z",
   "LastModifiedDate": "2026-06-10T22:02:58.372Z",
@@ -30,7 +30,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "a0dffa1f-d166-4a10-a0de-091574793532",
+      "Url": "/playfab/persona/9e2ef3e3-b15d-4a41-8fbf-5ca13b3bdff0.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "bd44349b-4b85-44c6-99a9-c6587ac049da",

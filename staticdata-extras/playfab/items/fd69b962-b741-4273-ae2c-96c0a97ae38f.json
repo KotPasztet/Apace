@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Bedhead",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "12109c94-9f85-4e46-a98d-a92f7b3c58fb",
   "CreationDate": "2019-08-30T01:11:45.521Z",
   "LastModifiedDate": "2026-06-10T23:48:26.381Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "3a805dd4-1fde-4080-a64d-f286355dca13",
+      "Url": "/playfab/persona/fd69b962-b741-4273-ae2c-96c0a97ae38f.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "f2e9bf00-c4d4-49cc-9593-3afeffd2681d",

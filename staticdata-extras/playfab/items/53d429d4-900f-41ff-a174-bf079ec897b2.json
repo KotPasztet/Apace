@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Cluckshroom Pants",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f2a3c67d-c837-4810-87d5-43a0808b4ff6",
   "CreationDate": "2020-12-07T22:48:44.184Z",
   "LastModifiedDate": "2026-06-10T20:29:01.428Z",
@@ -50,7 +50,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "5f63187c-c9ea-4664-94e3-72c2f8253495",
+      "Url": "/playfab/persona/53d429d4-900f-41ff-a174-bf079ec897b2.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "a117803f-54c6-4192-9e8d-f84724214f26",

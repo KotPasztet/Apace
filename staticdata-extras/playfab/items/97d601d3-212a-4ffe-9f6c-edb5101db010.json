@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Hero's Cowl",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "44ee6a55-9150-4afe-8896-b999e6cdef54",
   "CreationDate": "2020-12-16T20:07:31.341Z",
   "LastModifiedDate": "2026-06-10T20:28:47.08Z",
@@ -43,7 +43,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "6fb743c8-b0e0-47b3-9619-40bf08c3d478",
+      "Url": "/playfab/persona/97d601d3-212a-4ffe-9f6c-edb5101db010.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "64345c03-75d7-4ae0-a45a-813e83d275d9",

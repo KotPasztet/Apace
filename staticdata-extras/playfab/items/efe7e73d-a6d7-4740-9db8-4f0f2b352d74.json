@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Large Smile",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "5b6c1358-dfc2-4ec2-889c-65810360123c",
   "CreationDate": "2019-08-30T01:10:36.7Z",
   "LastModifiedDate": "2026-06-21T03:33:25.11Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "4f086419-3f83-4a01-8796-ac1083c900c3",
+      "Url": "/playfab/persona/efe7e73d-a6d7-4740-9db8-4f0f2b352d74.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "70fbd00b-629f-4d5d-b635-0118f6641e17",

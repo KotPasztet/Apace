@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wizard Cloak",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f1b8b779-aa11-4295-8212-c6ed6d1861c3",
   "CreationDate": "2020-10-01T18:46:46.313Z",
   "LastModifiedDate": "2026-06-10T20:26:29.126Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "c2176143-83b1-4252-89a9-0a79e65a7695",
+      "Url": "/playfab/persona/a02ef943-fa2c-4b5b-82f1-8891177f5604.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "9dc61994-4e41-494e-a8dd-4b6b3f87785f",

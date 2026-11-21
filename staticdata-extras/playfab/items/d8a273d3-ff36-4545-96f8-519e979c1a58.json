@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Cyclops-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "b67daad6-b759-4252-9ef9-01df3bff331c",
   "CreationDate": "2019-08-30T01:09:55.246Z",
   "LastModifiedDate": "2026-06-10T23:46:31.013Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "477dd42e-bf34-4b9b-b0f7-e6934c7ff3ad",
+      "Url": "/playfab/persona/d8a273d3-ff36-4545-96f8-519e979c1a58.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "660a6c2b-26c4-4f6e-8e1a-2b71679f8617",

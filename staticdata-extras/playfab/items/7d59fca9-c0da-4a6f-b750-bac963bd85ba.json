@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wink-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "0c0ea32a-b5f7-4e7b-994d-afb93a7ab14f",
   "CreationDate": "2019-08-30T01:10:50.887Z",
   "LastModifiedDate": "2026-06-10T23:46:31.155Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "c8974bf1-24ee-4737-b4de-c56ce6c1ac11",
+      "Url": "/playfab/persona/7d59fca9-c0da-4a6f-b750-bac963bd85ba.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "e6286300-9367-4c2e-9761-24b92ba3fa4e",

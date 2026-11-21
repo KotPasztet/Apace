@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Ruffled Shirt",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "a2699a60-7517-4cc6-9a28-7db80a56503a",
   "CreationDate": "2019-08-30T01:06:43.265Z",
   "LastModifiedDate": "2026-06-10T20:28:46.927Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "3ba8eb73-82d5-4d6e-8006-b40c18454f32",
+      "Url": "/playfab/persona/b8daac74-7711-4e0c-9cc3-3e3f787092c3.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "da3281cf-7cbd-429d-9ebb-7d4e2dfa804c",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Prosthetic Foot",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "884ca407-a534-4f3b-b0ff-b2e3050200ff",
   "CreationDate": "2019-08-30T01:12:25.014Z",
   "LastModifiedDate": "2026-06-10T18:50:11.545Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "bba532f7-ab8f-4178-af81-b7a92e306bc0",
+      "Url": "/playfab/persona/8011898c-e01a-4a22-8d1a-de9646553211.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "d2ce5289-92bb-49ba-a13b-2512f7cf58a6",

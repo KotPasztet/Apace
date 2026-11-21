@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Long-Sleeved Tunic",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "2489063b-4d82-4ff5-8f0d-0f7a2f07e74e",
   "CreationDate": "2019-08-30T01:11:06.948Z",
   "LastModifiedDate": "2026-06-10T18:49:29.904Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "00ed65c7-4fea-463f-8e63-53c54767658a",
+      "Url": "/playfab/persona/64baec66-5088-4533-9840-963c691c44b8.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "7790b196-ccfe-4933-a704-bda48f25b324",

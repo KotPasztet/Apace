@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Tired-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f6c7a803-4ec1-4f42-9c41-34186f0e05e6",
   "CreationDate": "2019-08-30T01:10:51.604Z",
   "LastModifiedDate": "2026-06-10T23:46:31.659Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "4d412558-aeb9-4524-bbbe-e7615ba197c6",
+      "Url": "/playfab/persona/da790aa8-5887-45fc-a8f7-0a76b49b8309.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "ba0b3722-da31-4f65-95f6-cf23921eeec9",

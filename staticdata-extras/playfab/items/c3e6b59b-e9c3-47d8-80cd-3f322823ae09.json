@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Elderly Texture",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "34d577be-b190-4c6c-ae3e-a5df01d4b7eb",
   "CreationDate": "2020-05-29T16:16:16.205Z",
   "LastModifiedDate": "2026-06-10T20:25:27.64Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "57f00266-c20d-4767-8d0d-0d74846b7db2",
+      "Url": "/playfab/persona/c3e6b59b-e9c3-47d8-80cd-3f322823ae09.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "d1887e5a-94b0-4d22-93f4-3d8f7e481b1c",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Worried-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "382021d4-ef58-4f93-bf4a-b9b1f9fcd644",
   "CreationDate": "2020-05-05T23:05:33.992Z",
   "LastModifiedDate": "2026-06-10T23:46:31.224Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "9abc68be-4fb2-46f4-9834-d694b6e5afa0",
+      "Url": "/playfab/persona/9d366d03-1edf-4b08-a1ac-a9311ae9d44b.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "7244d262-2c6f-4947-bdfb-af20ac18eca3",

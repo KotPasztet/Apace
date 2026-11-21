@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Sudden Blush",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "646e5b24-b6d1-4762-88ee-eecdc4ee8e62",
   "CreationDate": "2019-08-30T01:09:49.016Z",
   "LastModifiedDate": "2026-06-10T18:51:21.613Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "0cd0e091-e133-4a48-837e-be9b56881101",
+      "Url": "/playfab/persona/8ac772e5-2fd4-4bc9-8242-45ca3bf4072b.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "10ae0a7b-0d98-4601-b5b2-a5410522fab7",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Suspicious-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "ba8828bb-b4da-4a94-8edd-4719227a2662",
   "CreationDate": "2019-08-30T01:10:50.185Z",
   "LastModifiedDate": "2026-06-10T23:46:31.131Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "8b9eb716-e9ca-48b5-8f8b-289158ead2fa",
+      "Url": "/playfab/persona/ddeb191a-a90b-4efe-9db1-9dc25b0c165c.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "a35c3c73-0f53-4788-b1c5-bc22cfcd07e5",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Slender Skin",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "c18d9249-37bb-47e8-b3b5-afa82d146369",
   "CreationDate": "2019-08-30T01:03:07.057Z",
   "LastModifiedDate": "2026-06-10T18:49:01.8Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "49c3a1c0-a6a4-46ee-9c8c-c1eda9e00954",
+      "Url": "/playfab/persona/b06aa45c-816d-490e-a53c-f2e55c59d3e6.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "90178bd3-4805-4a36-b11a-fa679dff516e",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Basic Flats",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "7602c315-9eb0-4c40-8c51-8d8ec157b2b4",
   "CreationDate": "2019-08-30T01:11:13.349Z",
   "LastModifiedDate": "2026-06-10T18:49:29.937Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "4ca6be6f-a58a-4996-aeb2-02addab523c8",
+      "Url": "/playfab/persona/3c2f0361-c565-41a6-be0d-62f563c24f6c.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "e417a556-8a3d-4290-991f-ddc737226378",

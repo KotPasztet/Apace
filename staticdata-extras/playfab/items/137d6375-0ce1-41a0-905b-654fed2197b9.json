@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Tool Belt Trousers",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "3f2112e4-dc5e-496f-b5eb-69e5c6982d5b",
   "CreationDate": "2020-05-18T16:53:43.143Z",
   "LastModifiedDate": "2026-06-10T22:03:45.364Z",
@@ -30,7 +30,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "68afa33f-1500-4cd1-9d07-3ac69bba78f0",
+      "Url": "/playfab/persona/137d6375-0ce1-41a0-905b-654fed2197b9.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "49f378a4-08b6-404b-b308-eea1b58ad3b9",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Highwayman's Coat",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "c749e85f-8a5f-4658-91ac-92f6db250e40",
   "CreationDate": "2020-05-28T22:54:26.104Z",
   "LastModifiedDate": "2026-06-10T20:24:44.002Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "407d6114-dcdf-4a5f-8c91-c20d1dbec0dd",
+      "Url": "/playfab/persona/81f60b47-5fbf-49bf-8392-02dbe95006a1.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "af44ad70-c1d8-4f78-a38e-4b6f598879b3",

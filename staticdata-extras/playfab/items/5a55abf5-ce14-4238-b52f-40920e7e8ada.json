@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Crab",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "bff2db80-957a-4a5d-b615-86a669f619e5",
   "CreationDate": "2020-07-21T03:43:46.482Z",
   "LastModifiedDate": "2026-06-10T20:25:57.292Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "b2d680d7-0a4e-4e09-8077-776686d8510c",
+      "Url": "/playfab/persona/5a55abf5-ce14-4238-b52f-40920e7e8ada.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "65e08387-4f34-4908-8452-5d7b3aed0f25",

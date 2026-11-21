@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Merl Hair",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "7c6106e3-5968-46f8-89e1-d6759c7a818a",
   "CreationDate": "2020-05-06T19:01:52.345Z",
   "LastModifiedDate": "2026-06-10T20:25:12.379Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "cf28c213-96a0-4f5d-bd49-45590af31789",
+      "Url": "/playfab/persona/ad3324bb-2786-4ca5-9e95-53cfa6a21e83.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "0a8e6d12-2051-4544-9bff-f5c534b9dcc4",

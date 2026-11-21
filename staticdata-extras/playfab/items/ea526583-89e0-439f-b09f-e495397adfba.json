@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Rainbow Beanie",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "02d45198-d614-4f53-b470-09ac316c07fd",
   "CreationDate": "2020-05-20T22:52:50.348Z",
   "LastModifiedDate": "2026-06-10T20:25:13.112Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "52fbf754-283d-4dd4-b562-59099b1b1523",
+      "Url": "/playfab/persona/ea526583-89e0-439f-b09f-e495397adfba.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "a51b607f-43b1-46c2-9b2d-0a23e7d05211",

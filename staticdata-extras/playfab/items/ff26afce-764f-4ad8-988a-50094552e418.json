@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Earth Day Jacket",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "b924c083-16d8-4af6-a08e-937396963c50",
   "CreationDate": "2020-05-20T17:35:26.811Z",
   "LastModifiedDate": "2026-06-10T20:24:44.411Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "2f4414fc-4dde-4fe3-9b75-2d8b8b0c2cfc",
+      "Url": "/playfab/persona/ff26afce-764f-4ad8-988a-50094552e418.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "3ed91c45-49bc-4cbe-82bb-0a4a80dc4dfb",

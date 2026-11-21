@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wizened Locks",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "51e57735-07d5-444f-8880-300b565011a1",
   "CreationDate": "2019-08-30T01:10:40.637Z",
   "LastModifiedDate": "2026-06-10T18:49:59.026Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "76af25e8-fcf5-498b-8a77-0dc89a33839f",
+      "Url": "/playfab/persona/e4c6874b-fbe2-4908-b7ff-04fe1cbdf18c.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "b7b5b446-03bc-4138-a7cc-b32d275e1b88",

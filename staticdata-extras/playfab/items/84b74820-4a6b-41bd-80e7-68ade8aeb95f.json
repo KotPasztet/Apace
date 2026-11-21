@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Ice Cream!",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "97e1ee70-60fa-4ca9-907d-1d780f62ce96",
   "CreationDate": "2020-07-21T03:47:48.799Z",
   "LastModifiedDate": "2026-06-10T20:25:57.386Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "88c315b3-9ffb-400a-bafb-24b17b3bc403",
+      "Url": "/playfab/persona/84b74820-4a6b-41bd-80e7-68ade8aeb95f.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "4d9f976e-f62c-4e73-839a-343daf9b44ed",

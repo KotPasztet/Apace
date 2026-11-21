@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Angry-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "01b8402a-658f-4835-8ec9-a4c0d7123f40",
   "CreationDate": "2020-05-05T23:01:59.27Z",
   "LastModifiedDate": "2026-06-10T23:46:30.564Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "6497ab0c-e281-40d0-b55d-73021b0ad82e",
+      "Url": "/playfab/persona/9763d462-7cea-4236-b1d2-5e65c89362f0.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "7d99b499-cc32-44fe-a4cb-252abc1b552e",

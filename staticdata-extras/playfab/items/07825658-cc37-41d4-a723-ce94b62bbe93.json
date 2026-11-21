@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Earth Day Mask",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "25df98d8-e926-4499-89e4-ef02f541d7dc",
   "CreationDate": "2020-05-20T17:34:50.771Z",
   "LastModifiedDate": "2026-06-10T20:24:44.008Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "ae72e231-9e88-4849-b260-d889676c2776",
+      "Url": "/playfab/persona/07825658-cc37-41d4-a723-ce94b62bbe93.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "8f684098-f25f-4b93-82c0-9ebb2756f779",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Heavy Eyebrows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "823081f3-821a-4ee1-ac3b-b07d53323b03",
   "CreationDate": "2019-08-30T01:10:11.818Z",
   "LastModifiedDate": "2026-06-10T18:51:20.554Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "bcf23cda-896b-4aad-9487-21aa76b8edea",
+      "Url": "/playfab/persona/a62b2a97-36d7-43f9-8ad3-86c8b8ec5026.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "a735de1e-592d-4ebc-901b-6aa9b40e7e35",

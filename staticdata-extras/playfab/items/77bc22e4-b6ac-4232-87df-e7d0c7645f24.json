@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Power Core",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "08d4e328-e4a1-4659-9786-bcf027bb874b",
   "CreationDate": "2020-12-16T19:53:31.96Z",
   "LastModifiedDate": "2026-06-10T20:29:15.521Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "ce793c52-5924-4246-81d7-57cf5067c497",
+      "Url": "/playfab/persona/77bc22e4-b6ac-4232-87df-e7d0c7645f24.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "b8d15d25-8966-459e-839f-67f4b49deb81",

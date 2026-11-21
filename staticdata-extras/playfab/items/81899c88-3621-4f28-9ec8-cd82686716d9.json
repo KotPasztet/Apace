@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Hero's Cloak",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "4e2371f6-2d66-4f76-8d7a-5ae9d815ce7f",
   "CreationDate": "2020-12-16T20:06:16.81Z",
   "LastModifiedDate": "2026-06-10T20:28:47.121Z",
@@ -42,7 +42,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "7e228c7f-85f3-4fd6-bc56-f520d2205bdf",
+      "Url": "/playfab/persona/81899c88-3621-4f28-9ec8-cd82686716d9.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "6c362f97-7a8a-40e5-a44e-57455f508e58",

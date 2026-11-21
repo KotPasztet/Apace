@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Headscarf",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "b70e727b-8b04-45f1-b54f-49f57200cc2a",
   "CreationDate": "2019-08-30T01:10:10.963Z",
   "LastModifiedDate": "2026-06-10T18:50:11.356Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "e3017041-bf27-496d-aea7-de036222f561",
+      "Url": "/playfab/persona/bf8ecd88-e4ab-46f3-8a5a-e4df2bcaa16d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "dc3baad9-f19c-40ee-93a5-52c81571849a",

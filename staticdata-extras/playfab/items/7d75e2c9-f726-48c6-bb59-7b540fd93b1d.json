@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Short Locs",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "85da077b-ba9d-4fec-ac8e-76059bb0a091",
   "CreationDate": "2019-08-30T01:11:01.071Z",
   "LastModifiedDate": "2026-06-10T22:06:06.989Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "5f1f4e09-a146-4760-b58f-08db3d9105a6",
+      "Url": "/playfab/persona/7d75e2c9-f726-48c6-bb59-7b540fd93b1d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "a32db377-d060-46e6-999d-9c42b51661c1",

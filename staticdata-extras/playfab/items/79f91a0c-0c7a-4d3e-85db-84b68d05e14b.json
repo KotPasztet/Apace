@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Anxious-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "040511c7-29c1-4af2-b806-ee55ab49a1c5",
   "CreationDate": "2020-05-05T23:04:24.372Z",
   "LastModifiedDate": "2026-06-10T23:46:30.647Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "aab48cd2-5241-4119-9c4b-5ceef6834fb6",
+      "Url": "/playfab/persona/79f91a0c-0c7a-4d3e-85db-84b68d05e14b.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "882354fb-f801-4090-8760-319ceed11bc9",

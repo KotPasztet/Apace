@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Tall",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "317e41db-1e46-45e1-82d4-53ce5782b998",
   "CreationDate": "2019-08-30T01:10:49.354Z",
   "LastModifiedDate": "2026-06-10T23:46:31.121Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "f7a82219-9f91-4378-a934-bd909736e8a5",
+      "Url": "/playfab/persona/86e61638-2ae4-432c-802e-cec6f4715873.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "f827ab80-2f9e-4ddb-9f87-b240d8cb04ac",

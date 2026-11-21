@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "French Braid and Bun",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "e8537b50-1fef-46e4-84d1-5c738d4f0c19",
   "CreationDate": "2020-09-11T21:27:28.297Z",
   "LastModifiedDate": "2026-06-10T22:06:23.112Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "b7c163dd-4b30-4b5f-8c73-02236ff08b7d",
+      "Url": "/playfab/persona/61b96dc9-1f4f-44f3-95a8-48fdb9f861dc.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "42cd570a-98f7-4fee-b410-eb4d3abf3b63",

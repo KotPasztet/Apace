@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Curly Bob",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "7df9a54f-4274-4abf-b5aa-33921d977c53",
   "CreationDate": "2019-08-30T01:11:05.189Z",
   "LastModifiedDate": "2026-06-10T22:06:22.766Z",
@@ -28,7 +28,16 @@
     "tag.hair"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "94634955-a362-4e44-8b5f-1b93f91cb774",
+      "Url": "/playfab/persona/73c7c41c-bf02-418a-a0c1-d82e4d4fe5a3.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "0a549f70-a7ca-4e65-8908-7310c6b561df",

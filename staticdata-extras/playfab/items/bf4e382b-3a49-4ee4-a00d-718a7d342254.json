@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wizard Hat",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "7aedf15e-010a-4f28-8a17-6adb821d93ae",
   "CreationDate": "2020-11-24T00:43:54.181Z",
   "LastModifiedDate": "2026-06-10T20:29:15.726Z",
@@ -50,7 +50,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "9e803c92-f2e3-48c3-84e9-a9d8ce8e2074",
+      "Url": "/playfab/persona/bf4e382b-3a49-4ee4-a00d-718a7d342254.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "efc25e08-b702-46f7-a39a-43ff14cafedd",

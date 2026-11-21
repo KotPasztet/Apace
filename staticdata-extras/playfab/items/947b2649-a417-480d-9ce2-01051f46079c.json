@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Moobloom Mantle",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "ef8588a9-a77d-4234-afdf-cb7c2c88ba42",
   "CreationDate": "2020-04-17T23:38:31.195Z",
   "LastModifiedDate": "2026-06-10T20:24:57.035Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "b6c5e86e-655d-4035-845a-2bc70e9ea972",
+      "Url": "/playfab/persona/947b2649-a417-480d-9ce2-01051f46079c.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "effae383-f157-4ea1-84a7-abffbecfb5ff",

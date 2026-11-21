@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Patka",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "cdb7cfbb-2458-4e90-a744-e3c6d351dabd",
   "CreationDate": "2020-03-03T16:53:43.574Z",
   "LastModifiedDate": "2026-06-10T20:24:14.59Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "c4e0512b-de99-4248-922b-584fac075838",
+      "Url": "/playfab/persona/6516d383-e0c3-40d6-8c8a-6cea10c583ec.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "1054b620-2c1a-48cb-9a9a-7d802c6d80a5",

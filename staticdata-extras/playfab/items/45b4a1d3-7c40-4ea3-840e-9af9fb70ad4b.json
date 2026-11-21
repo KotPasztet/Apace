@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Side Glance",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "1075d47d-0347-49f8-914a-ce7087903bec",
   "CreationDate": "2020-05-05T23:03:14.14Z",
   "LastModifiedDate": "2026-06-10T23:46:30.68Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "17875ff3-be9f-4d4b-bc03-05ba2b92dac9",
+      "Url": "/playfab/persona/45b4a1d3-7c40-4ea3-840e-9af9fb70ad4b.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "1cf7679a-f03e-4aad-b907-c5d041d2b7e5",

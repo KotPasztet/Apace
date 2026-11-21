@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Shy Blush",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "57a0e16d-b717-4810-a0a7-688876c3dc8a",
   "CreationDate": "2019-08-30T01:10:40.102Z",
   "LastModifiedDate": "2026-06-10T18:51:20.481Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "97f1017f-0bee-4bee-b5ec-2506538474c4",
+      "Url": "/playfab/persona/76f94877-d1d7-464d-a71b-106a61793794.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "fe4a40df-a7d6-415f-8ef7-883c2e32c0ee",

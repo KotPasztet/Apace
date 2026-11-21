@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Blue Hoodie",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "382d3cef-8a7c-4aaf-947d-a77c4868c772",
   "CreationDate": "2020-08-12T15:38:53.61Z",
   "LastModifiedDate": "2026-06-10T22:14:16.872Z",
@@ -43,7 +43,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "b13279e6-6c52-4640-9a1b-17df894eece1",
+      "Url": "/playfab/persona/7201e9f7-50a6-4926-9f1d-a015efae57db.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "dd94474c-5b48-43e7-8bd8-69582c80fed2",

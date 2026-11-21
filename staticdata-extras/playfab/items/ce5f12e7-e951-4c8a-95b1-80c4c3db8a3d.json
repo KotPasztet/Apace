@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Short Braids",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f6cfe6c3-fbd2-4c6a-b0ed-de838085d92c",
   "CreationDate": "2019-11-11T16:43:59.689Z",
   "LastModifiedDate": "2026-06-10T18:50:24.733Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "27194dc3-dbc2-454a-9e19-aa22b6d9561e",
+      "Url": "/playfab/persona/ce5f12e7-e951-4c8a-95b1-80c4c3db8a3d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "26229132-5edd-4371-ae4a-2d1951c66d1b",

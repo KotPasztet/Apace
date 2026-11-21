@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Horned Sheep Hood",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "42d56d5f-f6a9-4f76-8cc6-72d57f94c49a",
   "CreationDate": "2020-12-07T22:49:31.183Z",
   "LastModifiedDate": "2026-06-10T20:29:15.787Z",
@@ -42,7 +42,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "25fdb956-7ec1-4871-a4ce-1ab14fc325c0",
+      "Url": "/playfab/persona/75a1ac78-b291-430a-9f6b-236dd79e27dc.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "988284d3-65df-44e6-b78d-27d340dc9b13",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Golden Watch",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f53371fe-2a29-45d0-800e-3d3d86d643f9",
   "CreationDate": "2020-10-15T17:41:08.665Z",
   "LastModifiedDate": "2026-06-10T22:03:45.148Z",
@@ -30,7 +30,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "3b152917-3f56-402f-96be-10cd25d66c47",
+      "Url": "/playfab/persona/b2c821b4-8e8e-48d1-987f-c9709e2cce74.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "8350acc5-aaf5-4b27-8d3b-7b049b1953e3",

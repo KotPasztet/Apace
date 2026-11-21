@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Right Arm Cast",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "0a420b37-ff3d-4026-8f51-7671af86c60e",
   "CreationDate": "2020-02-04T16:49:09.26Z",
   "LastModifiedDate": "2026-06-10T18:50:54.316Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "d823ff48-e908-4ca5-b057-e99a2a22b656",
+      "Url": "/playfab/persona/e289a047-f821-4078-b943-db0ecdf2b467.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "36372d4f-7243-4dd8-84ca-3db2e620d8f2",

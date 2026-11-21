@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Fruit Punch",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "d4540c95-3638-4525-8042-76847925cf49",
   "CreationDate": "2020-07-21T03:47:05.514Z",
   "LastModifiedDate": "2026-06-10T20:25:57.307Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "b151575c-8532-48bd-8af1-8171a0097a93",
+      "Url": "/playfab/persona/d7cc02f9-84d8-4fc3-83c3-3bc0b6d50162.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "1f738ca3-27aa-4747-afda-f2abfb15a23a",

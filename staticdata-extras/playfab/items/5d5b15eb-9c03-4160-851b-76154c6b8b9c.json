@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Horned Sheep Pants",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f812a044-c103-44da-9a43-55c5f68a478b",
   "CreationDate": "2020-12-07T22:50:35.226Z",
   "LastModifiedDate": "2026-06-10T20:29:01.447Z",
@@ -43,7 +43,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "ba6c9de6-ad34-4c16-ad37-88be5297bcb6",
+      "Url": "/playfab/persona/5d5b15eb-9c03-4160-851b-76154c6b8b9c.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "1766e29b-3679-4f7b-9cb4-178148a30455",

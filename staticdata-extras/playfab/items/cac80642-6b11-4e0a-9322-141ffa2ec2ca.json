@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Pirate Tunic",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "297174ac-506c-4b0c-a4f7-a2dfae85b26b",
   "CreationDate": "2020-06-22T18:56:16.855Z",
   "LastModifiedDate": "2026-06-10T20:25:43.588Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "555218c3-bbb5-46b9-9925-e9601b3b76cf",
+      "Url": "/playfab/persona/cac80642-6b11-4e0a-9322-141ffa2ec2ca.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "1e56bb13-c724-4796-9df0-ad773f40e033",

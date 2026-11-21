@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Basic Sneakers",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "6fb73afa-408c-46e8-8750-6c3d0693ed96",
   "CreationDate": "2019-08-30T01:11:11.125Z",
   "LastModifiedDate": "2026-06-10T18:49:29.922Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "55c55954-36c9-45ab-b4d5-0cd1b50c1eaa",
+      "Url": "/playfab/persona/5467aa72-444d-46a0-869d-9b0562a388a6.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "59ceff90-c5e4-4585-98f7-6f0c2d4ed812",

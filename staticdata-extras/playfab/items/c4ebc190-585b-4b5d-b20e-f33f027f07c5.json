@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Straight Ponytail",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "c8492e53-977c-4f50-9f3d-c9e434e5635d",
   "CreationDate": "2019-08-30T01:10:49.114Z",
   "LastModifiedDate": "2026-06-10T22:06:23.086Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "569deb06-3361-4628-ae37-05af70f0bd72",
+      "Url": "/playfab/persona/c4ebc190-585b-4b5d-b20e-f33f027f07c5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "c11ecc40-e3eb-4d11-b339-c91879b7618d",

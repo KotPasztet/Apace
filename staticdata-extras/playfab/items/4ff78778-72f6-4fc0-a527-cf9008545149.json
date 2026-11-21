@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Underbite",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "511e17a0-e3d0-4199-9648-40d8bc9319bb",
   "CreationDate": "2019-08-30T01:10:29.836Z",
   "LastModifiedDate": "2026-06-10T23:46:31.363Z",
@@ -28,7 +28,16 @@
     "tag.mouth"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "0f3daaa5-76cc-45f9-923d-676cc845be31",
+      "Url": "/playfab/persona/4ff78778-72f6-4fc0-a527-cf9008545149.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "6096ca45-ff51-4e3d-af8f-7f35992c04ef",

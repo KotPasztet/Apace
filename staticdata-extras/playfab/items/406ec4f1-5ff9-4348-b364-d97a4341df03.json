@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Prosthetic Leg",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "8c02748f-babc-4294-92de-7379053b037e",
   "CreationDate": "2019-08-30T01:11:36.654Z",
   "LastModifiedDate": "2026-06-10T22:03:13.251Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "c692bbb0-85de-44e0-a478-f6f42d2bf776",
+      "Url": "/playfab/persona/406ec4f1-5ff9-4348-b364-d97a4341df03.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "d6c21053-6919-4b82-9395-95597d5daec8",
