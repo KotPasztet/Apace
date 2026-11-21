@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "c952ae44-a32e-4c74-9c18-33bc66cb2c65",
+    "OfferId": "72732675-1eaa-461d-9695-9ba1f4cc90e8",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Low Ponytail",
+  "Description": "§",
+  "ThumbnailImageId": "e629b91d-36cc-4f75-a6f1-85ed64fe06cf",
+  "CreationDate": "2020-01-29T23:09:44.795Z",
+  "LastModifiedDate": "2026-06-10T23:31:34.506Z",
+  "StartDate": "2020-01-29T23:09:44.795Z",
+  "Id": "30532b3c-e969-41d4-ae20-137865df5767",
+  "FriendlyId": "72732675-1eaa-461d-9695-9ba1f4cc90e8",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "30532b3c-e969-41d4-ae20-137865df5767",
+    "c952ae44-a32e-4c74-9c18-33bc66cb2c65",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "e654b135-f69a-416b-894e-46a32179438b",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

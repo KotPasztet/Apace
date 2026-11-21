@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "382fd00a-3fff-4d02-9338-25ec36284c61",
+    "OfferId": "44b834f0-be75-4de6-ac20-7fde6e80fb5b",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Straight Pigtails",
+  "Description": "§",
+  "ThumbnailImageId": "6f6ae4e7-a448-4ed8-8eac-360dd4f0dade",
+  "CreationDate": "2019-08-30T01:10:47.434Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.076Z",
+  "StartDate": "2019-08-30T01:10:47.434Z",
+  "Id": "44b834f0-be75-4de6-ac20-7fde6e80fb5b",
+  "FriendlyId": "44b834f0-be75-4de6-ac20-7fde6e80fb5b",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "1P",
+    "44b834f0-be75-4de6-ac20-7fde6e80fb5b",
+    "382fd00a-3fff-4d02-9338-25ec36284c61",
+    "tag.hair"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "095ef2af-54fb-4b1d-9879-b3b2069eeacf",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,55 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hood",
+    "PieceId": "cd5f8a63-2c3d-4dd5-a4f7-8ac7f8f2269e",
+    "OfferId": "2e6f2830-ce23-42e1-8caf-3de7b2da0f60",
+    "Version": "1.2.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Blue Hoodie",
+  "Description": "§",
+  "ThumbnailImageId": "382d3cef-8a7c-4aaf-947d-a77c4868c772",
+  "CreationDate": "2020-08-12T15:38:53.61Z",
+  "LastModifiedDate": "2026-06-10T22:14:16.872Z",
+  "StartDate": "2020-08-12T15:38:53.61Z",
+  "Id": "7201e9f7-50a6-4926-9f1d-a015efae57db",
+  "FriendlyId": "2e6f2830-ce23-42e1-8caf-3de7b2da0f60",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "7201e9f7-50a6-4926-9f1d-a015efae57db",
+    "cd5f8a63-2c3d-4dd5-a4f7-8ac7f8f2269e",
+    "tag.hoodie",
+    "tag.dinosaurs",
+    "tag.blue",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Dinosaurs",
+        "Blue"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Dinosaurs",
+        "Blue"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "dd94474c-5b48-43e7-8bd8-69582c80fed2",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

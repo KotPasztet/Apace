@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "a555f509-5ba5-4bc3-ba90-8199ad126bbd",
+    "OfferId": "d73c01a3-d7e6-41c5-af88-512cc652ab19",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Curly Pigtails",
+  "Description": "§",
+  "ThumbnailImageId": "0a37d84c-0d38-4a15-abc8-03fea2ac437b",
+  "CreationDate": "2019-08-30T01:11:56.149Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.087Z",
+  "StartDate": "2019-08-30T01:11:56.149Z",
+  "Id": "bc04cc53-bc84-4106-b34c-014b21deeb07",
+  "FriendlyId": "d73c01a3-d7e6-41c5-af88-512cc652ab19",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "bc04cc53-bc84-4106-b34c-014b21deeb07",
+    "a555f509-5ba5-4bc3-ba90-8199ad126bbd",
+    "tag.hair",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "0216458a-d22d-4a7d-b440-ded2359530cd",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

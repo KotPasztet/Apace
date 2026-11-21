@@ -1,0 +1,54 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "2345d276-643c-4259-82f5-632967410d0a",
+    "OfferId": "20100851-0f5c-401a-8865-51bb1ed7a037",
+    "Version": "1.1.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Emerald Suitcoat",
+  "Description": "§",
+  "ThumbnailImageId": "4bb6ff28-1fc0-4c53-bc5e-c5b17d8c6576",
+  "CreationDate": "2020-05-18T16:45:04.186Z",
+  "LastModifiedDate": "2026-06-10T22:03:30.009Z",
+  "StartDate": "2020-05-18T16:45:04.186Z",
+  "Id": "bf7b53eb-d6a0-407e-be11-0e8ca7568cd9",
+  "FriendlyId": "20100851-0f5c-401a-8865-51bb1ed7a037",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "bf7b53eb-d6a0-407e-be11-0e8ca7568cd9",
+    "2345d276-643c-4259-82f5-632967410d0a",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.suits",
+    "tag.jacket",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Jacket"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Jacket"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "da82500d-260d-477e-8457-88b015e89e79",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

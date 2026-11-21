@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_bottom",
+    "PieceId": "12355419-f6cf-442d-88e9-99db1507f569",
+    "OfferId": "92b0765a-e030-48f2-94f5-ded14523dfb3",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Explorer Trousers",
+  "Description": "§",
+  "ThumbnailImageId": "a9515d79-5e40-4c90-aee4-01b692b15050",
+  "CreationDate": "2020-06-22T18:55:33.238Z",
+  "LastModifiedDate": "2026-06-10T20:25:43.557Z",
+  "StartDate": "2020-06-22T18:55:33.238Z",
+  "Id": "b4573a19-76ee-4437-b6e3-b7f092ad699f",
+  "FriendlyId": "92b0765a-e030-48f2-94f5-ded14523dfb3",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "b4573a19-76ee-4437-b6e3-b7f092ad699f",
+    "12355419-f6cf-442d-88e9-99db1507f569",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "2b150ad8-aa44-4d90-baec-bb0f99b34b87",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

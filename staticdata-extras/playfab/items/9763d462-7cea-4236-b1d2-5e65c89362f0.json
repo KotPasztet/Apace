@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "d26b97e1-7593-4b9c-8564-261ae483e2f4",
+    "OfferId": "aa4b605e-09d1-4afb-bedb-7da4e0f96516",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Angry-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "01b8402a-658f-4835-8ec9-a4c0d7123f40",
+  "CreationDate": "2020-05-05T23:01:59.27Z",
+  "LastModifiedDate": "2026-06-10T23:46:30.564Z",
+  "StartDate": "2020-05-05T23:01:59.27Z",
+  "Id": "9763d462-7cea-4236-b1d2-5e65c89362f0",
+  "FriendlyId": "aa4b605e-09d1-4afb-bedb-7da4e0f96516",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "9763d462-7cea-4236-b1d2-5e65c89362f0",
+    "d26b97e1-7593-4b9c-8564-261ae483e2f4",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "7d99b499-cc32-44fe-a4cb-252abc1b552e",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

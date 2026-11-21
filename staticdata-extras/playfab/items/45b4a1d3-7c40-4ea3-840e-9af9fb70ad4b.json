@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "713b178c-99e2-4edb-b534-99f5553f6c64",
+    "OfferId": "6a06aa79-f535-4db5-853a-afb44e5b51de",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Side Glance",
+  "Description": "§",
+  "ThumbnailImageId": "1075d47d-0347-49f8-914a-ce7087903bec",
+  "CreationDate": "2020-05-05T23:03:14.14Z",
+  "LastModifiedDate": "2026-06-10T23:46:30.68Z",
+  "StartDate": "2020-05-05T23:03:14.14Z",
+  "Id": "45b4a1d3-7c40-4ea3-840e-9af9fb70ad4b",
+  "FriendlyId": "6a06aa79-f535-4db5-853a-afb44e5b51de",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "45b4a1d3-7c40-4ea3-840e-9af9fb70ad4b",
+    "713b178c-99e2-4edb-b534-99f5553f6c64",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "1cf7679a-f03e-4aad-b907-c5d041d2b7e5",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

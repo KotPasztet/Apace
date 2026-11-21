@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_bottom",
+    "PieceId": "c9bc7d6d-2dd9-478b-948a-fc365058f9fc",
+    "OfferId": "d6c84a94-3725-4c5b-89aa-11eeb893189e",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Blue Jeans",
+  "Description": "§",
+  "ThumbnailImageId": "eef436b6-f5f4-4407-be28-f6a7ce5ca69b",
+  "CreationDate": "2019-08-30T01:08:25.214Z",
+  "LastModifiedDate": "2026-06-10T18:49:15.76Z",
+  "StartDate": "2019-08-30T01:08:25.214Z",
+  "Id": "23d3e05c-3402-420d-88ec-d1bee25c86e3",
+  "FriendlyId": "d6c84a94-3725-4c5b-89aa-11eeb893189e",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "23d3e05c-3402-420d-88ec-d1bee25c86e3",
+    "c9bc7d6d-2dd9-478b-948a-fc365058f9fc",
+    "tag.bottom",
+    "tag.pants",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f436387c-c7af-4c7f-a6cd-b8dc8f3495e7",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

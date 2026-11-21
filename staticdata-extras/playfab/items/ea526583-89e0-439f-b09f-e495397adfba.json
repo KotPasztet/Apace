@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "48d45a2b-48da-4365-9b44-d4fadebadc06",
+    "OfferId": "3df0f4d2-7e71-452c-b90b-56f139bf200b",
+    "Version": "1.0.1",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Rainbow Beanie",
+  "Description": "§",
+  "ThumbnailImageId": "02d45198-d614-4f53-b470-09ac316c07fd",
+  "CreationDate": "2020-05-20T22:52:50.348Z",
+  "LastModifiedDate": "2026-06-10T20:25:13.112Z",
+  "StartDate": "2020-05-20T22:52:50.348Z",
+  "Id": "ea526583-89e0-439f-b09f-e495397adfba",
+  "FriendlyId": "3df0f4d2-7e71-452c-b90b-56f139bf200b",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "ea526583-89e0-439f-b09f-e495397adfba",
+    "48d45a2b-48da-4365-9b44-d4fadebadc06",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "a51b607f-43b1-46c2-9b2d-0a23e7d05211",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

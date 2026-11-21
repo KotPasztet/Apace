@@ -1,0 +1,53 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "26b14067-62f6-48c7-9eb5-26c903bf6000",
+    "OfferId": "092a482c-3230-4ccf-989f-e26efd6abf1f",
+    "Version": "1.1.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Conductor Hat",
+  "Description": "§",
+  "ThumbnailImageId": "74f88f7d-daa4-45f5-96d0-f74c2b27e905",
+  "CreationDate": "2020-05-18T16:49:40.491Z",
+  "LastModifiedDate": "2026-06-10T22:03:28.699Z",
+  "StartDate": "2020-05-18T16:49:40.491Z",
+  "Id": "420f1d38-544b-4861-9de5-bc51ef0bb277",
+  "FriendlyId": "092a482c-3230-4ccf-989f-e26efd6abf1f",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "420f1d38-544b-4861-9de5-bc51ef0bb277",
+    "26b14067-62f6-48c7-9eb5-26c903bf6000",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.hat",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Hat"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Hat"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "48178a3c-a3cb-4862-85e7-bfdfce65d06a",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

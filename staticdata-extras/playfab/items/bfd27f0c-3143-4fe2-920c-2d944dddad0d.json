@@ -1,0 +1,57 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hand",
+    "PieceId": "2689455b-a49d-42de-8332-a4a547e47c5d",
+    "OfferId": "ad1bd493-4307-40e0-9558-83ec33f4bbdb",
+    "Version": "1.0.1",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Hero's Gloves",
+  "Description": "§",
+  "ThumbnailImageId": "3e0bbf98-df46-4489-a534-dc5084b0a5f1",
+  "CreationDate": "2020-12-16T20:05:24.722Z",
+  "LastModifiedDate": "2026-06-10T20:28:47.125Z",
+  "StartDate": "2020-12-16T20:05:24.722Z",
+  "Id": "bfd27f0c-3143-4fe2-920c-2d944dddad0d",
+  "FriendlyId": "ad1bd493-4307-40e0-9558-83ec33f4bbdb",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "bfd27f0c-3143-4fe2-920c-2d944dddad0d",
+    "2689455b-a49d-42de-8332-a4a547e47c5d",
+    "earth_achievement",
+    "is_achievement",
+    "tag.gloves",
+    "tag.superhero",
+    "tag.green",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Superhero",
+        "Green"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Superhero",
+        "Green"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "50bebe29-c516-4524-a21a-32c277aa8b14",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

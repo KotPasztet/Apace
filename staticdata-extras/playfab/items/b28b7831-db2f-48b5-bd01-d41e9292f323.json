@@ -1,0 +1,54 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_bottom",
+    "PieceId": "571068f8-d4f2-453d-a114-20484cc2897d",
+    "OfferId": "53980f7f-6a38-45b2-ba90-293eb6620210",
+    "Version": "1.1.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Cowpoke Chaps",
+  "Description": "§",
+  "ThumbnailImageId": "0a456e80-f41d-4fd4-aa40-325aedb84f81",
+  "CreationDate": "2020-05-18T16:38:59.456Z",
+  "LastModifiedDate": "2026-06-10T22:03:45.62Z",
+  "StartDate": "2020-05-18T16:38:59.456Z",
+  "Id": "b28b7831-db2f-48b5-bd01-d41e9292f323",
+  "FriendlyId": "53980f7f-6a38-45b2-ba90-293eb6620210",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "b28b7831-db2f-48b5-bd01-d41e9292f323",
+    "571068f8-d4f2-453d-a114-20484cc2897d",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.western",
+    "tag.pants",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Western"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Western"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "6917ff12-9658-472d-9743-058d8455a612",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -500,3 +500,5 @@ src/data/patcher/uploads/
 /mce.apk
 /mce.ipa
 /mce-decoded/
+# Persona catalog fetch/generation scratch data (scripts/fetch_persona_catalog.py)
+work/

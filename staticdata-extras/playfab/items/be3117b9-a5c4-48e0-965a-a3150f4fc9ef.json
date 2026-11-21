@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_bottom",
+    "PieceId": "0fffa8d7-d9cd-4fc1-838c-3e4d3e5ae5f5",
+    "OfferId": "021ac12a-c4ea-420a-97e4-b0f234b13222",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Basic Skirt",
+  "Description": "§",
+  "ThumbnailImageId": "15faadf2-ea8f-4b3d-a04b-305959e86e50",
+  "CreationDate": "2019-08-30T01:09:31.001Z",
+  "LastModifiedDate": "2026-06-10T18:49:57.57Z",
+  "StartDate": "2019-08-30T01:09:31.001Z",
+  "Id": "be3117b9-a5c4-48e0-965a-a3150f4fc9ef",
+  "FriendlyId": "021ac12a-c4ea-420a-97e4-b0f234b13222",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "be3117b9-a5c4-48e0-965a-a3150f4fc9ef",
+    "0fffa8d7-d9cd-4fc1-838c-3e4d3e5ae5f5",
+    "tag.skirt",
+    "tag.bottom",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "fc434617-1d0d-430e-95c4-b9c3aadcdc62",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

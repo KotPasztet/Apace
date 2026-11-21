@@ -1,0 +1,55 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "ba8475b8-0a95-4de7-a667-24bdf54b48ed",
+    "OfferId": "df57bca4-9525-4870-95bf-29f594e63a51",
+    "Version": "1.0.1",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Hero's Cowl",
+  "Description": "§",
+  "ThumbnailImageId": "44ee6a55-9150-4afe-8896-b999e6cdef54",
+  "CreationDate": "2020-12-16T20:07:31.341Z",
+  "LastModifiedDate": "2026-06-10T20:28:47.08Z",
+  "StartDate": "2020-12-16T20:07:31.341Z",
+  "Id": "97d601d3-212a-4ffe-9f6c-edb5101db010",
+  "FriendlyId": "df57bca4-9525-4870-95bf-29f594e63a51",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "97d601d3-212a-4ffe-9f6c-edb5101db010",
+    "ba8475b8-0a95-4de7-a667-24bdf54b48ed",
+    "tag.superhero",
+    "tag.green",
+    "tag.heads",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Superhero",
+        "Green"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Superhero",
+        "Green"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "64345c03-75d7-4ae0-a45a-813e83d275d9",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

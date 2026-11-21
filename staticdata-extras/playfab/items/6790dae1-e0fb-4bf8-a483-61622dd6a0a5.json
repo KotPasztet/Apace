@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_skin",
+    "PieceId": "a5819bf2-ebe8-4a72-98c2-98aaf4e0375d",
+    "OfferId": "28849652-99f9-4437-b782-e16c2e2da0be",
+    "Version": "1.0.4",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Vitiligo Skin",
+  "Description": "§",
+  "ThumbnailImageId": "1d6d47ed-e5ac-4994-a72e-ddf977a97060",
+  "CreationDate": "2019-08-30T01:03:03.161Z",
+  "LastModifiedDate": "2026-06-10T18:49:01.782Z",
+  "StartDate": "2019-08-30T01:03:03.161Z",
+  "Id": "6790dae1-e0fb-4bf8-a483-61622dd6a0a5",
+  "FriendlyId": "28849652-99f9-4437-b782-e16c2e2da0be",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "6790dae1-e0fb-4bf8-a483-61622dd6a0a5",
+    "a5819bf2-ebe8-4a72-98c2-98aaf4e0375d",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "e2f48611-1481-4e41-a67b-c73145ed5db3",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

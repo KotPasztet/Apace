@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "b54a0543-10bc-43af-a21a-f12b76670fc8",
+    "OfferId": "b85b7f01-1ede-4e44-b768-2e224eeadeeb",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Blouse",
+  "Description": "§",
+  "ThumbnailImageId": "e47aa8db-adf5-4381-b74a-e0495f8a1117",
+  "CreationDate": "2019-08-30T01:04:07.48Z",
+  "LastModifiedDate": "2026-06-10T18:49:58.015Z",
+  "StartDate": "2019-08-30T01:04:07.48Z",
+  "Id": "7091d81d-6c8b-46d8-b221-18b74a3708d5",
+  "FriendlyId": "b85b7f01-1ede-4e44-b768-2e224eeadeeb",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "7091d81d-6c8b-46d8-b221-18b74a3708d5",
+    "b54a0543-10bc-43af-a21a-f12b76670fc8",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "ef3073d2-b82e-4866-b231-4fbeb3396df2",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

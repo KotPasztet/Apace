@@ -1,0 +1,53 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "a831227e-69a3-4ca9-9f02-485339e22a19",
+    "OfferId": "cf2a5d28-639f-41f2-a858-d0c9e24e5572",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Astronaut Helmet",
+  "Description": "§",
+  "ThumbnailImageId": "18738bd9-06c0-4ad4-bf88-4107c6382ed3",
+  "CreationDate": "2020-11-10T02:17:05.406Z",
+  "LastModifiedDate": "2026-06-10T20:28:17.204Z",
+  "StartDate": "2020-11-10T02:17:05.406Z",
+  "Id": "1acdb55a-2abe-4881-8d4d-6ec7c6371902",
+  "FriendlyId": "cf2a5d28-639f-41f2-a858-d0c9e24e5572",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "1acdb55a-2abe-4881-8d4d-6ec7c6371902",
+    "a831227e-69a3-4ca9-9f02-485339e22a19",
+    "is_achievement",
+    "earth_achievement",
+    "tag.space",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Space"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Space"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "e14dce06-93b0-4efc-a491-21c326cd2aa8",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

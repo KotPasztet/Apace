@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_mouth",
+    "PieceId": "ee045fd1-685b-44df-809f-ecbeec456ceb",
+    "OfferId": "b77ce861-ed3b-463a-a0fa-fa46336323e3",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Braces",
+  "Description": "§",
+  "ThumbnailImageId": "634b5c45-76dc-48bd-a91b-9012a144cfa7",
+  "CreationDate": "2019-08-30T01:11:21.165Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.239Z",
+  "StartDate": "2019-08-30T01:11:21.165Z",
+  "Id": "73d69fbc-fad6-48c4-b87a-5d1bbd10818c",
+  "FriendlyId": "b77ce861-ed3b-463a-a0fa-fa46336323e3",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "73d69fbc-fad6-48c4-b87a-5d1bbd10818c",
+    "ee045fd1-685b-44df-809f-ecbeec456ceb",
+    "tag.mouth",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "de3c9606-9f76-42e0-bab0-5ae849283b8b",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

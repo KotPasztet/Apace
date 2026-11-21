@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "3a5eb037-61a6-492f-852b-501378114f9a",
+    "OfferId": "56d34963-d53d-4364-af89-79a2b71c572a",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Dots",
+  "Description": "§",
+  "ThumbnailImageId": "85f7abef-3e9b-4ac8-ba60-fde309ae444b",
+  "CreationDate": "2019-08-30T01:09:56.556Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.037Z",
+  "StartDate": "2019-08-30T01:09:56.556Z",
+  "Id": "a71b287d-1d5d-46e8-8628-0517a61c7830",
+  "FriendlyId": "56d34963-d53d-4364-af89-79a2b71c572a",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "a71b287d-1d5d-46e8-8628-0517a61c7830",
+    "3a5eb037-61a6-492f-852b-501378114f9a",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f815ff32-6e97-4aa8-a4e1-d8574d1edb81",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

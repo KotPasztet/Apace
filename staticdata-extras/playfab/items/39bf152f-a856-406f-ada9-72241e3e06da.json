@@ -1,0 +1,53 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "6b8af968-5d38-4fa6-90f9-1d58e53d6e17",
+    "OfferId": "8518a133-9d4d-4757-b0f6-5c897f495f68",
+    "Version": "1.1.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Enchanters Hat",
+  "Description": "§",
+  "ThumbnailImageId": "36e824cc-e61b-44eb-a96f-a8771a74ecc0",
+  "CreationDate": "2020-05-18T16:48:40.797Z",
+  "LastModifiedDate": "2026-06-10T22:03:30.415Z",
+  "StartDate": "2020-05-18T16:48:40.797Z",
+  "Id": "39bf152f-a856-406f-ada9-72241e3e06da",
+  "FriendlyId": "8518a133-9d4d-4757-b0f6-5c897f495f68",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "39bf152f-a856-406f-ada9-72241e3e06da",
+    "6b8af968-5d38-4fa6-90f9-1d58e53d6e17",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.hat",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Hat"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Hat"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "3a760d96-30d1-4cb8-976f-c92e36c70b98",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

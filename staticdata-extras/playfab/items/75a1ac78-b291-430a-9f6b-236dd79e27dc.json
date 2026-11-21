@@ -1,0 +1,54 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "bdee947b-cdde-4360-9bb7-c47365a64365",
+    "OfferId": "0605a9da-2f4f-4437-bf0e-6eb4765f43f5",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Horned Sheep Hood",
+  "Description": "§",
+  "ThumbnailImageId": "42d56d5f-f6a9-4f76-8cc6-72d57f94c49a",
+  "CreationDate": "2020-12-07T22:49:31.183Z",
+  "LastModifiedDate": "2026-06-10T20:29:15.787Z",
+  "StartDate": "2020-12-07T22:49:31.183Z",
+  "Id": "75a1ac78-b291-430a-9f6b-236dd79e27dc",
+  "FriendlyId": "0605a9da-2f4f-4437-bf0e-6eb4765f43f5",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "75a1ac78-b291-430a-9f6b-236dd79e27dc",
+    "bdee947b-cdde-4360-9bb7-c47365a64365",
+    "earth_achievement",
+    "is_achievement",
+    "tag.animal",
+    "tag.brown",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Animal"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Animal"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "988284d3-65df-44e6-b78d-27d340dc9b13",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

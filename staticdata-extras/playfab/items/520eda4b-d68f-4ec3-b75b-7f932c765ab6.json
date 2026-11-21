@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "d307e433-f1ac-4f31-a5dd-fbe23dc84c26",
+    "OfferId": "bb8bc214-1d4e-4ab6-a1c4-e502039740a9",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Standard Left",
+  "Description": "§",
+  "ThumbnailImageId": "11ce9404-ef21-40d4-8b41-149d0b9107ec",
+  "CreationDate": "2019-08-30T01:12:01.174Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.122Z",
+  "StartDate": "2019-08-30T01:12:01.174Z",
+  "Id": "520eda4b-d68f-4ec3-b75b-7f932c765ab6",
+  "FriendlyId": "bb8bc214-1d4e-4ab6-a1c4-e502039740a9",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "520eda4b-d68f-4ec3-b75b-7f932c765ab6",
+    "d307e433-f1ac-4f31-a5dd-fbe23dc84c26",
+    "tag.eyes",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Eyes"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Eyes"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "654daacc-6317-4c87-8df7-0dcc8f061b2a",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "368d8b0d-df74-46d5-a701-ec55d15f66fe",
+    "OfferId": "acf791ab-daf2-44c4-88bc-47b2ed258f84",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Crying-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "f1271eda-3c59-44ab-a9ba-5a92d14013fc",
+  "CreationDate": "2019-08-30T01:07:08.931Z",
+  "LastModifiedDate": "2026-06-10T23:46:30.576Z",
+  "StartDate": "2019-08-30T01:07:08.931Z",
+  "Id": "283f8848-a8b3-4b1d-8dab-fa3041726caa",
+  "FriendlyId": "acf791ab-daf2-44c4-88bc-47b2ed258f84",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "283f8848-a8b3-4b1d-8dab-fa3041726caa",
+    "368d8b0d-df74-46d5-a701-ec55d15f66fe",
+    "tag.eyes",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Eyes"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Eyes"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "3e703eff-4804-476b-8ab8-c8498f3d3b7c",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

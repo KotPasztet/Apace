@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "e2a5a059-655a-404a-80bc-9a768bc988a8",
+    "OfferId": "ca5e0886-33d5-4d4e-8c4d-1c8975212f31",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Everyday Turban",
+  "Description": "§",
+  "ThumbnailImageId": "8aeb72a6-f8d5-49f4-82ad-57eaa9f63bc3",
+  "CreationDate": "2020-01-29T23:06:17.591Z",
+  "LastModifiedDate": "2026-06-10T20:24:00.906Z",
+  "StartDate": "2020-01-29T23:06:17.591Z",
+  "Id": "c0b7cde4-ff04-4028-a80b-258741a41980",
+  "FriendlyId": "ca5e0886-33d5-4d4e-8c4d-1c8975212f31",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "c0b7cde4-ff04-4028-a80b-258741a41980",
+    "e2a5a059-655a-404a-80bc-9a768bc988a8",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "d709541f-0b8f-4efa-adc9-dfced5ce6ae2",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

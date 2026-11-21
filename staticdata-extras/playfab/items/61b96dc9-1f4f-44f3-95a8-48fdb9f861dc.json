@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "82044623-f69a-4231-a8b6-fb6c12b97eea",
+    "OfferId": "35d0162e-6bcd-454a-8fe6-f4151994b1f5",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "French Braid and Bun",
+  "Description": "§",
+  "ThumbnailImageId": "e8537b50-1fef-46e4-84d1-5c738d4f0c19",
+  "CreationDate": "2020-09-11T21:27:28.297Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.112Z",
+  "StartDate": "2020-09-11T21:27:28.297Z",
+  "Id": "61b96dc9-1f4f-44f3-95a8-48fdb9f861dc",
+  "FriendlyId": "35d0162e-6bcd-454a-8fe6-f4151994b1f5",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "61b96dc9-1f4f-44f3-95a8-48fdb9f861dc",
+    "82044623-f69a-4231-a8b6-fb6c12b97eea",
+    "tag.hair",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "42cd570a-98f7-4fee-b410-eb4d3abf3b63",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "91c06109-d92c-4529-bee8-400a925b6e88",
+    "OfferId": "26d385e4-1215-4d91-9b24-35ca22c114a8",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Spiky Pompadour",
+  "Description": "§",
+  "ThumbnailImageId": "4abce41e-05ba-4550-ac7e-063d48806a94",
+  "CreationDate": "2019-08-30T01:11:44.962Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.128Z",
+  "StartDate": "2019-08-30T01:11:44.962Z",
+  "Id": "bfe35427-426d-4f44-9f67-b7cbb077e27d",
+  "FriendlyId": "26d385e4-1215-4d91-9b24-35ca22c114a8",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "bfe35427-426d-4f44-9f67-b7cbb077e27d",
+    "91c06109-d92c-4529-bee8-400a925b6e88",
+    "tag.hair",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "ec8de4cb-7df9-4784-bc9f-1c8bfb8046c2",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

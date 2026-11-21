@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "2a339550-dc01-40e4-86b5-fa8a10aa5d58",
+    "OfferId": "ad6f9a9b-107a-45f4-967b-bd33c8c83ed2",
+    "Version": "1.0.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Bold Rabbit Jersey",
+  "Description": "§",
+  "ThumbnailImageId": "2e266b70-d8df-4ea2-8ba0-993c7dd92b86",
+  "CreationDate": "2020-05-06T23:44:22.382Z",
+  "LastModifiedDate": "2026-06-10T20:25:12.401Z",
+  "StartDate": "2020-05-06T23:44:22.382Z",
+  "Id": "237e7e9d-84e1-40ba-864a-0dfb256303ba",
+  "FriendlyId": "ad6f9a9b-107a-45f4-967b-bd33c8c83ed2",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "237e7e9d-84e1-40ba-864a-0dfb256303ba",
+    "2a339550-dc01-40e4-86b5-fa8a10aa5d58",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "3c149caa-af79-467f-af9a-bc9cfd01b69f",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

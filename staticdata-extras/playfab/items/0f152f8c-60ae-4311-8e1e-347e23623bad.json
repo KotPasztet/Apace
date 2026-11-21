@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_feet",
+    "PieceId": "18d09ff2-a16d-4427-9c4e-a5c50262b2c2",
+    "OfferId": "f1c2de94-e871-44e4-a5e6-717be87257d2",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Left Leg Cast",
+  "Description": "§",
+  "ThumbnailImageId": "f36382bc-2afc-4698-bb78-5cc60c3565ed",
+  "CreationDate": "2019-11-18T16:40:48.591Z",
+  "LastModifiedDate": "2026-06-10T18:50:25.131Z",
+  "StartDate": "2019-11-18T16:40:48.591Z",
+  "Id": "0f152f8c-60ae-4311-8e1e-347e23623bad",
+  "FriendlyId": "f1c2de94-e871-44e4-a5e6-717be87257d2",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "0f152f8c-60ae-4311-8e1e-347e23623bad",
+    "18d09ff2-a16d-4427-9c4e-a5c50262b2c2",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "068cc92c-ccf2-4a2b-be38-be7bea566be8",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

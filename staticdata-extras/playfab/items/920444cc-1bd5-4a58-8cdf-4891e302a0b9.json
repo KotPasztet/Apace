@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "add4181a-27cb-4f76-8988-c0457cd9074a",
+    "OfferId": "4ee4a152-f8ab-45d0-82c8-a70cfb1b12d8",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Medium Braids",
+  "Description": "§",
+  "ThumbnailImageId": "a0b491a7-52cd-4940-ab2a-c4b90184d316",
+  "CreationDate": "2019-11-26T18:35:38.525Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.101Z",
+  "StartDate": "2019-11-26T18:35:38.525Z",
+  "Id": "920444cc-1bd5-4a58-8cdf-4891e302a0b9",
+  "FriendlyId": "4ee4a152-f8ab-45d0-82c8-a70cfb1b12d8",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "920444cc-1bd5-4a58-8cdf-4891e302a0b9",
+    "add4181a-27cb-4f76-8988-c0457cd9074a",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f050ec18-d0cf-407b-803f-4ba73fc713ed",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

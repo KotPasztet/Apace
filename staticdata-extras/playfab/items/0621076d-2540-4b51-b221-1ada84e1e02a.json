@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "74ab8184-4e96-469c-a7a0-81ef63e755c6",
+    "OfferId": "392586c9-2d67-4360-9711-747a63b46262",
+    "Version": "1.2.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Long Waves",
+  "Description": "§",
+  "ThumbnailImageId": "0101b81f-a140-438a-afbd-6b42c2bf49b7",
+  "CreationDate": "2019-08-30T01:10:20.858Z",
+  "LastModifiedDate": "2026-06-10T22:05:18.511Z",
+  "StartDate": "2019-08-30T01:10:20.858Z",
+  "Id": "0621076d-2540-4b51-b221-1ada84e1e02a",
+  "FriendlyId": "392586c9-2d67-4360-9711-747a63b46262",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "0621076d-2540-4b51-b221-1ada84e1e02a",
+    "74ab8184-4e96-469c-a7a0-81ef63e755c6",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "6a6d3394-1824-47e2-92c9-46dc1a1cefa7",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

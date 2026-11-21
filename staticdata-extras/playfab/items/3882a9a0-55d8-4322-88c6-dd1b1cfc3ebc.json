@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hand",
+    "PieceId": "fbec1f90-7f5c-4d28-80f2-592291004968",
+    "OfferId": "619bb3ae-4d49-4943-9cf0-5bcf245a13a5",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Left Arm Cast",
+  "Description": "§",
+  "ThumbnailImageId": "8a84579a-2705-4862-b202-fdc6d9bdc406",
+  "CreationDate": "2020-02-04T16:49:17.558Z",
+  "LastModifiedDate": "2026-06-10T18:50:54.624Z",
+  "StartDate": "2020-02-04T16:49:17.558Z",
+  "Id": "3882a9a0-55d8-4322-88c6-dd1b1cfc3ebc",
+  "FriendlyId": "619bb3ae-4d49-4943-9cf0-5bcf245a13a5",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "3882a9a0-55d8-4322-88c6-dd1b1cfc3ebc",
+    "fbec1f90-7f5c-4d28-80f2-592291004968",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "035f7901-3aac-4c4b-8d5a-d73b09e5c2f4",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,42 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "e42c08d0-71bb-4f7c-9d5a-a976f91bb65a",
+    "OfferId": "155928d7-d2fb-4d57-bb88-745abdddd4e2",
+    "Version": "1.1.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Plague Doctor Mask",
+  "Description": "§",
+  "ThumbnailImageId": "bc340c04-b106-4a29-b9ea-0c912a7ef494",
+  "CreationDate": "2020-05-18T16:41:08.481Z",
+  "LastModifiedDate": "2026-06-10T22:03:29.929Z",
+  "StartDate": "2020-05-18T16:41:08.481Z",
+  "Id": "4f0ea898-5d07-461a-b19e-5b390dbf6222",
+  "FriendlyId": "155928d7-d2fb-4d57-bb88-745abdddd4e2",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "4f0ea898-5d07-461a-b19e-5b390dbf6222",
+    "e42c08d0-71bb-4f7c-9d5a-a976f91bb65a",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.mask",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "de2fcbb3-9173-4718-a1d4-d9526d3ce9ef",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

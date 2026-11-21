@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "71805366-d0f2-4197-90f6-4bb55e55432a",
+    "OfferId": "00d2130e-2e93-497e-82ef-c0ff8624cb95",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Googly-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "b3612d60-de24-4f08-a343-41c5b59f6e7b",
+  "CreationDate": "2019-08-30T01:11:54.238Z",
+  "LastModifiedDate": "2026-10-15T19:36:57.467Z",
+  "StartDate": "2019-08-30T01:11:54.238Z",
+  "Id": "006ba854-c27b-483d-9a61-648a12cfc10d",
+  "FriendlyId": "00d2130e-2e93-497e-82ef-c0ff8624cb95",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "006ba854-c27b-483d-9a61-648a12cfc10d",
+    "71805366-d0f2-4197-90f6-4bb55e55432a",
+    "tag.eyes",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Eyes"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Eyes"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "14904df9-8f5c-4e17-a4f0-64d692238e66",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

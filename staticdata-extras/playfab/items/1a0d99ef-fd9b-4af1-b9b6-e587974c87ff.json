@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_skin",
+    "PieceId": "6f6b0748-2df6-4bb2-a713-f556852b5cc5",
+    "OfferId": "c12e7c3b-00de-4ed1-935f-3ff7db6cb2f4",
+    "Version": "1.0.3",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Brawny",
+  "Description": "§",
+  "ThumbnailImageId": "21c63a23-6fdf-4d19-a502-6a3741812fb8",
+  "CreationDate": "2019-08-30T01:07:38.564Z",
+  "LastModifiedDate": "2026-06-10T18:49:15.746Z",
+  "StartDate": "2019-08-30T01:07:38.564Z",
+  "Id": "1a0d99ef-fd9b-4af1-b9b6-e587974c87ff",
+  "FriendlyId": "c12e7c3b-00de-4ed1-935f-3ff7db6cb2f4",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "1a0d99ef-fd9b-4af1-b9b6-e587974c87ff",
+    "6f6b0748-2df6-4bb2-a713-f556852b5cc5",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "2bece781-2391-4cec-b081-68e062ce910b",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

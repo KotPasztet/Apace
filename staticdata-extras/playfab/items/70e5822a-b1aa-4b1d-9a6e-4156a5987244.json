@@ -1,0 +1,39 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "d0e4d9ca-895a-4a25-a613-3593d9f2c4f4",
+    "OfferId": "6eb47b10-3e00-4055-8c1a-563ba62f2604",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Deep Gaze",
+  "Description": "§",
+  "ThumbnailImageId": "1f74c70b-b6f2-442f-916c-56965feaa791",
+  "CreationDate": "2020-05-05T23:04:58.553Z",
+  "LastModifiedDate": "2026-06-10T20:30:32.827Z",
+  "StartDate": "2020-05-05T23:04:58.553Z",
+  "Id": "70e5822a-b1aa-4b1d-9a6e-4156a5987244",
+  "FriendlyId": "6eb47b10-3e00-4055-8c1a-563ba62f2604",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "70e5822a-b1aa-4b1d-9a6e-4156a5987244",
+    "d0e4d9ca-895a-4a25-a613-3593d9f2c4f4",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "8936fc1b-8db4-4881-9170-b4c0f03d3ae9",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,55 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_bottom",
+    "PieceId": "ffd4a25d-54b6-4fc2-91dd-346194ae9714",
+    "OfferId": "21e1dae4-3122-4b00-a1ad-73287e9a96da",
+    "Version": "1.0.1",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Horned Sheep Pants",
+  "Description": "§",
+  "ThumbnailImageId": "f812a044-c103-44da-9a43-55c5f68a478b",
+  "CreationDate": "2020-12-07T22:50:35.226Z",
+  "LastModifiedDate": "2026-06-10T20:29:01.447Z",
+  "StartDate": "2020-12-07T22:50:35.226Z",
+  "Id": "5d5b15eb-9c03-4160-851b-76154c6b8b9c",
+  "FriendlyId": "21e1dae4-3122-4b00-a1ad-73287e9a96da",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "5d5b15eb-9c03-4160-851b-76154c6b8b9c",
+    "ffd4a25d-54b6-4fc2-91dd-346194ae9714",
+    "is_achievement",
+    "earth_achievement",
+    "tag.black",
+    "tag.brown",
+    "tag.pants",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Black"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Black"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "1766e29b-3679-4f7b-9cb4-178148a30455",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

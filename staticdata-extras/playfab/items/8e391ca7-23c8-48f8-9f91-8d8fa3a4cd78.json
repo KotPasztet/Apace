@@ -1,0 +1,57 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_feet",
+    "PieceId": "4c73f0d3-6cf3-4fcb-be07-7877e6dbd258",
+    "OfferId": "5563c13e-ba2e-4bc7-9705-015b6d838757",
+    "Version": "1.0.1",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Hero's Boots",
+  "Description": "§",
+  "ThumbnailImageId": "8cbacd10-2448-4b1e-9d57-d2d0689b2768",
+  "CreationDate": "2020-12-16T20:06:54.677Z",
+  "LastModifiedDate": "2026-06-10T20:28:47.168Z",
+  "StartDate": "2020-12-16T20:06:54.677Z",
+  "Id": "8e391ca7-23c8-48f8-9f91-8d8fa3a4cd78",
+  "FriendlyId": "5563c13e-ba2e-4bc7-9705-015b6d838757",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "8e391ca7-23c8-48f8-9f91-8d8fa3a4cd78",
+    "4c73f0d3-6cf3-4fcb-be07-7877e6dbd258",
+    "tag.boots",
+    "tag.superhero",
+    "tag.green",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Boots",
+        "Superhero",
+        "Green"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Boots",
+        "Superhero",
+        "Green"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "8ac161d8-42a8-4594-9856-aba186c6c456",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

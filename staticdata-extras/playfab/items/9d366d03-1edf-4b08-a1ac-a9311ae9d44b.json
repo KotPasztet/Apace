@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "6f9902a6-48a2-4bb9-9b4e-3ce0eade6691",
+    "OfferId": "5aa24594-e3a0-4312-9c4a-bb7f9a37a9b4",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Worried-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "382021d4-ef58-4f93-bf4a-b9b1f9fcd644",
+  "CreationDate": "2020-05-05T23:05:33.992Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.224Z",
+  "StartDate": "2020-05-05T23:05:33.992Z",
+  "Id": "9d366d03-1edf-4b08-a1ac-a9311ae9d44b",
+  "FriendlyId": "5aa24594-e3a0-4312-9c4a-bb7f9a37a9b4",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "9d366d03-1edf-4b08-a1ac-a9311ae9d44b",
+    "6f9902a6-48a2-4bb9-9b4e-3ce0eade6691",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "7244d262-2c6f-4947-bdfb-af20ac18eca3",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

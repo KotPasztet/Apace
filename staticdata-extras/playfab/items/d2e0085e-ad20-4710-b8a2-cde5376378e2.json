@@ -1,0 +1,56 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "95b78454-306e-46fe-9c32-f13388f42ba4",
+    "OfferId": "2ed9ba12-d8a3-4311-ac30-73a97d8941e8",
+    "Version": "1.1.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Beekeeper Hat",
+  "Description": "§",
+  "ThumbnailImageId": "94a7e262-d1ac-4c9e-bc90-26825f0fe0b1",
+  "CreationDate": "2020-09-11T21:22:38.066Z",
+  "LastModifiedDate": "2026-06-10T22:03:30.413Z",
+  "StartDate": "2020-09-11T21:22:38.066Z",
+  "Id": "d2e0085e-ad20-4710-b8a2-cde5376378e2",
+  "FriendlyId": "2ed9ba12-d8a3-4311-ac30-73a97d8941e8",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "d2e0085e-ad20-4710-b8a2-cde5376378e2",
+    "95b78454-306e-46fe-9c32-f13388f42ba4",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.bees",
+    "tag.hat",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Bees",
+        "Hat"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Bees",
+        "Hat"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "bb69d185-dc0e-41b9-9207-551fd1121f34",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

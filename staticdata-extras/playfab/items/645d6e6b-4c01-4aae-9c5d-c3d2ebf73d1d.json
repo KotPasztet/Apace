@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "d22b8d90-8b4b-431d-9091-8e25559ece57",
+    "OfferId": "a78667e3-c787-4733-bc44-19ebf0088a65",
+    "Version": "1.2.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Side Swept",
+  "Description": "§",
+  "ThumbnailImageId": "0a481106-c2f4-4941-b4fc-7083706023df",
+  "CreationDate": "2019-08-30T01:10:50.807Z",
+  "LastModifiedDate": "2026-06-10T22:06:06.388Z",
+  "StartDate": "2019-08-30T01:10:50.807Z",
+  "Id": "645d6e6b-4c01-4aae-9c5d-c3d2ebf73d1d",
+  "FriendlyId": "a78667e3-c787-4733-bc44-19ebf0088a65",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "645d6e6b-4c01-4aae-9c5d-c3d2ebf73d1d",
+    "d22b8d90-8b4b-431d-9091-8e25559ece57",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "577cfe5e-be8c-4080-9b82-1ba9ba097835",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

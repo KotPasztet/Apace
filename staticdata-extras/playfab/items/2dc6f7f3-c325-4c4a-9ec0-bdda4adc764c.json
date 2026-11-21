@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_mouth",
+    "PieceId": "79fab0ba-0fb6-4b22-aa8e-e6d3869cbaa3",
+    "OfferId": "c36d92b4-6f3d-4b83-8bf6-436d2abc7bb7",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Overbite",
+  "Description": "§",
+  "ThumbnailImageId": "d6028925-0281-47d6-8c13-b9ff3fe8f8b3",
+  "CreationDate": "2019-08-30T01:10:39.784Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.157Z",
+  "StartDate": "2019-08-30T01:10:39.784Z",
+  "Id": "2dc6f7f3-c325-4c4a-9ec0-bdda4adc764c",
+  "FriendlyId": "c36d92b4-6f3d-4b83-8bf6-436d2abc7bb7",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "2dc6f7f3-c325-4c4a-9ec0-bdda4adc764c",
+    "79fab0ba-0fb6-4b22-aa8e-e6d3869cbaa3",
+    "tag.mouth",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "33a95bd5-33ce-4524-9d37-32508e57bd5d",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

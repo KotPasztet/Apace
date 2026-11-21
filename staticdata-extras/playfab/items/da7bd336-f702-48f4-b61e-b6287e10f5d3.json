@@ -1,0 +1,42 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_face_accessory",
+    "PieceId": "15510e09-b207-4439-aae3-c26300c653ff",
+    "OfferId": "21f777e5-1c8f-44c0-b3ee-090255f7fba8",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Furnace mask",
+  "Description": "§",
+  "ThumbnailImageId": "8cee01c7-77c1-4b22-a230-0b6426efa1f0",
+  "CreationDate": "2020-04-28T17:22:29.434Z",
+  "LastModifiedDate": "2026-06-10T22:03:45.048Z",
+  "StartDate": "2020-04-28T17:22:29.434Z",
+  "Id": "da7bd336-f702-48f4-b61e-b6287e10f5d3",
+  "FriendlyId": "21f777e5-1c8f-44c0-b3ee-090255f7fba8",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "da7bd336-f702-48f4-b61e-b6287e10f5d3",
+    "15510e09-b207-4439-aae3-c26300c653ff",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.mask",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "e4361561-b8b6-442a-93e5-da7fe439742d",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

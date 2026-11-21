@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "ffe8699c-3682-477b-854d-08d8b6a62154",
+    "OfferId": "340a96d0-4019-4c01-a15a-5382c809d45f",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Long-Sleeved Tunic",
+  "Description": "§",
+  "ThumbnailImageId": "2489063b-4d82-4ff5-8f0d-0f7a2f07e74e",
+  "CreationDate": "2019-08-30T01:11:06.948Z",
+  "LastModifiedDate": "2026-06-10T18:49:29.904Z",
+  "StartDate": "2019-08-30T01:11:06.948Z",
+  "Id": "64baec66-5088-4533-9840-963c691c44b8",
+  "FriendlyId": "340a96d0-4019-4c01-a15a-5382c809d45f",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "64baec66-5088-4533-9840-963c691c44b8",
+    "ffe8699c-3682-477b-854d-08d8b6a62154",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "7790b196-ccfe-4933-a704-bda48f25b324",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

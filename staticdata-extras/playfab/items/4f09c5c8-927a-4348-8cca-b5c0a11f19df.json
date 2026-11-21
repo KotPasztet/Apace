@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "33e6309d-fa98-4510-9689-feaaf7e2df6f",
+    "OfferId": "5de4dd91-b894-45f2-8f6c-df19036ebf90",
+    "Version": "1.2.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Ponytail Locs",
+  "Description": "§",
+  "ThumbnailImageId": "e6d9a053-bcda-4d15-9cea-f518c2fd4ce6",
+  "CreationDate": "2019-08-30T01:10:50.253Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.108Z",
+  "StartDate": "2019-08-30T01:10:50.253Z",
+  "Id": "4f09c5c8-927a-4348-8cca-b5c0a11f19df",
+  "FriendlyId": "5de4dd91-b894-45f2-8f6c-df19036ebf90",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "4f09c5c8-927a-4348-8cca-b5c0a11f19df",
+    "33e6309d-fa98-4510-9689-feaaf7e2df6f",
+    "tag.hair",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "0c8a1207-5b17-472a-8226-28352b18e800",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

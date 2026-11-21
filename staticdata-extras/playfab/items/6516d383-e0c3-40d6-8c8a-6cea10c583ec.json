@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "0ec503f1-2c04-474b-adac-bab65ae84d9b",
+    "OfferId": "1592e26d-81c1-44b7-b10d-f0028afbc2a1",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Patka",
+  "Description": "§",
+  "ThumbnailImageId": "cdb7cfbb-2458-4e90-a744-e3c6d351dabd",
+  "CreationDate": "2020-03-03T16:53:43.574Z",
+  "LastModifiedDate": "2026-06-10T20:24:14.59Z",
+  "StartDate": "2020-03-03T16:53:43.574Z",
+  "Id": "6516d383-e0c3-40d6-8c8a-6cea10c583ec",
+  "FriendlyId": "1592e26d-81c1-44b7-b10d-f0028afbc2a1",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "6516d383-e0c3-40d6-8c8a-6cea10c583ec",
+    "0ec503f1-2c04-474b-adac-bab65ae84d9b",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "1054b620-2c1a-48cb-9a9a-7d802c6d80a5",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "d1e0a2a3-c748-4d41-9cf6-780b93e269e9",
+    "OfferId": "153ac6a3-de2d-4341-9476-aa4cf38b67df",
+    "Version": "1.0.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Horned Sheep Vest",
+  "Description": "§",
+  "ThumbnailImageId": "d77e801e-cfa3-4004-bcc1-363c907d1b57",
+  "CreationDate": "2020-04-17T23:40:18.476Z",
+  "LastModifiedDate": "2026-06-10T20:24:57.052Z",
+  "StartDate": "2020-04-17T23:40:18.476Z",
+  "Id": "a9980eae-4e87-4f40-b55e-766606cb06f6",
+  "FriendlyId": "153ac6a3-de2d-4341-9476-aa4cf38b67df",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "a9980eae-4e87-4f40-b55e-766606cb06f6",
+    "d1e0a2a3-c748-4d41-9cf6-780b93e269e9",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "10d1f018-8f1b-492a-9ab4-72afa04f1140",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

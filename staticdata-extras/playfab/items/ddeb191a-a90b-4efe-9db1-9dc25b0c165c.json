@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "4fdab299-61c7-48c1-aa01-6bc1f514b125",
+    "OfferId": "2f5423a5-28df-4872-b7cf-bb70e011f85f",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Suspicious-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "ba8828bb-b4da-4a94-8edd-4719227a2662",
+  "CreationDate": "2019-08-30T01:10:50.185Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.131Z",
+  "StartDate": "2019-08-30T01:10:50.185Z",
+  "Id": "ddeb191a-a90b-4efe-9db1-9dc25b0c165c",
+  "FriendlyId": "2f5423a5-28df-4872-b7cf-bb70e011f85f",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "ddeb191a-a90b-4efe-9db1-9dc25b0c165c",
+    "4fdab299-61c7-48c1-aa01-6bc1f514b125",
+    "tag.eyes",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Eyes"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Eyes"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "a35c3c73-0f53-4788-b1c5-bc22cfcd07e5",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

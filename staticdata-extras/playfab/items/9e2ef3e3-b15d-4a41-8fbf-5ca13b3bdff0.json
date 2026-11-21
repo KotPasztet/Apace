@@ -1,0 +1,42 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_feet",
+    "PieceId": "b5b979ba-7b56-4150-9f3f-d01f8bcba43c",
+    "OfferId": "87082806-ef3a-4a2d-9fe0-2001451e7f7e",
+    "Version": "1.1.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Winged Pig Boots",
+  "Description": "§",
+  "ThumbnailImageId": "f2ee9d61-57e5-46e9-a225-f3396a246849",
+  "CreationDate": "2020-11-10T06:33:02.003Z",
+  "LastModifiedDate": "2026-06-10T22:02:58.372Z",
+  "StartDate": "2020-11-10T06:33:02.003Z",
+  "Id": "9e2ef3e3-b15d-4a41-8fbf-5ca13b3bdff0",
+  "FriendlyId": "87082806-ef3a-4a2d-9fe0-2001451e7f7e",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "9e2ef3e3-b15d-4a41-8fbf-5ca13b3bdff0",
+    "b5b979ba-7b56-4150-9f3f-d01f8bcba43c",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.shoes",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "bd44349b-4b85-44c6-99a9-c6587ac049da",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

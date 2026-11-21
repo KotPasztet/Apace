@@ -1,0 +1,53 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "70a881b3-158b-4fd7-9d85-b414c9b7a2dd",
+    "OfferId": "515f8b06-185a-42f4-b3ca-704544340672",
+    "Version": "1.0.1",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Power Core",
+  "Description": "§",
+  "ThumbnailImageId": "08d4e328-e4a1-4659-9786-bcf027bb874b",
+  "CreationDate": "2020-12-16T19:53:31.96Z",
+  "LastModifiedDate": "2026-06-10T20:29:15.521Z",
+  "StartDate": "2020-12-16T19:53:31.96Z",
+  "Id": "77bc22e4-b6ac-4232-87df-e7d0c7645f24",
+  "FriendlyId": "515f8b06-185a-42f4-b3ca-704544340672",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "77bc22e4-b6ac-4232-87df-e7d0c7645f24",
+    "70a881b3-158b-4fd7-9d85-b414c9b7a2dd",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.jacket",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Jacket"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Jacket"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "b8d15d25-8966-459e-839f-67f4b49deb81",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

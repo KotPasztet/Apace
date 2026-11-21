@@ -1,0 +1,54 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "75794168-e47e-4da8-aa5f-3536d94c8dbf",
+    "OfferId": "b00ca4d9-98f2-4ccc-981f-54c41a4b454b",
+    "Version": "1.0.1",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Hero's Top",
+  "Description": "§",
+  "ThumbnailImageId": "2874b8cf-69a4-43a7-9e38-71f8340fbed1",
+  "CreationDate": "2020-12-16T20:08:13.954Z",
+  "LastModifiedDate": "2026-06-10T20:28:47.15Z",
+  "StartDate": "2020-12-16T20:08:13.954Z",
+  "Id": "43c812a0-24ab-454e-88a3-d0d2dd9c9ea7",
+  "FriendlyId": "b00ca4d9-98f2-4ccc-981f-54c41a4b454b",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "43c812a0-24ab-454e-88a3-d0d2dd9c9ea7",
+    "75794168-e47e-4da8-aa5f-3536d94c8dbf",
+    "tag.superhero",
+    "tag.green",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Superhero",
+        "Green"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Superhero",
+        "Green"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "67236c5a-4463-49b7-99ae-908efe154ba4",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

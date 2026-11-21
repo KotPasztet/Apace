@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_legs",
+    "PieceId": "d2deb446-33b1-4b61-b160-2971084e82a0",
+    "OfferId": "c3a28104-2cb4-4d0a-ac96-60c52a09fb66",
+    "Version": "1.2.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Prosthetic Blade",
+  "Description": "§",
+  "ThumbnailImageId": "b8d257c1-9155-4ce6-95db-03bd391738f8",
+  "CreationDate": "2019-08-30T01:11:39.824Z",
+  "LastModifiedDate": "2026-06-10T20:25:43.844Z",
+  "StartDate": "2019-08-30T01:11:39.824Z",
+  "Id": "07917303-ee33-4a1e-b0e8-6f171cc1247f",
+  "FriendlyId": "c3a28104-2cb4-4d0a-ac96-60c52a09fb66",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "07917303-ee33-4a1e-b0e8-6f171cc1247f",
+    "d2deb446-33b1-4b61-b160-2971084e82a0",
+    "tag.leg",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "a619f31c-45a6-4d05-b8f5-54c781826245",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

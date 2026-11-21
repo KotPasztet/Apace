@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "1f7cd224-3dee-4b3b-9489-ff3d24ebc998",
+    "OfferId": "39fc55f6-01a0-4474-90d9-9cd7ccf3b9f3",
+    "Version": "1.0.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Earth Day Jacket",
+  "Description": "§",
+  "ThumbnailImageId": "b924c083-16d8-4af6-a08e-937396963c50",
+  "CreationDate": "2020-05-20T17:35:26.811Z",
+  "LastModifiedDate": "2026-06-10T20:24:44.411Z",
+  "StartDate": "2020-05-20T17:35:26.811Z",
+  "Id": "ff26afce-764f-4ad8-988a-50094552e418",
+  "FriendlyId": "39fc55f6-01a0-4474-90d9-9cd7ccf3b9f3",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "ff26afce-764f-4ad8-988a-50094552e418",
+    "1f7cd224-3dee-4b3b-9489-ff3d24ebc998",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "3ed91c45-49bc-4cbe-82bb-0a4a80dc4dfb",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

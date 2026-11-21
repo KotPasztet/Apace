@@ -1,0 +1,40 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "39f190f1-2a1c-4f54-8e19-3227a0354916",
+    "OfferId": "b1a26cd7-3976-4496-9d13-41cfa0169079",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Bee Shirt!",
+  "Description": "§",
+  "ThumbnailImageId": "af4f0d5b-c5de-486c-b1b5-63053866a9cf",
+  "CreationDate": "2019-11-15T18:53:27.894Z",
+  "LastModifiedDate": "2026-06-11T03:46:31.823Z",
+  "StartDate": "2019-11-15T18:53:27.894Z",
+  "Id": "5502da39-2b7f-484d-afd9-e640f036d921",
+  "FriendlyId": "b1a26cd7-3976-4496-9d13-41cfa0169079",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "5502da39-2b7f-484d-afd9-e640f036d921",
+    "39f190f1-2a1c-4f54-8e19-3227a0354916",
+    "hidden_offer",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "2a0dcc8f-c820-4020-8a04-7dc3a8c691ff",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

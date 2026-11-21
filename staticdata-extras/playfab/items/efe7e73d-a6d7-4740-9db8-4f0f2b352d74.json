@@ -1,0 +1,40 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_mouth",
+    "PieceId": "8df76c97-83ce-43c7-a332-e35a16e24795",
+    "OfferId": "f1ac882e-631d-4796-a914-9532bae07e5b",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Large Smile",
+  "Description": "§",
+  "ThumbnailImageId": "5b6c1358-dfc2-4ec2-889c-65810360123c",
+  "CreationDate": "2019-08-30T01:10:36.7Z",
+  "LastModifiedDate": "2026-06-21T03:33:25.11Z",
+  "StartDate": "2019-08-30T01:10:36.7Z",
+  "Id": "efe7e73d-a6d7-4740-9db8-4f0f2b352d74",
+  "FriendlyId": "f1ac882e-631d-4796-a914-9532bae07e5b",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "efe7e73d-a6d7-4740-9db8-4f0f2b352d74",
+    "8df76c97-83ce-43c7-a332-e35a16e24795",
+    "tag.mouth",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "70fbd00b-629f-4d5d-b635-0118f6641e17",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

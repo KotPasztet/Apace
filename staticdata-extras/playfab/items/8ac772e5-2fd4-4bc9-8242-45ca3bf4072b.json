@@ -1,0 +1,39 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "141d261c-72fd-44a4-95b6-27fce4bc3663",
+    "OfferId": "df724c21-bdbc-451c-94b7-e021cdac5900",
+    "Version": "1.0.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Sudden Blush",
+  "Description": "§",
+  "ThumbnailImageId": "646e5b24-b6d1-4762-88ee-eecdc4ee8e62",
+  "CreationDate": "2019-08-30T01:09:49.016Z",
+  "LastModifiedDate": "2026-06-10T18:51:21.613Z",
+  "StartDate": "2019-08-30T01:09:49.016Z",
+  "Id": "8ac772e5-2fd4-4bc9-8242-45ca3bf4072b",
+  "FriendlyId": "df724c21-bdbc-451c-94b7-e021cdac5900",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "8ac772e5-2fd4-4bc9-8242-45ca3bf4072b",
+    "141d261c-72fd-44a4-95b6-27fce4bc3663",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "10ae0a7b-0d98-4601-b5b2-a5410522fab7",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

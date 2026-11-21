@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "09b22754-326a-4c74-96e8-07c0b42cdc8d",
+    "OfferId": "6b2396cb-fcad-4597-bdfd-6d7db3363b19",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Racecar Suit Cap",
+  "Description": "§",
+  "ThumbnailImageId": "2b2f7284-4b03-4664-8013-d9de5434e4ea",
+  "CreationDate": "2020-08-20T22:36:15.689Z",
+  "LastModifiedDate": "2026-06-10T20:26:58.437Z",
+  "StartDate": "2020-08-20T22:36:15.689Z",
+  "Id": "5a666fc6-907b-4993-9891-3488e4aeae9d",
+  "FriendlyId": "6b2396cb-fcad-4597-bdfd-6d7db3363b19",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "5a666fc6-907b-4993-9891-3488e4aeae9d",
+    "09b22754-326a-4c74-96e8-07c0b42cdc8d",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "b21377ab-cd9a-49e9-9970-29317fa577d7",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}
