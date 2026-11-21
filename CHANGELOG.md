@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased (dev) — login secrets survive redeploys, Data Management tab fixed
+
+> Two deployment-level bugs: every redeploy locked all clients out in a 401 loop on user/authenticate (login secrets rotated on every boot), and the Data Management tab of System Configuration rendered completely empty.
+
+### 🔐 Account login
+
+- **401 loop on user/authenticate after every redeploy**: the ApiServer's login secrets (api_config.json) were kept in its working directory, which in docker was a single-FILE bind-mount — when the host file was missing, Docker created a DIRECTORY at the mount path, the server could neither read nor write it ("Access to the path '/app/components/api_config.json' is denied" in the logs) and regenerated random secrets on every boot. Clients cache their tickets for up to 7 days and never re-request them while unexpired, so every redeploy locked everyone into a 401 loop.
+- The config now lives in the **data directory** (`../data/api_config.json`): the persistent `/app/data` volume in docker, the installation's data folder outside it. The legacy working-directory file is still read (and its contents migrated to the data directory, so a compose refresh cannot strand it). If neither location is writable the server now logs an explicit error instead of silently rotating.
+- docker-compose.yml no longer bind-mounts api_config.json at all (the data volume covers persistence); install.ps1/update.sh migrate any existing api-config/api_config.json into the data volume, remove the bogus directory Docker may have created, and refresh composes that still carry the old file mount.
+
+### 🖥️ Launcher UI
+
+- **The Data Management tab of System Configuration was completely empty** (only the Save Settings / Reset to Defaults buttons below). `<DataManagementPanel />` did not resolve to the component — ServerOptions.razor was missing `@using Apace.LauncherUI.Components.Admin.Shared`, and Razor silently degrades an unresolvable tag to a plain HTML element, so the page emitted an empty `<datamanagementpanel>` element with no build or runtime error. Added the import plus a folder-level `Components/Admin/_Imports.razor` so every Admin page sees Shared components.
+
 ## Unreleased (dev) — dressing room equippable: real piece binaries
 
 > Clicking a dressing room item used to spin forever and nothing could be equipped. Root cause: the MCE client has no persona pieces compiled in — it downloads every piece from the item's `personabinary` content — and our items shipped none.

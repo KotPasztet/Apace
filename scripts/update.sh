@@ -10,8 +10,9 @@ set -euo pipefail
 # It works on installs made by OLDER versions too: nothing this script would
 # have created is assumed to exist — the layout is detected by FEATURE
 # (missing persistent subdirs, config.json stored as a directory, compose
-# without the BRIDGE_PORT parameter or the api_config.json mount,
-# installer-injected platform line, non-default persistent data root).
+# without the BRIDGE_PORT parameter or still carrying the old api_config.json
+# file mount, installer-injected platform line, non-default persistent data
+# root).
 #
 # Update channels (default --tag):
 #   - the newest GitHub RELEASE: release.yml publishes a matching versioned
@@ -72,7 +73,8 @@ usage() {
     echo "                            dev installs stay on dev unless --tag is explicit"
     echo "  --refresh-compose       Re-download docker-compose.yml for the target version"
     echo "                          (also happens automatically when the local one predates"
-    echo "                          a required feature, e.g. the api_config.json mount)"
+    echo "                          a required feature, e.g. still having the old"
+    echo "                          api_config.json file mount)"
     echo "  --backup-only           Back up the persistent data and exit"
     echo "  --rollback              Go back to the image that ran before the last update"
     echo "  --restore-backup <f>    With --rollback: also restore a data backup (file path, or 'latest')"
@@ -364,20 +366,29 @@ heal_layout() {
         printf '{"ApiPort":1808}\n' | $AS_ROOT tee "$cfg" >/dev/null
     fi
 
-    # api_config.json (the ApiServer login secrets) is mounted as a single FILE. If
-    # the host file is missing, Docker creates a DIRECTORY at that path on the next
-    # start and the ApiServer cannot write its config — seed an empty file instead
-    # (the ApiServer fills in its defaults; existing secrets must survive updates).
+    # The ApiServer's login secrets (api_config.json) are written by the server itself
+    # into the persistent data directory (/app/data) — nothing to seed. Installations
+    # upgraded from older versions may still have api-config/api_config.json (the old
+    # single-file bind-mount; Docker replaced it with a directory whenever the host
+    # file was missing, rotating the secrets on every boot): migrate any real file
+    # into the data volume so the secrets survive the compose refresh that drops the
+    # mount, and remove any bogus directory Docker created.
     acfg="$PERSISTENT/api-config/api_config.json"
+    datacfg="$PERSISTENT/data/api_config.json"
     if [ -d "$acfg" ]; then
-        warn "→ $acfg is a DIRECTORY (Docker created it for the file mount) — removing it"
+        warn "→ $acfg is a DIRECTORY (Docker created it for the old file mount) — removing it"
         $AS_ROOT rm -rf "$acfg"
     fi
     if [ -f "$acfg" ]; then
-        echo "  api-config/api_config.json present — left untouched (the login secrets in it must survive updates)"
-    else
-        echo "→ Seeding $acfg as an empty file (the ApiServer fills in its defaults)"
-        $AS_ROOT touch "$acfg"
+        if [ -f "$datacfg" ]; then
+            echo "  api-config/api_config.json present but data/api_config.json already exists — leaving the data copy in charge"
+        else
+            echo "→ Migrating login secrets: api-config/api_config.json -> data/api_config.json"
+            $AS_ROOT cp "$acfg" "$datacfg"
+        fi
+    fi
+    if [ -f "$datacfg" ]; then
+        echo "  data/api_config.json present — login secrets survive updates"
     fi
 
     # Drift prevention: the panel can listen on a non-default bridge port while
@@ -582,14 +593,18 @@ report_failure() {
 
 # ─── Compose refresh ───────────────────────────────────────────────────────
 # Legacy installs keep whatever docker-compose.yml their installer downloaded —
-# missing the api_config.json mount, the ${BRIDGE_PORT:-19132} parameter, or
-# newer volumes. When the local file predates a feature the target version
-# needs, download the compose file FOR THE TARGET TAG and re-apply everything
-# the installer/user had changed locally. Any ambiguity → keep the old file
-# and print manual instructions; never guess paths.
+# missing the ${BRIDGE_PORT:-19132} parameter, newer volumes, or still carrying
+# the old api_config.json single-file bind-mount (Docker replaces it with a
+# directory when the host file is missing, which rotated the login secrets on
+# every boot; the server now keeps them in the /app/data volume instead).
+# When the local file predates a feature the target version needs, download
+# the compose file FOR THE TARGET TAG and re-apply everything the installer/
+# user had changed locally. Any ambiguity → keep the old file and print
+# manual instructions; never guess paths.
 refresh_needed() {
     [ "$REFRESH_COMPOSE" -eq 1 ] && return 0
-    grep -q 'api_config.json' "$COMPOSE_FILE" 2>/dev/null || return 0
+    # still has the old api_config.json file mount -> refresh drops it
+    grep -q 'api_config.json' "$COMPOSE_FILE" 2>/dev/null && return 0
     grep -q 'BRIDGE_PORT' "$COMPOSE_FILE" 2>/dev/null || return 0
     return 1
 }

@@ -155,17 +155,62 @@ public static class Program
         Log.Information("Loading configuration");
         try
         {
+            // The login secrets must survive updates: when they rotate, every client holding
+            // a cached ticket (valid up to 7 days, never re-requested while unexpired) is
+            // locked out in a 401 loop on user/authenticate.
+            //
+            // Primary location is the data directory (../data): in docker it is the
+            // persistent data volume (/app/data), outside docker it is the installation's
+            // data folder — both survive image updates and file replacements.
+            //
+            // The previous location — the current directory — has a failure mode in docker:
+            // docker-compose bind-mounts api_config.json as a single FILE, and when the host
+            // file is missing Docker creates a DIRECTORY at that path instead, so the server
+            // can neither read nor write it and regenerated random secrets on every boot.
+            // It is still read for backward compatibility (and its contents are migrated to
+            // the data directory so a later compose update cannot strand them).
             const string configFileName = "api_config.json";
-            if (File.Exists(configFileName))
+            string dataConfigPath = Path.Combine("..", "data", configFileName);
+            string legacyConfigPath = configFileName;
+
+            if (File.Exists(dataConfigPath))
             {
                 try
                 {
-                    // an existing configuration is used as-is, the secrets in it must survive updates
-                    config = Json.Deserialize<Config>(File.ReadAllText(configFileName));
+                    config = Json.Deserialize<Config>(File.ReadAllText(dataConfigPath));
                 }
                 catch (System.Text.Json.JsonException ex)
                 {
-                    Log.Warning($"Configuration file is invalid: {ex.Message}");
+                    Log.Warning($"Configuration file {dataConfigPath} is invalid: {ex.Message}");
+                    config = null;
+                }
+            }
+
+            if (config is null && File.Exists(legacyConfigPath))
+            {
+                try
+                {
+                    config = Json.Deserialize<Config>(File.ReadAllText(legacyConfigPath));
+
+                    // migrate to the data directory so the secrets survive a docker compose
+                    // refresh that drops the legacy file bind-mount
+                    if (config is not null)
+                    {
+                        try
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dataConfigPath))!);
+                            File.WriteAllText(dataConfigPath, Json.SerializeIndented(config));
+                            Log.Information($"Migrated login secrets from {Path.GetFullPath(legacyConfigPath)} to {Path.GetFullPath(dataConfigPath)}");
+                        }
+                        catch (Exception migrateEx)
+                        {
+                            Log.Warning($"Could not migrate the configuration to {Path.GetFullPath(dataConfigPath)}: {migrateEx.Message}");
+                        }
+                    }
+                }
+                catch (System.Text.Json.JsonException ex)
+                {
+                    Log.Warning($"Configuration file {legacyConfigPath} is invalid: {ex.Message}");
                     config = null;
                 }
             }
@@ -177,14 +222,24 @@ public static class Program
                 config = Config.Default;
                 try
                 {
-                    File.WriteAllText(configFileName, Json.SerializeIndented(config));
+                    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dataConfigPath))!);
+                    File.WriteAllText(dataConfigPath, Json.SerializeIndented(config));
                 }
                 catch (Exception writeEx)
                 {
-                    Log.Warning($"Could not persist the generated configuration: {writeEx.Message}");
+                    Log.Warning($"Could not persist the generated configuration to {Path.GetFullPath(dataConfigPath)}: {writeEx.Message}");
+                    try
+                    {
+                        File.WriteAllText(legacyConfigPath, Json.SerializeIndented(config));
+                    }
+                    catch (Exception legacyWriteEx)
+                    {
+                        Log.Error($"Could not persist the generated configuration to {Path.GetFullPath(legacyConfigPath)} either: {legacyWriteEx.Message} " +
+                                  $"(login secrets will rotate on every restart and clients will be locked out in a 401 loop — fix the data directory permissions)");
+                    }
                 }
 
-                Log.Warning($"Configuration file not found or invalid, created with random secrets: {Path.GetFullPath(configFileName)} " +
+                Log.Warning($"Configuration file not found or invalid, created with random secrets: {Path.GetFullPath(dataConfigPath)} " +
                             $"(tokens issued before are no longer valid, clients will be sent through the login flow again)");
             }
         }
