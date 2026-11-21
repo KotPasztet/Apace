@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased (dev) — Log-in fix, inventory fix, persona items
+
+> Fixes the two bugs from the 2026-11-21 play session (login 401 loop, panel-added items breaking the client inventory) and adds persona item support — something neither Solace nor Vienna ever had.
+
+### 🔐 Account login
+
+- Clients holding login tickets cached before the switch to random per-installation secrets (or from a re-created `api_config.json`) were locked out in a 401 loop on `user/authenticate` — the client never re-requests an unexpired ticket. Tokens are now verified against the legacy public Solace secrets as a fallback (never signed with them), so cached tickets keep working after an update. Disable with `"AcceptLegacyTokenSecrets": false` in `api_config.json`.
+
+### 🎒 Inventory
+
+- Items added through the panel's inventory editor had no journal entry; the game client expects one for every item, so `GET /inventory/survival` crashed with a NullReferenceException and the client showed no inventory at all — "adding items does not work". The endpoint now backfills missing journal entries in the same request, and the panel editor writes them for new additions. `SetHotbar` no longer crashes on a hotbar instance missing from the inventory either.
+
+### 📦 Player buildplates
+
+- Each player buildplate card now has an Export button that downloads the player's **edited** world from the object store (the Buildplates page keeps exporting templates).
+
+### 🧍 Persona items (dressing room / skins)
+
+- Custom character creator items can be added as JSON files in `staticdata/playfab/items/` with a new `Data` type `Persona` (piece type, piece id, offer id, rarity, price, optional local personabinary asset) — served as `PersonaDurable` catalog entries exactly like the built-in Bold Rabbit Feet. See `docs/custom-persona-items.md`.
+- New `/playfab/persona/<file>` endpoint serves persona piece binaries from `staticdata/playfab/persona/`.
+- `scripts/extract-persona-pieces.py` scans the client resource pack (`genoa.mcpack`) for persona piece definitions and their UUIDs.
+- Catalog searches log their filters (Debug) and every search that matches nothing is logged at Information — walking the empty dressing room categories now shows exactly what the client asks for per category.
+
+### 🗂️ Panel
+
+- Data Management moved into System Configuration as a tab (next to Network/Map/Databases/Gameplay/Data Handling); the page is reachable with either server-options or data permissions and shows only the tabs the user may use. The old `/Admin/Data` page is gone.
+
 ## Unreleased (dev) — Catching up with Solace: hearts, skins, stability
 
 > Closes the remaining feature gaps found in the "fall behind Solace" audit, and adds two things Solace does not have: persistent skins and hearts in full-size play sessions.

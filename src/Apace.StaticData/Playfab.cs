@@ -170,6 +170,7 @@ public sealed class Playfab
         [JsonDerivedType(typeof(BuildplateData), "Buildplate")]
         [JsonDerivedType(typeof(InventoryItemData), "InventoryItem")]
         [JsonDerivedType(typeof(RubyData), "Ruby")]
+        [JsonDerivedType(typeof(PersonaData), "Persona")]
         public abstract record ItemData
         {
         }
@@ -196,6 +197,22 @@ public sealed class Playfab
             int? BonusCoinCount,
             string Sku,
             string OriginalCreatorId
+        ) : ItemData;
+
+        // A dressing room / character creator item. Mapped to a PersonaDurable catalog
+        // entry (same shape as the hardcoded Bold Rabbit Feet item): the client groups
+        // these by DisplayProperties.pieceType and applies the referenced persona piece
+        // when equipped. PieceId must be the UUID of a piece the client knows (built into
+        // its resource pack) or one it can download from the Contents personabinary URL.
+        public sealed record PersonaData(
+            string PieceType,      // dressing room category, e.g. "persona_feet", "persona_hair", "persona_skins"
+            Guid PieceId,          // UUID of the persona piece the client applies
+            Guid OfferId,          // the offer id, also used as the friendly id
+            string Version,        // piece version, e.g. "1.1.0"
+            string Rarity,         // "common", "uncommon", "rare", "epic" or "legendary" (lowercase, like the built-in item)
+            int Price,             // ruby price, 0 = free
+            string? CreatorName,   // shown as the item creator, defaults to "Minecraft"
+            string? AssetFileName  // optional: a file in staticdata/playfab/persona served as the personabinary download
         ) : ItemData;
 
         // does not have type discriminator, so cannot be loaded from items, instead created manually from shop tabs

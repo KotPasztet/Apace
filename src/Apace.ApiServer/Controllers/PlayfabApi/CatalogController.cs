@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using OData2Linq;
+using Serilog;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -104,6 +105,12 @@ internal sealed class CatalogController : ApaceControllerBase
             return TypedResults.BadRequest();
         }
 
+        // Dressing room / shop catalog queries are the main way to find out what the client
+        // actually asks for (which content types, tags and piece filters per category) —
+        // log what the client searched for, and especially what it searched for in vain.
+        Log.Debug("Catalog search: filter={Filter} select={Select} orderBy={OrderBy} top={Top} skip={Skip} count={Count}",
+            request.Filter, request.Select, request.OrderBy, request.Top, request.Skip, request.Count);
+
         IEnumerable<Item> items;
         try
         {
@@ -138,8 +145,9 @@ internal sealed class CatalogController : ApaceControllerBase
                 .ToArray()
                 .Select(item => ToResponse(item, Request));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Log.Warning(ex, "Catalog search failed, returning no items (filter: {Filter})", request.Filter);
             items = [];
         }
 
@@ -148,6 +156,12 @@ internal sealed class CatalogController : ApaceControllerBase
         if (request.Count)
         {
             response["Count"] = items.Count(); // items is empty or select over array, so this is fine
+        }
+
+        if (!items.Any())
+        {
+            Log.Information("Catalog search matched no items: filter={Filter} select={Select} top={Top}",
+                request.Filter, request.Select, request.Top);
         }
 
         response["Items"] = items;
@@ -244,10 +258,34 @@ internal sealed class CatalogController : ApaceControllerBase
                     new("8b77345d-6250-4321-b3c2-373468b39457", "8b77345d-6250-4321-b3c2-373468b39457", "8b77345d-6250-4321-b3c2-373468b39457", data.Cost),
                 ]),
             ], []),
+            // the two currency ids are the ones the built-in Bold Rabbit Feet persona item prices in
+            CItem.PersonaData data => new Item.PriceR([
+                new([
+                    new("ecd19d3c-7635-402c-a185-eb11cb6c6946", "ecd19d3c-7635-402c-a185-eb11cb6c6946", "ecd19d3c-7635-402c-a185-eb11cb6c6946", data.Price),
+                ]),
+                new([
+                    new("0113e233-7637-48e7-91b0-349fdc74713d", "0113e233-7637-48e7-91b0-349fdc74713d", "0113e233-7637-48e7-91b0-349fdc74713d", data.Price),
+                ]),
+            ], []),
             CItem.RubyData => null,
             CItem.QueryManifestData => null,
             _ => throw new UnreachableException(),
         };
+
+        // persona pieces can either bring their own Contents (from the item json) or point at
+        // a local file in staticdata/playfab/persona served by the persona cdn endpoint
+        IEnumerable<object> contents = item.Contents;
+        if (item.Data is CItem.PersonaData { AssetFileName: { } assetFileName })
+        {
+            contents = [new CItem.QueryManifestContent(
+                $"{((CItem.PersonaData) item.Data).PieceId}_personabinary",
+                $"/playfab/persona/{assetFileName}",
+                "65535.65535.65535",
+                "1.0.0",
+                [],
+                "personabinary"
+            )];
+        }
 
         return new Item(
             new Item.Entity(item.SourceEntityId, "namespace", "namespace"),
@@ -257,6 +295,7 @@ internal sealed class CatalogController : ApaceControllerBase
             {
                 CItem.BuildplateData => "bundle",
                 CItem.InventoryItemData => "bundle",
+                CItem.PersonaData => "bundle",
                 CItem.RubyData => "catalogItem",
                 CItem.QueryManifestData => "catalogItem",
                 _ => throw new UnreachableException(),
@@ -272,17 +311,19 @@ internal sealed class CatalogController : ApaceControllerBase
             {
                 CItem.BuildplateData => "BuildplateOffer",
                 CItem.InventoryItemData => "InventoryItemOffer",
+                CItem.PersonaData => "PersonaDurable",
                 CItem.RubyData => "RubyOffer",
                 CItem.QueryManifestData => "GenoaQueryManifest_V0.0.3",
                 _ => throw new UnreachableException(),
             },
             new Item.Entity(item.CreatorEntityId, "title_player_account", "title_player_account"),
             new Item.Entity(item.CreatorEntityId, "title_player_account", "title_player_account"),
-            item.Data is CItem.RubyData ? false : null, // IsStackable
+            item.Data is CItem.RubyData or CItem.PersonaData ? false : null, // IsStackable (persona pieces are not stackable, like the built-in one)
             item.Data switch
             {
                 CItem.BuildplateData => ["android.amazonappstore", "android.googleplay", "b.store", "ios.store", "nx.store", "oculus.store.gearvr", "oculus.store.rift", "uwp.store", "uwp.store.mobile", "xboxone.store", "title.bedrockvanilla", "title.earth"],
                 CItem.InventoryItemData => ["android.googleplay", "ios.store", "uwp.store", "title.earth"],
+                CItem.PersonaData => ["android.amazonappstore", "android.googleplay", "b.store", "ios.store", "nx.store", "oculus.store.gearvr", "oculus.store.rift", "uwp.store", "uwp.store.mobile", "xboxone.store", "title.bedrockvanilla", "title.earth"],
                 CItem.RubyData => ["android.googleplay", "ios.store", "uwp.store", "title.bedrockvanilla", "title.earth"],
                 CItem.QueryManifestData => ["android.googleplay", "ios.store", "uwp.store", "title.earth"],
                 _ => throw new UnreachableException(),
@@ -291,7 +332,7 @@ internal sealed class CatalogController : ApaceControllerBase
             item.CreationDate,
             item.LastModifiedDate,
             item.StartDate,
-            item.Contents.Select(content => content switch
+            contents.Select(content => content switch
             {
                 CItem.QueryManifestContent qmContent => new Item.QueryManifestContent(qmContent.Id, qmContent.Url, qmContent.MaxClientVersion, qmContent.MinClientVersion, qmContent.Tags, qmContent.Type),
                 _ => content,
@@ -347,6 +388,15 @@ internal sealed class CatalogController : ApaceControllerBase
                         tab.TabId
                     )),
                     data.GlobalNotSearchQueryTags
+                ),
+                CItem.PersonaData data => Item.DisplayPropertiesR.CreatePersona(
+                    data.CreatorName ?? "Minecraft",
+                    data.Price,
+                    item.Purchasable,
+                    data.Rarity,
+                    [new("persona_piece", data.PieceId, data.Version)],
+                    data.OfferId,
+                    data.PieceType
                 ),
                 _ => throw new UnreachableException(),
             }
