@@ -1,5 +1,4 @@
 .inventory-container {
-    font-family: sans-serif;
     max-width: 1000px;
     margin: auto;
     padding: 12px;
@@ -27,11 +26,25 @@
 .filters input,
 .filters select {
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #fff;
-    color: #333;
+    border: 2px solid #3a3a3a;
+    border-radius: 0;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
     font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.filters input:focus,
+.filters select:focus {
+    outline: none;
+    background-color: #20201f;
+    border-color: #6b8e23;
+    color: #f0f0f0;
+    box-shadow: 0 0 0 3px rgba(107, 142, 35, 0.25);
+}
+
+.filters input::placeholder {
+    color: #707070;
 }
 
 .grid {
@@ -59,8 +72,9 @@
     margin-top: 6px;
     font-size: 0.8rem;
     text-align: center;
-    font-weight: 600;
-    color: #333;
+    font-weight: 700;
+    color: #e0e0e0;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8);
     width: 100%;
     white-space: nowrap;
     overflow: hidden;
@@ -459,14 +473,34 @@
 }
 
 html.dark .filters input,
-html.dark .filters select,
+html.dark .filters select {
+    background-color: #2b3a1f;
+    border-color: #5a6a3a;
+    color: #eef0e6;
+}
+
+html.dark .filters input:focus,
+html.dark .filters select:focus {
+    background-color: #2b3a1f;
+    border-color: #d4ff7a;
+    color: #eef0e6;
+    box-shadow: 0 0 0 3px rgba(212, 255, 122, 0.25);
+}
+
+html.dark .filters input::placeholder {
+    color: #6a7a5a;
+}
+
 html.dark .pag-btn {
     background-color: #1e1e42;
     color: #d0d0e0;
     border-color: #3a3a6a;
 }
 
-html.dark .item-label,
+html.dark .item-label {
+    color: #eef0e6;
+}
+
 html.dark .pag-info {
     color: #d0d0e0;
 }
