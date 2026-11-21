@@ -34,7 +34,13 @@ internal sealed class UserController : ApaceControllerBase
     [HttpPost]
     public Results<ContentHttpResult, UnauthorizedHttpResult> Authenticate([FromBody] AuthenticateRequest request)
     {
-        var ticket = JwtUtils.Verify<Tokens.Shared.XboxTicketToken>(request.Properties.RpsTicket, config.Login.XboxTokenSecretBytes)?.Data;
+        // Tickets cached by clients before the switch to random per-installation
+        // secrets are signed with the legacy public Solace secret; without the
+        // fallback every such client is locked out of the account login in a
+        // 401 loop (the client never re-requests an unexpired ticket).
+        var ticket = JwtUtils.VerifyAny<Tokens.Shared.XboxTicketToken>(
+            request.Properties.RpsTicket,
+            config.VerificationSecrets(config.Login.XboxTokenSecretBytes, LegacyTokenSecrets.XboxTokenSecretBytes))?.Data;
 
         if (ticket is null)
         {

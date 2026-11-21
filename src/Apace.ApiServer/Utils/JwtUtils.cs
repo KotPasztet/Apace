@@ -49,6 +49,15 @@ internal static class JwtUtils
 
     public static Token<TData>? Verify<TData>(string token, byte[] secret, bool allowExpired = false)
         where TData : ITokenData<TData>
+        => VerifyAny<TData>(token, [secret], allowExpired);
+
+    /// <summary>
+    /// Verifies a token against several candidate secrets (the current one first).
+    /// Used for tokens clients cache across server updates: the first secret is
+    /// the installation's own, the remaining ones are legacy fallbacks.
+    /// </summary>
+    public static Token<TData>? VerifyAny<TData>(string token, IReadOnlyList<byte[]> secrets, bool allowExpired = false)
+        where TData : ITokenData<TData>
     {
         // an absent token is a normal case (e.g. an RST2 request without a device token), not a verification failure
         if (string.IsNullOrWhiteSpace(token))
@@ -56,6 +65,28 @@ internal static class JwtUtils
             return null;
         }
 
+        for (int i = 0; i < secrets.Count; i++)
+        {
+            var verified = VerifyWithSecret<TData>(token, secrets[i], allowExpired);
+
+            if (verified is not null)
+            {
+                if (i > 0)
+                {
+                    Log.Warning("JWT verified with a legacy token secret — a client still uses tokens cached before the update " +
+                                "(turn off with AcceptLegacyTokenSecrets=false in api_config.json once nobody needs it)");
+                }
+
+                return verified;
+            }
+        }
+
+        return null;
+    }
+
+    private static Token<TData>? VerifyWithSecret<TData>(string token, byte[] secret, bool allowExpired)
+        where TData : ITokenData<TData>
+    {
         try
         {
             var claims = jwtHandler.ValidateToken(token, new TokenValidationParameters()
