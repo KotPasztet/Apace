@@ -1,0 +1,808 @@
+@page "/Admin/Players/{PlayerId}/Skins"
+@using Microsoft.AspNetCore.Authorization
+@using System.IO.Compression
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@using Serilog
+@using Apace.DB
+@using Apace.DB.Models.Player
+@using Apace.LauncherUI.Utils
+@using Apace.StaticData
+@using PlayfabItem = Apace.StaticData.Playfab.Item
+@attribute [Authorize(Policy = Permissions.ManagePlayers)]
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>Player Skins - Apace</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <a href="/Admin/Players" class="btn btn-link p-0 mb-2">
+        ← Back to Players
+    </a>
+    <div class="d-flex align-items-baseline gap-2">
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+            <img class="nav-icon" src="/images/merl_avatar_widget.png" alt="" /> Skins
+        </div>
+    </div>
+    <button class="btn btn-outline" @onclick="ExportSkinAsync"
+            disabled="@(_profiles is null || _profiles.Count == 0 || _isExporting || _jsModule is null)">
+        @if (_isExporting)
+        {
+            <span class="spinner-border spinner-border-sm"></span>
+            <span>Exporting...</span>
+        }
+        else
+        {
+            <span>↓ Export skin</span>
+        }
+    </button>
+</div>
+<div class="d-flex align-items-baseline gap-2 mb-3">
+    <h2 class="mb-0" style="font-size: 1.25rem;">
+        Persona for @(string.IsNullOrEmpty(_username) ? $"player {PlayerId}" : $"{_username} (ID: {PlayerId})")
+    </h2>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger">⚠ @_errorMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(_exportNote))
+{
+    <div class="alert alert-warning mb-4">⚠ @_exportNote</div>
+}
+
+@if (_profiles is null)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+}
+else if (_profiles.Count == 0)
+{
+    <div class="alert alert-info">
+        This player has no persona profile stored yet. A profile is created the first time
+        the player saves a skin in the dressing room.
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_catalogError))
+    {
+        <div class="alert alert-warning">⚠ @_catalogError</div>
+    }
+
+    @foreach (var profile in _profiles)
+    {
+        <div class="card mb-4">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h5 class="mb-0">@profile.ObjectName</h5>
+                <div class="d-flex align-items-center gap-2">
+                    @if (profile.IsDirty)
+                    {
+                        <span class="badge bg-warning text-dark">Unsaved changes</span>
+                        <button class="btn btn-success btn-sm" @onclick="() => SaveProfileAsync(profile)" disabled="@profile.IsSaving">
+                            @if (profile.IsSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                            }
+                            Save
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="badge badge-subtle">Saved</span>
+                    }
+                </div>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(profile.ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2 small">⚠ @profile.ErrorMessage</div>
+                }
+
+                @if (!string.IsNullOrEmpty(profile.BodySkinColor))
+                {
+                    <p class="text-muted small mb-2">
+                        Base body: arm @(profile.BodyArm ?? "unknown") · skin color <code>@profile.BodySkinColor</code>
+                    </p>
+                }
+
+                @if (profile.Slots.Count == 0)
+                {
+                    <p class="text-muted mb-2">No equipped pieces in this profile.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 48px;"></th>
+                                    <th>Item</th>
+                                    <th>Type</th>
+                                    <th>Rarity</th>
+                                    <th>Price</th>
+                                    <th>Piece ID</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var slot in profile.Slots)
+                                {
+                                    <tr @key="slot.Index">
+                                        @if (slot.Kind == SlotKind.Piece)
+                                        {
+                                            <td>
+                                                @if (slot.CatalogItem is not null)
+                                                {
+                                                    <img src="/api/persona-images/@(slot.CatalogItem.ThumbnailImageId).png" alt=""
+                                                         style="width: 40px; height: 40px; object-fit: contain;"
+                                                         onerror="this.onerror=null; this.src='@(MissingTextureDataUri)';" loading="lazy" />
+                                                }
+                                                else
+                                                {
+                                                    <img src="@MissingTextureDataUri" alt="" style="width: 40px; height: 40px; object-fit: contain; opacity: 0.5;" />
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (slot.CatalogItem is not null)
+                                                {
+                                                    <span class="fw-bold">@slot.CatalogItem.Title</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Unknown piece (not in catalog)</span>
+                                                }
+                                            </td>
+                                            <td>@(slot.CatalogItem is not null ? Persona(slot.CatalogItem)?.PieceType : "—")</td>
+                                            <td>
+                                                @if (slot.CatalogItem is not null)
+                                                {
+                                                    <span style="font-weight: bold; color: @GetPersonaRarityColor(Persona(slot.CatalogItem)?.Rarity)">@(Persona(slot.CatalogItem)?.Rarity ?? "—")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>—</span>
+                                                }
+                                            </td>
+                                            <td>@(slot.CatalogItem is not null ? FormatPrice(Persona(slot.CatalogItem)?.Price) : "—")</td>
+                                            <td><code style="font-size: 0.7rem;">@(slot.CatalogItem is not null ? slot.PieceId : slot.RawId)</code></td>
+                                            <td style="text-align: right;">
+                                                <button class="btn btn-outline btn-sm" @onclick="() => OpenReplacePicker(profile, slot)"
+                                                        disabled="@(_catalogItems.Count == 0)">
+                                                    Replace
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveSlot(profile, slot)">
+                                                    Remove
+                                                </button>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td></td>
+                                            <td>
+                                                <span class="text-muted">
+                                                    @(slot.Kind == SlotKind.Body ? "Base body config" : slot.Kind == SlotKind.Collection ? "Collection entry" : slot.Kind == SlotKind.EmptySlot ? "Empty slot" : "Unrecognized entry")
+                                                </span>
+                                            </td>
+                                            <td colspan="4"><code style="font-size: 0.65rem; color: #9a9ab0;">@(slot.Kind == SlotKind.Other ? slot.RawJson : (string.IsNullOrEmpty(slot.RawId) ? slot.RawJson : slot.RawId))</code></td>
+                                            <td></td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Changes reach the client the next time it downloads its persona profile.</span>
+                <button class="btn btn-outline btn-sm" @onclick="() => OpenAddPicker(profile)" disabled="@(_catalogItems.Count == 0)">
+                    + Add piece
+                </button>
+            </div>
+        </div>
+    }
+}
+
+@if (_pickerOpen && _pickerProfile is not null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.65); position: fixed; inset: 0; z-index: 1050;">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @(_pickerMode == PickerMode.Replace ? "Replace piece" : "Add piece")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="ClosePicker"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex gap-2 mb-3">
+                        <select class="form-select" style="max-width: 260px;" @bind="PickerPieceType">
+                            <option value="">All types</option>
+                            @foreach (var type in _pieceTypes)
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </select>
+                        <input type="text" class="form-control" placeholder="Search items..." @bind="PickerSearch" @bind:event="oninput" />
+                    </div>
+
+                    <div style="max-height: 55vh; overflow-y: auto;">
+                        @foreach (var item in PickerItems)
+                        {
+                            <div class="d-flex align-items-center gap-3 p-2 border-bottom"
+                                 style="cursor: pointer; @(_pickerSelected?.Id == item.Id ? "background-color: rgba(90, 160, 90, 0.25);" : "")"
+                                 @onclick="() => _pickerSelected = item" @key="item.Id">
+                                <img src="/api/persona-images/@(item.ThumbnailImageId).png" alt=""
+                                     style="width: 40px; height: 40px; object-fit: contain;"
+                                     onerror="this.onerror=null; this.src='@(MissingTextureDataUri)';" loading="lazy" />
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">@item.Title</div>
+                                    <code style="font-size: 0.65rem; color: #9a9ab0;">@item.Id</code>
+                                </div>
+                                <span style="font-weight: bold; color: @GetPersonaRarityColor(Persona(item)?.Rarity)">@(Persona(item)?.Rarity)</span>
+                                <span class="text-muted small" style="width: 80px; text-align: right;">@FormatPrice(Persona(item)?.Price)</span>
+                            </div>
+                        }
+                        @if (!PickerItems.Any())
+                        {
+                            <div class="alert alert-warning mb-0">No catalog items match the current filters.</div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="ClosePicker">Cancel</button>
+                    <button type="button" class="btn btn-success" @onclick="ConfirmPicker" disabled="@(_pickerSelected is null)">
+                        @(_pickerMode == PickerMode.Replace ? "Replace" : "Add")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string PlayerId { get; set; } = string.Empty;
+
+    private const string MissingTextureDataUri = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%238b8b8b'/%3E%3Crect width='32' height='32' fill='%23a8a8a8'/%3E%3Crect x='32' y='32' width='32' height='32' fill='%23a8a8a8'/%3E%3C/svg%3E";
+
+    // Same lookup as PersonaImagesController; duplicated so the export can attach
+    // thumbnails without a round-trip through the HTTP endpoint.
+    private static readonly string[] ThumbnailDirs =
+    [
+        Path.Combine(Program.ProgramsDir, "wwwroot", "playfab", "images"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Apace.ApiServer", "wwwroot", "playfab", "images")),
+    ];
+
+    private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
+
+    private readonly StaticData _staticData = new(Program.StaticDataDir);
+
+    private string? _username;
+    private string? _errorMessage;
+    private string? _catalogError;
+    private string? _exportNote;
+
+    private PersonaProfiles? _storedProfiles;
+    private List<ProfileView> _profiles = [];
+
+    private List<PlayfabItem> _catalogItems = [];
+    private List<string> _pieceTypes = [];
+    private Dictionary<string, PlayfabItem> _itemsByPieceId = [];
+
+    private bool _isExporting;
+    private IJSObjectReference? _jsModule;
+
+    // Piece picker state
+    private bool _pickerOpen;
+    private PickerMode _pickerMode = PickerMode.Add;
+    private ProfileView? _pickerProfile;
+    private SlotView? _pickerSlot;
+    private PlayfabItem? _pickerSelected;
+
+    private string _pickerPieceType = "";
+    private string PickerPieceType
+    {
+        get => _pickerPieceType;
+        set { _pickerPieceType = value; _pickerSelected = null; }
+    }
+
+    private string _pickerSearch = "";
+    private string PickerSearch
+    {
+        get => _pickerSearch;
+        set { _pickerSearch = value; _pickerSelected = null; }
+    }
+
+    private IEnumerable<PlayfabItem> PickerItems => _catalogItems
+        .Where(i => string.IsNullOrEmpty(PickerPieceType) || Persona(i)?.PieceType == PickerPieceType)
+        .Where(i => string.IsNullOrWhiteSpace(PickerSearch)
+            || i.Title.Contains(PickerSearch, StringComparison.OrdinalIgnoreCase)
+            || i.Id.ToString().Contains(PickerSearch, StringComparison.OrdinalIgnoreCase))
+        .OrderBy(i => i.Title);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+            if (liveDb is not null)
+            {
+                _username = await DataUtils.GetUsername(PlayerId, liveDb);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to get username for player '{PlayerId}'", PlayerId);
+        }
+
+        LoadCatalog();
+
+        try
+        {
+            using var earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
+
+            EarthDB.Results results = await new EarthDB.Query(false)
+                .Get("personaProfile", PlayerId, typeof(PersonaProfiles))
+                .ExecuteAsync(earthDB, default);
+
+            // A missing row yields an empty PersonaProfiles, so a player who never
+            // touched the dressing room simply shows the empty state.
+            _storedProfiles = results.Get<PersonaProfiles>("personaProfile");
+
+            foreach (KeyValuePair<string, JsonElement> entry in _storedProfiles.Objects.OrderBy(e => e.Key, StringComparer.Ordinal))
+            {
+                if (JsonNode.Parse(entry.Value.GetRawText()) is not JsonObject blob)
+                {
+                    _errorMessage = $"Stored object '{entry.Key}' is not a JSON object and was skipped.";
+                    continue;
+                }
+
+                var profile = new ProfileView { ObjectName = entry.Key, Blob = blob };
+                RefreshSlots(profile);
+                _profiles.Add(profile);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load persona profiles for player '{PlayerId}'", PlayerId);
+            _errorMessage = "Could not load the persona profile. Please check the database connection.";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./Components/Admin/Pages/Player/PlayerSkins.razor.js");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_jsModule is not null)
+            {
+                await _jsModule.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // circuit is already gone
+        }
+    }
+
+    private void LoadCatalog()
+    {
+        try
+        {
+            _catalogItems = [.. _staticData.Playfab.Items.Values
+                .Where(i => i.Data is PlayfabItem.PersonaData)
+                .OrderBy(i => i.Title)];
+
+            _pieceTypes = [.. _catalogItems
+                .Select(i => Persona(i)?.PieceType ?? "")
+                .Where(t => t.Length > 0)
+                .Distinct()
+                .OrderBy(t => t)];
+
+            // GUIDs are case-insensitive, so the lookup must be too.
+            _itemsByPieceId = _catalogItems
+                .GroupBy(i => Persona(i)?.PieceId.ToString())
+                .Where(g => g.Key is not null)
+                .ToDictionary(g => g.Key!, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load the persona catalog from staticdata");
+            _catalogError = "Could not load the persona catalog from staticdata - replace and add are unavailable.";
+        }
+    }
+
+    // Re-derives the slot list from the (possibly edited) blob. The blob is only
+    // ever touched through RemoveSlot/ReplaceSlot/AddPiece, so every field this
+    // does not understand survives unchanged.
+    private void RefreshSlots(ProfileView profile)
+    {
+        profile.Slots.Clear();
+        profile.BodyArm = null;
+        profile.BodySkinColor = null;
+
+        if (profile.Blob["personaCollection"] is not JsonObject collection
+            || collection["universalApp"] is not JsonArray apps)
+        {
+            return;
+        }
+
+        for (int i = 0; i < apps.Count; i++)
+        {
+            if (apps[i] is not JsonObject entry)
+            {
+                profile.Slots.Add(new SlotView { Index = i, Kind = SlotKind.Other, RawJson = apps[i]?.ToJsonString() ?? "" });
+                continue;
+            }
+
+            // Pack/collection entries (e.g. the built-in "skin" pack in personaProfile)
+            // are not equipped pieces, they are shown read-only.
+            if (entry.ContainsKey("typeId") || entry.ContainsKey("packId"))
+            {
+                profile.Slots.Add(new SlotView { Index = i, Kind = SlotKind.Collection, Entry = entry, RawId = GetString(entry, "id") ?? "", RawJson = entry.ToJsonString() });
+                continue;
+            }
+
+            string? id = GetString(entry, "id");
+
+            if (id is null)
+            {
+                if (entry.ContainsKey("arm") || entry.ContainsKey("skcol"))
+                {
+                    profile.Slots.Add(new SlotView { Index = i, Kind = SlotKind.Body, Entry = entry, RawJson = entry.ToJsonString() });
+                    profile.BodyArm = GetString(entry, "arm");
+                    profile.BodySkinColor = GetString(entry, "skcol");
+                    continue;
+                }
+
+                profile.Slots.Add(new SlotView { Index = i, Kind = SlotKind.Other, Entry = entry, RawJson = entry.ToJsonString() });
+                continue;
+            }
+
+            // An empty id is an unequipped slot as found in the default profiles,
+            // not a piece.
+            if (id.Length == 0)
+            {
+                profile.Slots.Add(new SlotView { Index = i, Kind = SlotKind.EmptySlot, Entry = entry, RawJson = entry.ToJsonString() });
+                continue;
+            }
+
+            // Equipped piece ids carry a "/d" suffix (see the default profiles in the
+            // ApiServer's ObjectController); strip it before matching the catalog.
+            string pieceId = id.EndsWith("/d", StringComparison.Ordinal) ? id[..^2] : id;
+
+            profile.Slots.Add(new SlotView
+            {
+                Index = i,
+                Kind = SlotKind.Piece,
+                Entry = entry,
+                RawId = id,
+                PieceId = pieceId,
+                CatalogItem = _itemsByPieceId.GetValueOrDefault(pieceId),
+            });
+        }
+    }
+
+    private static JsonArray GetOrCreateAppsArray(JsonObject blob)
+    {
+        if (blob["personaCollection"] is not JsonObject collection)
+        {
+            collection = new JsonObject();
+            blob["personaCollection"] = collection;
+        }
+
+        if (collection["universalApp"] is not JsonArray apps)
+        {
+            apps = new JsonArray();
+            collection["universalApp"] = apps;
+        }
+
+        return apps;
+    }
+
+    private void RemoveSlot(ProfileView profile, SlotView slot)
+    {
+        if (slot.Kind != SlotKind.Piece)
+        {
+            return;
+        }
+
+        GetOrCreateAppsArray(profile.Blob).RemoveAt(slot.Index);
+        profile.IsDirty = true;
+        RefreshSlots(profile);
+    }
+
+    private void ReplaceSlot(ProfileView profile, SlotView slot, PlayfabItem item)
+    {
+        if (slot.Kind != SlotKind.Piece || slot.Entry is null || Persona(item) is not { } persona)
+        {
+            return;
+        }
+
+        // Equipped ids carry the "/d" suffix; other fields (e.g. the per-piece "col"
+        // colors) are kept so nothing the client expects is dropped.
+        slot.Entry["id"] = $"{persona.PieceId}/d";
+        profile.IsDirty = true;
+        RefreshSlots(profile);
+    }
+
+    private void AddPiece(ProfileView profile, PlayfabItem item)
+    {
+        if (Persona(item) is not { } persona)
+        {
+            return;
+        }
+
+        GetOrCreateAppsArray(profile.Blob).Add(new JsonObject { ["id"] = $"{persona.PieceId}/d" });
+        profile.IsDirty = true;
+        RefreshSlots(profile);
+    }
+
+    private async Task SaveProfileAsync(ProfileView profile)
+    {
+        if (_storedProfiles is null || profile.IsSaving)
+        {
+            return;
+        }
+
+        profile.IsSaving = true;
+        profile.ErrorMessage = null;
+
+        try
+        {
+            // Only the edited profile is re-materialized; unsaved profiles keep their
+            // original blobs in the dictionary that gets written.
+            _storedProfiles.Objects[profile.ObjectName] = JsonSerializer.SerializeToElement(profile.Blob);
+
+            using var earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
+
+            await new EarthDB.Query(true)
+                .Update("personaProfile", PlayerId, _storedProfiles)
+                .ExecuteAsync(earthDB, default);
+
+            profile.IsDirty = false;
+            Log.Information("Saved persona profile '{ObjectName}' of player {PlayerId}", profile.ObjectName, PlayerId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to save persona profile '{ObjectName}' of player '{PlayerId}'", profile.ObjectName, PlayerId);
+            profile.ErrorMessage = "Failed to save. Try again?";
+        }
+        finally
+        {
+            profile.IsSaving = false;
+        }
+    }
+
+    private void OpenReplacePicker(ProfileView profile, SlotView slot)
+    {
+        _pickerProfile = profile;
+        _pickerSlot = slot;
+        _pickerMode = PickerMode.Replace;
+        _pickerPieceType = slot.CatalogItem is not null ? Persona(slot.CatalogItem)?.PieceType ?? "" : "";
+        _pickerSearch = "";
+        _pickerSelected = null;
+        _pickerOpen = true;
+    }
+
+    private void OpenAddPicker(ProfileView profile)
+    {
+        _pickerProfile = profile;
+        _pickerSlot = null;
+        _pickerMode = PickerMode.Add;
+        _pickerPieceType = "";
+        _pickerSearch = "";
+        _pickerSelected = null;
+        _pickerOpen = true;
+    }
+
+    private void ClosePicker()
+        => _pickerOpen = false;
+
+    private void ConfirmPicker()
+    {
+        if (_pickerProfile is null || _pickerSelected is null)
+        {
+            return;
+        }
+
+        if (_pickerMode == PickerMode.Replace && _pickerSlot is not null)
+        {
+            ReplaceSlot(_pickerProfile, _pickerSlot, _pickerSelected);
+        }
+        else if (_pickerMode == PickerMode.Add)
+        {
+            AddPiece(_pickerProfile, _pickerSelected);
+        }
+
+        ClosePicker();
+    }
+
+    private async Task ExportSkinAsync()
+    {
+        if (_profiles is null || _profiles.Count == 0 || _isExporting || _jsModule is null)
+        {
+            return;
+        }
+
+        _isExporting = true;
+        _exportNote = null;
+        StateHasChanged();
+
+        try
+        {
+            List<string> missingBinaries = [];
+
+            using var stream = new MemoryStream();
+            using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                // The raw blobs as they are right now in the editor, pretty-printed;
+                // everything else in the zip is derived from them.
+                ZipArchiveEntry blobsEntry = zip.CreateEntry("personaProfile.json");
+                using (var blobsStream = blobsEntry.Open())
+                using (var writer = new StreamWriter(blobsStream))
+                {
+                    var blobs = new JsonObject();
+                    foreach (ProfileView profile in _profiles)
+                    {
+                        blobs[profile.ObjectName] = profile.Blob.DeepClone();
+                    }
+
+                    writer.Write(blobs.ToJsonString(IndentedJson));
+                }
+
+                foreach (PlayfabItem item in DistinctEquippedItems())
+                {
+                    string itemDir = $"pieces/{item.Id}";
+
+                    ZipArchiveEntry itemEntry = zip.CreateEntry($"{itemDir}/item.json");
+                    using (var itemStream = itemEntry.Open())
+                    using (var writer = new StreamWriter(itemStream))
+                    {
+                        writer.Write(JsonSerializer.Serialize(item));
+                    }
+
+                    // Piece binaries are overlaid into staticdata at publish time and may
+                    // be absent (e.g. when running straight from the repo); skip with a note.
+                    string pieceZipPath = Path.Combine(Program.StaticDataDir, "playfab", "persona", item.Id + ".zip");
+                    if (System.IO.File.Exists(pieceZipPath))
+                    {
+                        zip.CreateEntryFromFile(pieceZipPath, $"{itemDir}/piece.zip");
+                    }
+                    else
+                    {
+                        missingBinaries.Add(item.Title);
+                    }
+
+                    string? thumbnailPath = FindThumbnailFile(item.ThumbnailImageId);
+                    if (thumbnailPath is not null)
+                    {
+                        zip.CreateEntryFromFile(thumbnailPath, $"{itemDir}/thumbnail.png");
+                    }
+                }
+            }
+
+            stream.Position = 0;
+            using var streamRef = new DotNetStreamReference(stream);
+
+            string fileName = $"{(_username ?? PlayerId).Replace(" ", "_")}_skin.zip";
+            await _jsModule.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+
+            if (missingBinaries.Count > 0)
+            {
+                _exportNote = $"Exported without piece binaries for: {string.Join(", ", missingBinaries)} (not found in staticdata/playfab/persona).";
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to export the skin of player '{PlayerId}'", PlayerId);
+            _errorMessage = "Export failed. Try again?";
+        }
+        finally
+        {
+            _isExporting = false;
+        }
+    }
+
+    private IEnumerable<PlayfabItem> DistinctEquippedItems() => _profiles
+        .SelectMany(p => p.Slots)
+        .Where(s => s.CatalogItem is not null)
+        .Select(s => s.CatalogItem!)
+        .DistinctBy(i => i.Id);
+
+    private static string? FindThumbnailFile(string? thumbnailImageId)
+    {
+        if (thumbnailImageId is null || !Guid.TryParse(thumbnailImageId, out _))
+        {
+            return null;
+        }
+
+        foreach (string dir in ThumbnailDirs)
+        {
+            string path = Path.Combine(dir, thumbnailImageId + ".png");
+
+            if (System.IO.File.Exists(path))
+            {
+                return path;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? GetString(JsonObject obj, string name)
+        => obj[name] is JsonValue value && value.TryGetValue<string>(out string? s) ? s : null;
+
+    private static PlayfabItem.PersonaData? Persona(PlayfabItem item)
+        => item.Data as PlayfabItem.PersonaData;
+
+    private static string FormatPrice(int? price)
+        => price is > 0 ? $"{price} 💎" : "Free";
+
+    private static string GetPersonaRarityColor(string? rarity)
+        => rarity?.ToLowerInvariant() switch
+        {
+            "common" => "#7f8c8d",
+            "uncommon" => "#2ecc71",
+            "rare" => "#3498db",
+            "epic" => "#9b59b6",
+            "legendary" => "#e67e22",
+            _ => "#7f8c8d"
+        };
+
+    private enum PickerMode
+    {
+        Replace,
+        Add,
+    }
+
+    private enum SlotKind
+    {
+        Piece,      // equipped piece entry: {"id": "<uuid>/d", ...}
+        Body,       // base body config: {"arm": ..., "skcol": ..., "skin": ...}
+        Collection, // pack/collection entry: {"id": ..., "packId": ..., "typeId": ...}
+        EmptySlot,  // {"id": ""} - an unequipped slot as found in the default profiles
+        Other,      // anything not understood, shown raw
+    }
+
+    private sealed class ProfileView
+    {
+        public required string ObjectName { get; init; }
+        public required JsonObject Blob { get; init; }
+
+        public List<SlotView> Slots { get; set; } = [];
+        public string? BodyArm { get; set; }
+        public string? BodySkinColor { get; set; }
+
+        public bool IsDirty { get; set; }
+        public bool IsSaving { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+
+    private sealed class SlotView
+    {
+        public required int Index { get; init; }
+        public required SlotKind Kind { get; init; }
+
+        // The raw entry object; mutating it mutates the blob, null for non-object entries.
+        public JsonObject? Entry { get; init; }
+
+        public string RawId { get; init; } = "";
+        public string PieceId { get; init; } = "";
+        public PlayfabItem? CatalogItem { get; init; }
+        public string RawJson { get; init; } = "";
+    }
+}
