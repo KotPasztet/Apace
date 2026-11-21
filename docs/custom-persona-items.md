@@ -73,39 +73,53 @@ Fields:
 ## The Apace Cape
 
 The server ships an **Apace Cape** — a free `persona_hood` (cloak) item available to
-every player by default. Its item file is
-`staticdata-extras/playfab/items/6e8671bd-7d35-442c-8e7c-39b6562490ca.json`.
+every player by default, and it is a **real custom piece**: art by **KotPasztet**,
+shipped as a proper `.mcpersona` binary. Its catalog item is
+`staticdata-extras/playfab/items/6e8671bd-7d35-442c-8e7c-39b6562490ca.json`
+(`PieceId 3199377b-130a-4189-9b90-484ae751c54f`, creator KotPasztet, thumbnail
+`10413b0a-1dfd-48d1-9215-22c0d41624ca.png`).
 
-As shipped it is a **placeholder**: it reuses the built-in *Hero's Cloak* piece
-(`PieceId 67f1e263-…`, thumbnail already in the Api server's `wwwroot/playfab/images/`),
-so it renders on every client with no downloads. To make it a *custom* cape, replace
-the placeholder's values with a piece of your own:
+How it reaches the client:
 
-| Field | Replace with |
-| --- | --- |
-| `Data.PieceId` | the UUID of your persona piece (must match the piece manifest) |
-| `Data.AssetFileName` | the file name of your piece binary in `staticdata/playfab/persona/` (served at `/playfab/persona/<file>`) |
-| `Data.Version` | the piece version from your manifest (e.g. `1.0.0`) |
-| `ThumbnailImageId` | a new GUID; put the PNG at `src/Apace.ApiServer/wwwroot/playfab/images/<guid>.png` (or upload it through the panel's **System Configuration → Store** tab, which writes to the runtime thumbnail directory) |
+1. the dressing room shows the item in the cloak category; claiming it is free,
+2. `AssetFileName: apace_cape.mcpersona` makes the Api server advertise the
+   piece binary as the item's `personabinary` content (served from
+   `staticdata/playfab/persona/` at `/playfab/persona/apace_cape.mcpersona`),
+3. the client downloads that zip, reads its `manifest.json` (`persona_piece`
+   module), the `apace_cape.meta.json` piece definition and applies the piece
+   with the matching `piece_id` UUID.
 
-What a custom cape needs (all of it can also be uploaded from the panel):
+The piece itself (see `staticdata-extras/playfab/persona/apace_cape.mcpersona`,
+a plain zip you can open):
 
-1. **Piece binary** — a `.mcpersona`-style zip: `manifest.json` whose `modules`
-   contain a `persona_piece` entry with a fresh UUID + version, plus the geometry
-   and texture files the manifest points at. A cloak/cape piece attaches to the
-   humanoid's shoulder/head bones (the client renders the flat cape geometry
-   `mobs/humanoid/cape.geo.json` for real capes; hood-style cloaks use their own
-   geometry like the built-in Hero's Cloak does).
-2. **Texture PNG** — the cape design. For the standard flat cape layout that is a
-   64×32 PNG (same UV layout as Java capes); custom geometry uses whatever UV the
-   geometry defines.
-3. **Thumbnail PNG** — square, 256×256 is what the built-in items use.
+- `manifest.json` — `format_version 1`, one module of type `persona_piece`
+- `apace_cape.meta.json` — `piece_id`/`piece_name`/`piece_type` plus
+  `geometry_sources` for every body size (`tall`, `medium`, `small`, `smaller`)
+- `apace_cape.geometry.json` — legacy `1.8.0` geometry, one
+  `geometry.apace_cape.<body_size>` per body size; a single `cape` cube in the
+  vanilla cape position (`[-5, 8, -3]`, size `[10, 16, 1]`, box UV `[0, 0]`)
+  parented under `body`/`waist`/`root` so it follows the player torso
+- `apace_cape.png` — the cape texture, 64x64 (the classic 64x32 cape UV layout
+  in the top half; the sheet must be a **square power of two** — that is the
+  Marketplace persona rule, which is why the original 1024x512 art is downscaled
+  and padded)
+- `texts/en_US.lang` — `persona.apace_cape.title=Apace Cape`
 
-Caveat: the `personabinary` download path (custom pieces the client does not have
-built in) follows the same wire format as the real service (`Contents` entry of type
-`personabinary`), but has not been verified against a real client yet — test on a
-patched client before promising it to players. The placeholder needs no such test:
-its piece is compiled into the client.
+The file passes the Marketplace persona validator (Spright's `spyglass`,
+`spyglass check persona --layout standard`) with zero findings.
+
+Swapping in different art later: replace `apace_cape.png` inside the zip — keep
+the classic cape UV layout on a square power-of-two sheet (64x64, 128x128, ...) —
+bump the module/piece versions if the client has cached the old one, and replace
+the thumbnail PNG in `src/Apace.ApiServer/wwwroot/playfab/images/`. The original
+1024x512 art is the author's; the design lives in the `(12,1)-(22,17)` UV region
+of that sheet and is mirrored into `(1,1)-(11,17)` (the face the vanilla cape
+orientation shows) during the build.
+
+Caveat: the `personabinary` download path follows the same wire format as the
+real service (`Contents` entry of type `personabinary`), but has not been
+verified against a real client yet — test on a patched client before promising
+it to players.
 
 ## Where to get valid PieceIds
 

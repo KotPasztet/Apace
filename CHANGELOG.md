@@ -2,11 +2,11 @@
 
 ## Unreleased (dev) — Apace Cape
 
-> The server now has its own free cape in the dressing room — a placeholder duplicating the built-in Hero's Cloak until custom art lands, with the swap-in workflow documented.
+> The server now has its own free cape in the dressing room — a real custom persona piece with art by KotPasztet, shipped as a `.mcpersona` binary and served to clients.
 
 ### 🧍 Persona items (dressing room / skins)
 
-- **New free "Apace Cape" cloak item** (`staticdata-extras/playfab/items/6e8671bd-….json`): every player can claim it from the dressing room's cloak category. As shipped it is a placeholder that reuses the built-in Hero's Cloak piece (and its thumbnail), so it works on every client with no downloads. Swapping in a custom cape is documented in `docs/custom-persona-items.md` ("The Apace Cape"): set `PieceId` to a custom persona piece, put the piece binary in `staticdata/playfab/persona/`, set `AssetFileName`, and replace the thumbnail.
+- **New free "Apace Cape" cloak item** (`staticdata-extras/playfab/items/6e8671bd-….json`): every player can claim it from the dressing room's cloak category. Unlike the earlier placeholder it is a **real custom piece**: `staticdata-extras/playfab/persona/apace_cape.mcpersona` (art by **KotPasztet**) is a Marketplace-format persona piece — `persona_piece` manifest, meta + geometry for all four body sizes, 64×64 classic cape layout texture, own thumbnail — advertised to clients as the item's `personabinary` download and served from `/playfab/persona/apace_cape.mcpersona`. The piece passes the Marketplace persona validator (`spyglass check persona --layout standard`, zero findings). The build is reproducible with `scripts/build_apace_cape.py` (not in the repo tree — see docs for the manual art-swap workflow).
 
 ## Unreleased (dev) — Log-in fix, inventory fix, filled dressing room
 

@@ -3,17 +3,17 @@
   "Data": {
     "Type": "Persona",
     "PieceType": "persona_hood",
-    "PieceId": "67f1e263-5720-402d-827c-d673118ae17b",
+    "PieceId": "3199377b-130a-4189-9b90-484ae751c54f",
     "OfferId": "cdcedea6-65f6-4b3f-b600-f84a39d9ff73",
     "Version": "1.0.0",
     "Rarity": "epic",
     "Price": 0,
-    "CreatorName": "Apace",
-    "AssetFileName": null
+    "CreatorName": "KotPasztet",
+    "AssetFileName": "apace_cape.mcpersona"
   },
   "Title": "Apace Cape",
-  "Description": "The official Apace cape.",
-  "ThumbnailImageId": "4e2371f6-2d66-4f76-8d7a-5ae9d815ce7f",
+  "Description": "The official Apace cape. Art by KotPasztet.",
+  "ThumbnailImageId": "10413b0a-1dfd-48d1-9215-22c0d41624ca",
   "CreationDate": "2020-12-10T18:59:39.396Z",
   "LastModifiedDate": "2026-11-21T12:00:00.000Z",
   "StartDate": "2020-12-10T18:59:39.396Z",
@@ -23,7 +23,7 @@
   "CreatorEntityId": "301F442C3B63DC20",
   "Tags": [
     "6e8671bd-7d35-442c-8e7c-39b6562490ca",
-    "67f1e263-5720-402d-827c-d673118ae17b",
+    "3199377b-130a-4189-9b90-484ae751c54f",
     "tag.cape",
     "tag.cloak",
     "custom",
