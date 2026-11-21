@@ -1,0 +1,50 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_back",
+    "PieceId": "a76970a2-33fe-48f6-b8fc-dd54679f5cdb",
+    "OfferId": "840bffac-2871-46eb-afab-a33c025183b9",
+    "Version": "1.0.0",
+    "Rarity": "epic",
+    "Price": 0,
+    "CreatorName": "KotPasztet",
+    "AssetFileName": "apace_cape_256.mcpersona"
+  },
+  "Title": "Apace Cape 256",
+  "Description": "HD resolution test build (256px). Art by KotPasztet.",
+  "ThumbnailImageId": "fe8973ff-194a-4a3e-b959-b3b26d9751db",
+  "CreationDate": "2020-12-10T18:59:39.396Z",
+  "LastModifiedDate": "2026-11-21T00:00:00.000Z",
+  "StartDate": "2020-12-10T18:59:39.396Z",
+  "Id": "a5d108fa-13d8-4b42-ac22-9ddc659d1eaf",
+  "FriendlyId": "840bffac-2871-46eb-afab-a33c025183b9",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "a5d108fa-13d8-4b42-ac22-9ddc659d1eaf",
+    "a76970a2-33fe-48f6-b8fc-dd54679f5cdb",
+    "tag.cape",
+    "tag.cloak",
+    "custom",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Cape",
+        "Apace"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Cape",
+        "Apace"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}
