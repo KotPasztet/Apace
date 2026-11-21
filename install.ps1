@@ -117,14 +117,22 @@ if ($Mode -eq "--no-docker") {
     }
 
     Write-Host "Setting up persistent storage..."
-    $dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs", "fabric-data", "api-config")
+    $dirs = @("launcher-data", "launcher-logs", "data", "dataprotection-keys", "resourcepacks", "server-template-dir", "logs", "fabric-data")
     foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path "$PERSISTENT\$d" | Out-Null }
     # ApiPort=1808 matches the compose port mapping (and the code default)
     if (-not (Test-Path "$PERSISTENT\config.json")) { '{"ApiPort":1808}' | Out-File -FilePath "$PERSISTENT\config.json" -Encoding utf8 }
-    # api_config.json (ApiServer login secrets) is bind-mounted as a single FILE: seed it
-    # empty so Docker does not create a directory at the mount path (the ApiServer fills it in).
-    if (Test-Path "$PERSISTENT\api-config\api_config.json" -PathType Container) { Remove-Item -Recurse -Force "$PERSISTENT\api-config\api_config.json" }
-    if (-not (Test-Path "$PERSISTENT\api-config\api_config.json")) { New-Item -ItemType File -Force -Path "$PERSISTENT\api-config\api_config.json" | Out-Null }
+    # The ApiServer's login secrets (api_config.json) are written by the server itself
+    # into the persistent data directory (/app/data) — nothing to seed here. Installations
+    # upgraded from older versions may still have api-config/api_config.json on the host;
+    # migrate its contents into the data volume so the secrets survive the compose refresh
+    # that drops the old single-file bind-mount (which Docker replaced with a directory
+    # whenever the host file was missing, rotating the secrets on every boot).
+    $legacyApiConfig = "$PERSISTENT\api-config\api_config.json"
+    $dataApiConfig = "$PERSISTENT\data\api_config.json"
+    if ((Test-Path $legacyApiConfig -PathType Leaf) -and -not (Test-Path $dataApiConfig)) {
+        Copy-Item $legacyApiConfig $dataApiConfig
+        Write-Host "  Migrated login secrets: api-config/api_config.json -> data/api_config.json"
+    }
 
     $compose = Get-Content docker-compose.yml -Raw
     $compose = $compose -replace '/opt/apace-persistent/', 'C:/apace-persistent/'
