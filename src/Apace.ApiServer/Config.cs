@@ -3,10 +3,20 @@ using System.Text.Json.Serialization;
 
 namespace Apace.ApiServer;
 
-public sealed record class Config(Config.LoginR Login, Config.XboxLiveR XboxLive, Config.PlayfabApiR PlayfabApi)
+public sealed record class Config(Config.LoginR Login, Config.XboxLiveR XboxLive, Config.PlayfabApiR PlayfabApi, bool AcceptLegacyTokenSecrets = true)
 {
     private const int TokenSecretByteLength = 64;
     private const int SessionKeyByteLength = 32;
+
+    /// <summary>
+    /// The secrets a token may be verified against: the current one first,
+    /// then the legacy public Solace secrets for tokens clients cached before
+    /// the switch to random per-installation secrets (see
+    /// <see cref="LegacyTokenSecrets"/>). Nothing is ever signed with the
+    /// legacy secrets.
+    /// </summary>
+    public byte[][] VerificationSecrets(byte[] currentSecret, byte[] legacySecret)
+        => AcceptLegacyTokenSecrets ? [currentSecret, legacySecret] : [currentSecret];
 
     // the secrets are generated randomly per installation (and persisted in the freshly created api_config.json),
     // the previous hardcoded defaults were the public upstream Solace secrets, so anyone could forge tokens for any server using them

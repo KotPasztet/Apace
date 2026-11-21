@@ -186,7 +186,7 @@ internal sealed partial class LoginController : ApaceControllerBase
         Tokens.Live.UserToken? tokenData;
         try
         {
-            tokenData = JwtUtils.Verify<Tokens.Live.UserToken>(userToken, config.Login.UserTokenSecretBytes, allowExpired: true)?.Data;
+            tokenData = JwtUtils.VerifyAny<Tokens.Live.UserToken>(userToken, config.VerificationSecrets(config.Login.UserTokenSecretBytes, LegacyTokenSecrets.UserTokenSecretBytes), allowExpired: true)?.Data;
         }
         catch (FormatException ex)
         {
@@ -462,9 +462,9 @@ internal sealed partial class LoginController : ApaceControllerBase
                 return TypedResults.BadRequest();
             }
 
-            var userToken = JwtUtils.Verify<Tokens.Live.UserToken>(userTokenString, config.Login.UserTokenSecretBytes, allowExpired: true);
+            var userToken = JwtUtils.VerifyAny<Tokens.Live.UserToken>(userTokenString, config.VerificationSecrets(config.Login.UserTokenSecretBytes, LegacyTokenSecrets.UserTokenSecretBytes), allowExpired: true);
 #pragma warning disable IDE0059 // Unnecessary assignment of a value
-            var deviceToken = JwtUtils.Verify<Tokens.Live.DeviceToken>(deviceTokenString, config.Login.DeviceTokenSecretBytes, allowExpired: true);
+            var deviceToken = JwtUtils.VerifyAny<Tokens.Live.DeviceToken>(deviceTokenString, config.VerificationSecrets(config.Login.DeviceTokenSecretBytes, LegacyTokenSecrets.DeviceTokenSecretBytes), allowExpired: true);
 #pragma warning restore IDE0059 // Unnecessary assignment of a value
 
             if (userToken is null || userToken.Expired is true)
