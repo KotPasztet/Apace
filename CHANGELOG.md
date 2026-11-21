@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased (dev) — every catalog cosmetic is free (no achievement gates)
+
+> The dressing room showed 82 cosmetics as locked behind Minecraft/Earth achievements, and 29 more reward-only items could not be acquired at all. Everything is now a normal free offer.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **All cosmetics are now free and ungated**: stripped the `is_achievement` / `earth_achievement` / `vanilla_achievement` tags from all 82 achievement-gated catalog items (the MCE client shows those as locked behind achievements and refuses to acquire them) and flipped `Purchasable` to true on the 29 reward-only items (the "Hero's" set, event eyes/mouths etc.). Prices were already 0 everywhere, so every offer is now a plain free item like the Apace Cape. `hidden_offer` items stay hidden (they never appeared in the dressing room). The built-in Bold Rabbit Feet shop item had the same achievement tags hardcoded in `CatalogController` — removed there as well.
+
 ## Unreleased (dev) — login secrets survive redeploys, Data Management tab fixed
 
 > Two deployment-level bugs: every redeploy locked all clients out in a 401 loop on user/authenticate (login secrets rotated on every boot), and the Data Management tab of System Configuration rendered completely empty. A second redeploy killer — the Genoa session key ring living in the container layer — is fixed here as well.

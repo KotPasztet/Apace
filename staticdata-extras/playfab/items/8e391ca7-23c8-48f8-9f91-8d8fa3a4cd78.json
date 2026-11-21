@@ -1,5 +1,5 @@
 {
-  "Purchasable": false,
+  "Purchasable": true,
   "Data": {
     "Type": "Persona",
     "PieceType": "persona_feet",
