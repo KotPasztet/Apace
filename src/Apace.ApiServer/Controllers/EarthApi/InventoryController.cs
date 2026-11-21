@@ -38,10 +38,52 @@ internal sealed class InventoryController : ControllerBase
         Journal journalModel;
         try
         {
-            EarthDB.Results results = await new EarthDB.Query(false)
+            // Items can exist in the inventory without a journal entry (e.g. added through
+            // the panel's inventory editor before it started writing journal entries too).
+            // The journal lookups below used to null-forgive those missing entries and crash
+            // the whole request, leaving the client without an inventory — so backfill any
+            // missing entries first and persist them, then read everything back.
+            EarthDB.Results results = await new EarthDB.Query(true)
                 .Get("inventory", playerId, typeof(DB.Models.Player.Inventory))
-                .Get("hotbar", playerId, typeof(Hotbar))
                 .Get("journal", playerId, typeof(Journal))
+                .Get("hotbar", playerId, typeof(Hotbar))
+                .Then(results1 =>
+                {
+                    DB.Models.Player.Inventory inventory = results1.Get<DB.Models.Player.Inventory>("inventory");
+                    Journal journal = results1.Get<Journal>("journal");
+
+                    long timestamp = HttpContext.GetTimestamp();
+                    bool journalChanged = false;
+
+                    foreach (var item in inventory.StackableItems)
+                    {
+                        if (journal.GetItem(item.Id) is null)
+                        {
+                            journal.AddCollectedItem(item.Id, timestamp, 0);
+                            journalChanged = true;
+                        }
+                    }
+
+                    foreach (var item in inventory.NonStackableItems)
+                    {
+                        if (journal.GetItem(item.Id) is null)
+                        {
+                            journal.AddCollectedItem(item.Id, timestamp, 0);
+                            journalChanged = true;
+                        }
+                    }
+
+                    if (!journalChanged)
+                    {
+                        return new EarthDB.Query(false);
+                    }
+
+                    return new EarthDB.Query(true)
+                        .Update("journal", playerId, journal)
+                        .Get("inventory", playerId, typeof(DB.Models.Player.Inventory))
+                        .Get("journal", playerId, typeof(Journal))
+                        .Get("hotbar", playerId, typeof(Hotbar));
+                })
                 .ExecuteAsync(earthDB, cancellationToken);
 
             inventoryModel = results.Get<DB.Models.Player.Inventory>("inventory");
@@ -164,7 +206,7 @@ internal sealed class InventoryController : ControllerBase
             item.Uuid,
             item.Count,
             item.InstanceId,
-            item.InstanceId is not null ? ItemWear.WearToHealth(item.Uuid, inventoryModel.GetItemInstance(item.Uuid, item.InstanceId)!.Wear, catalog.ItemsCatalog) : 0.0f
+            item.InstanceId is not null ? ItemWear.WearToHealth(item.Uuid, inventoryModel.GetItemInstance(item.Uuid, item.InstanceId)?.Wear ?? 0, catalog.ItemsCatalog) : 0.0f
         ) : null)];
 
         string resp = Json.Serialize(hotbarItems);
