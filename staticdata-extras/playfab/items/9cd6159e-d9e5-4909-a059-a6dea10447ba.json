@@ -1,0 +1,57 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "00675e3d-9893-42a8-a70c-c99402ae75cb",
+    "OfferId": "7423f11b-b83c-4dd4-82c3-01b0277f00c7",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Cluckshroom Hood",
+  "Description": "§",
+  "ThumbnailImageId": "1a137277-5d2c-4995-bbb6-dbae0842c548",
+  "CreationDate": "2020-12-07T22:47:50.701Z",
+  "LastModifiedDate": "2026-06-10T20:29:16.261Z",
+  "StartDate": "2020-12-07T22:47:50.701Z",
+  "Id": "9cd6159e-d9e5-4909-a059-a6dea10447ba",
+  "FriendlyId": "7423f11b-b83c-4dd4-82c3-01b0277f00c7",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "9cd6159e-d9e5-4909-a059-a6dea10447ba",
+    "00675e3d-9893-42a8-a70c-c99402ae75cb",
+    "earth_achievement",
+    "is_achievement",
+    "tag.hood",
+    "tag.red",
+    "tag.mushroom",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Red",
+        "Mushroom"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Red",
+        "Mushroom"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "d4539f11-00de-4f48-bd2f-82684b0d093a",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

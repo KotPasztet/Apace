@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "3c6ce6f7-87dd-4e96-9ef2-1906c06df604",
+    "OfferId": "bc0be143-e1f6-4f8c-a88a-4c9a59ff119a",
+    "Version": "1.0.2",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Buzzcut",
+  "Description": "§",
+  "ThumbnailImageId": "a6f61d28-e1de-46ba-82f2-27226ea1aa0a",
+  "CreationDate": "2019-08-30T01:04:24.823Z",
+  "LastModifiedDate": "2026-06-10T18:49:15.351Z",
+  "StartDate": "2019-08-30T01:04:24.823Z",
+  "Id": "c52276e1-53f1-44ca-97c7-d52198db8d69",
+  "FriendlyId": "bc0be143-e1f6-4f8c-a88a-4c9a59ff119a",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "c52276e1-53f1-44ca-97c7-d52198db8d69",
+    "3c6ce6f7-87dd-4e96-9ef2-1906c06df604",
+    "tag.hair",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "e7a75f49-935b-4af1-b537-9a6dc6464d06",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

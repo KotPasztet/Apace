@@ -1,0 +1,59 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_feet",
+    "PieceId": "54045247-66f8-4e86-a854-56a935b4f1f8",
+    "OfferId": "834fd57d-20cf-4113-8d16-64b711978d46",
+    "Version": "1.0.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Astronaut Boots",
+  "Description": "§",
+  "ThumbnailImageId": "7ab97b77-2680-419f-9c82-0337d99f7227",
+  "CreationDate": "2020-11-24T00:43:06.814Z",
+  "LastModifiedDate": "2026-06-10T20:29:15.709Z",
+  "StartDate": "2020-11-24T00:43:06.814Z",
+  "Id": "5d7abb16-8a02-499b-83a7-102bfe233c51",
+  "FriendlyId": "834fd57d-20cf-4113-8d16-64b711978d46",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "5d7abb16-8a02-499b-83a7-102bfe233c51",
+    "54045247-66f8-4e86-a854-56a935b4f1f8",
+    "earth_achievement",
+    "is_achievement",
+    "tag.space",
+    "tag.boots",
+    "tag.white",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Space",
+        "Boots",
+        "White"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Space",
+        "Boots",
+        "White"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "838c09be-19af-46c9-a3de-a6761c3225f9",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

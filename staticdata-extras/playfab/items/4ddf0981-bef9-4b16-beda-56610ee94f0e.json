@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_mouth",
+    "PieceId": "9b22787a-86d7-467f-9019-7e8cece2fc68",
+    "OfferId": "0c754956-64ff-467c-946e-6062a1097d30",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Chewing",
+  "Description": "§",
+  "ThumbnailImageId": "bafb24ac-6e84-466b-8a99-e2fd4d5946ee",
+  "CreationDate": "2019-08-30T01:11:37.354Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.242Z",
+  "StartDate": "2019-08-30T01:11:37.354Z",
+  "Id": "4ddf0981-bef9-4b16-beda-56610ee94f0e",
+  "FriendlyId": "0c754956-64ff-467c-946e-6062a1097d30",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "4ddf0981-bef9-4b16-beda-56610ee94f0e",
+    "9b22787a-86d7-467f-9019-7e8cece2fc68",
+    "tag.mouth",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "2c19d13c-006b-46b4-89ca-34abd2831e10",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_skin",
+    "PieceId": "009316c3-7065-42b2-b045-532c664ee3ce",
+    "OfferId": "af407d19-ea2b-4ef3-9bea-1a881f5d3903",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Elderly Texture",
+  "Description": "§",
+  "ThumbnailImageId": "34d577be-b190-4c6c-ae3e-a5df01d4b7eb",
+  "CreationDate": "2020-05-29T16:16:16.205Z",
+  "LastModifiedDate": "2026-06-10T20:25:27.64Z",
+  "StartDate": "2020-05-29T16:16:16.205Z",
+  "Id": "c3e6b59b-e9c3-47d8-80cd-3f322823ae09",
+  "FriendlyId": "af407d19-ea2b-4ef3-9bea-1a881f5d3903",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "c3e6b59b-e9c3-47d8-80cd-3f322823ae09",
+    "009316c3-7065-42b2-b045-532c664ee3ce",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "d1887e5a-94b0-4d22-93f4-3d8f7e481b1c",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

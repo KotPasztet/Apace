@@ -1,0 +1,53 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "dbc41caa-7f88-4936-bcfa-e360588d691a",
+    "OfferId": "cb7c8ebc-81cc-4d86-a4e6-d646a6433a58",
+    "Version": "1.1.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Highwayman's Mask",
+  "Description": "§",
+  "ThumbnailImageId": "84cd504a-c5a7-4006-8997-d37ec49faa32",
+  "CreationDate": "2020-05-28T22:53:44.789Z",
+  "LastModifiedDate": "2026-06-10T20:27:43.934Z",
+  "StartDate": "2020-05-28T22:53:44.789Z",
+  "Id": "21705d8d-820c-4eac-84d3-b1af159f9ca3",
+  "FriendlyId": "cb7c8ebc-81cc-4d86-a4e6-d646a6433a58",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "21705d8d-820c-4eac-84d3-b1af159f9ca3",
+    "dbc41caa-7f88-4936-bcfa-e360588d691a",
+    "is_achievement",
+    "earth_achievement",
+    "tag.face",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Face"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Face"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "acf44b25-e770-4b09-afa4-351d7c48fee4",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

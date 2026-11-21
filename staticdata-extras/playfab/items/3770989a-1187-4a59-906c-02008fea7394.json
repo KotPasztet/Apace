@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "296469da-3995-426d-b478-e666fdec82c3",
+    "OfferId": "7beef37e-3f18-47e0-bc49-95455d77aed8",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Low Bun",
+  "Description": "§",
+  "ThumbnailImageId": "7e795aea-075f-4046-b8bd-adf502559907",
+  "CreationDate": "2020-01-29T23:07:03.147Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.966Z",
+  "StartDate": "2020-01-29T23:07:03.147Z",
+  "Id": "3770989a-1187-4a59-906c-02008fea7394",
+  "FriendlyId": "7beef37e-3f18-47e0-bc49-95455d77aed8",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "3770989a-1187-4a59-906c-02008fea7394",
+    "296469da-3995-426d-b478-e666fdec82c3",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f76cde66-d69a-438a-9ab0-6d717c9a2449",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,52 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_face_accessory",
+    "PieceId": "19c2ce58-549c-4b74-a388-a22df30d37d7",
+    "OfferId": "8ae61303-bf0a-4eff-99d5-7c540f001764",
+    "Version": "1.0.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Upper Framed Glasses",
+  "Description": "§",
+  "ThumbnailImageId": "95bccb91-c67a-45ed-a19b-16467ba09dc9",
+  "CreationDate": "2019-08-30T01:09:51.467Z",
+  "LastModifiedDate": "2026-06-10T18:49:15.811Z",
+  "StartDate": "2019-08-30T01:09:51.467Z",
+  "Id": "336ca2f6-cca5-470e-9361-8293433e078a",
+  "FriendlyId": "8ae61303-bf0a-4eff-99d5-7c540f001764",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "336ca2f6-cca5-470e-9361-8293433e078a",
+    "19c2ce58-549c-4b74-a388-a22df30d37d7",
+    "tag.glasses",
+    "tag.face",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Face"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Face"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "703a8d3b-a0f3-43b9-8adb-dbf4ed584d3c",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

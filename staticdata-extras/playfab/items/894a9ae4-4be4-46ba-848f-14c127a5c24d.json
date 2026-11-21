@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "a7d20555-e48e-40af-b2f3-ca4b9c046050",
+    "OfferId": "b51007b5-15fb-48b0-a9ba-4ab846abd070",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Basic Hoodie",
+  "Description": "§",
+  "ThumbnailImageId": "d697bee4-ca83-41b8-befd-5f6695658d7a",
+  "CreationDate": "2019-08-30T01:10:17.178Z",
+  "LastModifiedDate": "2026-06-10T18:49:57.541Z",
+  "StartDate": "2019-08-30T01:10:17.178Z",
+  "Id": "894a9ae4-4be4-46ba-848f-14c127a5c24d",
+  "FriendlyId": "b51007b5-15fb-48b0-a9ba-4ab846abd070",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "894a9ae4-4be4-46ba-848f-14c127a5c24d",
+    "a7d20555-e48e-40af-b2f3-ca4b9c046050",
+    "tag.hoodie",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "7ee00f20-893f-4454-bf93-0a64f6be3542",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

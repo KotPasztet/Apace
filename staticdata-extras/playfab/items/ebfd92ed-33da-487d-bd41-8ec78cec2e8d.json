@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_skin",
+    "PieceId": "8bd03856-91c1-4ece-a09d-12c4aba0f6ac",
+    "OfferId": "8dab0991-0a6b-4c3d-887d-00c06d587048",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Freckled",
+  "Description": "§",
+  "ThumbnailImageId": "524df3e6-637c-488c-9d95-f07699eede4a",
+  "CreationDate": "2019-08-30T01:07:45.13Z",
+  "LastModifiedDate": "2026-06-10T22:03:13.649Z",
+  "StartDate": "2019-08-30T01:07:45.13Z",
+  "Id": "ebfd92ed-33da-487d-bd41-8ec78cec2e8d",
+  "FriendlyId": "8dab0991-0a6b-4c3d-887d-00c06d587048",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "ebfd92ed-33da-487d-bd41-8ec78cec2e8d",
+    "8bd03856-91c1-4ece-a09d-12c4aba0f6ac",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "a57ac1a8-9321-4f64-b325-1eb997d0d7b5",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

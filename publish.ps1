@@ -66,6 +66,15 @@ foreach ($buildProfile in $profiles) {
 
     Copy-Item -Path "staticdata" -Destination "$publishDir/staticdata" -Recurse -Force
 
+    # Overlay Apace-shipped staticdata on top of the Solace.StaticData submodule:
+    # staticdata-extras mirrors the staticdata layout (e.g. playfab/items/*.json —
+    # the built-in persona dressing room items) and its files win over the
+    # submodule's. This keeps shipped data versioned with the code that serves it
+    # without needing write access to the upstream staticdata repo.
+    if (Test-Path "staticdata-extras") {
+        Copy-Item -Path "staticdata-extras/*" -Destination "$publishDir/staticdata" -Recurse -Force
+    }
+
     # Copy server JARs from repo root into the staticdata directory that the launcher reads at runtime.
     # (The MSBuild copy targets in Apace.LauncherUI.csproj copy to $(PublishDir)/staticdata,
     # but the launcher resolves StaticDataDir as ../staticdata relative to the exe — i.e. the

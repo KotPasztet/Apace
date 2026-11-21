@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "7aa75f98-14c3-4cc9-a616-76238db98687",
+    "OfferId": "6445bcdc-0af6-4a95-ab90-8e5aef1fd86f",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Natural Curls",
+  "Description": "§",
+  "ThumbnailImageId": "e33bb38d-9de1-42b6-b0c2-925a1a566926",
+  "CreationDate": "2020-03-03T17:14:06.569Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.11Z",
+  "StartDate": "2020-03-03T17:14:06.569Z",
+  "Id": "1f69cf65-d553-4015-be26-b693ce3b9a98",
+  "FriendlyId": "6445bcdc-0af6-4a95-ab90-8e5aef1fd86f",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "1f69cf65-d553-4015-be26-b693ce3b9a98",
+    "7aa75f98-14c3-4cc9-a616-76238db98687",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "24df76df-baac-4ec4-9ea9-e718f0cb1945",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

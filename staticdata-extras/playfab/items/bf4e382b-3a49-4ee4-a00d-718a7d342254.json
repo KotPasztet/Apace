@@ -1,0 +1,62 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "10f113b2-7eea-4a22-b26f-d03523b0bea1",
+    "OfferId": "32d8d6a7-1157-4a4b-aaaf-9214aace4cd4",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Wizard Hat",
+  "Description": "§",
+  "ThumbnailImageId": "7aedf15e-010a-4f28-8a17-6adb821d93ae",
+  "CreationDate": "2020-11-24T00:43:54.181Z",
+  "LastModifiedDate": "2026-06-10T20:29:15.726Z",
+  "StartDate": "2020-11-24T00:43:54.181Z",
+  "Id": "bf4e382b-3a49-4ee4-a00d-718a7d342254",
+  "FriendlyId": "32d8d6a7-1157-4a4b-aaaf-9214aace4cd4",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "bf4e382b-3a49-4ee4-a00d-718a7d342254",
+    "10f113b2-7eea-4a22-b26f-d03523b0bea1",
+    "earth_achievement",
+    "is_achievement",
+    "tag.magic",
+    "tag.hat",
+    "tag.witch",
+    "tag.purple",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Magic",
+        "Hat",
+        "Witch",
+        "Purple"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Magic",
+        "Hat",
+        "Witch",
+        "Purple"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "efc25e08-b702-46f7-a39a-43ff14cafedd",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

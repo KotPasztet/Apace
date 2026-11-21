@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "06cf9488-4bd0-477f-a5d9-cac2873e7ad5",
+    "OfferId": "842870e3-1a00-4676-8e3b-5fb2f6171263",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Wizard Cloak",
+  "Description": "§",
+  "ThumbnailImageId": "f1b8b779-aa11-4295-8212-c6ed6d1861c3",
+  "CreationDate": "2020-10-01T18:46:46.313Z",
+  "LastModifiedDate": "2026-06-10T20:26:29.126Z",
+  "StartDate": "2020-10-01T18:46:46.313Z",
+  "Id": "a02ef943-fa2c-4b5b-82f1-8891177f5604",
+  "FriendlyId": "842870e3-1a00-4676-8e3b-5fb2f6171263",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "a02ef943-fa2c-4b5b-82f1-8891177f5604",
+    "06cf9488-4bd0-477f-a5d9-cac2873e7ad5",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "9dc61994-4e41-494e-a8dd-4b6b3f87785f",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

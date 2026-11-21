@@ -1,0 +1,40 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_mouth",
+    "PieceId": "fb7fcd8f-febf-4cd2-a76b-8a5b352ae7ad",
+    "OfferId": "55dbbc7a-cc34-433c-848f-310316001397",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Extra Wide Smile",
+  "Description": "§",
+  "ThumbnailImageId": "7ccbd4d8-48d8-47d8-b489-baf1c0d49c41",
+  "CreationDate": "2019-08-30T01:10:51.48Z",
+  "LastModifiedDate": "2026-06-11T02:17:58.945Z",
+  "StartDate": "2019-08-30T01:10:51.48Z",
+  "Id": "15ce9809-e0ff-4c12-9fec-55537e9da910",
+  "FriendlyId": "55dbbc7a-cc34-433c-848f-310316001397",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "15ce9809-e0ff-4c12-9fec-55537e9da910",
+    "fb7fcd8f-febf-4cd2-a76b-8a5b352ae7ad",
+    "tag.mouth",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "436b2230-2e96-4013-87ab-d755f5cc4806",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

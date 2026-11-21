@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "eec11e83-4c7b-4c8e-91ab-c37083d4e136",
+    "OfferId": "42fc38b2-237b-4ff3-ad6f-2eb27dc5d837",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Lacy Dress",
+  "Description": "§",
+  "ThumbnailImageId": "d332700f-624c-4e74-92fd-b89907a1d29d",
+  "CreationDate": "2019-08-30T01:08:56.798Z",
+  "LastModifiedDate": "2026-06-10T18:49:57.594Z",
+  "StartDate": "2019-08-30T01:08:56.798Z",
+  "Id": "c6ea9f28-b1f5-4414-9726-7dad2da3b0bb",
+  "FriendlyId": "42fc38b2-237b-4ff3-ad6f-2eb27dc5d837",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "c6ea9f28-b1f5-4414-9726-7dad2da3b0bb",
+    "eec11e83-4c7b-4c8e-91ab-c37083d4e136",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "a2e68ae7-4412-41e6-9c35-19d3b606567e",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

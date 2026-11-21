@@ -1,0 +1,53 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_back",
+    "PieceId": "f52e5ea6-d541-44d6-9c37-54cad9b0ff95",
+    "OfferId": "08b494e9-aa45-48a1-927b-a08237db506f",
+    "Version": "1.1.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Archers Quiver",
+  "Description": "§",
+  "ThumbnailImageId": "4ecea6ac-2765-4e7f-8f7c-0fe952988326",
+  "CreationDate": "2020-05-18T16:40:31.46Z",
+  "LastModifiedDate": "2026-06-10T22:03:45.6Z",
+  "StartDate": "2020-05-18T16:40:31.46Z",
+  "Id": "f5a1bf60-8208-41e0-b015-55c3f7160f19",
+  "FriendlyId": "08b494e9-aa45-48a1-927b-a08237db506f",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "f5a1bf60-8208-41e0-b015-55c3f7160f19",
+    "f52e5ea6-d541-44d6-9c37-54cad9b0ff95",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.backpack",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Backpack"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Backpack"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "fa7ceca1-eb32-4ac7-8460-435d873e6cdd",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

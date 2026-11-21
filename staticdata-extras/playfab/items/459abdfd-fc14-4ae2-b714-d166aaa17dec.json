@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "c7512426-2166-4564-9a30-f5a6b128475e",
+    "OfferId": "63bd6332-ca73-474b-b37a-8e49fe6e70a6",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Mo-Quaff",
+  "Description": "§",
+  "ThumbnailImageId": "b30f427f-3288-4717-ab7b-f6f6c1f4f508",
+  "CreationDate": "2020-05-22T15:59:20.179Z",
+  "LastModifiedDate": "2026-06-10T22:06:07.176Z",
+  "StartDate": "2020-05-22T15:59:20.179Z",
+  "Id": "459abdfd-fc14-4ae2-b714-d166aaa17dec",
+  "FriendlyId": "63bd6332-ca73-474b-b37a-8e49fe6e70a6",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "459abdfd-fc14-4ae2-b714-d166aaa17dec",
+    "c7512426-2166-4564-9a30-f5a6b128475e",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f398819c-caf6-4a4b-a47a-2fd5262f8481",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

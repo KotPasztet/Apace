@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_feet",
+    "PieceId": "7d21103d-11ae-4768-a88e-65b5c24a5a79",
+    "OfferId": "aa6f1077-56a7-4639-91ef-9056ff7e46ac",
+    "Version": "1.0.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Rogue Archer Boots",
+  "Description": "§",
+  "ThumbnailImageId": "6fd1e46b-97f4-4dd3-953f-0bfd0e47fe65",
+  "CreationDate": "2020-09-11T18:13:45.057Z",
+  "LastModifiedDate": "2026-06-10T20:27:13.668Z",
+  "StartDate": "2020-09-11T18:13:45.057Z",
+  "Id": "a90ce6f2-f438-48d0-82ee-d3702dad3da6",
+  "FriendlyId": "aa6f1077-56a7-4639-91ef-9056ff7e46ac",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "a90ce6f2-f438-48d0-82ee-d3702dad3da6",
+    "7d21103d-11ae-4768-a88e-65b5c24a5a79",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "2f8ba772-eccc-4302-9af3-d939b0da7b1d",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

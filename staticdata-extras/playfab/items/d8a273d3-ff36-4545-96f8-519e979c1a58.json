@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "edf14a52-474c-4e26-b038-dc9a37aa530f",
+    "OfferId": "73ae2f6f-4eea-4a65-aaf1-3ae97423de7d",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Cyclops-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "b67daad6-b759-4252-9ef9-01df3bff331c",
+  "CreationDate": "2019-08-30T01:09:55.246Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.013Z",
+  "StartDate": "2019-08-30T01:09:55.246Z",
+  "Id": "d8a273d3-ff36-4545-96f8-519e979c1a58",
+  "FriendlyId": "73ae2f6f-4eea-4a65-aaf1-3ae97423de7d",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "d8a273d3-ff36-4545-96f8-519e979c1a58",
+    "edf14a52-474c-4e26-b038-dc9a37aa530f",
+    "tag.eyes",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Eyes"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Eyes"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "660a6c2b-26c4-4f6e-8e1a-2b71679f8617",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

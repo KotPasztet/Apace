@@ -1,0 +1,53 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hood",
+    "PieceId": "10dba15a-6202-4f48-9c75-52bc64d73042",
+    "OfferId": "e099095c-a9fc-46e7-9095-7b95446f88e1",
+    "Version": "1.0.2",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Witch's Robe",
+  "Description": "§",
+  "ThumbnailImageId": "2189ccb9-49f1-43c8-b418-2a78cbba2a5f",
+  "CreationDate": "2020-11-24T17:32:13.141Z",
+  "LastModifiedDate": "2026-06-10T20:29:15.526Z",
+  "StartDate": "2020-11-24T17:32:13.141Z",
+  "Id": "0134ddfb-9759-40f6-8e08-3d49e654ffe5",
+  "FriendlyId": "e099095c-a9fc-46e7-9095-7b95446f88e1",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "0134ddfb-9759-40f6-8e08-3d49e654ffe5",
+    "10dba15a-6202-4f48-9c75-52bc64d73042",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.jacket",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Jacket"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Jacket"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f7b6cb1b-a20e-4c13-8b48-5059b8e0e75e",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

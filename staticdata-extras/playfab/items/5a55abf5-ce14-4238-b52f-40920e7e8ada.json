@@ -1,0 +1,40 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "c734a32e-6a44-4319-8801-7fbafa762683",
+    "OfferId": "5c621a48-dca1-4e60-8050-3d0f7fd8c1ce",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Crab",
+  "Description": "§",
+  "ThumbnailImageId": "bff2db80-957a-4a5d-b615-86a669f619e5",
+  "CreationDate": "2020-07-21T03:43:46.482Z",
+  "LastModifiedDate": "2026-06-10T20:25:57.292Z",
+  "StartDate": "2020-07-21T03:43:46.482Z",
+  "Id": "5a55abf5-ce14-4238-b52f-40920e7e8ada",
+  "FriendlyId": "5c621a48-dca1-4e60-8050-3d0f7fd8c1ce",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "5a55abf5-ce14-4238-b52f-40920e7e8ada",
+    "c734a32e-6a44-4319-8801-7fbafa762683",
+    "hidden_offer",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "65e08387-4f34-4908-8452-5d7b3aed0f25",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

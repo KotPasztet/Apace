@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_arms",
+    "PieceId": "bf01a13f-f00d-4013-bfa0-ca9f045e83b2",
+    "OfferId": "de88b8f3-9022-4efe-8333-3b4869c2ae9a",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Prosthetic Arm",
+  "Description": "§",
+  "ThumbnailImageId": "88633bbf-5650-4ee3-8bda-a8e2568c72c0",
+  "CreationDate": "2019-08-30T01:12:07.359Z",
+  "LastModifiedDate": "2026-06-10T18:50:11.399Z",
+  "StartDate": "2019-08-30T01:12:07.359Z",
+  "Id": "e3f4e021-8c44-4337-a798-426fb4bf17aa",
+  "FriendlyId": "de88b8f3-9022-4efe-8333-3b4869c2ae9a",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "e3f4e021-8c44-4337-a798-426fb4bf17aa",
+    "bf01a13f-f00d-4013-bfa0-ca9f045e83b2",
+    "tag.prosthetic_arm",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "3a015cf2-7cd0-4ad9-a8aa-9ae7def8b66f",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

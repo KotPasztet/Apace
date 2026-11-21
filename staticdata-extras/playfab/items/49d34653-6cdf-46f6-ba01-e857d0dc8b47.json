@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "1686c17f-be5d-48fb-a84a-cfcab9ad60a5",
+    "OfferId": "573650fa-4309-48ef-af9a-ce6dc454f41f",
+    "Version": "1.0.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Rainbow Scarf",
+  "Description": "§",
+  "ThumbnailImageId": "ceb772bb-29ae-4ff5-a9b6-cedd45d0b9a8",
+  "CreationDate": "2020-05-20T22:51:08.181Z",
+  "LastModifiedDate": "2026-06-10T20:25:12.891Z",
+  "StartDate": "2020-05-20T22:51:08.181Z",
+  "Id": "49d34653-6cdf-46f6-ba01-e857d0dc8b47",
+  "FriendlyId": "573650fa-4309-48ef-af9a-ce6dc454f41f",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "49d34653-6cdf-46f6-ba01-e857d0dc8b47",
+    "1686c17f-be5d-48fb-a84a-cfcab9ad60a5",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "98873b67-ac13-4e33-b23a-b93655ff9558",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,42 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "c3be6264-478d-4c75-8aa0-45b4b9dec231",
+    "OfferId": "332c1293-553b-4a35-92d6-180269d66a29",
+    "Version": "1.2.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Wolf Mask",
+  "Description": "§",
+  "ThumbnailImageId": "a351ad62-53a0-42ce-8443-d26ad24fcbef",
+  "CreationDate": "2020-05-18T16:36:10.306Z",
+  "LastModifiedDate": "2026-06-10T22:03:30.431Z",
+  "StartDate": "2020-05-18T16:36:10.306Z",
+  "Id": "8b1252a1-c2a4-48a7-9db4-7e591e4608d2",
+  "FriendlyId": "332c1293-553b-4a35-92d6-180269d66a29",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "8b1252a1-c2a4-48a7-9db4-7e591e4608d2",
+    "c3be6264-478d-4c75-8aa0-45b4b9dec231",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.mask",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f9e7b97b-2b4f-496a-81e9-b82788361f67",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

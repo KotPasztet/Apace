@@ -1,0 +1,53 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "ddebd517-a5f6-4814-a376-56a0c0baf247",
+    "OfferId": "84af08f5-385b-457a-90c1-c5f5e7979369",
+    "Version": "1.2.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Chefs Hat",
+  "Description": "§",
+  "ThumbnailImageId": "d74b1fad-a52f-4eb0-a919-d0b585c076a9",
+  "CreationDate": "2020-05-18T16:38:26.093Z",
+  "LastModifiedDate": "2026-06-10T22:03:28.709Z",
+  "StartDate": "2020-05-18T16:38:26.093Z",
+  "Id": "63f3fa37-ed83-4090-85b0-639bc7a446d7",
+  "FriendlyId": "84af08f5-385b-457a-90c1-c5f5e7979369",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "63f3fa37-ed83-4090-85b0-639bc7a446d7",
+    "ddebd517-a5f6-4814-a376-56a0c0baf247",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.hat",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Hat"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Hat"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "da342fad-ee4b-4804-b4f4-c5505daf1e92",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

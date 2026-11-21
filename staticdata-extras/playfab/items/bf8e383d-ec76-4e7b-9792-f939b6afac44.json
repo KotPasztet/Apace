@@ -1,0 +1,62 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "e60ac654-7c41-45fc-bb16-8d128be40d05",
+    "OfferId": "11b49955-f2aa-41a6-b608-8a0419395829",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Moobloom Hood",
+  "Description": "§",
+  "ThumbnailImageId": "e1588ccc-29f1-4389-99d6-aa9402ec62bc",
+  "CreationDate": "2020-11-24T00:44:44.309Z",
+  "LastModifiedDate": "2026-06-10T20:29:15.825Z",
+  "StartDate": "2020-11-24T00:44:44.309Z",
+  "Id": "bf8e383d-ec76-4e7b-9792-f939b6afac44",
+  "FriendlyId": "11b49955-f2aa-41a6-b608-8a0419395829",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "bf8e383d-ec76-4e7b-9792-f939b6afac44",
+    "e60ac654-7c41-45fc-bb16-8d128be40d05",
+    "is_achievement",
+    "earth_achievement",
+    "tag.mob",
+    "tag.yellow",
+    "tag.flower",
+    "tag.animal",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Mob",
+        "Yellow",
+        "Flower",
+        "Animal"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Mob",
+        "Yellow",
+        "Flower",
+        "Animal"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "22096852-bdd4-416c-8ba6-3b7302d4c1f2",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

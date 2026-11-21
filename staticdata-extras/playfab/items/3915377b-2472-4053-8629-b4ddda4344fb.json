@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "0c969139-74f8-4d50-abe7-e34024b1e045",
+    "OfferId": "dee5f85e-6b94-403e-815c-d59bc03ad0e1",
+    "Version": "1.0.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Simple Beanie",
+  "Description": "§",
+  "ThumbnailImageId": "39352f8a-b113-4935-8168-52e4a5328750",
+  "CreationDate": "2019-08-30T01:06:29.125Z",
+  "LastModifiedDate": "2026-06-10T18:49:15.506Z",
+  "StartDate": "2019-08-30T01:06:29.125Z",
+  "Id": "3915377b-2472-4053-8629-b4ddda4344fb",
+  "FriendlyId": "dee5f85e-6b94-403e-815c-d59bc03ad0e1",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "3915377b-2472-4053-8629-b4ddda4344fb",
+    "0c969139-74f8-4d50-abe7-e34024b1e045",
+    "tag.hat",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Hat"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Hat"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "03363894-2eb9-472c-88db-b3b256cc0996",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

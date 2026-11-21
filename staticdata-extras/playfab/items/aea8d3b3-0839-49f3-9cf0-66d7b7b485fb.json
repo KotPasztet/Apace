@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "3febe1b8-a861-4174-a06f-a88de3773d78",
+    "OfferId": "3ab842e6-9245-445b-a69d-31887b06c8fb",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Toon-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "2de546b7-b702-41f4-a3ef-2b2017febab7",
+  "CreationDate": "2019-08-30T01:07:08.354Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.147Z",
+  "StartDate": "2019-08-30T01:07:08.354Z",
+  "Id": "aea8d3b3-0839-49f3-9cf0-66d7b7b485fb",
+  "FriendlyId": "3ab842e6-9245-445b-a69d-31887b06c8fb",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "aea8d3b3-0839-49f3-9cf0-66d7b7b485fb",
+    "3febe1b8-a861-4174-a06f-a88de3773d78",
+    "tag.eyes",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Eyes"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Eyes"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f80b46e8-3d2c-4e14-9c50-b3e47646badb",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

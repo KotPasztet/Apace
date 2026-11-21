@@ -1,0 +1,39 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_mouth",
+    "PieceId": "03260f7d-0ae5-4056-841a-bd2cee065c4a",
+    "OfferId": "af5c61f6-dbb7-43d3-8ca5-453df041c927",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Shy Blush",
+  "Description": "§",
+  "ThumbnailImageId": "57a0e16d-b717-4810-a0a7-688876c3dc8a",
+  "CreationDate": "2019-08-30T01:10:40.102Z",
+  "LastModifiedDate": "2026-06-10T18:51:20.481Z",
+  "StartDate": "2019-08-30T01:10:40.102Z",
+  "Id": "76f94877-d1d7-464d-a71b-106a61793794",
+  "FriendlyId": "af5c61f6-dbb7-43d3-8ca5-453df041c927",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "76f94877-d1d7-464d-a71b-106a61793794",
+    "03260f7d-0ae5-4056-841a-bd2cee065c4a",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "fe4a40df-a7d6-415f-8ef7-883c2e32c0ee",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

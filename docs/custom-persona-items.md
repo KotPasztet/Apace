@@ -47,9 +47,17 @@ Fields:
 
 - `Id` — any unique GUID (the catalog item id). Must not collide with existing items.
 - `FriendlyId` — set it to `OfferId`, like the built-in persona item does.
-- `PieceType` — the dressing room category the item appears in: `persona_skins`
-  (full skins), `persona_body`, `persona_eyes`, `persona_hair`, `persona_mouth`,
-  `persona_feet`, `persona_hands`, `persona_outerwear`, `persona_innerwear`, ...
+- `PieceType` — the dressing room category the item appears in. The values the
+  Minecraft Earth client asks for are the Bedrock character creator piece types:
+  `persona_skin` (base skin textures), `persona_hair`, `persona_eyes`,
+  `persona_mouth`, `persona_face_accessory` (glasses/masks), `persona_head`
+  (hats), `persona_hood` (hoods/cloaks), `persona_top` (shirts/suits),
+  `persona_bottom` (trousers/skirts), `persona_outerwear` (jackets/costumes),
+  `persona_hand` (gloves), `persona_arms`, `persona_legs`, `persona_feet`
+  (boots/shoes), `persona_back` (wings/backpacks), `persona_emote`.
+  (The old hardcoded Bold Rabbit Feet item proves `persona_feet`; the Earth Hero
+  set — an item made *for* MCE — uses `persona_top`/`persona_head`/`persona_hood`/
+  `persona_hand`/`persona_feet`, so these are the client's own category names.)
 - `PieceId` — **the UUID of the persona piece the client applies when the item is
   equipped**. This must be a piece the client actually knows: either one built into
   its resource pack, or one it downloads from the `personabinary` URL. See below.
@@ -64,6 +72,10 @@ Fields:
 
 ## Where to get valid PieceIds
 
+**Apace already ships 231 dressing room items** — see "Built-in dressing room items"
+below. They cover every category, so most servers do not need to hunt for PieceIds
+at all.
+
 The MCE client ships its persona pieces in its resource pack
 (`staticdata/resourcepacks/vanilla.zip` -> `genoa.mcpack`, extracted to
 `staticdata/resourcepacks/genoa_cache` while the panel runs). Run:
@@ -76,9 +88,41 @@ It lists every persona piece definition it can find (uuid, type, parent pack) in
 client's own data. Pieces reported there can be used as `PieceId` with
 `AssetFileName: null` — the client already has them.
 
+Another source of valid (real) pieces is the still-live PlayFab catalog of the
+Minecraft title: log in anonymously (`Client/LoginWithAndroidDeviceID`, TitleId
+`20ca2`), exchange the entity token for a `master_player_account` token
+(`Authentication/GetEntityToken`) and `Catalog/Search` with
+`(contentType eq 'PersonaDurable' and displayProperties/pieceType eq '<type>')` —
+that is where the built-in items below come from. Prefer free 1P items
+(`creatorName` `Minecraft`) created before 2021: the MCE client froze in January
+2021 and does not know newer pieces.
+
 For pieces the client does not have, put a persona piece zip (`.mcpersona`-style:
 manifest with the piece uuid, geometry, textures) into `staticdata/playfab/persona/`
 and reference it by file name in `AssetFileName`.
+
+## Built-in dressing room items
+
+`staticdata-extras/playfab/items/` contains 231 free character creator items
+(fetched from the live catalog with `scripts/generate_persona_items.py`), overlaid
+onto the staticdata submodule at publish time by `publish.ps1`:
+
+- 41 hair, 31 eyes, 18 mouth, 22 top, 15 bottom, 20 outerwear, 13 feet, 34 head,
+  5 hand (incl. Hero's Gloves), 3 hood (incl. Blue Hoodie), 3 arms, 5 legs,
+  5 back, 10 face accessory, 7 base skins
+- includes the **Earth Hero set** (Hero's Top/Cowl/Cloak/Gloves/Boots) — the outfit
+  items made for MCE — and the whole 2019 launch set of default pieces
+  (Buzzcut, Blue Jeans, Work Boots, ...) that the real dressing room showed
+- every item is free (`price: 0`), 1P (`Minecraft`) and created before 2021 —
+  pieces the MCE client knows; `AssetFileName: null` for all of them
+- thumbnails ship in `src/Apace.ApiServer/wwwroot/playfab/images/` and are served
+  at `/playfab/images/<guid>.png`
+
+Removing or editing a built-in item: they are plain JSON files in
+`staticdata/playfab/items/` **inside the published output** (baked into the Docker
+image from `staticdata-extras/`). Edit or delete the file there and restart the Api
+server. Do not add a second file with the same item `Id` anywhere — duplicate ids
+crash the staticdata loader.
 
 ## Diagnosing what the client asks for
 

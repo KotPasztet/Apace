@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_legs",
+    "PieceId": "709cafb0-cdc1-4c04-9f4b-55ffbe25a81f",
+    "OfferId": "0de1729a-97db-4484-bcaa-3b6755b9cbea",
+    "Version": "1.2.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Prosthetic Leg",
+  "Description": "§",
+  "ThumbnailImageId": "8c02748f-babc-4294-92de-7379053b037e",
+  "CreationDate": "2019-08-30T01:11:36.654Z",
+  "LastModifiedDate": "2026-06-10T22:03:13.251Z",
+  "StartDate": "2019-08-30T01:11:36.654Z",
+  "Id": "406ec4f1-5ff9-4348-b364-d97a4341df03",
+  "FriendlyId": "0de1729a-97db-4484-bcaa-3b6755b9cbea",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "406ec4f1-5ff9-4348-b364-d97a4341df03",
+    "709cafb0-cdc1-4c04-9f4b-55ffbe25a81f",
+    "tag.leg",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "d6c21053-6919-4b82-9395-95597d5daec8",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "c5cb1506-47f2-4ac7-9c2f-69c5905acb69",
+    "OfferId": "8d209550-89d8-4108-9eb7-b24d76a2d7f5",
+    "Version": "1.1.3",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Annoyed-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "acbfc42a-072c-4a46-b251-cf6cfb78736f",
+  "CreationDate": "2020-05-05T23:06:11.377Z",
+  "LastModifiedDate": "2026-06-10T23:46:30.581Z",
+  "StartDate": "2020-05-05T23:06:11.377Z",
+  "Id": "e10605c6-071c-4b5d-85c9-e9842b221513",
+  "FriendlyId": "8d209550-89d8-4108-9eb7-b24d76a2d7f5",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "e10605c6-071c-4b5d-85c9-e9842b221513",
+    "c5cb1506-47f2-4ac7-9c2f-69c5905acb69",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "8698a697-4a87-49ac-992c-bc500e20bfc5",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

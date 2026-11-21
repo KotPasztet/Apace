@@ -1,0 +1,40 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "e74a9498-c75e-4eee-ab3a-f96a862c35f4",
+    "OfferId": "c6a3e6af-ef60-4be6-9432-edac6a4d0290",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Block Party Tee",
+  "Description": "§",
+  "ThumbnailImageId": "d8c837bf-9587-4bab-b698-f4d05a864fe4",
+  "CreationDate": "2020-07-21T03:45:04.362Z",
+  "LastModifiedDate": "2026-06-10T20:25:57.287Z",
+  "StartDate": "2020-07-21T03:45:04.362Z",
+  "Id": "24857fea-1933-462f-b9e6-a477e254ec94",
+  "FriendlyId": "c6a3e6af-ef60-4be6-9432-edac6a4d0290",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "24857fea-1933-462f-b9e6-a477e254ec94",
+    "e74a9498-c75e-4eee-ab3a-f96a862c35f4",
+    "hidden_offer",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "6f5a9514-a1a7-4d5f-a682-3699cd0e607a",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

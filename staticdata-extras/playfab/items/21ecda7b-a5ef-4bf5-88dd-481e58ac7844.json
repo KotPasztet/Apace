@@ -1,0 +1,56 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "6aaae3ed-c6c3-4ddb-82d7-418ab9ecaac0",
+    "OfferId": "6ae1742b-4fa1-4c9e-8fef-e3642d2992a1",
+    "Version": "1.1.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Fisherman Hat",
+  "Description": "§",
+  "ThumbnailImageId": "aae23c5a-0633-4bc0-b1a4-31378be1cadb",
+  "CreationDate": "2020-05-18T16:51:14.192Z",
+  "LastModifiedDate": "2026-06-10T22:03:30.432Z",
+  "StartDate": "2020-05-18T16:51:14.192Z",
+  "Id": "21ecda7b-a5ef-4bf5-88dd-481e58ac7844",
+  "FriendlyId": "6ae1742b-4fa1-4c9e-8fef-e3642d2992a1",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "21ecda7b-a5ef-4bf5-88dd-481e58ac7844",
+    "6aaae3ed-c6c3-4ddb-82d7-418ab9ecaac0",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.hat",
+    "tag.fishing",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Hat",
+        "Fishing"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Hat",
+        "Fishing"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "a2909232-03fd-4fa0-9deb-3d3b6a4c48f0",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

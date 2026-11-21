@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_mouth",
+    "PieceId": "98a6329e-e02d-4c6c-8ee7-431734164503",
+    "OfferId": "bfce9901-675b-47f5-b336-184acae9cae1",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Ultrawide",
+  "Description": "§",
+  "ThumbnailImageId": "19ca4d78-8d80-448a-a3c0-a0b7c267c9a4",
+  "CreationDate": "2019-08-30T01:07:41.244Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.617Z",
+  "StartDate": "2019-08-30T01:07:41.244Z",
+  "Id": "1c6c45c6-ff4f-4bb8-8fa1-2930996865ad",
+  "FriendlyId": "bfce9901-675b-47f5-b336-184acae9cae1",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "1c6c45c6-ff4f-4bb8-8fa1-2930996865ad",
+    "98a6329e-e02d-4c6c-8ee7-431734164503",
+    "tag.mouth",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "93aab686-b91b-4018-84b0-ba4a54228229",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

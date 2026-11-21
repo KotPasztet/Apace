@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "013fbc2b-1667-48a9-886f-d0c2080a97b4",
+    "OfferId": "03fad2c3-972e-4de0-a860-d57a66b3d5b8",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Pirate Hat",
+  "Description": "§",
+  "ThumbnailImageId": "85dc58a8-f882-49b5-b748-2800c16f1ec4",
+  "CreationDate": "2020-10-01T18:48:25.154Z",
+  "LastModifiedDate": "2026-06-10T20:26:28.417Z",
+  "StartDate": "2020-10-01T18:48:25.154Z",
+  "Id": "55116df7-9147-4871-a1ed-60e3858c825e",
+  "FriendlyId": "03fad2c3-972e-4de0-a860-d57a66b3d5b8",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "55116df7-9147-4871-a1ed-60e3858c825e",
+    "013fbc2b-1667-48a9-886f-d0c2080a97b4",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "8407c9bc-6f79-41fb-8f2c-1cdc1f01a05f",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

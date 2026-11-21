@@ -1,0 +1,40 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_mouth",
+    "PieceId": "ecf0aa8f-10d4-4d14-9468-1f2048226c7b",
+    "OfferId": "2f688aa5-3cf3-4e2d-9463-1530f1d5b3b2",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Wide Smile",
+  "Description": "§",
+  "ThumbnailImageId": "f49787b3-36a1-4379-a1c6-83f3b9154407",
+  "CreationDate": "2019-08-30T01:10:36.865Z",
+  "LastModifiedDate": "2026-06-11T02:17:59.086Z",
+  "StartDate": "2019-08-30T01:10:36.865Z",
+  "Id": "45ceb11f-2271-4b04-9d56-bc34ecfc3295",
+  "FriendlyId": "2f688aa5-3cf3-4e2d-9463-1530f1d5b3b2",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "45ceb11f-2271-4b04-9d56-bc34ecfc3295",
+    "ecf0aa8f-10d4-4d14-9468-1f2048226c7b",
+    "tag.mouth",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f6eb0cff-1db6-40d2-bcb8-288ce4ea0f25",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

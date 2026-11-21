@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased (dev) — Log-in fix, inventory fix, persona items
+## Unreleased (dev) — Log-in fix, inventory fix, filled dressing room
 
-> Fixes the two bugs from the 2026-11-21 play session (login 401 loop, panel-added items breaking the client inventory) and adds persona item support — something neither Solace nor Vienna ever had.
+> Fixes the two bugs from the 2026-11-21 play session (login 401 loop, panel-added items breaking the client inventory) and fills the dressing room with 231 real character creator items — something neither Solace nor Vienna ever had.
 
 ### 🔐 Account login
 
@@ -18,6 +18,7 @@
 
 ### 🧍 Persona items (dressing room / skins)
 
+- **The dressing room is no longer empty: 231 real character creator items ship with the server** (in `staticdata-extras/`, overlaid onto the staticdata submodule at publish time). Every category has content again: 41 hair, 31 eyes, 18 mouth, 22 tops, 15 bottoms, 20 outerwear, 13 footwear, 34 hats, 5 gloves, 3 hoods, 5 legs, 3 arms, 5 back items, 10 face accessories and 7 base skins — including the Earth Hero set made for MCE and the whole 2019 launch set (Buzzcut, Blue Jeans, Work Boots, ...) that the real dressing room showed. All items are free 1P pieces the MCE client knows; thumbnails are served locally. Fetched from the still-live PlayFab catalog with `scripts/fetch_persona_catalog.py` + `scripts/generate_persona_items.py` (reproducible).
 - Custom character creator items can be added as JSON files in `staticdata/playfab/items/` with a new `Data` type `Persona` (piece type, piece id, offer id, rarity, price, optional local personabinary asset) — served as `PersonaDurable` catalog entries exactly like the built-in Bold Rabbit Feet. See `docs/custom-persona-items.md`.
 - New `/playfab/persona/<file>` endpoint serves persona piece binaries from `staticdata/playfab/persona/`.
 - `scripts/extract-persona-pieces.py` scans the client resource pack (`genoa.mcpack`) for persona piece definitions and their UUIDs.

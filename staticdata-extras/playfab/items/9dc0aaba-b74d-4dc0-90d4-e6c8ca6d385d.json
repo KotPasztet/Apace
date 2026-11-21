@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "68077113-bb7e-4b1f-9a7e-b2b1c2ccc1bd",
+    "OfferId": "4b3c7be5-5c21-4f1c-86a4-13344ec32f50",
+    "Version": "1.1.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Creeper Hoodie",
+  "Description": "§",
+  "ThumbnailImageId": "aa613c8b-af79-4361-958a-e6b53a683396",
+  "CreationDate": "2020-03-23T15:54:47.007Z",
+  "LastModifiedDate": "2026-06-10T20:24:43.717Z",
+  "StartDate": "2020-03-23T15:54:47.007Z",
+  "Id": "9dc0aaba-b74d-4dc0-90d4-e6c8ca6d385d",
+  "FriendlyId": "4b3c7be5-5c21-4f1c-86a4-13344ec32f50",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "9dc0aaba-b74d-4dc0-90d4-e6c8ca6d385d",
+    "68077113-bb7e-4b1f-9a7e-b2b1c2ccc1bd",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "81ca0cb1-886f-47f0-a519-29b4037ba936",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

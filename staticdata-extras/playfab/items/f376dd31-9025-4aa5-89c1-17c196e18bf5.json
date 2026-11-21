@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "d7ee086a-aeb1-48bd-b776-03695d6a1642",
+    "OfferId": "c767afae-b448-44bb-b180-60d695bfbb3b",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Long Braid",
+  "Description": "§",
+  "ThumbnailImageId": "78f12c00-4490-4e45-b680-c40de7f50d24",
+  "CreationDate": "2019-11-04T23:16:26.476Z",
+  "LastModifiedDate": "2026-06-10T22:06:07.137Z",
+  "StartDate": "2019-11-04T23:16:26.476Z",
+  "Id": "f376dd31-9025-4aa5-89c1-17c196e18bf5",
+  "FriendlyId": "c767afae-b448-44bb-b180-60d695bfbb3b",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "f376dd31-9025-4aa5-89c1-17c196e18bf5",
+    "d7ee086a-aeb1-48bd-b776-03695d6a1642",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "db31d68b-5c43-408c-9600-0291244f149e",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

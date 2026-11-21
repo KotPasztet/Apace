@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "abcec69a-359c-49d4-8b2d-d1a30a320c7a",
+    "OfferId": "1bba3921-c19a-45e5-9124-3d5c9a47a745",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Straight Ponytail",
+  "Description": "§",
+  "ThumbnailImageId": "c8492e53-977c-4f50-9f3d-c9e434e5635d",
+  "CreationDate": "2019-08-30T01:10:49.114Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.086Z",
+  "StartDate": "2019-08-30T01:10:49.114Z",
+  "Id": "c4ebc190-585b-4b5d-b20e-f33f027f07c5",
+  "FriendlyId": "1bba3921-c19a-45e5-9124-3d5c9a47a745",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "c4ebc190-585b-4b5d-b20e-f33f027f07c5",
+    "abcec69a-359c-49d4-8b2d-d1a30a320c7a",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "c11ecc40-e3eb-4d11-b339-c91879b7618d",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

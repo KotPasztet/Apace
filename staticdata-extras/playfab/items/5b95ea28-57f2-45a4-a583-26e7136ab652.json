@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "a13f51c2-00d8-459c-bec5-957c35b54a9d",
+    "OfferId": "e03c2add-7b78-47dc-8291-4216aaa1f55c",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Undercut",
+  "Description": "§",
+  "ThumbnailImageId": "a3ac7d90-3cf3-4656-8ad4-822c512918eb",
+  "CreationDate": "2019-08-30T01:10:27.381Z",
+  "LastModifiedDate": "2026-06-10T18:49:15.516Z",
+  "StartDate": "2019-08-30T01:10:27.381Z",
+  "Id": "5b95ea28-57f2-45a4-a583-26e7136ab652",
+  "FriendlyId": "e03c2add-7b78-47dc-8291-4216aaa1f55c",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "5b95ea28-57f2-45a4-a583-26e7136ab652",
+    "a13f51c2-00d8-459c-bec5-957c35b54a9d",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "d7b98182-b017-4cdb-87bd-349f5ba9bd5d",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "023f68ca-6574-481e-afe4-f218ecacff04",
+    "OfferId": "e20285b6-0fb5-4bd3-93d1-a9221bf82d89",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Wizened Locks",
+  "Description": "§",
+  "ThumbnailImageId": "51e57735-07d5-444f-8880-300b565011a1",
+  "CreationDate": "2019-08-30T01:10:40.637Z",
+  "LastModifiedDate": "2026-06-10T18:49:59.026Z",
+  "StartDate": "2019-08-30T01:10:40.637Z",
+  "Id": "e4c6874b-fbe2-4908-b7ff-04fe1cbdf18c",
+  "FriendlyId": "e20285b6-0fb5-4bd3-93d1-a9221bf82d89",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "e4c6874b-fbe2-4908-b7ff-04fe1cbdf18c",
+    "023f68ca-6574-481e-afe4-f218ecacff04",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "b7b5b446-03bc-4138-a7cc-b32d275e1b88",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

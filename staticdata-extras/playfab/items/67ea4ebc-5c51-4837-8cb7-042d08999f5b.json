@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_skin",
+    "PieceId": "f731c6f5-241e-490f-b95e-c697f9245902",
+    "OfferId": "17d12d57-de76-4b75-9310-457049cbe25d",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Basic Texture",
+  "Description": "§",
+  "ThumbnailImageId": "330fdc2b-4541-4aca-8caf-6a1bbb9a15a2",
+  "CreationDate": "2020-05-22T15:57:57.763Z",
+  "LastModifiedDate": "2026-06-10T20:25:27.592Z",
+  "StartDate": "2020-05-22T15:57:57.763Z",
+  "Id": "67ea4ebc-5c51-4837-8cb7-042d08999f5b",
+  "FriendlyId": "17d12d57-de76-4b75-9310-457049cbe25d",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "67ea4ebc-5c51-4837-8cb7-042d08999f5b",
+    "f731c6f5-241e-490f-b95e-c697f9245902",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "fd679a84-d3f9-4a3c-9945-880b956d69a0",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

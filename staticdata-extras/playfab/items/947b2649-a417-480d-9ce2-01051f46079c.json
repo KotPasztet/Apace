@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "a31c9002-264e-4ba5-b3d3-07ca5dea37a2",
+    "OfferId": "768ea269-88ac-4916-9a94-059c92838fe4",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Moobloom Mantle",
+  "Description": "§",
+  "ThumbnailImageId": "ef8588a9-a77d-4234-afdf-cb7c2c88ba42",
+  "CreationDate": "2020-04-17T23:38:31.195Z",
+  "LastModifiedDate": "2026-06-10T20:24:57.035Z",
+  "StartDate": "2020-04-17T23:38:31.195Z",
+  "Id": "947b2649-a417-480d-9ce2-01051f46079c",
+  "FriendlyId": "768ea269-88ac-4916-9a94-059c92838fe4",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "947b2649-a417-480d-9ce2-01051f46079c",
+    "a31c9002-264e-4ba5-b3d3-07ca5dea37a2",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "effae383-f157-4ea1-84a7-abffbecfb5ff",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

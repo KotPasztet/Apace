@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_eyes",
+    "PieceId": "3f02d80f-221b-4b1e-8ba3-3397aa9123c8",
+    "OfferId": "24952d72-828a-45b8-b773-b93006796db2",
+    "Version": "1.1.1",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Square-Brows",
+  "Description": "§",
+  "ThumbnailImageId": "11b90361-cc5d-4367-8b26-3dc8be209620",
+  "CreationDate": "2019-08-30T01:11:44.599Z",
+  "LastModifiedDate": "2026-06-10T23:46:31.034Z",
+  "StartDate": "2019-08-30T01:11:44.599Z",
+  "Id": "8f7250c7-d08b-464c-accb-a5eeb4dd813a",
+  "FriendlyId": "24952d72-828a-45b8-b773-b93006796db2",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "8f7250c7-d08b-464c-accb-a5eeb4dd813a",
+    "3f02d80f-221b-4b1e-8ba3-3397aa9123c8",
+    "tag.eyes",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Eyes"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Eyes"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "d841d27e-0241-4c5f-aadc-1fc2f6838924",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

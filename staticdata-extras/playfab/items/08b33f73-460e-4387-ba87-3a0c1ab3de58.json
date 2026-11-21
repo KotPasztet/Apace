@@ -1,0 +1,51 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_face_accessory",
+    "PieceId": "100e2efa-f441-4276-ac53-0b0acca1d8bd",
+    "OfferId": "6854aec8-4097-4f97-a686-ef42118c9446",
+    "Version": "1.0.3",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Right Eyepatch",
+  "Description": "§",
+  "ThumbnailImageId": "f3a6639b-8be4-490e-8424-ee5bf1741825",
+  "CreationDate": "2019-08-30T01:05:38.161Z",
+  "LastModifiedDate": "2026-06-10T18:49:15.334Z",
+  "StartDate": "2019-08-30T01:05:38.161Z",
+  "Id": "08b33f73-460e-4387-ba87-3a0c1ab3de58",
+  "FriendlyId": "6854aec8-4097-4f97-a686-ef42118c9446",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "08b33f73-460e-4387-ba87-3a0c1ab3de58",
+    "100e2efa-f441-4276-ac53-0b0acca1d8bd",
+    "tag.eye_patch",
+    "1P"
+  ],
+  "Keywords": {
+    "NEUTRAL": {
+      "Values": [
+        "Eye Patch"
+      ]
+    },
+    "neutral": {
+      "Values": [
+        "Eye Patch"
+      ]
+    }
+  },
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "aa6f6850-06db-4eb1-88f3-c92295c3b6ae",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

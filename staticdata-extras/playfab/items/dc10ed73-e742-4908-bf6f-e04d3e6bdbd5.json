@@ -1,0 +1,40 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_head",
+    "PieceId": "72ef1102-7073-457d-921f-c2e7f2eb4db9",
+    "OfferId": "5514ed24-bb30-44c6-aa89-0d05032579de",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Science Experiment",
+  "Description": "§",
+  "ThumbnailImageId": "63ffe819-f495-4616-a22b-b762f93b5e99",
+  "CreationDate": "2020-07-21T03:45:46.024Z",
+  "LastModifiedDate": "2026-06-10T20:25:57.266Z",
+  "StartDate": "2020-07-21T03:45:46.024Z",
+  "Id": "dc10ed73-e742-4908-bf6f-e04d3e6bdbd5",
+  "FriendlyId": "5514ed24-bb30-44c6-aa89-0d05032579de",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "dc10ed73-e742-4908-bf6f-e04d3e6bdbd5",
+    "72ef1102-7073-457d-921f-c2e7f2eb4db9",
+    "hidden_offer",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "5cffaf85-901c-4b3e-a6a3-ac8e7323f26e",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

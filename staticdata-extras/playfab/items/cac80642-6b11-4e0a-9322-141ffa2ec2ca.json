@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "77dfeca1-9d93-47b7-a408-11fea46b4f29",
+    "OfferId": "d801fcb8-0163-4fe4-9fd9-59305b4e64c2",
+    "Version": "1.0.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Pirate Tunic",
+  "Description": "§",
+  "ThumbnailImageId": "297174ac-506c-4b0c-a4f7-a2dfae85b26b",
+  "CreationDate": "2020-06-22T18:56:16.855Z",
+  "LastModifiedDate": "2026-06-10T20:25:43.588Z",
+  "StartDate": "2020-06-22T18:56:16.855Z",
+  "Id": "cac80642-6b11-4e0a-9322-141ffa2ec2ca",
+  "FriendlyId": "d801fcb8-0163-4fe4-9fd9-59305b4e64c2",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "cac80642-6b11-4e0a-9322-141ffa2ec2ca",
+    "77dfeca1-9d93-47b7-a408-11fea46b4f29",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "1e56bb13-c724-4796-9df0-ad773f40e033",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

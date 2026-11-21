@@ -1,0 +1,41 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_outerwear",
+    "PieceId": "1c9ff752-14b5-421f-86fa-d5faec42a864",
+    "OfferId": "19c85aad-364b-4257-93c8-2976eaa87b16",
+    "Version": "1.0.0",
+    "Rarity": "uncommon",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Muddy Mud",
+  "Description": "§",
+  "ThumbnailImageId": "ed749d1d-b2bb-49e1-a650-11be2b9e4716",
+  "CreationDate": "2020-04-17T23:39:44.772Z",
+  "LastModifiedDate": "2026-06-10T20:24:57.901Z",
+  "StartDate": "2020-04-17T23:39:44.772Z",
+  "Id": "02766e6d-7506-408c-bdc5-aff00f6863df",
+  "FriendlyId": "19c85aad-364b-4257-93c8-2976eaa87b16",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "02766e6d-7506-408c-bdc5-aff00f6863df",
+    "1c9ff752-14b5-421f-86fa-d5faec42a864",
+    "is_achievement",
+    "earth_achievement",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "f5c10145-7585-4ab9-8c09-34ec2aaca041",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -1,0 +1,42 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hand",
+    "PieceId": "4ea68884-4a2c-4668-8096-fc29c003df0b",
+    "OfferId": "0924f56d-0e14-40b6-8cb5-6fb23b2b1ebd",
+    "Version": "1.1.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Golden Watch",
+  "Description": "§",
+  "ThumbnailImageId": "f53371fe-2a29-45d0-800e-3d3d86d643f9",
+  "CreationDate": "2020-10-15T17:41:08.665Z",
+  "LastModifiedDate": "2026-06-10T22:03:45.148Z",
+  "StartDate": "2020-10-15T17:41:08.665Z",
+  "Id": "b2c821b4-8e8e-48d1-987f-c9709e2cce74",
+  "FriendlyId": "0924f56d-0e14-40b6-8cb5-6fb23b2b1ebd",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "b2c821b4-8e8e-48d1-987f-c9709e2cce74",
+    "4ea68884-4a2c-4668-8096-fc29c003df0b",
+    "is_achievement",
+    "vanilla_achievement",
+    "tag.gloves",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "8350acc5-aaf5-4b27-8d3b-7b049b1953e3",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

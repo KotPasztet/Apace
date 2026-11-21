@@ -1,0 +1,40 @@
+{
+  "Purchasable": false,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_legs",
+    "PieceId": "536d8934-3f9b-4965-93d7-3bcee3831af7",
+    "OfferId": "eff93bef-4c4b-4449-b512-af9c558f5098",
+    "Version": "1.0.0",
+    "Rarity": "rare",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Rocket Thrusters",
+  "Description": "§",
+  "ThumbnailImageId": "bbe6acc6-63a8-49f5-ac2a-20ed1da2e48d",
+  "CreationDate": "2020-07-21T03:44:24.927Z",
+  "LastModifiedDate": "2026-06-10T20:25:57.746Z",
+  "StartDate": "2020-07-21T03:44:24.927Z",
+  "Id": "0388aad8-020f-4149-88d2-cec75498d6d1",
+  "FriendlyId": "eff93bef-4c4b-4449-b512-af9c558f5098",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "0388aad8-020f-4149-88d2-cec75498d6d1",
+    "536d8934-3f9b-4965-93d7-3bcee3831af7",
+    "hidden_offer",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "0d883d5e-5c18-47c5-99db-d863f1a8e402",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

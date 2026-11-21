@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "dafa8bcd-dbec-4db3-8cec-7bed87ce27c2",
+    "OfferId": "e71dff5b-4c4a-4da1-b051-4e3014a3f947",
+    "Version": "1.1.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Curly Ponytail",
+  "Description": "§",
+  "ThumbnailImageId": "284f1780-5724-4fa3-8230-2840a90415cc",
+  "CreationDate": "2019-11-05T16:37:42.201Z",
+  "LastModifiedDate": "2026-06-10T22:06:23.109Z",
+  "StartDate": "2019-11-05T16:37:42.201Z",
+  "Id": "08682ab6-9063-4dc3-9bb7-2fe54ca58abc",
+  "FriendlyId": "e71dff5b-4c4a-4da1-b051-4e3014a3f947",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "08682ab6-9063-4dc3-9bb7-2fe54ca58abc",
+    "dafa8bcd-dbec-4db3-8cec-7bed87ce27c2",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "556459e4-109c-44a6-8f30-b121b918a813",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

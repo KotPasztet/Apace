@@ -1,0 +1,39 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "541a0c1a-ebf6-43c1-b76e-acc3303623d9",
+    "OfferId": "926e93de-6c1f-4bc0-9b35-758c982665b6",
+    "Version": "1.0.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Slicked Back",
+  "Description": "§",
+  "ThumbnailImageId": "a4f13804-ba52-4c78-ac1c-ffef8b085f23",
+  "CreationDate": "2019-08-30T01:10:45.929Z",
+  "LastModifiedDate": "2026-06-10T18:49:16.246Z",
+  "StartDate": "2019-08-30T01:10:45.929Z",
+  "Id": "4e950e9c-90d7-43ed-8e50-aa5a6e23a4f4",
+  "FriendlyId": "926e93de-6c1f-4bc0-9b35-758c982665b6",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "4e950e9c-90d7-43ed-8e50-aa5a6e23a4f4",
+    "541a0c1a-ebf6-43c1-b76e-acc3303623d9",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "92615abc-f521-4a25-a67a-6f04c8a9c061",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

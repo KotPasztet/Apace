@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_top",
+    "PieceId": "81e8c3f1-51cd-4a94-a37e-6f6f4aceb500",
+    "OfferId": "74553d2c-230e-48fe-8acb-baf0016cb5ce",
+    "Version": "1.2.0",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Ruffled Shirt",
+  "Description": "§",
+  "ThumbnailImageId": "a2699a60-7517-4cc6-9a28-7db80a56503a",
+  "CreationDate": "2019-08-30T01:06:43.265Z",
+  "LastModifiedDate": "2026-06-10T20:28:46.927Z",
+  "StartDate": "2019-08-30T01:06:43.265Z",
+  "Id": "b8daac74-7711-4e0c-9cc3-3e3f787092c3",
+  "FriendlyId": "74553d2c-230e-48fe-8acb-baf0016cb5ce",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "b8daac74-7711-4e0c-9cc3-3e3f787092c3",
+    "81e8c3f1-51cd-4a94-a37e-6f6f4aceb500",
+    "tag.shirt",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "da3281cf-7cbd-429d-9ebb-7d4e2dfa804c",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

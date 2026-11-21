@@ -1,0 +1,40 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "Persona",
+    "PieceType": "persona_hair",
+    "PieceId": "38b6f2f1-dc9b-4a6d-8536-4dcef0da3a4c",
+    "OfferId": "73c7c41c-bf02-418a-a0c1-d82e4d4fe5a3",
+    "Version": "1.0.2",
+    "Rarity": "common",
+    "Price": 0,
+    "CreatorName": "Minecraft",
+    "AssetFileName": null
+  },
+  "Title": "Curly Bob",
+  "Description": "§",
+  "ThumbnailImageId": "7df9a54f-4274-4abf-b5aa-33921d977c53",
+  "CreationDate": "2019-08-30T01:11:05.189Z",
+  "LastModifiedDate": "2026-06-10T22:06:22.766Z",
+  "StartDate": "2019-08-30T01:11:05.189Z",
+  "Id": "73c7c41c-bf02-418a-a0c1-d82e4d4fe5a3",
+  "FriendlyId": "73c7c41c-bf02-418a-a0c1-d82e4d4fe5a3",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "1P",
+    "73c7c41c-bf02-418a-a0c1-d82e4d4fe5a3",
+    "38b6f2f1-dc9b-4a6d-8536-4dcef0da3a4c",
+    "tag.hair"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "0a549f70-a7ca-4e65-8908-7310c6b561df",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}
