@@ -149,10 +149,14 @@ public static class Program
         }
         else
         {
-            Log.Warning("Local account only login disabled, account credentials cannot be verified");
+            // informational only — the default login mode signs clients in through the login
+            // page (the fake login.live.com flow); this is NOT an error
+            Log.Information("Login mode: Microsoft-style account login (clients sign in through the login page)");
         }
 
         Log.Information("Loading configuration");
+        bool secretsReused = false;
+        string dataConfigPath = string.Empty;
         try
         {
             // The login secrets must survive updates: when they rotate, every client holding
@@ -170,7 +174,7 @@ public static class Program
             // It is still read for backward compatibility (and its contents are migrated to
             // the data directory so a later compose update cannot strand them).
             const string configFileName = "api_config.json";
-            string dataConfigPath = Path.Combine("..", "data", configFileName);
+            dataConfigPath = Path.Combine("..", "data", configFileName);
             string legacyConfigPath = configFileName;
 
             if (File.Exists(dataConfigPath))
@@ -215,6 +219,8 @@ public static class Program
                 }
             }
 
+            // loaded from either location ⇒ the secrets (and every client session) survive this boot
+            secretsReused = config is not null;
             if (config is null)
             {
                 // missing, empty or unparseable configuration gets fresh random secrets (the old hardcoded defaults
@@ -251,6 +257,9 @@ public static class Program
         }
 
         Log.Information("Loaded configuration");
+        Log.Information(secretsReused
+            ? $"Login secrets reused from {Path.GetFullPath(dataConfigPath)} — future redeploys keep all client sessions valid"
+            : "Login secrets generated fresh — clients holding tickets from before this boot must sign in once through the login page");
 
         Log.Information("Connecting to earth database");
         try

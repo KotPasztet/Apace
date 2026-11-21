@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using Apace.ApiServer.Models;
 using Apace.ApiServer.Utils;
 
@@ -10,6 +11,8 @@ namespace Apace.ApiServer.Controllers.XboxLive.Auth;
 internal sealed class UserController : ApaceControllerBase
 {
     private static Config config => Program.config;
+
+    private static bool warnedAboutUnknownSecretTicket;
 
     public sealed record AuthenticateRequest(
         AuthenticateRequest.PropertiesR Properties,
@@ -44,6 +47,20 @@ internal sealed class UserController : ApaceControllerBase
 
         if (ticket is null)
         {
+            // A ticket that matches neither the installation's secrets nor the legacy public
+            // Solace secrets was cached while the installation was still rotating its secrets
+            // on every boot (the pre-fix api_config.json / dataprotection-keys locations): no
+            // server can verify it, and the client keeps replaying it in a 401 loop instead of
+            // falling back to the login page. The only way out for such a client is one full
+            // sign-in through the login page (or clearing the app's data).
+            if (!warnedAboutUnknownSecretTicket)
+            {
+                warnedAboutUnknownSecretTicket = true;
+                Log.Warning("user/authenticate rejected a ticket signed with unknown secrets (cached before the login secrets " +
+                            "were persisted across redeploys); that client must sign in once through the login page " +
+                            "(warning logged once per restart, further occurrences suppressed)");
+            }
+
             return TypedResults.Unauthorized();
         }
 
