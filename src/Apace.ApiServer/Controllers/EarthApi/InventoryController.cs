@@ -75,7 +75,12 @@ internal sealed class InventoryController : ControllerBase
 
                     if (!journalChanged)
                     {
-                        return new EarthDB.Query(false);
+                        // MUST be null, not an empty query: Then() callbacks replace the
+                        // outer results with the inner query's results, so returning an
+                        // empty query threw away the already-read inventory/journal/hotbar
+                        // and results.Get("inventory") below crashed the request
+                        // (KeyNotFoundException) on every call in the steady state.
+                        return null;
                     }
 
                     return new EarthDB.Query(true)
@@ -250,7 +255,9 @@ internal sealed class InventoryController : ControllerBase
 
                     if (!inventory.TakeItems(itemId, 1))
                     {
-                        return new EarthDB.Query(false);
+                        // null, not an empty query — an empty query would replace the
+                        // outer results (Then() semantics) instead of keeping them
+                        return null;
                     }
 
                     string? returnItemId = item.ConsumeInfo.ReturnItemId;
