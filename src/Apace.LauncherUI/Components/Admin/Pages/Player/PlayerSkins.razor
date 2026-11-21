@@ -120,7 +120,7 @@ else
                         <table class="table table-sm table-hover align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th style="width: 48px;"></th>
+                                    <th style="width: 56px;"></th>
                                     <th>Item</th>
                                     <th>Type</th>
                                     <th>Rarity</th>
@@ -136,25 +136,31 @@ else
                                         @if (slot.Kind == SlotKind.Piece)
                                         {
                                             <td>
-                                                @if (slot.CatalogItem is not null)
-                                                {
-                                                    <img src="/api/persona-images/@(slot.CatalogItem.ThumbnailImageId).png" alt=""
-                                                         style="width: 40px; height: 40px; object-fit: contain;"
-                                                         onerror="this.onerror=null; this.src='@(MissingTextureDataUri)';" loading="lazy" />
-                                                }
-                                                else
-                                                {
-                                                    <img src="@MissingTextureDataUri" alt="" style="width: 40px; height: 40px; object-fit: contain; opacity: 0.5;" />
-                                                }
+                                                <div style="width: 48px; height: 48px; border: 2px solid #555; background: #8b8b8b; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: inset 4px 4px 0px #a8a8a8, inset -4px -4px 0px #4a4a4a; box-sizing: border-box; overflow: hidden;">
+                                                    @if (slot.CatalogItem is not null)
+                                                    {
+                                                        <img src="/api/persona-images/@(slot.CatalogItem.ThumbnailImageId).png" alt=""
+                                                             style="width: 65%; height: 65%; object-fit: contain; image-rendering: pixelated;"
+                                                             onerror="this.onerror=null; this.src='@(MissingTextureDataUri)';" loading="lazy" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <img src="@MissingTextureDataUri" alt="" style="width: 65%; height: 65%; object-fit: contain; image-rendering: pixelated; opacity: 0.45;" />
+                                                    }
+                                                </div>
                                             </td>
                                             <td>
                                                 @if (slot.CatalogItem is not null)
                                                 {
                                                     <span class="fw-bold">@slot.CatalogItem.Title</span>
                                                 }
+                                                else if (slot.ClassicName is not null)
+                                                {
+                                                    <span class="fw-bold">@slot.ClassicName</span>
+                                                }
                                                 else
                                                 {
-                                                    <span class="text-muted">Unknown piece (not in catalog)</span>
+                                                    <span class="text-muted">@GetUnequippedLabel(slot)</span>
                                                 }
                                             </td>
                                             <td>@(slot.CatalogItem is not null ? Persona(slot.CatalogItem)?.PieceType : "—")</td>
@@ -185,10 +191,23 @@ else
                                             <td></td>
                                             <td>
                                                 <span class="text-muted">
-                                                    @(slot.Kind == SlotKind.Body ? "Base body config" : slot.Kind == SlotKind.Collection ? "Collection entry" : slot.Kind == SlotKind.EmptySlot ? "Empty slot" : "Unrecognized entry")
+                                                    @GetEntryLabel(slot)
                                                 </span>
                                             </td>
-                                            <td colspan="4"><code style="font-size: 0.65rem; color: #9a9ab0;">@(slot.Kind == SlotKind.Other ? slot.RawJson : (string.IsNullOrEmpty(slot.RawId) ? slot.RawJson : slot.RawId))</code></td>
+                                            <td colspan="4">
+                                                @if (slot.Kind == SlotKind.Other)
+                                                {
+                                                    <code style="font-size: 0.65rem; color: #9a9ab0;">@slot.RawJson</code>
+                                                }
+                                                else if (IsNoneCollectionEntry(slot))
+                                                {
+                                                    <span class="text-muted small">—</span>
+                                                }
+                                                else
+                                                {
+                                                    <code style="font-size: 0.65rem; color: #9a9ab0;">@(string.IsNullOrEmpty(slot.RawId) ? slot.RawJson : slot.RawId)</code>
+                                                }
+                                            </td>
                                             <td></td>
                                         }
                                     </tr>
@@ -270,6 +289,60 @@ else
     public string PlayerId { get; set; } = string.Empty;
 
     private const string MissingTextureDataUri = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%238b8b8b'/%3E%3Crect width='32' height='32' fill='%23a8a8a8'/%3E%3Crect x='32' y='32' width='32' height='32' fill='%23a8a8a8'/%3E%3C/svg%3E";
+
+    // Display names for the four classic-skin default clothing pieces. Their
+    // uuids are the four-entry GUID cluster stored right after
+    // "persona.classicskincape.texture" in the client binary; the Steve pair is
+    // the adjacent top/bottom slot pair in the wide-arms default profile
+    // (ApiServer ObjectController personaProfile2/3) and the Alex pair was
+    // identified the same way against the slim-arms default profile.
+    private static readonly Dictionary<string, string> ClassicPieceNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["f1e4c577-19ba-4d77-9222-47f145857f78"] = "Steve's shirt",
+        ["49f93789-a512-4c47-95cb-0606cdc1c2be"] = "Steve's pants",
+        ["1042557f-d1f9-44e3-ba78-f404e8fb7363"] = "Alex's shirt",
+        ["b6702f0e-a4b5-497a-8820-6c8e3946bb55"] = "Alex's pants",
+    };
+
+    // The classic skin itself: one piece id with "_Steve"/"_Alex" (or a
+    // ".Custom<hex>") variant suffix, hardcoded in the client binary next to the
+    // default persona JSON.
+    private const string ClassicSkinPiecePrefix = "c18e65aa-7b21-4637-9b63-8ad63622ef01";
+
+    // Categories of the default-profile placeholder pieces (the "Unequipped"
+    // rows). Anchors: the tint "col" colours stored with the default profiles
+    // (eyes purple/green, hair brown/orange, mouths brown/peach - matching the
+    // client's dr.color.steve_blue / alex_green / steve_brown / alex_orange /
+    // *_mouth swatches) and the /l+/r limb pairs seen in live profiles. The
+    // ObjectController uuid spellings (2bb1473b-7a5c, 2e4341c3) are included so
+    // server-generated defaults resolve too. The arms/legs placeholders are
+    // free catalog items (Prosthetic Arm / Bird Legs) that the client writes
+    // into empty limb slots.
+    private static readonly Dictionary<string, string> DefaultPieceCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["a0f263b3-e093-4c85-aadb-3759417898ff"] = "persona_eyes",
+        ["2bb1473b-9a5c-4eae-9fd5-82302a6aa3da"] = "persona_hair",
+        ["2bb1473b-7a5c-4eae-9fd5-82302a6aa3da"] = "persona_hair",
+        ["70be0801-a93f-4ce0-8e3f-7fdeac1e03b9"] = "persona_hair",
+        ["52dd0726-cd68-4d7d-8561-515a4866de39"] = "persona_mouth",
+        ["2e4341c3-c014-4114-94b5-73968230aaaf"] = "persona_mouth",
+        ["83c940ce-d7b8-4603-8d73-c1234e322cce"] = "persona_mouth",
+        ["bf01a13f-f00d-4013-bfa0-ca9f045e83b2"] = "persona_arms",
+        ["e847933f-6578-4b6f-ad48-e9e97d1ec728"] = "persona_legs",
+    };
+
+    // Position fallback for placeholder uuids not in the table above: category
+    // by index in the profile's piece list, against the canonical default
+    // profile order from the ApiServer's ObjectController defaults. Both
+    // default layouts (wide/slim) agree on the trailing eye/hair/mouth slots;
+    // the leading slots have no firmly identifiable category.
+    private static readonly string?[] CanonicalPieceCategories =
+    [
+        null, null, null, null, null, null,
+        "persona_eyes",
+        "persona_hair",
+        "persona_mouth",
+    ];
 
     // Same lookup as PersonaImagesController; duplicated so the export can attach
     // thumbnails without a round-trip through the HTTP endpoint.
@@ -440,6 +513,8 @@ else
             return;
         }
 
+        int piecePosition = 0;
+
         for (int i = 0; i < apps.Count; i++)
         {
             if (apps[i] is not JsonObject entry)
@@ -480,9 +555,48 @@ else
                 continue;
             }
 
-            // Equipped piece ids carry a "/d" suffix (see the default profiles in the
-            // ApiServer's ObjectController); strip it before matching the catalog.
-            string pieceId = id.EndsWith("/d", StringComparison.Ordinal) ? id[..^2] : id;
+            // Piece ids carry a side/default suffix: "/d" on whole pieces (equipped
+            // and placeholder alike), "/l" + "/r" pairs on left/right limb slots.
+            // Strip it before matching the catalog.
+            string pieceId = id;
+            string? limbSide = null;
+            if (id.EndsWith("/d", StringComparison.Ordinal))
+            {
+                pieceId = id[..^2];
+            }
+            else if (id.EndsWith("/l", StringComparison.Ordinal))
+            {
+                pieceId = id[..^2];
+                limbSide = "left";
+            }
+            else if (id.EndsWith("/r", StringComparison.Ordinal))
+            {
+                pieceId = id[..^2];
+                limbSide = "right";
+            }
+
+            // The classic-skin default pieces (base Steve/Alex shirt+pants and the
+            // classic skin itself) have no catalog entry; give them their names.
+            string? classicName = GetClassicPieceName(pieceId);
+
+            // Default-profile placeholder uuids are empty slots, never equipped
+            // items - even when the uuid doubles as a free catalog item (the
+            // default arms/legs pieces). Excluding them here also keeps them out
+            // of the skin export.
+            bool isDefaultPiece = DefaultPieceCategories.ContainsKey(pieceId) || classicName is not null;
+            PlayfabItem? catalogItem = isDefaultPiece ? null : _itemsByPieceId.GetValueOrDefault(pieceId);
+
+            // Category for the "Unequipped" label: the client's own slotname field
+            // when present, then the canonical default-profile lookup.
+            string? category = GetString(entry, "slotname");
+            if (string.IsNullOrWhiteSpace(category))
+            {
+                DefaultPieceCategories.TryGetValue(pieceId, out category);
+            }
+            if (string.IsNullOrWhiteSpace(category) && piecePosition < CanonicalPieceCategories.Length)
+            {
+                category = CanonicalPieceCategories[piecePosition];
+            }
 
             profile.Slots.Add(new SlotView
             {
@@ -491,8 +605,13 @@ else
                 Entry = entry,
                 RawId = id,
                 PieceId = pieceId,
-                CatalogItem = _itemsByPieceId.GetValueOrDefault(pieceId),
+                CatalogItem = catalogItem,
+                ClassicName = classicName,
+                Category = category,
+                LimbSide = limbSide,
             });
+
+            piecePosition++;
         }
     }
 
@@ -746,6 +865,35 @@ else
     private static string? GetString(JsonObject obj, string name)
         => obj[name] is JsonValue value && value.TryGetValue<string>(out string? s) ? s : null;
 
+    private static string? GetClassicPieceName(string pieceId)
+    {
+        if (ClassicPieceNames.TryGetValue(pieceId, out string? name))
+        {
+            return name;
+        }
+
+        return pieceId.StartsWith(ClassicSkinPiecePrefix, StringComparison.OrdinalIgnoreCase) ? "Classic skin" : null;
+    }
+
+    private static string GetUnequippedLabel(SlotView slot)
+    {
+        string side = slot.LimbSide is null ? "" : $" ({slot.LimbSide})";
+        return string.IsNullOrEmpty(slot.Category) ? "Unequipped" : $"Unequipped · {slot.Category}{side}";
+    }
+
+    private static bool IsNoneCollectionEntry(SlotView slot)
+        => slot.Kind == SlotKind.Collection
+            && slot.RawId.StartsWith("00000000-0000-0000-0000-000000000000", StringComparison.OrdinalIgnoreCase);
+
+    private static string GetEntryLabel(SlotView slot)
+        => slot.Kind switch
+        {
+            SlotKind.Body => "Base body config",
+            SlotKind.Collection => IsNoneCollectionEntry(slot) ? "None collection" : "Collection entry",
+            SlotKind.EmptySlot => "Empty slot",
+            _ => "Unrecognized entry",
+        };
+
     private static PlayfabItem.PersonaData? Persona(PlayfabItem item)
         => item.Data as PlayfabItem.PersonaData;
 
@@ -771,7 +919,7 @@ else
 
     private enum SlotKind
     {
-        Piece,      // equipped piece entry: {"id": "<uuid>/d", ...}
+        Piece,      // piece entry: {"id": "<uuid>/d", ...} - equipped (in catalog) or unequipped placeholder
         Body,       // base body config: {"arm": ..., "skcol": ..., "skin": ...}
         Collection, // pack/collection entry: {"id": ..., "packId": ..., "typeId": ...}
         EmptySlot,  // {"id": ""} - an unequipped slot as found in the default profiles
@@ -804,5 +952,15 @@ else
         public string PieceId { get; init; } = "";
         public PlayfabItem? CatalogItem { get; init; }
         public string RawJson { get; init; } = "";
+
+        // Hardcoded name for the classic-skin default pieces (no catalog entry).
+        public string? ClassicName { get; init; }
+
+        // Category for the "Unequipped · <category>" label: the entry's slotname
+        // field, else the canonical default-profile lookup. Null when unknown.
+        public string? Category { get; init; }
+
+        // "left"/"right" for limb pieces carrying a "/l" or "/r" id suffix.
+        public string? LimbSide { get; init; }
     }
 }
