@@ -243,8 +243,45 @@ the server only supplies the catalog scaffolding around them:
 - `staticdata-extras/playfab/items/b3099ceb-…json` — real 1P "City Folk Skin Pack" offer
   (the client hardcodes a search for tag `acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806`, which is
   that pack's uuid; the item comes from the live catalog unchanged). Its pack binary is not
-  servable (the real download went through the marketplace DLC pipeline), so picking it
-  shows the offer but the pack cannot actually download.
+  servable (the real download went through the marketplace DLC pipeline and no copy of the
+  bytes is reachable — the live offer, its referenced product stub and the xforge CDN all
+  404), so picking it shows the offer but the pack cannot actually download.
+
+### Downloadable skin packs (skinbinary)
+
+Skin packs the client does not have built in are downloaded the same way persona pieces
+are: the client resolves the offer (from the Classic Skins row's `productIds`, via
+`Catalog/GetPublishedItem`), sees the pack uuid in `displayProperties.packIdentity` is
+missing from its skin pack repo ("Need to download skin pack"), fetches the offer's
+`Contents` entry of type **`skinbinary`** and imports the zip into its premium cache
+("Loading skin pack"), then matches the zip's `manifest.json` header uuid against the
+promised `packIdentity` uuid ("Skin pack is in repo"). A mismatch shows
+"Skin pack was not recognized" — so **the pack manifest header uuid must equal
+`packIdentity[0].uuid`**. The pack zip itself is a plain Bedrock skin pack: `manifest.json`
+(`format_version 1`, one `skin_pack` module), `skins.json` (skins with
+`localization_name`/`geometry`/`texture`/`type`, NO cape field) and `texts/en_US.lang`
+(`skinpack.<serialize_name>=…` plus `skin.<serialize_name>.<skin>=…` lines) — same shape
+as the client's built-in `assets/skin_packs/vanilla`.
+
+- `staticdata-extras/playfab/items/42a5f927-…json` — **"Apace Skins"** (by KotPasztet),
+  free offer whose `packIdentity` uuid is the pack's own manifest header uuid; `Contents`
+  carries the `skinbinary` download at `/playfab/skinpacks/42a5f927-….zip`.
+- `staticdata-extras/playfab/skinpacks/` — pack binaries, served by
+  `SkinPackCdnController` (`/playfab/skinpacks/{fileName}`, mirrors
+  `PersonaCdnController`). The skin texture is a **placeholder** generated in the Apace
+  Cape palette — the real skin should be KotPasztet's own 64x64 drawing (replace
+  `apace.png` inside the zip; the cape banner art cannot be re-cut into a skin layout).
+- Discovery: the committed layout manifest (`a2e12d4d`) only lists the two original offers
+  in `skinPackFeaturedQuery.productIds`. Instead of editing it, `CatalogController` appends
+  the ids of **every `MarketplaceDurableCatalog_V1.2` item tagged `has_skinpack`** to the
+  served featured query at response time — a new skin pack is just an item JSON with that
+  tag, the manifest file never changes.
+
+Adding another downloadable pack: build the Bedrock skin pack zip, drop it into
+`staticdata-extras/playfab/skinpacks/<offerId>.zip`, add an offer item JSON
+(`MarketplaceDurableCatalog_V1.2`, `packIdentity` = manifest header uuid, `Contents` entry
+`Type: "skinbinary"` pointing at `/playfab/skinpacks/<offerId>.zip`, tags incl.
+`skinpack` + `has_skinpack`), thumbnail PNG in `src/Apace.ApiServer/wwwroot/playfab/images/`.
 
 These use the `Data.Type = "ClientConfig"` item shape: `ContentType` (the exact string the
 client filters on), `ResponseType` (`catalogItem` or `bundle`), `MinClientVersion` /

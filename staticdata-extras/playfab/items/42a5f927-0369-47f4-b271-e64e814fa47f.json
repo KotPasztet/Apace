@@ -1,0 +1,63 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "ClientConfig",
+    "ContentType": "MarketplaceDurableCatalog_V1.2",
+    "ResponseType": "bundle",
+    "MinClientVersion": "1.0.0",
+    "MaxClientVersion": "65535.65535.65535",
+    "IsStackable": false,
+    "Price": 0,
+    "DisplayProperties": {
+      "creatorName": "KotPasztet",
+      "offerId": "ca74c960-ad18-461c-9355-2ca210fef580",
+      "price": 0,
+      "purchasable": true,
+      "packIdentity": [
+        {
+          "type": "skinpack",
+          "uuid": "3724ccc4-f959-41f5-a877-6cad824b08b7",
+          "version": "1.0.0"
+        }
+      ],
+      "skinPack": {
+        "count": 1
+      }
+    }
+  },
+  "Title": "Apace Skins",
+  "Description": "A custom skin pack by KotPasztet!",
+  "ThumbnailImageId": "4ef41e47-cba1-4358-a84f-2d265c286f0f",
+  "CreationDate": "2026-11-21T20:00:00.000Z",
+  "LastModifiedDate": "2026-11-21T20:00:00.000Z",
+  "StartDate": "2019-10-01T00:00:00Z",
+  "Id": "42a5f927-0369-47f4-b271-e64e814fa47f",
+  "FriendlyId": "ca74c960-ad18-461c-9355-2ca210fef580",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "42a5f927-0369-47f4-b271-e64e814fa47f",
+    "3724ccc4-f959-41f5-a877-6cad824b08b7",
+    "skinpack",
+    "has_skinpack"
+  ],
+  "Keywords": {},
+  "Contents": [
+    {
+      "Id": "ca74c960-ad18-461c-9355-2ca210fef580",
+      "Url": "/playfab/skinpacks/42a5f927-0369-47f4-b271-e64e814fa47f.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.0.0",
+      "Tags": [],
+      "Type": "skinbinary"
+    }
+  ],
+  "ItemReferences": [
+    {
+      "Id": "4f8e8e19-3218-4614-b0ff-3cd97e173f48",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

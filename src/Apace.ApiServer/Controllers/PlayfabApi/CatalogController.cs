@@ -6,6 +6,7 @@ using OData2Linq;
 using Serilog;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Apace.ApiServer.Models.Playfab;
 using Apace.Common.Utils;
@@ -264,6 +265,44 @@ internal sealed class CatalogController : ApaceControllerBase
         _ => content,
     };
 
+    // The dressing room's Classic Skins row (skinPackFeaturedQuery) selects its offers by
+    // explicit productIds — the committed layout manifest (a2e12d4d) only knows the two
+    // offers that existed when it was written. Skin pack offers added later are tagged
+    // "has_skinpack"; append their ids to every served skinPackFeaturedQuery so a new
+    // pack is just another item JSON (deduped, ids already in the list are kept in place).
+    private static IEnumerable<string> SkinPackOfferIds => StaticData.Playfab.Items.Values
+        .Where(item => item.Data is CItem.ClientConfigData { ContentType: "MarketplaceDurableCatalog_V1.2" }
+            && item.Tags.Contains("has_skinpack"))
+        .Select(item => item.Id.ToString());
+
+    private static JsonElement MergeSkinPackOffersIntoFeaturedQuery(JsonElement displayProperties)
+    {
+        JsonNode? node;
+        try
+        {
+            node = JsonNode.Parse(displayProperties.GetRawText());
+        }
+        catch (JsonException)
+        {
+            return displayProperties;
+        }
+
+        if (node?["dressingRoomLayout"]?["skinPackFeaturedQuery"]?["productIds"] is not JsonArray productIds)
+        {
+            return displayProperties;
+        }
+
+        foreach (string offerId in SkinPackOfferIds)
+        {
+            if (!productIds.Any(entry => entry?.GetValue<string>() == offerId))
+            {
+                productIds.Add(offerId);
+            }
+        }
+
+        return JsonSerializer.SerializeToElement(node, jsonOptions);
+    }
+
     private static Item CIItemToItem(CItem item)
     {
         Item.PriceR? price = item.Data switch
@@ -324,13 +363,17 @@ internal sealed class CatalogController : ApaceControllerBase
 
         // client-parsed entries (PersonaQueryManifest_V1.0, StoreConfig_V1.1,
         // MarketplaceDurableCatalog_V1.2) carry their displayProperties verbatim; every
-        // other item type gets the typed model below
+        // other item type gets the typed model below. The one exception: the dressing
+        // room layout's skinPackFeaturedQuery.productIds gets skin pack offers merged in
+        // (see MergeSkinPackOffersIntoFeaturedQuery).
         Dictionary<string, JsonElement>? extensionData = null;
         Item.DisplayPropertiesR? displayProperties;
         switch (item.Data)
         {
             case CItem.ClientConfigData configData:
-                extensionData = new() { ["DisplayProperties"] = configData.DisplayProperties };
+                extensionData = new() { ["DisplayProperties"] = configData.ContentType == "PersonaQueryManifest_V1.0"
+                    ? MergeSkinPackOffersIntoFeaturedQuery(configData.DisplayProperties)
+                    : configData.DisplayProperties };
                 displayProperties = null;
                 break;
             default:
