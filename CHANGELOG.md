@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased (dev) — Apace Cape crash fix: real encrypted container + server-delivered content key
+
+> Equipping any Apace Cape hard-crashed the MCE client (`std::bad_alloc`, `malloc(18446744073709551504)`) ~100ms after the piece download. Root cause (reverse-engineered from `libgenoa.so`): the previous synthesized `contents.json` copied the real 256-byte ContentIdentity header, so the client picked the DERIVED (encrypted-pack) strategy and computed `bodyLen − 256` on a 133-byte file — a size_t underflow into `operator new`.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **contents.json is now a real encrypted container** (`scripts/build_apace_piece.py`): valid 256-byte header (`u32@0x00 = 0`, magic `0x9BCFB9FC` LE @0x04, uuid length byte @0x10, pack uuid ASCII @0x11 — exact real-piece layout) followed by AES-256-CBC PKCS7 ciphertext of the `{"content":[{"path":..,"key":""},..]}` file map. Per-file keys are empty so the piece art stays plaintext; `signatures.json` is gone (a foreign one fails the hash check). The body is always ≥ 16 bytes, so the underflow crash is structurally impossible — worst case is a graceful pack rejection.
+- **The content key is delivered through the inventory receipt channel**: the client registers pack keys from PlayFab entitlement receipts riding on `/inventory/GetInventoryItems` — a JWT-shaped `Receipt` string whose payload must carry `iss == "https://playfab.com"`, `aud == "https://playfab.com/B63A0803D3653643/"` (the MCE title hash) and `Receipt.Entitlements[]` with `{FriendlyId: <pack uuid>, ContentKey: <key>}`. The Apace server now serves exactly that receipt for all three cape identities with a fixed key (`ApaceContentKey` in `InventoryController.cs`, mirrored as `APACE_CONTENT_KEY` in the build script).
+- **Manifest header/module versions bumped to 2.0.0** (client caches imported pieces by version), pack identities unchanged (uuids from the manifest headers). Flat `.mcpersona` sources still live only in git history (`a04a762^`) — the build script restores them, builds and removes them again.
+- **Byte-level verification built in**: the build self-checks the header layout, decrypts contents.json back with the receipt key, and asserts the file list matches the inner zip exactly (one `ppack0.zip` in the outer zip).
+- If the device does not honor the receipt (e.g. a receipt-signature check we cannot see), the client decrypts with its own fallback key, gets garbage and rejects the pack gracefully — the cape then still won't equip (fallback plan: swap `PieceId` to a real piece), but the crash is gone either way.
+
 ## Unreleased (dev) — Apace Cape equip fix: nested ppack format + device-test matrix
 
 > The Apace Cape items appeared in the dressing room but none of them could be equipped, while every real cosmetic could. Root cause: the pieces were shipped as a flat zip, but the MCE client only accepts the nested `ppack0.zip` structure every real Mojang piece binary uses.

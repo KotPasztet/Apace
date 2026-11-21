@@ -98,29 +98,59 @@ How it reaches the client:
    `manifest.json` (`persona_piece` module), the `apace_cape.meta.json` piece
    definition and applies the piece with the matching `piece_id` UUID.
 
-**The nested `ppack0.zip` structure is mandatory.** The first build (a0b4d51)
-shipped a flat zip (manifest + piece files at the zip root) and none of the
-Apace capes could be equipped — every real Mojang piece is an outer zip
-containing exactly one `ppack0.zip`, plus `signatures.json` (80 bytes) and a
-`contents.json` whose header embeds the manifest pack uuid. Real pieces carry
-Microsoft-encrypted content (meta/geometry/textures) and a real signature; we
-cannot produce either. The pieces are therefore rebuilt by
-`scripts/build_apace_piece.py` in the nested shape with PLAINTEXT content, in
-three test variants (this is the open device test):
+**The nested `ppack0.zip` structure is mandatory, and `contents.json` must be a
+real encrypted container.** Every real Mojang piece is an outer zip containing
+exactly one `ppack0.zip` whose `contents.json` is a 256-byte ContentIdentity
+header followed by an AES-encrypted body. The client reads the header to decide
+how to load the pack (reverse-engineered from `libgenoa.so`, arm64):
 
-- `6e8671bd-...zip` (Apace Cape, 128px) — synthesized `contents.json`, no
-  `signatures.json` → probes whether `contents.json` presence is required,
-- `a5d108fa-...zip` (Apace Cape 256) — bare inner pack → probes whether
-  plaintext/unsigned content loads at all,
-- `1981967a-...zip` (Apace Cape 512) — synthesized `contents.json` PLUS
-  `signatures.json` copied verbatim from a real piece → probes whether
-  signature presence (not validity) is enough.
+- header layout (identical in all 231 real pieces): `u32@0x00 == 0`,
+  magic `u32@0x04 == 0x9BCFB9FC` (LE), `byte@0x10 == 36`,
+  pack uuid as NUL-terminated ASCII at `0x11`;
+- if the header parses, the client selects the DERIVED access strategy
+  (DirectoryPackWithEncryption), resolves the pack key via its key provider for
+  that ContentIdentity, and DECRYPTS the rest of contents.json with
+  AES-256-CBC (key = keyString[0:32], IV = keyString[0:16], PKCS7);
+- the decrypted body is JSON `{"content":[{"path":"<file>","key":"<key>"},...]}`;
+  a file whose per-file key is empty is served raw, so the piece art itself can
+  stay plaintext;
+- if the header does not parse, the client falls back to the plain strategy and
+  reads contents.json as plaintext JSON.
 
-Reading the results: if 256 works, the client ignores both files (bare wins);
-if only 128 works, `contents.json` must exist but is not validated; if only
-512 works, `signatures.json` must exist but is not validated; if none work
-while real pieces still do, the client validates the crypto and a custom piece
-is impossible without Microsoft's keys — fall back to real pieces.
+History: the first build (a0b4d51) shipped a flat zip — nothing loaded. The
+second build (a04a762) shipped the nested shape with a synthesized 133-byte
+plaintext contents.json: its header PARSED (it copied the real layout), so the
+client went down the encrypted path and computed `bodyLen - 256` on a 133-byte
+file — size_t underflow, `malloc(18446744073709551504)`, uncaught
+`std::bad_alloc` ~100ms after download, hard crash. That crash is the reason
+the current build exists.
+
+The pieces are rebuilt by `scripts/build_apace_piece.py` as a REAL encrypted
+container: valid 256-byte header (pack uuid = manifest uuid) + AES-256-CBC
+body listing every file with an EMPTY per-file key, so piece files stay
+plaintext and openable. There is no `signatures.json` (a foreign one fails the
+hash check; absence is fine). The key is a fixed constant (`APACE_CONTENT_KEY`
+in the build script, mirrored in `InventoryController.cs`), delivered to the
+client through the content-key receipt channel:
+
+- the client registers pack keys from its PlayFab entitlement receipts. The
+  receipt rides on the `/inventory/GetInventoryItems` response (which Apace
+  serves itself): a JWT-shaped `Receipt` string whose payload validates with
+  `iss == "https://playfab.com"` and `aud == "https://playfab.com/B63A0803D3653643/"`
+  (the MCE title id hash) and carries `Receipt.Entitlements[]` entries of
+  `{FriendlyId: <pack uuid>, ContentKey: <key>, CreatorId, Quantity, InstanceId}`;
+- the same response pattern is cached in `premium_cache/*.ent` on the device;
+- receipts are processed asynchronously: payload validated, then each
+  entitlement's FriendlyId→ContentKey lands in the client's ContentKeyMap,
+  which the pack access strategies consult when loading contents.json.
+
+Because the receipts are plain JSON inside an alg=none JWT, no PlayFab secret
+is needed — but if the client enforces a receipt signature we cannot see, the
+key never registers and the client decrypts with whatever fallback it uses;
+decryption then yields garbage, the contents parse fails and the pack is
+rejected GRACEFULLY (no crash — the body is always ≥ 16 bytes, so the
+underflow can never happen again). In that case the cape still won't equip;
+the fallback plan is swapping the item's `PieceId` to a real piece.
 
 The piece inside the nested `ppack0.zip` (plaintext, you can open it):
 
@@ -137,18 +167,26 @@ The piece inside the nested `ppack0.zip` (plaintext, you can open it):
   accepts more than 128)
 - `texts/en_US.lang` — `persona.apace_cape.title=Apace Cape`
 
-Rebuild after changing art or variants: edit
-`scripts/build_apace_piece.py` (sources are the flat piece zips kept under
-version control history / the art PNG in the repo), run it, then run
-`scripts/update_apace_items.py` if item JSONs need refreshing, and restart the
-Api server. Bump the module/piece versions if the client may have cached the
-old piece, and replace the thumbnail PNG in
-`src/Apace.ApiServer/wwwroot/playfab/images/`.
+Rebuild after changing art: edit the flat piece sources (kept in git history at
+`a04a762^`; `scripts/build_apace_piece.py` restores them automatically, builds
+and removes them again), run it, then run `scripts/update_apace_items.py` if
+item JSONs need refreshing, and restart the Api server. The built manifest
+version is `2.0.0` — bump `BUILD_VERSION` in the build script if the client may
+have cached the old piece, and replace the thumbnail PNG in
+`src/Apace.ApiServer/wwwroot/playfab/images/`. Keep `APACE_CONTENT_KEY`
+in sync between `scripts/build_apace_piece.py` and
+`src/Apace.ApiServer/Controllers/PlayfabApi/InventoryController.cs` — the
+client will only accept the pack if the receipt key matches the one used to
+encrypt contents.json.
 
 Status: the catalog side is verified end-to-end (search returns the items, the
-binaries download with the nested structure). Whether the client ACCEPTS
-plaintext unsigned pieces is a device test — equip each cape variant in the
-dressing room and read the matrix above.
+binaries download with the nested structure) and the encrypted container is
+verified byte-level (header layout, AES roundtrip, exact file list). The open
+device test is whether the receipt-delivered key is accepted: equip each cape
+in the dressing room. If the capes equip — done, and the 256/512 variants
+additionally answer whether textures above 128px are accepted. If they do NOT
+equip but the game no longer crashes — the receipt channel is not being
+honored (see the fallback note above); swap the `PieceId` to a real piece.
 
 ## Where to get valid PieceIds
 
@@ -209,10 +247,10 @@ it downloads every piece it applies from the item's `personabinary` content
 (xforge `primary.zip` → `ppack0.zip`, signed and encrypted by Microsoft). Without
 the Contents entry the client waits for the piece download forever, which is why
 items in the dressing room used to spin on click. The binaries were fetched from
-the still-live xforge CDN (same bytes the real service served); a custom piece
-built from scratch cannot be encrypted by us, so a truly custom piece
-(the Apace Cape) rides on the same download path but in the plain Marketplace
-submission format — if the client refuses it, swap its `PieceId` to a real piece.
+the still-live xforge CDN (same bytes the real service served); a truly custom
+piece (the Apace Cape) rides on the same download path in a self-encrypted
+container whose key Apace delivers itself through the inventory receipt — see
+"The Apace Cape" section above.
 
 Removing or editing a built-in item: they are plain JSON files in
 `staticdata/playfab/items/` **inside the published output** (baked into the Docker

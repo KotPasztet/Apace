@@ -33,6 +33,11 @@ REFERENCE_IDS = {
 
 LAST_MODIFIED = "2026-11-21T15:30:00.000Z"
 
+# kept in sync with BUILD_VERSION in scripts/build_apace_piece.py: the client
+# caches imported pieces by version, so the catalog entry must advertise the
+# version the shipped pack's manifest carries
+DATA_VERSION = "2.0.0"
+
 
 def main() -> int:
     for item_id, content_id in CONTENT_IDS.items():
@@ -47,6 +52,10 @@ def main() -> int:
         if "AssetFileName" in data:
             del data["AssetFileName"]
             changed.append("dropped AssetFileName")
+
+        if data.get("Version") != DATA_VERSION:
+            data["Version"] = DATA_VERSION
+            changed.append(f"Data.Version -> {DATA_VERSION}")
 
         contents = [
             {
