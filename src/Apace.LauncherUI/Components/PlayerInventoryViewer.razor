@@ -546,26 +546,42 @@
         try
         {
             using var earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
-            EarthDB.Results results = await new EarthDB.Query(false)
+            EarthDB.Results results = await new EarthDB.Query(true)
                 .Get("inventory", PlayerId, typeof(Inventory))
-                .ExecuteAsync(earthDB, default);
-            Inventory inventory = results.Get<Inventory>("inventory");
-
-            if (SelectedItemToAdd.Stackable)
-            {
-                inventory.AddItems(SelectedItemToAdd.Id, AddItemCount);
-            }
-            else
-            {
-                NonStackableItemInstance[] instances = new NonStackableItemInstance[AddItemCount];
-                for (int i = 0; i < AddItemCount; i++)
+                .Get("journal", PlayerId, typeof(Journal))
+                .Then(results1 =>
                 {
-                    instances[i] = new NonStackableItemInstance(Guid.NewGuid().ToString(), 0);
-                }
-                inventory.AddItems(SelectedItemToAdd.Id, instances);
-            }
+                    Inventory inventory = results1.Get<Inventory>("inventory");
+                    Journal journal = results1.Get<Journal>("journal");
 
-            await SaveInventoryAsync(inventory);
+                    if (SelectedItemToAdd.Stackable)
+                    {
+                        inventory.AddItems(SelectedItemToAdd.Id, AddItemCount);
+                    }
+                    else
+                    {
+                        NonStackableItemInstance[] instances = new NonStackableItemInstance[AddItemCount];
+                        for (int i = 0; i < AddItemCount; i++)
+                        {
+                            instances[i] = new NonStackableItemInstance(Guid.NewGuid().ToString(), 0);
+                        }
+                        inventory.AddItems(SelectedItemToAdd.Id, instances);
+                    }
+
+                    // The game client expects every inventory item to have a journal entry
+                    // (first/last seen); without it the inventory request crashes server-side
+                    // and the client shows no inventory at all.
+                    long timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    if (journal.GetItem(SelectedItemToAdd.Id) is null)
+                    {
+                        journal.AddCollectedItem(SelectedItemToAdd.Id, timestamp, 0);
+                    }
+
+                    return new EarthDB.Query(true)
+                        .Update("inventory", PlayerId, inventory)
+                        .Update("journal", PlayerId, journal);
+                })
+                .ExecuteAsync(earthDB, default);
         }
         catch (Exception ex)
         {
