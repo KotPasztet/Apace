@@ -2,7 +2,9 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
 @using System.Diagnostics
+@using System.IO.Compression
 @using Serilog
+@using Apace.Buildplate.Model
 @using Apace.BuildplateImporter
 @using Apace.BuildplateRenderer
 @using Apace.DB
@@ -15,6 +17,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavManager
 @inject ServerManager ServerManager
+@inject IJSRuntime JS
 
 <PageTitle>Player Buildplates - Apace</PageTitle>
 
@@ -128,10 +131,25 @@
                     </div>
                     <div class="card-footer d-flex flex-column gap-2">
                         <div class="d-flex justify-content-between align-items-center">
-                            <button class="btn btn-outline-danger btn-sm" @onclick="() => OpenRemoveBuildplateModal(bp.Id)"
-                                    disabled="@bp.IsBusy">
-                                Remove
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-danger btn-sm" @onclick="() => OpenRemoveBuildplateModal(bp.Id)"
+                                        disabled="@bp.IsBusy">
+                                    Remove
+                                </button>
+
+                                <button class="btn btn-outline btn-sm" @onclick="() => ExportBuildplate(bp)"
+                                        disabled="@bp.IsBusy" title="Download this player's edited buildplate world">
+                                    @if (bp.IsExporting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm"></span>
+                                        <span>Exporting...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>↓ Export</span>
+                                    }
+                                </button>
+                            </div>
 
                             @if (bp.IsDirty || bp.IsSaving)
                             {
@@ -442,6 +460,7 @@ _playerPageSize));
                 Id = buildplateId,
                 Name = buildplate.Name,
                 Size = buildplate.Size,
+                Offset = buildplate.Offset,
                 BlocksPerMeter = buildplate.Scale,
                 IsNight = buildplate.Night,
                 ServerDataObjectId = buildplate.ServerDataObjectId,
@@ -579,6 +598,7 @@ BuildplateLauncher.ExeName))
                 Id = buildplateId,
                 Name = template.Name,
                 Size = template.Size,
+                Offset = dbBuildplate.Offset,
                 BlocksPerMeter = template.BlocksPerMeter,
                 IsNight = template.IsNight,
                 ServerDataObjectId = dbBuildplate.ServerDataObjectId,
@@ -784,6 +804,72 @@ BuildplateLauncher.ExeName))
         }
     }
 
+    private async Task ExportBuildplate(PlayerBuildplate bp)
+    {
+        if (bp.IsBusy)
+        {
+            return;
+        }
+
+        bp.IsExporting = true;
+        bp.ErrorMessage = null;
+
+        try
+        {
+            if (!await ServerManager.EnsureComponentsOnline(ObjectStoreServer.ExeName))
+            {
+                bp.ErrorMessage = "The server must be running.";
+                return;
+            }
+
+            await using var importer = await Importer.CreateFromSettings(Settings.Instance, Log.Logger, createEventBus: false);
+
+            // the player's edited world, not the template — this is the whole point
+            // of exporting from this page (the Buildplates page exports templates)
+            var data = await importer.ObjectStoreClient.GetAsync(bp.ServerDataObjectId);
+
+            if (data is null)
+            {
+                bp.ErrorMessage = "Could not get the buildplate world data from the object store.";
+                return;
+            }
+
+            var stream = new MemoryStream(data.Length);
+            stream.Write(data);
+            stream.Position = 0;
+
+            using (var zip = new ZipArchive(stream, ZipArchiveMode.Update, leaveOpen: true))
+            {
+                if (zip.GetEntry(WorldData.MetadataFileName) is null)
+                {
+                    var metadataEntry = zip.CreateEntry(WorldData.MetadataFileName);
+
+                    using (var metadataStream = metadataEntry.Open())
+                    {
+                        WorldData.WriteMetadata(metadataStream, new BuildplateMetadataV1(bp.Size, bp.Offset, bp.IsNight));
+                    }
+                }
+            }
+
+            stream.Position = 0;
+            using var streamRef = new DotNetStreamReference(stream);
+
+            string fileName = $"{bp.Name.Replace(" ", "_")}_player_export.zip";
+            await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+
+            Log.Information($"Exported player buildplate '{bp.Name}' ({bp.Id}) of player {PlayerId} as {fileName}");
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to export player buildplate '{bp.Id}' of player '{PlayerId}': {ex}");
+            bp.ErrorMessage = "Export failed. Try again?";
+        }
+        finally
+        {
+            bp.IsExporting = false;
+        }
+    }
+
     private bool HasPermission(string permission)
         => _user?.HasPermission(permission) ?? false;
 
@@ -792,6 +878,7 @@ BuildplateLauncher.ExeName))
         public required string Id { get; set; }
         public required string Name { get; set; }
         public int Size { get; set; }
+        public int Offset { get; set; }
         public int BlocksPerMeter { get; set; }
         public bool IsNight { get; set; }
 
@@ -807,7 +894,8 @@ BuildplateLauncher.ExeName))
         // UI State
         public bool IsSaving { get; set; }
         public bool IsRegeneratingPreview { get; set; }
-        public bool IsBusy => IsSaving || IsRegeneratingPreview;
+        public bool IsExporting { get; set; }
+        public bool IsBusy => IsSaving || IsRegeneratingPreview || IsExporting;
         public string? ErrorMessage { get; set; }
 
         public void AcceptChanges()
