@@ -1,0 +1,55 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "ClientConfig",
+    "ContentType": "MarketplaceDurableCatalog_V1.2",
+    "ResponseType": "bundle",
+    "MinClientVersion": "1.0.0",
+    "MaxClientVersion": "65535.65535.65535",
+    "IsStackable": false,
+    "Price": 0,
+    "DisplayProperties": {
+      "creatorName": "Minecraft",
+      "offerId": "9a5a67e2-4d3b-4f07-a1c4-88b0e5f2f6aa",
+      "price": 0,
+      "purchasable": true,
+      "packIdentity": [
+        {
+          "type": "skinpack",
+          "uuid": "c18e65aa-7b21-4637-9b63-8ad63622ef01",
+          "version": "1.0.0"
+        }
+      ],
+      "skinPack": {
+        "count": 3
+      }
+    }
+  },
+  "Title": "Standard",
+  "Description": "The classic Minecraft skins - Steve and Alex.",
+  "ThumbnailImageId": "8b52ee1a-9c4b-4a70-9f6e-2d47a53b1c04",
+  "CreationDate": "2026-11-21T20:00:00.000Z",
+  "LastModifiedDate": "2026-11-21T20:00:00.000Z",
+  "StartDate": "2019-10-01T00:00:00Z",
+  "Id": "c8a4571e-6df0-4b39-9d2e-1f6fbcad4e03",
+  "FriendlyId": "9a5a67e2-4d3b-4f07-a1c4-88b0e5f2f6aa",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "c8a4571e-6df0-4b39-9d2e-1f6fbcad4e03",
+    "c18e65aa-7b21-4637-9b63-8ad63622ef01",
+    "skinpack",
+    "has_skinpack",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "7d5e5f1c-8b3a-4a2e-9c6d-0e1b2a3c4d5e",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

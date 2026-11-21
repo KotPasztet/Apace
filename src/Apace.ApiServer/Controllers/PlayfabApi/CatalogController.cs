@@ -287,6 +287,15 @@ internal sealed class CatalogController : ApaceControllerBase
                     new("0113e233-7637-48e7-91b0-349fdc74713d", "0113e233-7637-48e7-91b0-349fdc74713d", "0113e233-7637-48e7-91b0-349fdc74713d", data.Price),
                 ]),
             ], []),
+            // client-parsed entries (skin pack offers) price in the same ruby currencies
+            CItem.ClientConfigData data => data.Price is { } configPrice ? new Item.PriceR([
+                new([
+                    new("ecd19d3c-7635-402c-a185-eb11cb6c6946", "ecd19d3c-7635-402c-a185-eb11cb6c6946", "ecd19d3c-7635-402c-a185-eb11cb6c6946", configPrice),
+                ]),
+                new([
+                    new("0113e233-7637-48e7-91b0-349fdc74713d", "0113e233-7637-48e7-91b0-349fdc74713d", "0113e233-7637-48e7-91b0-349fdc74713d", configPrice),
+                ]),
+            ], []) : null,
             CItem.RubyData => null,
             CItem.QueryManifestData => null,
             _ => throw new UnreachableException(),
@@ -313,6 +322,22 @@ internal sealed class CatalogController : ApaceControllerBase
         // typed response model so ToResponse can prefix the host
         contents = contents.Select(ConvertContent);
 
+        // client-parsed entries (PersonaQueryManifest_V1.0, StoreConfig_V1.1,
+        // MarketplaceDurableCatalog_V1.2) carry their displayProperties verbatim; every
+        // other item type gets the typed model below
+        Dictionary<string, JsonElement>? extensionData = null;
+        Item.DisplayPropertiesR? displayProperties;
+        switch (item.Data)
+        {
+            case CItem.ClientConfigData configData:
+                extensionData = new() { ["DisplayProperties"] = configData.DisplayProperties };
+                displayProperties = null;
+                break;
+            default:
+                displayProperties = BuildDisplayProperties(item);
+                break;
+        }
+
         return new Item(
             new Item.Entity(item.SourceEntityId, "namespace", "namespace"),
             new Item.Entity(item.SourceEntityId, "namespace", "namespace"),
@@ -324,6 +349,7 @@ internal sealed class CatalogController : ApaceControllerBase
                 CItem.PersonaData => "bundle",
                 CItem.RubyData => "catalogItem",
                 CItem.QueryManifestData => "catalogItem",
+                CItem.ClientConfigData data => data.ResponseType,
                 _ => throw new UnreachableException(),
             },
             item.FriendlyId is null ? [] : [new("FriendlyId", item.FriendlyId.Value)],
@@ -340,11 +366,19 @@ internal sealed class CatalogController : ApaceControllerBase
                 CItem.PersonaData => "PersonaDurable",
                 CItem.RubyData => "RubyOffer",
                 CItem.QueryManifestData => "GenoaQueryManifest_V0.0.3",
+                // the exact content type the client filters on ("PersonaQueryManifest_V1.0",
+                // "StoreConfig_V1.1", "MarketplaceDurableCatalog_V1.2")
+                CItem.ClientConfigData data => data.ContentType,
                 _ => throw new UnreachableException(),
             },
             new Item.Entity(item.CreatorEntityId, "title_player_account", "title_player_account"),
             new Item.Entity(item.CreatorEntityId, "title_player_account", "title_player_account"),
-            item.Data is CItem.RubyData or CItem.PersonaData ? false : null, // IsStackable (persona pieces are not stackable, like the built-in one)
+            item.Data switch
+            {
+                CItem.RubyData or CItem.PersonaData => false, // persona pieces are not stackable, like the built-in one
+                CItem.ClientConfigData data => data.IsStackable,
+                _ => null, // the real manifest/config entries omit IsStackable entirely
+            }, // IsStackable
             item.Data switch
             {
                 CItem.BuildplateData => ["android.amazonappstore", "android.googleplay", "b.store", "ios.store", "nx.store", "oculus.store.gearvr", "oculus.store.rift", "uwp.store", "uwp.store.mobile", "xboxone.store", "title.bedrockvanilla", "title.earth"],
@@ -352,6 +386,7 @@ internal sealed class CatalogController : ApaceControllerBase
                 CItem.PersonaData => ["android.amazonappstore", "android.googleplay", "b.store", "ios.store", "nx.store", "oculus.store.gearvr", "oculus.store.rift", "uwp.store", "uwp.store.mobile", "xboxone.store", "title.bedrockvanilla", "title.earth"],
                 CItem.RubyData => ["android.googleplay", "ios.store", "uwp.store", "title.bedrockvanilla", "title.earth"],
                 CItem.QueryManifestData => ["android.googleplay", "ios.store", "uwp.store", "title.earth"],
+                CItem.ClientConfigData => ["android.amazonappstore", "android.googleplay", "b.store", "ios.store", "nx.store", "oculus.store.gearvr", "oculus.store.rift", "uwp.store", "uwp.store.mobile", "xboxone.store", "title.bedrockvanilla", "title.earth"],
                 _ => throw new UnreachableException(),
             },
             item.Tags,
@@ -368,66 +403,71 @@ internal sealed class CatalogController : ApaceControllerBase
             price,
             price,
             [],
-            item.Data switch
-            {
-                CItem.BuildplateData data => Item.DisplayPropertiesR.CreateBuildplate(
-                    "Minecraft",
-                    data.Cost,
-                    item.Purchasable,
-                    data.Rarity.ToString().ToLowerInvariant(),
-                    [new("entitlement_EarthBuildPlate", data.Id, data.Version)],
-                    data.Id,
-                    data.Size.ToString().ToLowerInvariant(),
-                    data.UnlockLevel
-                ),
-                CItem.InventoryItemData data => Item.DisplayPropertiesR.CreateInventoryItem(
-                    data.Cost,
-                    data.Rarity.ToString(),
-                    [new("entitlement_InventoryItemOffer", data.Id, data.Version)],
-                    data.Id,
-                    data.Amount
-                ),
-                CItem.RubyData data => Item.DisplayPropertiesR.CreateRuby(
-                    data.BonusCoinCount,
-                    data.CoinCount,
-                    data.OriginalCreatorId,
-                    data.Sku
-                ),
-                CItem.QueryManifestData data => Item.DisplayPropertiesR.CreateQueryManifest(
-                    data.MinClientVersion,
-                    data.MaxClientVersion,
-                    data.Tabs.Select(tab => new Item.DisplayPropertiesR.Tab(
-                        tab.ScreenLayoutQueries.Select(layoutQuery => new Item.DisplayPropertiesR.Tab.ScreenLayoutQuery(
-                            // TODO: haven't seen it yet, but it's possible these can have properties
-                            layoutQuery.ColumnType is Apace.StaticData.Playfab.Tab.ColumnType.Rectangle ? new object() : null,
-                            layoutQuery.ColumnType is Apace.StaticData.Playfab.Tab.ColumnType.Square ? new object() : null,
-                            layoutQuery.ColumnType is Apace.StaticData.Playfab.Tab.ColumnType.Grid ? new object() : null,
-                            layoutQuery.Queries.Select(query => new Item.DisplayPropertiesR.Tab.ScreenLayoutQuery.Query(
-                                query.ProductIds,
-                                query.QueryContentTypes.Select(type => type.ToString()),
-                                query.TopCount
-                            )),
-                            layoutQuery.ComponentId
-                        )),
-                        tab.TabIcon,
-                        tab.TabTitle,
-                        tab.TabId
-                    )),
-                    data.GlobalNotSearchQueryTags
-                ),
-                CItem.PersonaData data => Item.DisplayPropertiesR.CreatePersona(
-                    data.CreatorName ?? "Minecraft",
-                    data.Price,
-                    item.Purchasable,
-                    data.Rarity,
-                    [new("persona_piece", data.PieceId, data.Version)],
-                    data.OfferId,
-                    data.PieceType
-                ),
-                _ => throw new UnreachableException(),
-            }
-        );
+            displayProperties
+        )
+        {
+            ExtensionData = extensionData,
+        };
     }
+
+    private static Item.DisplayPropertiesR BuildDisplayProperties(CItem item) => item.Data switch
+    {
+        CItem.BuildplateData data => Item.DisplayPropertiesR.CreateBuildplate(
+            "Minecraft",
+            data.Cost,
+            item.Purchasable,
+            data.Rarity.ToString().ToLowerInvariant(),
+            [new("entitlement_EarthBuildPlate", data.Id, data.Version)],
+            data.Id,
+            data.Size.ToString().ToLowerInvariant(),
+            data.UnlockLevel
+        ),
+        CItem.InventoryItemData data => Item.DisplayPropertiesR.CreateInventoryItem(
+            data.Cost,
+            data.Rarity.ToString(),
+            [new("entitlement_InventoryItemOffer", data.Id, data.Version)],
+            data.Id,
+            data.Amount
+        ),
+        CItem.RubyData data => Item.DisplayPropertiesR.CreateRuby(
+            data.BonusCoinCount,
+            data.CoinCount,
+            data.OriginalCreatorId,
+            data.Sku
+        ),
+        CItem.QueryManifestData data => Item.DisplayPropertiesR.CreateQueryManifest(
+            data.MinClientVersion,
+            data.MaxClientVersion,
+            data.Tabs.Select(tab => new Item.DisplayPropertiesR.Tab(
+                tab.ScreenLayoutQueries.Select(layoutQuery => new Item.DisplayPropertiesR.Tab.ScreenLayoutQuery(
+                    // TODO: haven't seen it yet, but it's possible these can have properties
+                    layoutQuery.ColumnType is Apace.StaticData.Playfab.Tab.ColumnType.Rectangle ? new object() : null,
+                    layoutQuery.ColumnType is Apace.StaticData.Playfab.Tab.ColumnType.Square ? new object() : null,
+                    layoutQuery.ColumnType is Apace.StaticData.Playfab.Tab.ColumnType.Grid ? new object() : null,
+                    layoutQuery.Queries.Select(query => new Item.DisplayPropertiesR.Tab.ScreenLayoutQuery.Query(
+                        query.ProductIds,
+                        query.QueryContentTypes.Select(type => type.ToString()),
+                        query.TopCount
+                    )),
+                    layoutQuery.ComponentId
+                )),
+                tab.TabIcon,
+                tab.TabTitle,
+                tab.TabId
+            )),
+            data.GlobalNotSearchQueryTags
+        ),
+        CItem.PersonaData data => Item.DisplayPropertiesR.CreatePersona(
+            data.CreatorName ?? "Minecraft",
+            data.Price,
+            item.Purchasable,
+            data.Rarity,
+            [new("persona_piece", data.PieceId, data.Version)],
+            data.OfferId,
+            data.PieceType
+        ),
+        _ => throw new UnreachableException(),
+    };
 
     private static Item ToResponse(Item item, HttpRequest request)
     {
@@ -448,6 +488,9 @@ internal sealed class CatalogController : ApaceControllerBase
     {
         var builder = new ODataConventionModelBuilder();
         builder.EntitySet<Item>("Item");
+        // ExtensionData is the JSON passthrough for client-parsed entries (serialized
+        // under the DisplayProperties key); hide it from the OData model
+        builder.EntityType<Item>().Ignore(item => item.ExtensionData);
 
         builder.ComplexType<Item.Entity>();
         builder.ComplexType<Item.AlternateId>();
@@ -490,10 +533,19 @@ internal sealed class CatalogController : ApaceControllerBase
         Item.PriceR? Price,
         Item.PriceR? PriceOptions,
         IEnumerable<object> DeepLinks,
-        Item.DisplayPropertiesR DisplayProperties,
+        // displayProperties for the client-parsed entries (PersonaQueryManifest_V1.0,
+        // StoreConfig_V1.1, MarketplaceDurableCatalog_V1.2) is served verbatim through
+        // the ExtensionData dictionary below (serialized under the DisplayProperties
+        // key); a JsonElement property named DisplayProperties would collide with the
+        // typed property at serialization metadata level. Only one of the two is ever
+        // set per item.
+        Item.DisplayPropertiesR? DisplayProperties = null,
         string? ETag = null
     )
     {
+        // raw displayProperties passthrough, see the constructor comment above
+        [JsonExtensionData]
+        public Dictionary<string, JsonElement>? ExtensionData { get; set; }
         public sealed record Entity(
             string Id,
             string Type,

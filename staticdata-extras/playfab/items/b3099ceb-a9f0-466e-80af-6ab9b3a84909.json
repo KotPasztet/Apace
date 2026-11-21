@@ -1,0 +1,55 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "ClientConfig",
+    "ContentType": "MarketplaceDurableCatalog_V1.2",
+    "ResponseType": "bundle",
+    "MinClientVersion": "1.0.0",
+    "MaxClientVersion": "65535.65535.65535",
+    "IsStackable": false,
+    "Price": 490,
+    "DisplayProperties": {
+      "creatorName": "Minecraft",
+      "offerId": "92147c69-4643-4510-8ad4-1ddaf00cbbba",
+      "price": 490,
+      "purchasable": true,
+      "packIdentity": [
+        {
+          "type": "skinpack",
+          "uuid": "acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806",
+          "version": "1.0.4"
+        }
+      ],
+      "skinPack": {
+        "count": 20
+      }
+    }
+  },
+  "Title": "City Folk Skin Pack",
+  "Description": "Dress as one of 20 city dwellers!",
+  "ThumbnailImageId": "313bbf8a-936a-4308-932b-a651e9998c6e",
+  "CreationDate": "2018-07-31T20:57:04.114Z",
+  "LastModifiedDate": "2026-11-21T20:00:00.000Z",
+  "StartDate": "2019-10-01T00:00:00Z",
+  "Id": "b3099ceb-a9f0-466e-80af-6ab9b3a84909",
+  "FriendlyId": "92147c69-4643-4510-8ad4-1ddaf00cbbba",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "b3099ceb-a9f0-466e-80af-6ab9b3a84909",
+    "acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806",
+    "skinpack",
+    "has_skinpack",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [],
+  "ItemReferences": [
+    {
+      "Id": "62c5d15f-0736-4a92-9a5b-4948b29b0d3f",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}

@@ -220,6 +220,42 @@ image from `staticdata-extras/`). Edit or delete the file there and restart the 
 server. Do not add a second file with the same item `Id` anywhere — duplicate ids
 crash the staticdata loader.
 
+## Classic skins (Steve / Alex skin packs)
+
+The dressing room's **Classic Skins** section (header `dr.header.skins`) shows Bedrock-style
+*skin packs*, not persona pieces. The packs themselves are **built into the client**
+(`data/skin_packs/vanilla` in the app bundle: the "Standard" pack `c18e65aa-7b21-4637-9b63-8ad63622ef01`
+with Steve/Alex/Dummy, plus the empty "Persona" pack `5eb65f73-af11-448e-82aa-1b7b165316ad`) —
+the server only supplies the catalog scaffolding around them:
+
+- `staticdata-extras/playfab/items/a2e12d4d-…json` — **`PersonaQueryManifest_V1.0`** ("Home L1"):
+  the dressing room layout (categories/subcategories per piece type, featured rows and
+  `skinPackFeaturedQuery` — the Classic Skins row, listing skin pack offer ids). Served
+  with the layout JSON from the real catalog (`displayProperties` passed through verbatim);
+  featured product ids are trimmed to the offers Apace can serve.
+- `staticdata-extras/playfab/items/b7c61d34-…json` — **`StoreConfig_V1.1`**: store/dressing
+  room configuration from the real catalog (`dressingRoomFilters`, `dressingRoomSearch`,
+  `dressingRoomClassicSkinsSearch`, …), verbatim.
+- `staticdata-extras/playfab/items/c8a4571e-…json` — **`MarketplaceDurableCatalog_V1.2`**,
+  free "Standard" pack offer: `displayProperties.packIdentity[0].uuid` is the client's own
+  vanilla pack uuid, so the client resolves it locally ("Skin pack is in repo") and offers
+  Steve/Alex for picking. `skinPack.count: 3`.
+- `staticdata-extras/playfab/items/b3099ceb-…json` — real 1P "City Folk Skin Pack" offer
+  (the client hardcodes a search for tag `acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806`, which is
+  that pack's uuid; the item comes from the live catalog unchanged). Its pack binary is not
+  servable (the real download went through the marketplace DLC pipeline), so picking it
+  shows the offer but the pack cannot actually download.
+
+These use the `Data.Type = "ClientConfig"` item shape: `ContentType` (the exact string the
+client filters on), `ResponseType` (`catalogItem` or `bundle`), `MinClientVersion` /
+`MaxClientVersion`, `IsStackable`, `Price` (ruby price for the response price block or
+`null` for none) and `DisplayProperties` — a raw JSON object served to the client unchanged
+(`displayProperties` key in catalog responses). All of them are free-form client-parsed
+entries: the server never interprets their displayProperties.
+
+Classic skin selection itself (`skin: true` entries in the serialized persona, skin ids
+shaped `<packUuid>_<skinName>` like `c18e65aa-…_Steve`) is entirely client-side.
+
 ## Diagnosing what the client asks for
 
 The Api server logs every catalog search filter at `Debug` level, and every search

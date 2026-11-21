@@ -171,6 +171,7 @@ public sealed class Playfab
         [JsonDerivedType(typeof(InventoryItemData), "InventoryItem")]
         [JsonDerivedType(typeof(RubyData), "Ruby")]
         [JsonDerivedType(typeof(PersonaData), "Persona")]
+        [JsonDerivedType(typeof(ClientConfigData), "ClientConfig")]
         public abstract record ItemData
         {
         }
@@ -213,6 +214,24 @@ public sealed class Playfab
             int Price,             // ruby price, 0 = free
             string? CreatorName,   // shown as the item creator, defaults to "Minecraft"
             string? AssetFileName  // optional: a file in staticdata/playfab/persona served as the personabinary download
+        ) : ItemData;
+
+        // Catalog entries the client reads by content type and parses itself; their
+        // displayProperties are served to the client verbatim. Used for the dressing
+        // room layout manifest (PersonaQueryManifest_V1.0 — categories, subcategories
+        // and the skinPackFeaturedQuery that feeds the "Classic Skins" row), the
+        // store/dressing room configuration (StoreConfig_V1.1 — incl.
+        // dressingRoomClassicSkinsSearch) and classic skin pack offers
+        // (MarketplaceDurableCatalog_V1.2 — displayProperties.packIdentity.uuid points
+        // at a skin pack the client resolves in its own skin_packs repository).
+        public sealed record ClientConfigData(
+            string ContentType,           // exact catalog content type, e.g. "PersonaQueryManifest_V1.0"
+            string ResponseType,          // catalog response Type field: "catalogItem" or "bundle"
+            string? MinClientVersion,
+            string? MaxClientVersion,
+            bool IsStackable,
+            int? Price,                   // ruby price for the response Price block, null = no price
+            JsonElement DisplayProperties // raw JSON object, passed through unmodified
         ) : ItemData;
 
         // does not have type discriminator, so cannot be loaded from items, instead created manually from shop tabs
