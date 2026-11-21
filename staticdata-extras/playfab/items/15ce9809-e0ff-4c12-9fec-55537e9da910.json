@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Extra Wide Smile",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "7ccbd4d8-48d8-47d8-b489-baf1c0d49c41",
   "CreationDate": "2019-08-30T01:10:51.48Z",
   "LastModifiedDate": "2026-06-11T02:17:58.945Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "5a7dba0b-3e9a-4899-94cc-0129545638d1",
+      "Url": "/playfab/persona/15ce9809-e0ff-4c12-9fec-55537e9da910.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "436b2230-2e96-4013-87ab-d755f5cc4806",

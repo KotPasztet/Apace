@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Bird Legs",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "3a768431-59f2-4817-8726-6d4f2b81d246",
   "CreationDate": "2020-07-21T03:46:22.855Z",
   "LastModifiedDate": "2026-06-10T20:27:44.563Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "e19c6d5c-7e14-40ab-818e-5dc1ce3a30be",
+      "Url": "/playfab/persona/ca94203a-fb82-4bef-a88c-8fe508c51266.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "78b8684d-894f-448f-b83c-c5e0c44e51d1",

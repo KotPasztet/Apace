@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Right Leg Cast",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "1640754b-172c-40cd-ac57-1453a1ba784a",
   "CreationDate": "2019-11-18T16:40:56.378Z",
   "LastModifiedDate": "2026-06-10T18:50:25.13Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "49c49193-148a-4ae8-a1d9-34ba91757ee2",
+      "Url": "/playfab/persona/b5c80c78-5c3e-4477-af7d-5ece09450fc1.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "0ecd9576-d631-4840-ba55-c083b1a14e8c",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Comfy Shorts",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "eeccb01e-c143-494f-ac90-6fa962c6fe51",
   "CreationDate": "2019-08-30T01:08:49.58Z",
   "LastModifiedDate": "2026-06-10T18:49:58.235Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "779a473a-c886-49b1-9092-187f691def5c",
+      "Url": "/playfab/persona/d7f44a57-822a-4c6d-a678-ff9d67a8a1ab.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "9422c02b-c309-41ad-90bf-ec745df9b224",

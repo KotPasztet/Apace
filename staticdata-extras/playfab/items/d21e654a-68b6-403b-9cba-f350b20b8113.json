@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Graduation Gown",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "8945773e-a872-49f6-abbf-14f1d91280b4",
   "CreationDate": "2020-06-08T22:16:05.912Z",
   "LastModifiedDate": "2026-06-10T20:25:43.32Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "016fe4cb-93f7-413d-bc2d-4dcdc753ba00",
+      "Url": "/playfab/persona/d21e654a-68b6-403b-9cba-f350b20b8113.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "d627d155-cf2f-4def-9a4f-c77e4a841018",

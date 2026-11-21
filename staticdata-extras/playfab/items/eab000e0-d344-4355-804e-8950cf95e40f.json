@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Ecstatic-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "a35e5155-730e-4230-8f73-d8c85bcd065b",
   "CreationDate": "2020-05-05T23:03:48.568Z",
   "LastModifiedDate": "2026-06-10T23:46:31.007Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "01eee1fb-61a0-4517-b7de-5e8acedcc731",
+      "Url": "/playfab/persona/eab000e0-d344-4355-804e-8950cf95e40f.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "97df4b74-9d1a-470c-a039-696cb8837210",

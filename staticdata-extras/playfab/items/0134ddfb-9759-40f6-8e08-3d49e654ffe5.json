@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Witch's Robe",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "2189ccb9-49f1-43c8-b418-2a78cbba2a5f",
   "CreationDate": "2020-11-24T17:32:13.141Z",
   "LastModifiedDate": "2026-06-10T20:29:15.526Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "25a64e7b-75ba-4cee-97bd-c92183835d1e",
+      "Url": "/playfab/persona/0134ddfb-9759-40f6-8e08-3d49e654ffe5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "f7b6cb1b-a20e-4c13-8b48-5059b8e0e75e",

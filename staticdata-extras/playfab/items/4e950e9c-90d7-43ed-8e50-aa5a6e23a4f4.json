@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Slicked Back",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "a4f13804-ba52-4c78-ac1c-ffef8b085f23",
   "CreationDate": "2019-08-30T01:10:45.929Z",
   "LastModifiedDate": "2026-06-10T18:49:16.246Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "266f8072-7f56-4557-8738-e7e9d191812e",
+      "Url": "/playfab/persona/4e950e9c-90d7-43ed-8e50-aa5a6e23a4f4.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "92615abc-f521-4a25-a67a-6f04c8a9c061",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Natural Curls",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "e33bb38d-9de1-42b6-b0c2-925a1a566926",
   "CreationDate": "2020-03-03T17:14:06.569Z",
   "LastModifiedDate": "2026-06-10T22:06:23.11Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "18d7968b-2f2d-4ced-b20d-a02a7f311af8",
+      "Url": "/playfab/persona/1f69cf65-d553-4015-be26-b693ce3b9a98.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "24df76df-baac-4ec4-9ea9-e718f0cb1945",

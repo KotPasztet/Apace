@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Witch Hat",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "44f983ab-2bb9-4187-bedc-0a03c3ab74fd",
   "CreationDate": "2020-05-18T16:37:23.235Z",
   "LastModifiedDate": "2026-06-10T22:03:30.06Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "70e4af4b-e91d-4df3-aa2a-3bb323325e8d",
+      "Url": "/playfab/persona/ec8d1aca-32b7-4c12-988d-2877cf85d2f3.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "965907a6-4097-4a24-b25a-f439b47cb849",

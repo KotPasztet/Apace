@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Basic Hoodie",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "d697bee4-ca83-41b8-befd-5f6695658d7a",
   "CreationDate": "2019-08-30T01:10:17.178Z",
   "LastModifiedDate": "2026-06-10T18:49:57.541Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "36d543ad-b555-4327-a095-50b11a73f9ee",
+      "Url": "/playfab/persona/894a9ae4-4be4-46ba-848f-14c127a5c24d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "7ee00f20-893f-4454-bf93-0a64f6be3542",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Lacy Dress",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "d332700f-624c-4e74-92fd-b89907a1d29d",
   "CreationDate": "2019-08-30T01:08:56.798Z",
   "LastModifiedDate": "2026-06-10T18:49:57.594Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "106c98dc-809e-4906-978a-bff8b8f25d6b",
+      "Url": "/playfab/persona/c6ea9f28-b1f5-4414-9726-7dad2da3b0bb.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "a2e68ae7-4412-41e6-9c35-19d3b606567e",

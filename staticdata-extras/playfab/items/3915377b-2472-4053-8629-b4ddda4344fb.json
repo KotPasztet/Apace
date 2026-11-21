@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Simple Beanie",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "39352f8a-b113-4935-8168-52e4a5328750",
   "CreationDate": "2019-08-30T01:06:29.125Z",
   "LastModifiedDate": "2026-06-10T18:49:15.506Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "69773832-56d7-4ba2-b7eb-ae0b4e101637",
+      "Url": "/playfab/persona/3915377b-2472-4053-8629-b4ddda4344fb.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "03363894-2eb9-472c-88db-b3b256cc0996",

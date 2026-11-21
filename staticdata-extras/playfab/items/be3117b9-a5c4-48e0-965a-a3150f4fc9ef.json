@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Basic Skirt",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "15faadf2-ea8f-4b3d-a04b-305959e86e50",
   "CreationDate": "2019-08-30T01:09:31.001Z",
   "LastModifiedDate": "2026-06-10T18:49:57.57Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "8cf4b643-aa5c-4816-84f4-7aa0e5ecb471",
+      "Url": "/playfab/persona/be3117b9-a5c4-48e0-965a-a3150f4fc9ef.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "fc434617-1d0d-430e-95c4-b9c3aadcdc62",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Emerald Suitcoat",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "4bb6ff28-1fc0-4c53-bc5e-c5b17d8c6576",
   "CreationDate": "2020-05-18T16:45:04.186Z",
   "LastModifiedDate": "2026-06-10T22:03:30.009Z",
@@ -42,7 +42,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "4db4d108-e735-439e-b168-24f2052ffad2",
+      "Url": "/playfab/persona/bf7b53eb-d6a0-407e-be11-0e8ca7568cd9.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "da82500d-260d-477e-8457-88b015e89e79",

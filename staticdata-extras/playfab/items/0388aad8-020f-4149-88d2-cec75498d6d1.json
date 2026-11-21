@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Rocket Thrusters",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "bbe6acc6-63a8-49f5-ac2a-20ed1da2e48d",
   "CreationDate": "2020-07-21T03:44:24.927Z",
   "LastModifiedDate": "2026-06-10T20:25:57.746Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "17f55c76-621f-422d-94e4-8cb3a3069a78",
+      "Url": "/playfab/persona/0388aad8-020f-4149-88d2-cec75498d6d1.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "0d883d5e-5c18-47c5-99db-d863f1a8e402",

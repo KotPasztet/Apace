@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Cowpoke Chaps",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "0a456e80-f41d-4fd4-aa40-325aedb84f81",
   "CreationDate": "2020-05-18T16:38:59.456Z",
   "LastModifiedDate": "2026-06-10T22:03:45.62Z",
@@ -42,7 +42,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "688553d0-a33f-444a-b03f-0bf5aa53e6a9",
+      "Url": "/playfab/persona/b28b7831-db2f-48b5-bd01-d41e9292f323.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "6917ff12-9658-472d-9743-058d8455a612",

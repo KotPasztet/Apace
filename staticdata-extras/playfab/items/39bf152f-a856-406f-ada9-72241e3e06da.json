@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Enchanters Hat",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "36e824cc-e61b-44eb-a96f-a8771a74ecc0",
   "CreationDate": "2020-05-18T16:48:40.797Z",
   "LastModifiedDate": "2026-06-10T22:03:30.415Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "81d1e3c6-a89a-47a1-a8b4-093e39ed0755",
+      "Url": "/playfab/persona/39bf152f-a856-406f-ada9-72241e3e06da.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "3a760d96-30d1-4cb8-976f-c92e36c70b98",

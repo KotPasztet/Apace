@@ -244,6 +244,26 @@ internal sealed class CatalogController : ApaceControllerBase
         ), jsonOptions), "application/json");
     }
 
+    private static object ConvertContent(object content) => content switch
+    {
+        CItem.QueryManifestContent qmContent => new Item.QueryManifestContent(
+            qmContent.Id, qmContent.Url, qmContent.MaxClientVersion, qmContent.MinClientVersion, qmContent.Tags, qmContent.Type),
+        JsonElement { ValueKind: JsonValueKind.Object } je when
+                je.TryGetProperty("Id", out var idProp) && idProp.ValueKind == JsonValueKind.String &&
+                je.TryGetProperty("Url", out var urlProp) && urlProp.ValueKind == JsonValueKind.String &&
+                je.TryGetProperty("Type", out var typeProp) && typeProp.ValueKind == JsonValueKind.String
+            => new Item.QueryManifestContent(
+                idProp.GetString() ?? "",
+                urlProp.GetString() ?? "",
+                je.TryGetProperty("MaxClientVersion", out var maxProp) && maxProp.ValueKind == JsonValueKind.String ? maxProp.GetString() ?? "" : "65535.65535.65535",
+                je.TryGetProperty("MinClientVersion", out var minProp) && minProp.ValueKind == JsonValueKind.String ? minProp.GetString() ?? "" : "1.0.0",
+                je.TryGetProperty("Tags", out var tagsProp) && tagsProp.ValueKind == JsonValueKind.Array
+                    ? tagsProp.EnumerateArray().Select(tag => tag.GetString() ?? "")
+                    : [],
+                typeProp.GetString() ?? ""),
+        _ => content,
+    };
+
     private static Item CIItemToItem(CItem item)
     {
         Item.PriceR? price = item.Data switch
@@ -286,6 +306,12 @@ internal sealed class CatalogController : ApaceControllerBase
                 "personabinary"
             )];
         }
+
+        // contents that came from the item json deserialize as raw JsonElement objects
+        // (CItem.Contents is IReadOnlyList<object>) and would pass through the response
+        // untouched, leaving relative urls the client cannot fetch - convert them to the
+        // typed response model so ToResponse can prefix the host
+        contents = contents.Select(ConvertContent);
 
         return new Item(
             new Item.Entity(item.SourceEntityId, "namespace", "namespace"),

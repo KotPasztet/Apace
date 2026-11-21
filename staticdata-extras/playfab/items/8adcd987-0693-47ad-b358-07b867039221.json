@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Long Locs",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "ae97adbc-2e81-4793-9466-8c43d1d431c7",
   "CreationDate": "2019-08-30T01:08:01.235Z",
   "LastModifiedDate": "2026-06-10T22:06:23.075Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "09a9b34f-7310-4a4d-9a2b-a91278267383",
+      "Url": "/playfab/persona/8adcd987-0693-47ad-b358-07b867039221.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "6e4e3a18-9c7b-492f-9d3d-e432a05d06d4",

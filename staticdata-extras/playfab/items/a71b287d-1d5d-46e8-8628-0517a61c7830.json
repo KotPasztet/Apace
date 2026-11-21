@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Dots",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "85f7abef-3e9b-4ac8-ba60-fde309ae444b",
   "CreationDate": "2019-08-30T01:09:56.556Z",
   "LastModifiedDate": "2026-06-10T23:46:31.037Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "f44c638f-aa1d-4b05-bf7f-44af9f743e9e",
+      "Url": "/playfab/persona/a71b287d-1d5d-46e8-8628-0517a61c7830.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "f815ff32-6e97-4aa8-a4e1-d8574d1edb81",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wheat Toothpick",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f8adb191-6f30-454b-af76-16d10820587e",
   "CreationDate": "2020-04-28T17:21:54.616Z",
   "LastModifiedDate": "2026-06-10T22:03:14.214Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "22920f97-6850-49a8-89b8-ca2c5946797a",
+      "Url": "/playfab/persona/846b7b9d-6ba0-4956-a457-4141b1427971.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "da657ded-5021-42dd-be7b-2a17b642ec88",

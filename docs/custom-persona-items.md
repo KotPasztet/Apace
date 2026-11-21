@@ -169,6 +169,19 @@ onto the staticdata submodule at publish time by `publish.ps1`:
 - thumbnails ship in `src/Apace.ApiServer/wwwroot/playfab/images/` and are served
   at `/playfab/images/<guid>.png`
 
+**Every built-in item also ships its real piece binary** (`Contents` entry of type
+`personabinary` pointing at `/playfab/persona/<item id>.zip`, file in
+`staticdata-extras/playfab/persona/`). This matters: the MCE client has **no**
+persona pieces compiled in — not even the Earth Hero set or the 2019 defaults —
+it downloads every piece it applies from the item's `personabinary` content
+(xforge `primary.zip` → `ppack0.zip`, signed and encrypted by Microsoft). Without
+the Contents entry the client waits for the piece download forever, which is why
+items in the dressing room used to spin on click. The binaries were fetched from
+the still-live xforge CDN (same bytes the real service served); a custom piece
+built from scratch cannot be encrypted by us, so a truly custom piece
+(the Apace Cape) rides on the same download path but in the plain Marketplace
+submission format — if the client refuses it, swap its `PieceId` to a real piece.
+
 Removing or editing a built-in item: they are plain JSON files in
 `staticdata/playfab/items/` **inside the published output** (baked into the Docker
 image from `staticdata-extras/`). Edit or delete the file there and restart the Api

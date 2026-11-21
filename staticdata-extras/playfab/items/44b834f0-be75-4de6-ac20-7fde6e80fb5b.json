@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Straight Pigtails",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "6f6ae4e7-a448-4ed8-8eac-360dd4f0dade",
   "CreationDate": "2019-08-30T01:10:47.434Z",
   "LastModifiedDate": "2026-06-10T22:06:23.076Z",
@@ -28,7 +28,16 @@
     "tag.hair"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "04d6e355-f9d1-4237-8569-f0af69976f8a",
+      "Url": "/playfab/persona/44b834f0-be75-4de6-ac20-7fde6e80fb5b.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "095ef2af-54fb-4b1d-9879-b3b2069eeacf",

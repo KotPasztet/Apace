@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Right Eyepatch",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f3a6639b-8be4-490e-8424-ee5bf1741825",
   "CreationDate": "2019-08-30T01:05:38.161Z",
   "LastModifiedDate": "2026-06-10T18:49:15.334Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "6f7f086c-8a94-4551-b604-144e4853ae71",
+      "Url": "/playfab/persona/08b33f73-460e-4387-ba87-3a0c1ab3de58.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "aa6f6850-06db-4eb1-88f3-c92295c3b6ae",

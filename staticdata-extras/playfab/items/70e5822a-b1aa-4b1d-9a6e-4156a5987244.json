@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Deep Gaze",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "1f74c70b-b6f2-442f-916c-56965feaa791",
   "CreationDate": "2020-05-05T23:04:58.553Z",
   "LastModifiedDate": "2026-06-10T20:30:32.827Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "80022c2f-5976-4232-9299-687bc8f2373b",
+      "Url": "/playfab/persona/70e5822a-b1aa-4b1d-9a6e-4156a5987244.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "8936fc1b-8db4-4881-9170-b4c0f03d3ae9",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Blue Jeans",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "eef436b6-f5f4-4407-be28-f6a7ce5ca69b",
   "CreationDate": "2019-08-30T01:08:25.214Z",
   "LastModifiedDate": "2026-06-10T18:49:15.76Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "a7bbe3cf-9926-47b6-b9ad-28ac02074221",
+      "Url": "/playfab/persona/23d3e05c-3402-420d-88ec-d1bee25c86e3.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "f436387c-c7af-4c7f-a6cd-b8dc8f3495e7",

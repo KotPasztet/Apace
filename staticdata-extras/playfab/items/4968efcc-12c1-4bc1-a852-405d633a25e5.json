@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Moobloom Skirt",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "002e236c-19ee-4b70-b7f7-92fb11a7eabc",
   "CreationDate": "2020-11-24T00:45:23.075Z",
   "LastModifiedDate": "2026-06-10T20:29:01.844Z",
@@ -45,7 +45,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "59d93f05-e5fe-4b0f-84db-c91dea1a82d5",
+      "Url": "/playfab/persona/4968efcc-12c1-4bc1-a852-405d633a25e5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "3519919c-2331-4bf6-8401-4409e84823f4",

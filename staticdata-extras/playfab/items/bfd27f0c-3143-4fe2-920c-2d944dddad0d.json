@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Hero's Gloves",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "3e0bbf98-df46-4489-a534-dc5084b0a5f1",
   "CreationDate": "2020-12-16T20:05:24.722Z",
   "LastModifiedDate": "2026-06-10T20:28:47.125Z",
@@ -45,7 +45,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "b971a65f-9881-4ef8-810f-71d659424948",
+      "Url": "/playfab/persona/bfd27f0c-3143-4fe2-920c-2d944dddad0d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "50bebe29-c516-4524-a21a-32c277aa8b14",

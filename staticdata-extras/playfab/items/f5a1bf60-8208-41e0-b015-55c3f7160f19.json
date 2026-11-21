@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Archers Quiver",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "4ecea6ac-2765-4e7f-8f7c-0fe952988326",
   "CreationDate": "2020-05-18T16:40:31.46Z",
   "LastModifiedDate": "2026-06-10T22:03:45.6Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "1eb0afee-055c-4fbd-a6bb-0a04eb9bc429",
+      "Url": "/playfab/persona/f5a1bf60-8208-41e0-b015-55c3f7160f19.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "fa7ceca1-eb32-4ac7-8460-435d873e6cdd",

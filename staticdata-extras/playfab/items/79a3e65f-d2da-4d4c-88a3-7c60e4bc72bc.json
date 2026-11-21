@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Bullseye Top",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "efe89fb2-5812-4578-9ca2-5f237be51174",
   "CreationDate": "2020-05-18T16:33:20.597Z",
   "LastModifiedDate": "2026-06-10T22:03:13.782Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "8deb4cd2-c990-4ae1-bee7-aa52da6cb196",
+      "Url": "/playfab/persona/79a3e65f-d2da-4d4c-88a3-7c60e4bc72bc.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "2b7c401a-dd2e-4e57-98a0-a95163671e53",

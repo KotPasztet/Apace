@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Shredded Shirt",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "4e4240b8-7bd2-4231-8605-fe2cd55aad2a",
   "CreationDate": "2020-12-11T23:47:56.607Z",
   "LastModifiedDate": "2026-06-10T20:29:15.518Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "82d97376-3ccb-4df1-b5c8-7acb644496b3",
+      "Url": "/playfab/persona/6fe6431d-544f-488c-b306-373e9b20f603.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "b1a79e17-c736-488a-b9e7-85af741b7e50",

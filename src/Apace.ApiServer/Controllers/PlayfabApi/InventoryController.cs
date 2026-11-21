@@ -1,16 +1,40 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Apace.ApiServer.Models.Playfab;
+using Serilog;
 
 namespace Apace.ApiServer.Controllers.PlayfabApi;
 
+// Economy v2 inventory endpoints. The MCE client calls redeem/GetVirtualCurrencies/
+// GetInventoryItems as a burst when it syncs persona state (dressing room / store),
+// and later purchase-style calls when claiming items. Bodies are logged at
+// Information level: the dress/claim wire format is still being mapped and these
+// logs are how the next missing endpoint gets identified.
 [Route("inventory")]
 [Route("20CA2.playfabapi.com/inventory")]
 internal sealed class InventoryController : ApaceControllerBase
 {
+    private async Task<string> ReadBodyAsync()
+    {
+        try
+        {
+            using var reader = new StreamReader(Request.Body);
+            var body = await reader.ReadToEndAsync();
+            Log.Information("inventory{Path} request body: {Body}", Request.Path.Value ?? "", body);
+            return body;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "failed to read inventory request body");
+            return "";
+        }
+    }
+
     [HttpPost("GetVirtualCurrencies")]
-    public ContentHttpResult GetVirtualCurrencies()
-        => JsonPascalCase(new PlayfabOkResponse(
+    public async Task<ContentHttpResult> GetVirtualCurrencies()
+    {
+        await ReadBodyAsync();
+        return JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -23,10 +47,13 @@ internal sealed class InventoryController : ApaceControllerBase
                 ["Items"] = Array.Empty<object>(),
             }
         ));
+    }
 
     [HttpPost("redeem")]
-    public ContentHttpResult Redeem()
-        => JsonPascalCase(new PlayfabOkResponse(
+    public async Task<ContentHttpResult> Redeem()
+    {
+        await ReadBodyAsync();
+        return JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -35,10 +62,13 @@ internal sealed class InventoryController : ApaceControllerBase
                 ["Failed"] = Array.Empty<object>(),
             }
         ));
+    }
 
     [HttpPost("GetInventoryItems")]
-    public ContentHttpResult GetInventoryItems()
-        => JsonPascalCase(new PlayfabOkResponse(
+    public async Task<ContentHttpResult> GetInventoryItems()
+    {
+        await ReadBodyAsync();
+        return JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
             new Dictionary<string, object>()
@@ -49,4 +79,5 @@ internal sealed class InventoryController : ApaceControllerBase
                 ["Subscriptions"] = Array.Empty<object>(),
             }
         ));
+    }
 }

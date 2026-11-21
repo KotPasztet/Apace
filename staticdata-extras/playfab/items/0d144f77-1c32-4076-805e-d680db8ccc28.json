@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Glub Glub",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "2b3afe6a-4fa3-4d7d-8c82-d5d1e4e7ce19",
   "CreationDate": "2019-08-30T01:11:06.848Z",
   "LastModifiedDate": "2026-06-10T22:03:45.414Z",
@@ -42,7 +42,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "63ceef87-8e86-4bb0-977c-6871da006229",
+      "Url": "/playfab/persona/0d144f77-1c32-4076-805e-d680db8ccc28.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "e630a0fc-d0bb-4672-ab29-1fd23d501ba7",

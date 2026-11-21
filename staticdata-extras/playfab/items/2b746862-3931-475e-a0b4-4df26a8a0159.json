@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Straight and Long",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "b5166f61-bb21-4cf4-8d31-4883895e0865",
   "CreationDate": "2019-08-30T01:10:25.329Z",
   "LastModifiedDate": "2026-06-10T18:49:15.512Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "6bf95f3a-b9d1-4c52-a3be-29bcee6c36e0",
+      "Url": "/playfab/persona/2b746862-3931-475e-a0b4-4df26a8a0159.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "b423efb6-af3a-4067-a53e-1f3aa62ce532",

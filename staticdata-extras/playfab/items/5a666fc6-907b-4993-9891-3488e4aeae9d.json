@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Racecar Suit Cap",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "2b2f7284-4b03-4664-8013-d9de5434e4ea",
   "CreationDate": "2020-08-20T22:36:15.689Z",
   "LastModifiedDate": "2026-06-10T20:26:58.437Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "86386cfc-1d9e-4e25-9286-e8169b81496f",
+      "Url": "/playfab/persona/5a666fc6-907b-4993-9891-3488e4aeae9d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "b21377ab-cd9a-49e9-9970-29317fa577d7",

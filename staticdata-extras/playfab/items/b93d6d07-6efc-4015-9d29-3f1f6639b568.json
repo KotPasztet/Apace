@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Short Centerpart",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "ff322c44-5c60-4c85-86d6-850573c11615",
   "CreationDate": "2019-08-30T01:07:53.229Z",
   "LastModifiedDate": "2026-06-10T18:49:15.525Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "8a36cec6-494d-4f0d-9026-05ea46138140",
+      "Url": "/playfab/persona/b93d6d07-6efc-4015-9d29-3f1f6639b568.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "3f77fdad-59e6-4f94-8535-616fcaf3e523",

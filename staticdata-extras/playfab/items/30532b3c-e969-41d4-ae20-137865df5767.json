@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Low Ponytail",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "e629b91d-36cc-4f75-a6f1-85ed64fe06cf",
   "CreationDate": "2020-01-29T23:09:44.795Z",
   "LastModifiedDate": "2026-06-10T23:31:34.506Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "b09c295f-4ce3-4d39-acb9-29aa24fb284a",
+      "Url": "/playfab/persona/30532b3c-e969-41d4-ae20-137865df5767.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "e654b135-f69a-416b-894e-46a32179438b",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "DIAMOND CROWN",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "045db042-a248-45ff-88c0-21deb7a65f1b",
   "CreationDate": "2020-05-18T16:50:17.078Z",
   "LastModifiedDate": "2026-06-10T22:03:30.422Z",
@@ -42,7 +42,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "f75ac548-9cef-4d6a-b270-9c0d1ab2e6f2",
+      "Url": "/playfab/persona/e4bf59f6-cead-4c19-9cbe-faded7b6c2a3.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "636e518c-bbb9-4755-9771-0c785b2c3047",

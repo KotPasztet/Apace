@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Explorers Cap",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "57a688e8-e24e-407c-be6f-0f81403b23ea",
   "CreationDate": "2020-08-10T16:54:18.657Z",
   "LastModifiedDate": "2026-06-10T20:26:28.62Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "ea6f9656-7f65-4d4a-9485-97894a88ab88",
+      "Url": "/playfab/persona/2dbb5eea-8fb3-42e9-b2a6-08b989a2bbf7.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "a630d319-c0c9-471b-8c6b-19f9160db8dd",

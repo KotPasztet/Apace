@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Beekeeper Suit",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "664fcf24-89d8-4a43-a368-f5ec4269df79",
   "CreationDate": "2020-09-26T06:42:06.997Z",
   "LastModifiedDate": "2026-06-10T22:14:17.113Z",
@@ -41,7 +41,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "8ae86072-b419-4409-b470-9ef332d991ab",
+      "Url": "/playfab/persona/1c6fbc95-2555-45c4-b447-5cd1805333b5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "bb5f1f1b-baf1-489d-afb8-0f4bc5bf2b5b",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Square-Brows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "11b90361-cc5d-4367-8b26-3dc8be209620",
   "CreationDate": "2019-08-30T01:11:44.599Z",
   "LastModifiedDate": "2026-06-10T23:46:31.034Z",
@@ -39,7 +39,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "4285c619-1c81-45cf-a6bb-27efb4fb7867",
+      "Url": "/playfab/persona/8f7250c7-d08b-464c-accb-a5eeb4dd813a.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "d841d27e-0241-4c5f-aadc-1fc2f6838924",

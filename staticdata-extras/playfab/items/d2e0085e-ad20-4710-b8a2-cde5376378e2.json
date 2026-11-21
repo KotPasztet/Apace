@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Beekeeper Hat",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "94a7e262-d1ac-4c9e-bc90-26825f0fe0b1",
   "CreationDate": "2020-09-11T21:22:38.066Z",
   "LastModifiedDate": "2026-06-10T22:03:30.413Z",
@@ -44,7 +44,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "be042a91-7c35-42bb-9552-b6bdd6cf34a7",
+      "Url": "/playfab/persona/d2e0085e-ad20-4710-b8a2-cde5376378e2.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "bb69d185-dc0e-41b9-9207-551fd1121f34",

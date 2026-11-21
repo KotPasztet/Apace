@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Excited",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "283873eb-15bb-46c6-b984-0f5b545bdf42",
   "CreationDate": "2020-05-05T23:02:37.048Z",
   "LastModifiedDate": "2026-06-10T20:30:32.74Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "118eee8f-e9e2-4397-8d32-1847ae6d12b0",
+      "Url": "/playfab/persona/01483121-8882-4bbc-8d31-5403ecf9cafb.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "e7db708e-979c-4d4f-bee3-0db9c343df46",

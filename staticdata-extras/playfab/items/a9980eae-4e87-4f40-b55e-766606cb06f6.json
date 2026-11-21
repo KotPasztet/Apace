@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Horned Sheep Vest",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "d77e801e-cfa3-4004-bcc1-363c907d1b57",
   "CreationDate": "2020-04-17T23:40:18.476Z",
   "LastModifiedDate": "2026-06-10T20:24:57.052Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "3e442d02-5093-4b48-8793-f1fbeab6b041",
+      "Url": "/playfab/persona/a9980eae-4e87-4f40-b55e-766606cb06f6.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "10d1f018-8f1b-492a-9ab4-72afa04f1140",

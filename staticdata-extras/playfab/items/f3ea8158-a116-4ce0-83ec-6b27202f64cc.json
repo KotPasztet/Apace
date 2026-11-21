@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Prosthetic Hand",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "a3caddce-742f-4a46-bd55-eb79c03abd39",
   "CreationDate": "2019-08-30T01:12:12.156Z",
   "LastModifiedDate": "2026-06-10T18:50:11.55Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "cfde77a4-9e5a-4a37-8b76-edcdd4a9d447",
+      "Url": "/playfab/persona/f3ea8158-a116-4ce0-83ec-6b27202f64cc.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "2d8c050c-da4a-4a77-ac82-c0784eb3cd1e",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Slime",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "b2722f69-8e62-4062-aaaa-45604bba4ef2",
   "CreationDate": "2020-05-18T16:33:56.594Z",
   "LastModifiedDate": "2026-06-11T02:23:47.536Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "820f3868-68f1-4e76-a301-b8984c458d66",
+      "Url": "/playfab/persona/3a50f3c7-b876-4e56-b457-4d7af5a954a8.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "853e92b5-34c2-4991-9c7b-8a5712243c77",

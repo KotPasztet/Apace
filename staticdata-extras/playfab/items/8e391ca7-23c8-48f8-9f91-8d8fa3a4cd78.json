@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Hero's Boots",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "8cbacd10-2448-4b1e-9d57-d2d0689b2768",
   "CreationDate": "2020-12-16T20:06:54.677Z",
   "LastModifiedDate": "2026-06-10T20:28:47.168Z",
@@ -45,7 +45,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "ca7cce61-f670-470b-8795-29448ce8fc3d",
+      "Url": "/playfab/persona/8e391ca7-23c8-48f8-9f91-8d8fa3a4cd78.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "8ac161d8-42a8-4594-9856-aba186c6c456",

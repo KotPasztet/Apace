@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wizard Robe",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "36cc13bb-68e2-4b2c-a553-778235fa0259",
   "CreationDate": "2020-10-01T18:47:24.13Z",
   "LastModifiedDate": "2026-06-10T20:27:27.557Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "bb24e66f-ac96-4c9f-87c5-f9563ddc9390",
+      "Url": "/playfab/persona/45ae49fb-064a-4efe-95a0-01f0fa4bebf1.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "26546d11-8016-45b2-9afb-18b1675fec3e",

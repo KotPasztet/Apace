@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Everyday Turban",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "8aeb72a6-f8d5-49f4-82ad-57eaa9f63bc3",
   "CreationDate": "2020-01-29T23:06:17.591Z",
   "LastModifiedDate": "2026-06-10T20:24:00.906Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "3dca13bb-4790-4d64-855e-924d2208c9eb",
+      "Url": "/playfab/persona/c0b7cde4-ff04-4028-a80b-258741a41980.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "d709541f-0b8f-4efa-adc9-dfced5ce6ae2",

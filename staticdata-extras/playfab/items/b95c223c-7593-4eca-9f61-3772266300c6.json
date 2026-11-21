@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Bushy Eyebrows",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "8a43790c-0c9d-4cb3-af20-4088a1be46bd",
   "CreationDate": "2019-08-30T01:10:00.376Z",
   "LastModifiedDate": "2026-06-10T18:51:20.518Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "d308d657-54f9-44c9-ae4e-10ba68e09ab3",
+      "Url": "/playfab/persona/b95c223c-7593-4eca-9f61-3772266300c6.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "46e8bd6d-6a35-473d-b7dc-d300a13c47b6",

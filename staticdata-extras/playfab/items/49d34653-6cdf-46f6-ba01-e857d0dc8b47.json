@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Rainbow Scarf",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "ceb772bb-29ae-4ff5-a9b6-cedd45d0b9a8",
   "CreationDate": "2020-05-20T22:51:08.181Z",
   "LastModifiedDate": "2026-06-10T20:25:12.891Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "d2f7a436-904d-4290-a730-0e057873f4a3",
+      "Url": "/playfab/persona/49d34653-6cdf-46f6-ba01-e857d0dc8b47.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "98873b67-ac13-4e33-b23a-b93655ff9558",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Long Curls",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "108889c6-b153-46b0-bab9-4aede79fdd73",
   "CreationDate": "2019-08-30T01:10:59.618Z",
   "LastModifiedDate": "2026-06-10T22:05:18.502Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "a7311a72-5955-481d-a0af-cc6f8d1de7d6",
+      "Url": "/playfab/persona/8d380230-fb60-4860-9474-f9981a6c320d.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "ab99dca7-292a-461e-84f5-5c84119e4173",

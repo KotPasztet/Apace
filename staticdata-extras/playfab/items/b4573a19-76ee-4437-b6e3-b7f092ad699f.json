@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Explorer Trousers",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "a9515d79-5e40-4c90-aee4-01b692b15050",
   "CreationDate": "2020-06-22T18:55:33.238Z",
   "LastModifiedDate": "2026-06-10T20:25:43.557Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "88cc8f25-77e7-4146-983c-ba931f010419",
+      "Url": "/playfab/persona/b4573a19-76ee-4437-b6e3-b7f092ad699f.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "2b150ad8-aa44-4d90-baec-bb0f99b34b87",

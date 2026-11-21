@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Science Experiment",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "63ffe819-f495-4616-a22b-b762f93b5e99",
   "CreationDate": "2020-07-21T03:45:46.024Z",
   "LastModifiedDate": "2026-06-10T20:25:57.266Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "6101da7a-7285-4797-8664-938ead40c5e1",
+      "Url": "/playfab/persona/dc10ed73-e742-4908-bf6f-e04d3e6bdbd5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "5cffaf85-901c-4b3e-a6a3-ac8e7323f26e",

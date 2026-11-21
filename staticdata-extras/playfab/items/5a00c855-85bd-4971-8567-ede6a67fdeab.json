@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Spiked Front",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "788bbb1d-a41a-44df-8e5e-f3b3056633d7",
   "CreationDate": "2019-08-30T01:10:49.033Z",
   "LastModifiedDate": "2026-06-10T22:06:22.89Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "1c5d98b2-96ce-4549-b4bf-42cb72363062",
+      "Url": "/playfab/persona/5a00c855-85bd-4971-8567-ede6a67fdeab.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "d3a68f41-e0eb-4da9-a5da-fdac428dbd5d",

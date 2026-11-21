@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Vitiligo Skin",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "1d6d47ed-e5ac-4994-a72e-ddf977a97060",
   "CreationDate": "2019-08-30T01:03:03.161Z",
   "LastModifiedDate": "2026-06-10T18:49:01.782Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "87a1ee8d-9ac5-43b9-a2f6-2e1ed469a45e",
+      "Url": "/playfab/persona/6790dae1-e0fb-4bf8-a483-61622dd6a0a5.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "e2f48611-1481-4e41-a67b-c73145ed5db3",

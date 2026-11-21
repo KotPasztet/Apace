@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "High Bun",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f259e8f5-8b64-4975-9464-c215465e1ee4",
   "CreationDate": "2019-08-30T01:11:42.815Z",
   "LastModifiedDate": "2026-06-10T22:06:23.097Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "7aa4a3f6-204b-4510-abe3-ddd298b27938",
+      "Url": "/playfab/persona/f3a11681-e82b-4009-aa25-0c0c2e3221bb.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "51fa70d7-7864-43dd-87d6-8918e76bdc08",

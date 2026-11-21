@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Moobloom Hood",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "e1588ccc-29f1-4389-99d6-aa9402ec62bc",
   "CreationDate": "2020-11-24T00:44:44.309Z",
   "LastModifiedDate": "2026-06-10T20:29:15.825Z",
@@ -50,7 +50,16 @@
       ]
     }
   },
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "4a212c43-c946-42e3-bb45-b78309c74e92",
+      "Url": "/playfab/persona/bf8e383d-ec76-4e7b-9792-f939b6afac44.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "22096852-bdd4-416c-8ba6-3b7302d4c1f2",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Balding Short",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "0af43b10-f0bc-4f65-bbf2-94b331e9dcd4",
   "CreationDate": "2019-08-30T01:04:16.701Z",
   "LastModifiedDate": "2026-06-10T18:51:07.778Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "5ad4f0d0-7d56-4499-b1c4-4761a5ca3ceb",
+      "Url": "/playfab/persona/9460f2ab-424e-497b-8e6a-33746fc9cc5a.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "2c605aec-03b8-4b9e-9fb8-302c6ed1872a",

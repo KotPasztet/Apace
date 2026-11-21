@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased (dev) — dressing room equippable: real piece binaries
+
+> Clicking a dressing room item used to spin forever and nothing could be equipped. Root cause: the MCE client has no persona pieces compiled in — it downloads every piece from the item's `personabinary` content — and our items shipped none.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **Ship the real piece binaries for all 231 built-in items** (`staticdata-extras/playfab/persona/<item id>.zip`, fetched from the still-live xforge CDN — the exact bytes the real service served). Every built-in item JSON now carries its `Contents` personabinary entry pointing at the local file, so the client can download and apply the piece instead of waiting forever.
+- `CatalogController.CIItemToItem` now converts Contents that come from item JSON files (raw `JsonElement`s, which previously passed through untouched and left relative URLs the client cannot fetch) into the typed response model; `ToResponse` then prefixes the host, exactly like it already did for `AssetFileName` pieces.
+- Inventory endpoints (`inventory/redeem`, `GetVirtualCurrencies`, `GetInventoryItems`) now log their request bodies at Information level — the persona claim/ownership wire format is still being mapped and this is how the next missing piece gets identified.
+
 ## Unreleased (dev) — Apace Cape
 
 > The server now has its own free cape in the dressing room — a real custom persona piece with art by KotPasztet, shipped as a `.mcpersona` binary and served to clients.

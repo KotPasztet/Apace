@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Lumberjack Shirt",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "eb4fbbe3-e221-443d-b1ca-c3d1dbdce752",
   "CreationDate": "2019-09-19T16:59:59.845Z",
   "LastModifiedDate": "2026-06-10T22:03:14.218Z",
@@ -30,7 +30,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "2fc305d7-99cd-49f1-9272-1c6bdb438f4d",
+      "Url": "/playfab/persona/c4aa54dd-5e44-45f6-b670-f42749b47a66.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "47b3e019-f948-4f15-bfcc-3041b33bafbc",

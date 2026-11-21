@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Wide Smile",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "f49787b3-36a1-4379-a1c6-83f3b9154407",
   "CreationDate": "2019-08-30T01:10:36.865Z",
   "LastModifiedDate": "2026-06-11T02:17:59.086Z",
@@ -28,7 +28,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "65cc2d47-83d4-4f20-a959-4848844a19ea",
+      "Url": "/playfab/persona/45ceb11f-2271-4b04-9d56-bc34ecfc3295.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "f6eb0cff-1db6-40d2-bcb8-288ce4ea0f25",

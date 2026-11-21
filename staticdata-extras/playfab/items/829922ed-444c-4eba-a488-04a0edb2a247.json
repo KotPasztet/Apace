@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Cluck Shirt",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "1d283980-01d4-4158-b93c-c63a3a77874f",
   "CreationDate": "2020-04-17T23:37:54.236Z",
   "LastModifiedDate": "2026-06-10T20:24:57.045Z",
@@ -29,7 +29,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "18cd521a-bc36-4532-a1fd-991b4991e3e0",
+      "Url": "/playfab/persona/829922ed-444c-4eba-a488-04a0edb2a247.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "58852e33-dfc6-4825-b8f1-c9461d458adf",

@@ -12,7 +12,7 @@
     "AssetFileName": null
   },
   "Title": "Pleated Dress",
-  "Description": "§",
+  "Description": "\u00a7",
   "ThumbnailImageId": "da663e69-98ec-443a-830c-0c42ad5dcb14",
   "CreationDate": "2019-08-30T01:08:58.653Z",
   "LastModifiedDate": "2026-06-10T18:49:15.767Z",
@@ -27,7 +27,16 @@
     "1P"
   ],
   "Keywords": {},
-  "Contents": [],
+  "Contents": [
+    {
+      "Id": "d132a82a-5dac-41c6-8946-94eb1ab43080",
+      "Url": "/playfab/persona/65e2a258-6a53-44ee-994c-ba6de08807da.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.11.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
   "ItemReferences": [
     {
       "Id": "e6173b64-7a3e-4a2d-9317-7a77f56dd09f",
