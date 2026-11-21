@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased (dev) — Apace Cape
+
+> The server now has its own free cape in the dressing room — a placeholder duplicating the built-in Hero's Cloak until custom art lands, with the swap-in workflow documented.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **New free "Apace Cape" cloak item** (`staticdata-extras/playfab/items/6e8671bd-….json`): every player can claim it from the dressing room's cloak category. As shipped it is a placeholder that reuses the built-in Hero's Cloak piece (and its thumbnail), so it works on every client with no downloads. Swapping in a custom cape is documented in `docs/custom-persona-items.md` ("The Apace Cape"): set `PieceId` to a custom persona piece, put the piece binary in `staticdata/playfab/persona/`, set `AssetFileName`, and replace the thumbnail.
+
 ## Unreleased (dev) — Log-in fix, inventory fix, filled dressing room
 
 > Fixes the two bugs from the 2026-11-21 play session (login 401 loop, panel-added items breaking the client inventory) and fills the dressing room with 231 real character creator items — something neither Solace nor Vienna ever had.
