@@ -8,14 +8,13 @@
     "Version": "1.1.0",
     "Rarity": "epic",
     "Price": 0,
-    "CreatorName": "KotPasztet",
-    "AssetFileName": "apace_cape.mcpersona"
+    "CreatorName": "KotPasztet"
   },
   "Title": "Apace Cape",
   "Description": "The official Apace cape. Art by KotPasztet.",
   "ThumbnailImageId": "10413b0a-1dfd-48d1-9215-22c0d41624ca",
   "CreationDate": "2020-12-10T18:59:39.396Z",
-  "LastModifiedDate": "2026-11-21T12:00:00.000Z",
+  "LastModifiedDate": "2026-11-21T15:30:00.000Z",
   "StartDate": "2020-12-10T18:59:39.396Z",
   "Id": "6e8671bd-7d35-442c-8e7c-39b6562490ca",
   "FriendlyId": "cdcedea6-65f6-4b3f-b600-f84a39d9ff73",
@@ -43,8 +42,22 @@
       ]
     }
   },
-  "Contents": [],
-  "ItemReferences": [],
+  "Contents": [
+    {
+      "Id": "b1e7f282-4c5a-4e02-9f31-6d0a1e5c7001",
+      "Url": "/playfab/persona/6e8671bd-7d35-442c-8e7c-39b6562490ca.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
+  "ItemReferences": [
+    {
+      "Id": "c8f2a9d1-5e34-4b67-9a02-14d6b3c85104",
+      "Amount": 1
+    }
+  ],
   "TitleTranslations": {},
   "DescriptionTranslations": {}
 }

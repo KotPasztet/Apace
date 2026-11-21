@@ -64,33 +64,65 @@ Fields:
 - `OfferId` — offer id, shown in the item details.
 - `Rarity` — lowercase: `common`, `uncommon`, `rare`, `epic`, `legendary`.
 - `Price` — ruby price, `0` for free.
-- `AssetFileName` — optional; a file in `staticdata/playfab/persona/` served at
-  `/playfab/persona/<file>` as the item's `personabinary` download (use this for
-  pieces the client does not have built in). `null` for built-in pieces.
+- `Contents` — the item's `personabinary` download. Real persona items carry an
+  explicit entry: `{ "Id": <guid>, "Url": "/playfab/persona/<itemId>.zip",
+  "MaxClientVersion": "65535.65535.65535", "MinClientVersion": "1.13.0",
+  "Tags": [], "Type": "personabinary" }`, pointing at a file named after the
+  ITEM id in `staticdata/playfab/persona/`. Use this for pieces the client does
+  not have built in. `[]` for built-in pieces.
+- `ItemReferences` — real persona items carry exactly one dangling reference
+  (`{ "Id": <guid>, "Amount": 1 }` whose target does not exist in the catalog);
+  replicate it so the item is structurally indistinguishable from real ones.
 - `ThumbnailImageId` — optional thumbnail GUID; PNG must exist at
   `wwwroot/playfab/images/<id>.png` in the Api server.
 
 ## The Apace Cape
 
-The server ships an **Apace Cape** — a free `persona_hood` (cloak) item available to
-every player by default, and it is a **real custom piece**: art by **KotPasztet**,
-shipped as a proper `.mcpersona` binary. Its catalog item is
+The server ships an **Apace Cape** — a free `persona_back` (cape) item available to
+every player by default, and it is a **real custom piece**: art by **KotPasztet**.
+Its catalog item is
 `staticdata-extras/playfab/items/6e8671bd-7d35-442c-8e7c-39b6562490ca.json`
 (`PieceId 3199377b-130a-4189-9b90-484ae751c54f`, creator KotPasztet, thumbnail
-`10413b0a-1dfd-48d1-9215-22c0d41624ca.png`).
+`10413b0a-1dfd-48d1-9215-22c0d41624ca.png`). Two more items (Apace Cape 256 /
+512) ship the same art at higher square resolutions as a device test.
 
 How it reaches the client:
 
-1. the dressing room shows the item in the cloak category; claiming it is free,
-2. `AssetFileName: apace_cape.mcpersona` makes the Api server advertise the
-   piece binary as the item's `personabinary` content (served from
-   `staticdata/playfab/persona/` at `/playfab/persona/apace_cape.mcpersona`),
-3. the client downloads that zip, reads its `manifest.json` (`persona_piece`
-   module), the `apace_cape.meta.json` piece definition and applies the piece
-   with the matching `piece_id` UUID.
+1. the dressing room shows the item in the capes category; claiming it is free,
+2. the item's `Contents` entry advertises the piece binary at
+   `/playfab/persona/6e8671bd-7d35-442c-8e7c-39b6562490ca.zip` (served from
+   `staticdata/playfab/persona/`, file named after the item id like the real
+   pieces),
+3. the client downloads that zip and opens the nested `ppack0.zip` inside it —
+   the exact structure of the 231 real piece binaries — reads its
+   `manifest.json` (`persona_piece` module), the `apace_cape.meta.json` piece
+   definition and applies the piece with the matching `piece_id` UUID.
 
-The piece itself (see `staticdata-extras/playfab/persona/apace_cape.mcpersona`,
-a plain zip you can open):
+**The nested `ppack0.zip` structure is mandatory.** The first build (a0b4d51)
+shipped a flat zip (manifest + piece files at the zip root) and none of the
+Apace capes could be equipped — every real Mojang piece is an outer zip
+containing exactly one `ppack0.zip`, plus `signatures.json` (80 bytes) and a
+`contents.json` whose header embeds the manifest pack uuid. Real pieces carry
+Microsoft-encrypted content (meta/geometry/textures) and a real signature; we
+cannot produce either. The pieces are therefore rebuilt by
+`scripts/build_apace_piece.py` in the nested shape with PLAINTEXT content, in
+three test variants (this is the open device test):
+
+- `6e8671bd-...zip` (Apace Cape, 128px) — synthesized `contents.json`, no
+  `signatures.json` → probes whether `contents.json` presence is required,
+- `a5d108fa-...zip` (Apace Cape 256) — bare inner pack → probes whether
+  plaintext/unsigned content loads at all,
+- `1981967a-...zip` (Apace Cape 512) — synthesized `contents.json` PLUS
+  `signatures.json` copied verbatim from a real piece → probes whether
+  signature presence (not validity) is enough.
+
+Reading the results: if 256 works, the client ignores both files (bare wins);
+if only 128 works, `contents.json` must exist but is not validated; if only
+512 works, `signatures.json` must exist but is not validated; if none work
+while real pieces still do, the client validates the crypto and a custom piece
+is impossible without Microsoft's keys — fall back to real pieces.
+
+The piece inside the nested `ppack0.zip` (plaintext, you can open it):
 
 - `manifest.json` — `format_version 1`, one module of type `persona_piece`
 - `apace_cape.meta.json` — `piece_id`/`piece_name`/`piece_type` plus
@@ -99,27 +131,24 @@ a plain zip you can open):
   `geometry.apace_cape.<body_size>` per body size; a single `cape` cube in the
   vanilla cape position (`[-5, 8, -3]`, size `[10, 16, 1]`, box UV `[0, 0]`)
   parented under `body`/`waist`/`root` so it follows the player torso
-- `apace_cape.png` — the cape texture, 64x64 (the classic 64x32 cape UV layout
-  in the top half; the sheet must be a **square power of two** — that is the
-  Marketplace persona rule, which is why the original 1024x512 art is downscaled
-  and padded)
+- `apace_cape.png` — the cape texture, 128x128 (the ct_cape layout, design
+  mirrored onto both faces; the sheet must be a **square power of two** — that
+  is the Marketplace persona rule; 256/512 variants probe whether the client
+  accepts more than 128)
 - `texts/en_US.lang` — `persona.apace_cape.title=Apace Cape`
 
-The file passes the Marketplace persona validator (Spright's `spyglass`,
-`spyglass check persona --layout standard`) with zero findings.
+Rebuild after changing art or variants: edit
+`scripts/build_apace_piece.py` (sources are the flat piece zips kept under
+version control history / the art PNG in the repo), run it, then run
+`scripts/update_apace_items.py` if item JSONs need refreshing, and restart the
+Api server. Bump the module/piece versions if the client may have cached the
+old piece, and replace the thumbnail PNG in
+`src/Apace.ApiServer/wwwroot/playfab/images/`.
 
-Swapping in different art later: replace `apace_cape.png` inside the zip — keep
-the classic cape UV layout on a square power-of-two sheet (64x64, 128x128, ...) —
-bump the module/piece versions if the client has cached the old one, and replace
-the thumbnail PNG in `src/Apace.ApiServer/wwwroot/playfab/images/`. The original
-1024x512 art is the author's; the design lives in the `(12,1)-(22,17)` UV region
-of that sheet and is mirrored into `(1,1)-(11,17)` (the face the vanilla cape
-orientation shows) during the build.
-
-Caveat: the `personabinary` download path follows the same wire format as the
-real service (`Contents` entry of type `personabinary`), but has not been
-verified against a real client yet — test on a patched client before promising
-it to players.
+Status: the catalog side is verified end-to-end (search returns the items, the
+binaries download with the nested structure). Whether the client ACCEPTS
+plaintext unsigned pieces is a device test — equip each cape variant in the
+dressing room and read the matrix above.
 
 ## Where to get valid PieceIds
 
@@ -148,9 +177,12 @@ that is where the built-in items below come from. Prefer free 1P items
 (`creatorName` `Minecraft`) created before 2021: the MCE client froze in January
 2021 and does not know newer pieces.
 
-For pieces the client does not have, put a persona piece zip (`.mcpersona`-style:
-manifest with the piece uuid, geometry, textures) into `staticdata/playfab/persona/`
-and reference it by file name in `AssetFileName`.
+For pieces the client does not have, build a persona piece (manifest with the
+piece uuid, meta with the `piece_id`, geometry, square power-of-two texture),
+wrap it in the nested `ppack0.zip` shape the real pieces use (see
+`scripts/build_apace_piece.py` and the Apace Cape section above), name the outer
+zip after the catalog ITEM id, drop it into `staticdata/playfab/persona/` and
+add the explicit `Contents` entry to the item JSON.
 
 ## Built-in dressing room items
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased (dev) — Apace Cape equip fix: nested ppack format + device-test matrix
+
+> The Apace Cape items appeared in the dressing room but none of them could be equipped, while every real cosmetic could. Root cause: the pieces were shipped as a flat zip, but the MCE client only accepts the nested `ppack0.zip` structure every real Mojang piece binary uses.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **Root cause found by comparing formats**: all 231 working piece binaries are an outer zip containing exactly one `ppack0.zip`, which holds `manifest.json` (plaintext), `texts/`, the piece files and two extra binary files — `signatures.json` (80 bytes, different per piece) and `contents.json` (header embeds the manifest pack uuid, body encrypted). The Apace pieces were flat zips with plaintext files only — the client downloaded nothing and equip silently did nothing.
+- **Pieces rebuilt in the nested shape** (`scripts/build_apace_piece.py`, replaces the lost v2 script): outer zip named after the catalog item id (`/playfab/persona/<itemId>.zip` — how real pieces are addressed), inner `ppack0.zip` with the plaintext piece content. Because Microsoft's content encryption and signatures cannot be reproduced, the three capes ship as a **device-test matrix**: Apace Cape (128px) with a synthesized `contents.json` (probes contents-presence), Apace Cape 256 bare (probes plaintext acceptance at all), Apace Cape 512 with `contents.json` plus a `signatures.json` copied verbatim from a real piece (probes signature-presence). If none equip while real pieces do, the client validates the crypto and custom art is impossible without Microsoft's keys — the doc records the full decision matrix (`docs/custom-persona-items.md`).
+- **Catalog items made structurally identical to real ones** (`scripts/update_apace_items.py`): explicit `Contents` entry of type `personabinary` pointing at `/playfab/persona/<itemId>.zip` with `MinClientVersion 1.13.0` (real-item values; the synthesized `AssetFileName` URL that pointed at `apace_cape.mcpersona` is gone), and the one dangling `ItemReferences` entry every real persona item carries (all 231 have it, the Apace items were the only ones without — harmless, but one more difference eliminated). `LastModifiedDate` bumped so clients refresh cached catalog entries.
+- **Verified end-to-end locally** (ApiServer + EventBus + ObjectStore on a machine): the `persona_back` dressing-room query returns all three Apace capes alongside the real capes/wings at price 0 and purchasable, each binary downloads with the exact nested structure of a real piece, and the other piece categories are unaffected. Whether the client accepts plaintext unsigned content is the remaining device test.
+
+
 ## Unreleased (dev) — every catalog cosmetic is free (no achievement gates)
 
 > The dressing room showed 82 cosmetics as locked behind Minecraft/Earth achievements, and 29 more reward-only items could not be acquired at all. Everything is now a normal free offer.

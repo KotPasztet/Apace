@@ -8,14 +8,13 @@
     "Version": "1.0.0",
     "Rarity": "epic",
     "Price": 0,
-    "CreatorName": "KotPasztet",
-    "AssetFileName": "apace_cape_256.mcpersona"
+    "CreatorName": "KotPasztet"
   },
   "Title": "Apace Cape 256",
   "Description": "HD resolution test build (256px). Art by KotPasztet.",
   "ThumbnailImageId": "fe8973ff-194a-4a3e-b959-b3b26d9751db",
   "CreationDate": "2020-12-10T18:59:39.396Z",
-  "LastModifiedDate": "2026-11-21T00:00:00.000Z",
+  "LastModifiedDate": "2026-11-21T15:30:00.000Z",
   "StartDate": "2020-12-10T18:59:39.396Z",
   "Id": "a5d108fa-13d8-4b42-ac22-9ddc659d1eaf",
   "FriendlyId": "840bffac-2871-46eb-afab-a33c025183b9",
@@ -43,8 +42,22 @@
       ]
     }
   },
-  "Contents": [],
-  "ItemReferences": [],
+  "Contents": [
+    {
+      "Id": "4d2c9a13-8e6b-4b7f-a25c-31f8d9e04a02",
+      "Url": "/playfab/persona/a5d108fa-13d8-4b42-ac22-9ddc659d1eaf.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.13.0",
+      "Tags": [],
+      "Type": "personabinary"
+    }
+  ],
+  "ItemReferences": [
+    {
+      "Id": "e3a67b20-9c41-4d58-8f73-62b9d0e17505",
+      "Amount": 1
+    }
+  ],
   "TitleTranslations": {},
   "DescriptionTranslations": {}
 }
