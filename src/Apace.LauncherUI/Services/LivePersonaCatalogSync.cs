@@ -317,6 +317,16 @@ public static class LivePersonaCatalogSync
                 {
                     logger.Information("Live persona catalog sync: {Pages} page(s), {Raw} raw item(s), {Unique} unique piece(s) so far",
                         PagesFetched, RawItemsFetched, byPiece.Count);
+
+                    // checkpoint: land the partial index during the walk so a redeploy
+                    // mid-sync still serves the pieces seen so far instead of nothing.
+                    // SyncedAt stays null on checkpoints — the scheduler keeps treating
+                    // the walk as due until a completed run stamps the final index.
+                    if (byPiece.Count > 0)
+                    {
+                        SyncIndex checkpoint = new(null, RawItemsFetched, emotes, [.. byPiece.Values.OrderBy(item => item.PieceType).ThenBy(item => item.Title)]);
+                        await WriteIndexAsync(checkpoint, cancellationToken);
+                    }
                 }
 
                 // the sort is not unique across equal creationDate values — expect some
@@ -341,9 +351,7 @@ public static class LivePersonaCatalogSync
 
             // 3. write the deduped index (atomic replace; the ApiServer hot-reloads it)
             var index = new SyncIndex(DateTimeOffset.UtcNow, RawItemsFetched, emotes, [.. byPiece.Values.OrderBy(item => item.PieceType).ThenBy(item => item.Title)]);
-            string tempPath = IndexPath + ".tmp";
-            await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(index, JsonOptions), cancellationToken);
-            File.Move(tempPath, IndexPath, overwrite: true);
+            await WriteIndexAsync(index, cancellationToken);
 
             LastSyncFinished = DateTimeOffset.UtcNow;
             logger.Information(
@@ -367,6 +375,15 @@ public static class LivePersonaCatalogSync
         {
             IsSyncing = false;
         }
+    }
+
+    // Atomic index write: temp file first, then an overwrite move — a crash can
+    // never leave the ApiServer (or the panel counters) reading a half-written index.
+    private static async Task WriteIndexAsync(SyncIndex index, CancellationToken cancellationToken)
+    {
+        string tempPath = IndexPath + ".tmp";
+        await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(index, JsonOptions), cancellationToken);
+        File.Move(tempPath, IndexPath, overwrite: true);
     }
 
     private static async Task<string> LoginAsync(CancellationToken cancellationToken)
