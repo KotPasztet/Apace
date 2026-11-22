@@ -325,7 +325,16 @@ public static class LivePersonaCatalogSync
                     if (byPiece.Count > 0)
                     {
                         SyncIndex checkpoint = new(null, RawItemsFetched, emotes, [.. byPiece.Values.OrderBy(item => item.PieceType).ThenBy(item => item.Title)]);
-                        await WriteIndexAsync(checkpoint, cancellationToken);
+                        try
+                        {
+                            await WriteIndexAsync(checkpoint, cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            // a checkpoint failure must never kill the walk — the final
+                            // write below is what matters; log it and keep paging
+                            logger.Warning("Live persona catalog sync: checkpoint write failed ({Error}) — continuing", ex.Message);
+                        }
                     }
                 }
 
@@ -368,7 +377,9 @@ public static class LivePersonaCatalogSync
         catch (Exception ex)
         {
             LastError = ex.Message;
-            logger.Error(ex, "Live persona catalog sync failed");
+            // message in the template line: launcher consoles usually print only
+            // the message, not the exception — keep the cause visible there too
+            logger.Error(ex, "Live persona catalog sync failed: {Error}", ex.Message);
             return false;
         }
         finally
@@ -383,7 +394,21 @@ public static class LivePersonaCatalogSync
     {
         string tempPath = IndexPath + ".tmp";
         await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(index, JsonOptions), cancellationToken);
-        File.Move(tempPath, IndexPath, overwrite: true);
+        // the ApiServer and the panel counters read this file on the same volume;
+        // on Windows a concurrent reader briefly blocks the overwrite move — retry
+        // instead of failing a multi-minute walk at the very last step
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(tempPath, IndexPath, overwrite: true);
+                return;
+            }
+            catch (IOException) when (attempt < 4)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
+            }
+        }
     }
 
     private static async Task<string> LoginAsync(CancellationToken cancellationToken)
@@ -411,25 +436,62 @@ public static class LivePersonaCatalogSync
 
     private static async Task<JsonElement> PostAsync(string path, Dictionary<string, object> body, IReadOnlyList<string> entityTokens, CancellationToken cancellationToken)
     {
-        using var client = new HttpClient
+        // the panel shares the server IP with every proxied client call; PlayFab
+        // answers bursts with 429 (and occasionally 5xx) — retry transient
+        // failures with backoff instead of killing a multi-minute walk, and put
+        // the status + body into the exception so LastError / the console line
+        // shows the real cause instead of a bare EnsureSuccessStatusCode text
+        for (int attempt = 1; ; attempt++)
         {
-            Timeout = TimeSpan.FromSeconds(40),
-        };
-        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "KotPasztet/Apace live-persona-catalog-sync");
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"https://20ca2.playfabapi.com{path}")
-        {
-            Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"),
-        };
-        if (entityTokens.Count > 0)
-        {
-            request.Headers.Add("X-EntityToken", entityTokens[^1]);
-        }
+            try
+            {
+                using var client = new HttpClient
+                {
+                    Timeout = TimeSpan.FromSeconds(40),
+                };
+                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "KotPasztet/Apace live-persona-catalog-sync");
+                using var request = new HttpRequestMessage(HttpMethod.Post, $"https://20ca2.playfabapi.com{path}")
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"),
+                };
+                if (entityTokens.Count > 0)
+                {
+                    request.Headers.Add("X-EntityToken", entityTokens[^1]);
+                }
 
-        using var response = await client.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
-        return doc.RootElement.Clone();
+                using var response = await client.SendAsync(request, cancellationToken);
+                string payload = await response.Content.ReadAsStringAsync(cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    string snippet = payload.Trim();
+                    if (snippet.Length > 300)
+                    {
+                        snippet = snippet[..300];
+                    }
+
+                    throw new HttpRequestException($"PlayFab {path} returned HTTP {(int)response.StatusCode} ({response.StatusCode}): {snippet}");
+                }
+
+                using var doc = JsonDocument.Parse(payload);
+                return doc.RootElement.Clone();
+            }
+            catch (Exception ex) when (attempt < 3 && IsTransient(ex))
+            {
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 3), cancellationToken);
+            }
+        }
     }
+
+    private static bool IsTransient(Exception ex) => ex switch
+    {
+        HttpRequestException hre when hre.StatusCode is null
+            || hre.StatusCode == System.Net.HttpStatusCode.TooManyRequests
+            || (int)hre.StatusCode >= 500 => true,
+        // HttpClient timeouts surface as TaskCanceledException with a clean token
+        TaskCanceledException tce when !tce.CancellationToken.IsCancellationRequested => true,
+        IOException => true,
+        _ => false,
+    };
 
     private static async Task<string> PostCatalogSearchAsync(string masterToken, int skip, int top, CancellationToken cancellationToken)
     {
