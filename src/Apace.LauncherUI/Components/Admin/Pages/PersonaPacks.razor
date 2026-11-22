@@ -123,15 +123,10 @@
 @code {
     private sealed record PacksConfig(bool Gating, List<string> DefaultPacks);
 
-    // light-weight index shape (camelCase JSON in the volume) — the ApiServer
-    // keeps the full model, the panel only needs the category counts here
-    private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items);
-    private sealed record IndexItem(string Id, string Title, string PieceType, string? ThumbnailUrl, bool IsEmote);
+    private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
 
-    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
-
-    private List<(string PieceType, int Count)> _categories = [];
-    private List<(string PieceType, int Count)> _defaultRows = [];
+    private List<PersonaPackIndex.PackCategory> _categories = [];
+    private List<PersonaPackIndex.PackCategory> _defaultRows = [];
     private List<string> _grantRows = [];
     private bool _gating;
     private HashSet<string> _defaults = [];
@@ -154,36 +149,7 @@
 
     private void LoadCategories()
     {
-        _categories = [];
-        try
-        {
-            string path = LivePersonaCatalogSync.IndexPath;
-            if (!File.Exists(path))
-            {
-                _indexSummary = "No synced persona catalog index yet — run a sync first (System Configuration → \"Sync now\", or wait for the scheduled sync).";
-                return;
-            }
-
-            var index = JsonSerializer.Deserialize<IndexFile>(File.ReadAllText(path), _jsonOptions);
-            if (index?.Items is not { Count: > 0 })
-            {
-                _indexSummary = "The synced index holds no items yet — run a sync first.";
-                return;
-            }
-
-            _categories = [.. index.Items
-                .Where(item => !item.IsEmote)
-                .GroupBy(item => item.PieceType)
-                .Select(group => (group.Key, group.Count()))
-                .OrderByDescending(row => row.Item2)];
-            _indexSummary = $"Marketplace index: {index.Items.Count - index.EmoteCount} wearable piece(s) in {_categories.Count} pack(s), "
-                + $"{index.EmoteCount} emote(s) (never offered — the dressing room has no emote category).";
-        }
-        catch (Exception ex)
-        {
-            _indexSummary = $"Reading the persona catalog index failed: {ex.Message}";
-        }
-
+        (_categories, _indexSummary) = PersonaPackIndex.ReadCategories();
         RebuildRows();
     }
 
@@ -194,8 +160,8 @@
         var known = _categories.Select(row => row.PieceType).ToHashSet(StringComparer.OrdinalIgnoreCase);
         _defaultRows = [.. _categories, .. _defaults
             .Where(pack => !known.Contains(pack))
-            .Select(pack => (pack, 0))
-            .OrderBy(row => row.pack)];
+            .Select(pack => new PersonaPackIndex.PackCategory(pack, 0))
+            .OrderBy(row => row.PieceType)];
         _grantRows = [.. known, .. _grants.Where(pack => !known.Contains(pack)), ];
     }
 

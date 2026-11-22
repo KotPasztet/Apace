@@ -1,0 +1,30 @@
+@namespace Apace.LauncherUI.Components.Admin.Shared
+
+@* Shared tab bar for the per-player admin pages (Inventory / Skins /
+   Buildplates / Skin Packs). Plain <a> links with an explicit Active key —
+   NavLink's automatic active class would fight the manual highlight. *@
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @ActiveClass("inventory")" href="@($"/Admin/Players/{PlayerId}/Inventory")">Inventory</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @ActiveClass("skins")" href="@($"/Admin/Players/{PlayerId}/Skins")">Skins</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @ActiveClass("buildplates")" href="@($"/Admin/Players/{PlayerId}/Buildplates")">Buildplates</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @ActiveClass("packs")" href="@($"/Admin/Players/{PlayerId}/Packs")">Skin Packs</a>
+    </li>
+</ul>
+
+@code {
+    [Parameter]
+    public string PlayerId { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Active { get; set; } = string.Empty;
+
+    private string ActiveClass(string key)
+        => string.Equals(Active, key, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+}

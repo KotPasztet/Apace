@@ -1,0 +1,189 @@
+@page "/Admin/Players/{PlayerId}/Packs"
+@using Microsoft.AspNetCore.Authorization
+@using Serilog
+@using Apace.DB
+@using Apace.DB.Models.Player
+@using Apace.LauncherUI.Services
+@using Apace.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.ManagePlayers)]
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>Player Skin Packs - Apace</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <a href="/Admin/Players" class="btn btn-link p-0 mb-2">
+        ← Back to Players
+    </a>
+    <div class="d-flex align-items-baseline gap-2">
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+            <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Skin Packs
+        </div>
+    </div>
+</div>
+<div class="d-flex align-items-baseline gap-2 mb-3">
+    <h2 class="mb-0" style="font-size: 1.25rem;">
+        Skin packs for @(string.IsNullOrEmpty(_username) ? $"player {PlayerId}" : $"{_username} (ID: {PlayerId})")
+    </h2>
+</div>
+
+<PlayerTabs PlayerId="@PlayerId" Active="packs" />
+
+@if (_message is not null)
+{
+    <div class="alert alert-info py-2 px-3">@_message</div>
+}
+
+<div class="card mb-4">
+    <div class="card-header">Granted packs (extra categories beyond the panel defaults)</div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">@EffectiveSummary
+            Global defaults are managed on the <a href="/Admin/PersonaPacks">Skin Packs</a> page.</p>
+
+        @if (_indexSummary is not null)
+        {
+            <p class="text-muted small">@_indexSummary</p>
+        }
+
+        @if (_grantRows.Count == 0)
+        {
+            <p class="text-muted small mb-2">No packs available yet — run the live persona catalog sync first
+                (System Configuration → "Sync now", or wait for the scheduled sync).</p>
+        }
+        <div class="row">
+            @foreach (var (pieceType, count) in _grantRows)
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="grant-@pieceType"
+                               checked="@_grants.Contains(pieceType)"
+                               @onchange="@(e => Toggle(pieceType, e.Value is bool v && v))" />
+                        <label class="form-check-label" for="grant-@pieceType">
+                            @pieceType <span class="text-muted small">(@count item@(count == 1 ? "" : "s"))</span>
+                        </label>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveGrantsAsync" disabled="@_saving">
+            @if (_saving)
+            {
+                <span class="spinner-border spinner-border-sm"></span>
+            }
+            Save grants
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string PlayerId { get; set; } = string.Empty;
+
+    private string? _username;
+    private List<PersonaPackIndex.PackCategory> _categories = [];
+    private List<PersonaPackIndex.PackCategory> _grantRows = [];
+    private HashSet<string> _grants = [];
+    private string? _indexSummary;
+    private string? _message;
+    private bool _saving;
+    private EarthDB? _earthDB;
+
+    private string EffectiveSummary
+    {
+        get
+        {
+            if (!(Settings.Instance.PersonaPackGating ?? false))
+            {
+                return "Pack gating is OFF — this player currently sees the whole live marketplace.";
+            }
+
+            var defaults = Settings.Instance.PersonaDefaultPacks ?? [];
+            var granted = _grants.Where(pack => !defaults.Contains(pack, StringComparer.OrdinalIgnoreCase)).ToList();
+            return $"This player sees {(defaults.Count + granted.Count)} pack(s): "
+                + $"{defaults.Count} default + {granted.Count} granted"
+                + (granted.Count > 0 ? $" ({string.Join(", ", granted)})." : ".");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        (_categories, _indexSummary) = PersonaPackIndex.ReadCategories();
+        RebuildRows();
+        try
+        {
+            using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+            if (liveDb is not null)
+            {
+                _username = await DataUtils.GetUsername(PlayerId, liveDb);
+            }
+
+            _earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
+            EarthDB.Results results = await new EarthDB.Query(false)
+                .Get("personaPacks", PlayerId, typeof(PersonaPackGrants))
+                .ExecuteAsync(_earthDB, default);
+            _grants = [.. results.Get<PersonaPackGrants>("personaPacks")?.Packs ?? []];
+            RebuildRows();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load persona pack grants for player '{PlayerId}'", PlayerId);
+            _message = $"Loading the grants failed: {ex.Message}";
+        }
+    }
+
+    private void RebuildRows()
+    {
+        // grants may reference piece types the current index no longer has
+        // (re-sync dropped them) — keep them listed so they can be unchecked
+        var known = _categories.Select(row => row.PieceType).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _grantRows = [.. _categories, .. _grants
+            .Where(pack => !known.Contains(pack))
+            .Select(pack => new PersonaPackIndex.PackCategory(pack, 0))
+            .OrderBy(row => row.PieceType)];
+    }
+
+    private void Toggle(string pack, bool on)
+    {
+        if (on)
+        {
+            _grants.Add(pack);
+        }
+        else
+        {
+            _grants.Remove(pack);
+        }
+    }
+
+    private async Task SaveGrantsAsync()
+    {
+        if (_earthDB is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _message = null;
+        try
+        {
+            await new EarthDB.Query(true)
+                .Update("personaPacks", PlayerId, new PersonaPackGrants { Packs = [.. _grants] })
+                .ExecuteAsync(_earthDB, default);
+            _message = "Grants saved — the ApiServer applies them within ~30 seconds, once the dressing room reloads.";
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to save persona pack grants for player '{PlayerId}'", PlayerId);
+            _message = $"Saving the grants failed: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _earthDB?.Dispose();
+    }
+}

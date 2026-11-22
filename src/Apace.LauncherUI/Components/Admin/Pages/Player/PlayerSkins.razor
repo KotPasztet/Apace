@@ -38,6 +38,9 @@
         }
     </button>
 </div>
+
+<PlayerTabs PlayerId="@PlayerId" Active="skins" />
+
 <div class="d-flex align-items-baseline gap-2 mb-3">
     <h2 class="mb-0" style="font-size: 1.25rem;">
         Persona for @(string.IsNullOrEmpty(_username) ? $"player {PlayerId}" : $"{_username} (ID: {PlayerId})")

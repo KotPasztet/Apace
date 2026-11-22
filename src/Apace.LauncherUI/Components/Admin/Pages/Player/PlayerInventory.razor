@@ -19,6 +19,9 @@
         </div>
     </div>
 </div>
+
+<PlayerTabs PlayerId="@PlayerId" Active="inventory" />
+
 <div class="d-flex align-items-baseline gap-2 mb-3">
     <h2 class="mb-0" style="font-size: 1.25rem;">
         Inventory for @(string.IsNullOrEmpty(_username) ? $"player {PlayerId}" : $"{_username} (ID: {PlayerId})")
