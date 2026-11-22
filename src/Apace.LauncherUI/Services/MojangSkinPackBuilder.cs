@@ -2,6 +2,7 @@ using Serilog;
 using System.Globalization;
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json;
 using ILogger = Serilog.ILogger;
 
 namespace Apace.LauncherUI.Services;
@@ -45,6 +46,14 @@ public static class MojangSkinPackBuilder
     /// </summary>
     public const string PackUuid = "acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806";
 
+    /// <summary>
+    /// Bedrock pack version (both header and module; must equal the offer's
+    /// packIdentity[0].version). Bumped to 1.0.1: the client caches imports per
+    /// (uuid, version), so a version bump is the only way to force a re-import of
+    /// a pack it once imported empty (e.g. requested before the zip existed).
+    /// </summary>
+    public const string PackVersion = "1.0.1";
+
     private const string ModuleUuid = "023c897b-9573-4f1b-b5cd-19445b70a08b";
     private const string PackName = "Minecraft Default Skins";
     private const string SerializeName = "MinecraftDefaultSkins";
@@ -67,27 +76,26 @@ public static class MojangSkinPackBuilder
     // inputs did not change.
     private static readonly DateTimeOffset EntryTimestamp = new(2026, 11, 22, 0, 0, 0, TimeSpan.Zero);
 
+    // "1, 0, 1" — the JSON array body for the header/module versions
+    private static readonly string PackVersionJson = string.Join(", ", PackVersion.Split('.'));
+
     private static readonly string ManifestJson =
-        """
+        $$"""
         {
             "format_version": 1,
             "header": {
                 "name": "Minecraft Default Skins",
-                "uuid": "acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806",
+                "uuid": "{{PackUuid}}",
                 "version": [
-                    1,
-                    0,
-                    0
+                    {{PackVersionJson}}
                 ]
             },
             "modules": [
                 {
                     "type": "skin_pack",
-                    "uuid": "023c897b-9573-4f1b-b5cd-19445b70a08b",
+                    "uuid": "{{ModuleUuid}}",
                     "version": [
-                        1,
-                        0,
-                        0
+                        {{PackVersionJson}}
                     ]
                 }
             ]
@@ -144,10 +152,12 @@ public static class MojangSkinPackBuilder
             return;
         }
 
-        // Idempotency: (re)build only when the zip is absent, empty, or older
-        // than the newest source texture (e.g. the gate re-downloaded one).
+        // Idempotency: (re)build only when the zip is absent, empty, older than
+        // the newest source texture (e.g. the gate re-downloaded one), or carries
+        // an older pack version — a version bump must reach the client as a new
+        // zip, or it will keep serving its cached import of the old one.
         var targetInfo = new FileInfo(targetPath);
-        if (targetInfo.Exists && targetInfo.Length > 0)
+        if (targetInfo.Exists && targetInfo.Length > 0 && PackVersionOnDisk(targetPath) == PackVersion)
         {
             DateTimeOffset newestTexture = included.Max(entry => new FileInfo(entry.Path).LastWriteTimeUtc);
             if (targetInfo.LastWriteTimeUtc >= newestTexture)
@@ -182,6 +192,29 @@ public static class MojangSkinPackBuilder
         logger.Information(
             "Minecraft Default Skins pack built at {Path} ({Skins}/{Total} default skins, pack uuid {PackUuid})",
             targetPath, included.Count, DefaultSkins.Length, PackUuid);
+    }
+
+    // header.version of the pack zip currently on disk ("1.0.1") — null when the
+    // zip is unreadable or malformed (anything unreadable gets rebuilt).
+    private static string? PackVersionOnDisk(string targetPath)
+    {
+        try
+        {
+            using ZipArchive zip = ZipFile.OpenRead(targetPath);
+            ZipArchiveEntry? entry = zip.GetEntry("manifest.json");
+            if (entry is null)
+            {
+                return null;
+            }
+
+            using var doc = JsonDocument.Parse(entry.Open());
+            return string.Join(".", doc.RootElement.GetProperty("header").GetProperty("version")
+                .EnumerateArray().Select(part => part.GetRawText()));
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     private static string BuildSkinsJson()
