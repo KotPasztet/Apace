@@ -108,20 +108,7 @@
                 <strong>Additional Mojang assets required</strong><br />
                 @if (_mojangAssetsSummary is not null)
                 {
-                    <small>
-                        The server cannot start without the additional Mojang assets:
-                        @_mojangAssetsSummary.DownloadFileCount file(s) (@FormatBytes(_mojangAssetsSummary.DownloadBytes)) —
-                        @_mojangAssetsSummary.PersonaCount character creator piece(s), @_mojangAssetsSummary.ThumbnailCount thumbnail(s),
-                        @_mojangAssetsSummary.SkinTextureCount default character texture(s).
-                        They are downloaded once from @(string.Join(", ", _mojangAssetsSummary.Hosts.DefaultIfEmpty("the recorded sources")))
-                        into <code>@_mojangAssetsSummary.AssetsDir</code> on the persistent data volume.
-                        This is a one-time download — redeploys keep the files and will not ask again.
-                    </small>
-                }
-                @if (_mojangAssetsSummary is { UnavailableCount: > 0 })
-                {
-                    <br />
-                    <small class="text-muted">@_mojangAssetsSummary.UnavailableCount further asset(s) currently have no reachable source and are not required to start.</small>
+                    <small>@_mojangAssetsSummary.DownloadFileCount file(s) (@FormatBytes(_mojangAssetsSummary.DownloadBytes)) need to be downloaded once to start the server.</small>
                 }
                 @if (_mojangAssetsErrors is { Count: > 0 })
                 {
