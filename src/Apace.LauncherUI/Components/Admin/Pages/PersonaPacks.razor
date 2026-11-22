@@ -1,0 +1,326 @@
+@page "/Admin/PersonaPacks"
+@using Microsoft.AspNetCore.Authorization
+@using System.Text.Json
+@using Apace.DB
+@using Apace.DB.Models.Player
+@using Apace.LauncherUI.Services
+@using Apace.LauncherUI.Utils
+@attribute [Authorize(Policy = Permissions.ManagePlayers)]
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>Skin Packs - Apace</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+            <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Skin Packs
+        </div>
+        <p class="text-muted small mb-0 mt-1">Choose which live marketplace packs (dressing room categories) players can see —
+            streaming the whole catalog at once made the dressing room choke on load</p>
+    </div>
+</div>
+
+@if (_message is not null)
+{
+    <div class="alert alert-info py-2 px-3">@_message</div>
+}
+
+<div class="card mb-4">
+    <div class="card-header">Default packs (every player)</div>
+    <div class="card-body">
+        @if (_indexSummary is not null)
+        {
+            <p class="text-muted small">@_indexSummary</p>
+        }
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="pack-gating" @bind="_gating" />
+            <label class="form-check-label" for="pack-gating">
+                <strong>Filter the live marketplace by packs</strong>
+                <span class="text-muted small">— off = the whole catalog is served to everyone (the old behavior)</span>
+            </label>
+        </div>
+
+        @if (_defaultRows.Count == 0)
+        {
+            <p class="text-muted small mb-2">No packs available yet — run the live persona catalog sync first
+                (System Configuration → "Sync now", or wait for the scheduled sync).</p>
+        }
+        <div class="row">
+            @foreach (var (pieceType, count) in _defaultRows)
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="def-@pieceType"
+                               checked="@_defaults.Contains(pieceType)"
+                               @onchange="@(e => Toggle(_defaults, pieceType, e.Value is bool v && v))" />
+                        <label class="form-check-label" for="def-@pieceType">
+                            @pieceType <span class="text-muted small">(@count item@(count == 1 ? "" : "s"))</span>
+                        </label>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <button class="btn btn-sm btn-outline-primary me-2 mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
+            @if (_savingDefaults)
+            {
+                <span class="spinner-border spinner-border-sm"></span>
+            }
+            Save defaults
+        </button>
+        <span class="text-muted small">Gating off = the whole live catalog is served to everyone (the pre-gating behavior).</span>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Per-player grants (extra packs beyond the defaults)</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-12 col-md-5">
+                <label class="form-label small text-muted" for="pack-player">Player</label>
+                <select class="form-select" id="pack-player" value="@(_selectedPlayerId ?? "")"
+                        @onchange="@(async e => await SelectPlayerAsync((string?)e.Value))">
+                    <option value="" selected>choose a player…</option>
+                    @foreach (var player in _players)
+                    {
+                        <option value="@player.Id">@PlayerLabel(player.Id)</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @if (_selectedPlayerId is not null)
+        {
+            <div class="row mt-3">
+                @foreach (var pieceType in _grantRows)
+                {
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="grant-@pieceType"
+                                   checked="@_grants.Contains(pieceType)"
+                                   @onchange="@(e => Toggle(_grants, pieceType, e.Value is bool v && v))" />
+                            <label class="form-check-label" for="grant-@pieceType">@pieceType</label>
+                        </div>
+                    </div>
+                }
+            </div>
+            <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveGrantsAsync" disabled="@_savingGrants">
+                @if (_savingGrants)
+                {
+                    <span class="spinner-border spinner-border-sm"></span>
+                }
+                Save grants for @PlayerLabel(_selectedPlayerId)
+            </button>
+        }
+        <p class="text-muted small mb-0 mt-3">
+            The ApiServer reads grants from the game database and caches them for ~30 seconds — saved grants apply
+            when the player's dressing room reloads.
+        </p>
+    </div>
+</div>
+
+@code {
+    private sealed record PacksConfig(bool Gating, List<string> DefaultPacks);
+
+    // light-weight index shape (camelCase JSON in the volume) — the ApiServer
+    // keeps the full model, the panel only needs the category counts here
+    private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items);
+    private sealed record IndexItem(string Id, string Title, string PieceType, string? ThumbnailUrl, bool IsEmote);
+
+    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
+
+    private List<(string PieceType, int Count)> _categories = [];
+    private List<(string PieceType, int Count)> _defaultRows = [];
+    private List<string> _grantRows = [];
+    private bool _gating;
+    private HashSet<string> _defaults = [];
+    private HashSet<string> _grants = [];
+    private string? _selectedPlayerId;
+    private List<(string Id, string? Username)> _players = [];
+    private string? _indexSummary;
+    private string? _message;
+    private bool _savingDefaults, _savingGrants;
+    private EarthDB? _earthDB;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _gating = Settings.Instance.PersonaPackGating ?? false;
+        _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
+        LoadCategories();
+        await LoadPlayersAsync();
+        await SelectPlayerAsync(null);
+    }
+
+    private void LoadCategories()
+    {
+        _categories = [];
+        try
+        {
+            string path = LivePersonaCatalogSync.IndexPath;
+            if (!File.Exists(path))
+            {
+                _indexSummary = "No synced persona catalog index yet — run a sync first (System Configuration → \"Sync now\", or wait for the scheduled sync).";
+                return;
+            }
+
+            var index = JsonSerializer.Deserialize<IndexFile>(File.ReadAllText(path), _jsonOptions);
+            if (index?.Items is not { Count: > 0 })
+            {
+                _indexSummary = "The synced index holds no items yet — run a sync first.";
+                return;
+            }
+
+            _categories = [.. index.Items
+                .Where(item => !item.IsEmote)
+                .GroupBy(item => item.PieceType)
+                .Select(group => (group.Key, group.Count()))
+                .OrderByDescending(row => row.Item2)];
+            _indexSummary = $"Marketplace index: {index.Items.Count - index.EmoteCount} wearable piece(s) in {_categories.Count} pack(s), "
+                + $"{index.EmoteCount} emote(s) (never offered — the dressing room has no emote category).";
+        }
+        catch (Exception ex)
+        {
+            _indexSummary = $"Reading the persona catalog index failed: {ex.Message}";
+        }
+
+        RebuildRows();
+    }
+
+    private void RebuildRows()
+    {
+        // defaults/grants may reference piece types the current index no longer
+        // has (re-sync dropped them) — keep them listed so they can be unchecked
+        var known = _categories.Select(row => row.PieceType).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _defaultRows = [.. _categories, .. _defaults
+            .Where(pack => !known.Contains(pack))
+            .Select(pack => (pack, 0))
+            .OrderBy(row => row.pack)];
+        _grantRows = [.. known, .. _grants.Where(pack => !known.Contains(pack)), ];
+    }
+
+    private async Task LoadPlayersAsync()
+    {
+        try
+        {
+            _earthDB = EarthDB.Open(Settings.Instance.EarthDatabaseConnectionString ?? "");
+            using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
+            _players = [.. (await DataUtils.GetFullProfilesAsync(_earthDB, liveDb, default)
+                .Select(player => (player.Id, player.Username)).ToListAsync())];
+        }
+        catch (Exception ex)
+        {
+            _message = $"Loading the player list failed: {ex.Message}";
+        }
+    }
+
+    private async Task SelectPlayerAsync(string? playerId)
+    {
+        _selectedPlayerId = playerId;
+        _grants = [];
+        _grantRows = [.. _categories.Select(row => row.PieceType)];
+        if (playerId is null || _earthDB is null)
+        {
+            return;
+        }
+
+        try
+        {
+            EarthDB.Results results = await new EarthDB.Query(false)
+                .Get("personaPacks", playerId, typeof(PersonaPackGrants))
+                .ExecuteAsync(_earthDB, default);
+            var stored = results.Get<PersonaPackGrants>("personaPacks")?.Packs ?? [];
+            _grants = [.. stored];
+            RebuildRows();
+        }
+        catch (Exception ex)
+        {
+            _message = $"Reading the grants for {PlayerLabel(playerId)} failed: {ex.Message}";
+        }
+    }
+
+    private void Toggle(HashSet<string> set, string pack, bool on)
+    {
+        if (on)
+        {
+            set.Add(pack);
+        }
+        else
+        {
+            set.Remove(pack);
+        }
+    }
+
+    private async Task SaveDefaultsAsync()
+    {
+        _savingDefaults = true;
+        _message = null;
+        try
+        {
+            Settings.Instance.PersonaPackGating = _gating;
+            Settings.Instance.PersonaDefaultPacks = [.. _defaults];
+            Settings.Instance.Save(Settings.DefaultPath);
+
+            // the ApiServer hot-reloads packs.json from the volume (next to the
+            // catalog index) — same pattern as the index itself
+            string path = Path.Combine(MojangAssetGate.MojangAssetsDir, "persona-catalog", "packs.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_gating, [.. _defaults]), _jsonOptions));
+            _message = _gating
+                ? $"Saved — {_defaults.Count} default pack(s), gating on. The ApiServer picks this up immediately."
+                : "Saved — gating is OFF, every player sees the whole live catalog.";
+        }
+        catch (Exception ex)
+        {
+            _message = $"Saving the defaults failed: {ex.Message}";
+        }
+        finally
+        {
+            _savingDefaults = false;
+        }
+    }
+
+    private async Task SaveGrantsAsync()
+    {
+        if (_selectedPlayerId is null || _earthDB is null)
+        {
+            return;
+        }
+
+        _savingGrants = true;
+        _message = null;
+        try
+        {
+            await new EarthDB.Query(true)
+                .Update("personaPacks", _selectedPlayerId, new PersonaPackGrants { Packs = [.. _grants] })
+                .ExecuteAsync(_earthDB, default);
+            _message = $"Grants saved for {PlayerLabel(_selectedPlayerId)} — the ApiServer applies them within ~30 seconds.";
+        }
+        catch (Exception ex)
+        {
+            _message = $"Saving the grants failed: {ex.Message}";
+        }
+        finally
+        {
+            _savingGrants = false;
+        }
+    }
+
+    private string PlayerLabel(string playerId)
+    {
+        foreach (var player in _players)
+        {
+            if (player.Id == playerId)
+            {
+                return string.IsNullOrEmpty(player.Username) ? playerId : $"{player.Username} ({playerId})";
+            }
+        }
+
+        return playerId;
+    }
+
+    public void Dispose()
+    {
+        _earthDB?.Dispose();
+    }
+}

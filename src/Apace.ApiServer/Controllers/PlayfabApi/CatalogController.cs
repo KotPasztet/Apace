@@ -122,7 +122,9 @@ internal sealed class CatalogController : ApaceControllerBase
             long stamp = LivePersonaCatalog.IndexStamp;
             if (_liveOfferStamp != stamp)
             {
-                _liveOfferItems = LivePersonaCatalog.GetOfferItems().Select(CIItemToItem).ToArray();
+                var source = LivePersonaCatalog.GetOfferItems();
+                _liveOfferItems = source.Select(CIItemToItem).ToArray();
+                _liveOfferPieceTypes = [.. source.Select(item => item.Data is CItem.PersonaData piece ? piece.PieceType : "")];
                 _liveOfferById = _liveOfferItems.ToDictionary(item => item.Id);
                 _liveOfferStamp = stamp;
                 Log.Information("Live persona offer rebuilt: {Count} item(s) (index stamp {Stamp})", _liveOfferItems.Length, stamp);
@@ -135,6 +137,41 @@ internal sealed class CatalogController : ApaceControllerBase
     private static long? _liveOfferStamp;
     private static Item[]? _liveOfferItems;
     private static Dictionary<Guid, Item>? _liveOfferById;
+    // piece types aligned with _liveOfferItems by index (the response Item model
+    // carries its category only inside the displayProperties JSON — keeping the
+    // source-side type here makes the gate filter a plain array lookup)
+    private static string[]? _liveOfferPieceTypes;
+
+    // The live offer filtered through the skin pack gate for one player. The
+    // full mapped list is cached per index stamp; the gate applies a cheap
+    // piece-type filter on top. Anonymous searches resolve no grants — default
+    // packs only.
+    private static async Task<IReadOnlyList<Item>> LiveOfferItemsFor(string? playerId, CancellationToken cancellationToken)
+    {
+        if (!LivePersonaCatalog.IsAvailable)
+        {
+            return [];
+        }
+
+        IReadOnlyList<Item> all = LiveOfferItems;
+        IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPieceTypesAsync(playerId, cancellationToken);
+        string[]? types = _liveOfferPieceTypes;
+        if (allowed is null || types is null || types.Length != all.Count)
+        {
+            return all;
+        }
+
+        var filtered = new List<Item>(all.Count);
+        for (int i = 0; i < all.Count; i++)
+        {
+            if (allowed.Contains(types[i]))
+            {
+                filtered.Add(all[i]);
+            }
+        }
+
+        return filtered;
+    }
 
     private sealed record CatalogSearchRequest(
         bool Count,
@@ -170,9 +207,13 @@ internal sealed class CatalogController : ApaceControllerBase
             string filter = request.Filter
                 .Replace("platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth')", "platforms/any(tp: tp eq 'android.googleplay') and platforms/any(tp: tp eq 'title.earth')");
 
-            // base offer (staticdata) plus, when the live persona marketplace is on,
-            // the unlock-all live items — one OData filter over both
-            IEnumerable<Item> source = BaseOfferItems.Concat(LiveOfferItems);
+                // base offer (staticdata) plus, when the live persona marketplace is on,
+                // the unlock-all live items — one OData filter over both. The live half
+                // goes through the skin pack gate: the panel decides which categories
+                // (piece types) are on by default and per player — streaming the whole
+                // multi-thousand-piece marketplace at once made the dressing room choke.
+                string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
+                IEnumerable<Item> source = BaseOfferItems.Concat(await LiveOfferItemsFor(callerId, cancellationToken));
 
             var oDataQuery = source.AsQueryable().OData(settings =>
                 {
