@@ -58,9 +58,19 @@ RANDOM_BASELINE_URL = (
 CDX_ENDPOINT = "https://web.archive.org/cdx/search/cdx"
 CDX_LIMIT = 10
 CDX_TIMEOUT = 45
-CDX_RETRIES = 3          # up to 3 retries on transient errors
-CDX_RETRY_BACKOFF = 5.0  # seconds between CDX retries
-CDX_POLITENESS = 0.7     # seconds between CDX calls
+CDX_RETRIES = 2          # up to 2 retries on transient errors
+CDX_RETRY_BACKOFF = 4.0  # seconds between CDX retries
+CDX_POLITENESS = 0.4     # seconds between CDX calls
+
+# Prefix-scan constants: ONE CDX call per (host, namespace) pair returns every
+# archived primary.zip under that prefix — far faster than 231 per-URL calls.
+PREFIX_CDX_TIMEOUT = 90
+PREFIX_CDX_RETRIES = 3
+PREFIX_CDX_RETRY_BACKOFF = 6.0
+
+# Overall wall-clock budget for Parts B+C so the workflow never hits its
+# timeout before the report is written. Overridable via env.
+PROBE_BUDGET_SECONDS = int(os.environ.get("PROBE_BUDGET_SECONDS", "1500"))
 
 LIVENESS_TIMEOUT = 30
 LIVENESS_RETRIES = 2
@@ -237,6 +247,75 @@ def git_blob_sha256(path):
 # Parts B+C: per-item scan and byte verification
 # --------------------------------------------------------------------------
 
+def _url_shape(url):
+    """'https://host/<namespace>/<uuid>/primary.zip' -> 'host/<namespace>'."""
+    parts = url.split("/")
+    return "%s/%s" % (parts[2], parts[3])
+
+
+def prefix_scan_cdx(personas):
+    """CDX prefix scan: one call per (host, namespace) pair.
+
+    Returns (snapshots, failed_shapes) where snapshots maps persona URL ->
+    latest 200-capture timestamp, and failed_shapes is the set of shapes whose
+    prefix query failed (their URLs need the slow per-URL fallback).
+    """
+    shapes = sorted({_url_shape(i["url"]) for i in personas})
+    by_shape = {}
+    for i in personas:
+        by_shape.setdefault(_url_shape(i["url"]), []).append(i["url"])
+
+    snapshots = {}
+    failed = set()
+    for n, shape in enumerate(shapes, start=1):
+        query_url = "%s/*" % shape
+        endpoint = (
+            "%s?url=%s&output=json&limit=8000"
+            "&filter=statuscode:200&filter=original:.*primary\\.zip"
+            "&collapse=urlkey&matchType=prefix" % (
+                CDX_ENDPOINT, urllib.parse.quote(query_url, safe="")
+            )
+        )
+        status, body, err = http_get(
+            endpoint, PREFIX_CDX_TIMEOUT, PREFIX_CDX_RETRIES, PREFIX_CDX_RETRY_BACKOFF
+        )
+        time.sleep(CDX_POLITENESS)
+        rows = None
+        if status == 200 and body:
+            try:
+                data = json.loads(body.decode("utf-8", errors="replace"))
+            except json.JSONDecodeError:
+                data = None
+            if isinstance(data, list) and len(data) > 1:
+                header = data[0]
+                try:
+                    idx_o = header.index("original")
+                    idx_t = header.index("timestamp")
+                except ValueError:
+                    data = None
+                else:
+                    rows = [
+                        (r[idx_o], r[idx_t])
+                        for r in data[1:]
+                        if isinstance(r, list) and len(r) > max(idx_o, idx_t)
+                    ]
+        want = set(by_shape[shape])
+        if rows is None:
+            print("[B] prefix %-55s QUERY FAILED (%s) — per-URL fallback for %d URLs"
+                  % (shape, err or ("HTTP %s" % status), len(want)), flush=True)
+            failed.add(shape)
+            continue
+        found = {}
+        for original, ts in rows:
+            if original in want and (original not in found or ts > found[original]):
+                found[original] = ts
+        snapshots.update(found)
+        print("[B] prefix %-55s archived %d/%d"
+              % (shape, len(found), len(want)), flush=True)
+
+    return snapshots, failed
+
+
 def scan_wayback(personas):
     counts = {
         "checked": len(personas),
@@ -246,9 +325,15 @@ def scan_wayback(personas):
         "not_archived": 0,
         "cdx_error": 0,
         "download_error": 0,
+        "skipped_deadline": 0,
     }
     details = []
     total = len(personas)
+    deadline = time.time() + PROBE_BUDGET_SECONDS
+
+    print("[B] prefix CDX scan over %d namespace shape(s)..." %
+          len({_url_shape(i["url"]) for i in personas}), flush=True)
+    snapshots, failed_shapes = prefix_scan_cdx(personas)
 
     for n, item in enumerate(personas, start=1):
         url = item["url"]
@@ -259,8 +344,19 @@ def scan_wayback(personas):
             "manifest_size": item.get("size"),
         }
 
-        snapshot_ts, err = find_latest_200_snapshot(url)
-        time.sleep(CDX_POLITENESS)  # politeness: AFTER every CDX call
+        if time.time() > deadline:
+            detail["classification"] = "skipped_deadline"
+            counts[detail["classification"]] += 1
+            details.append(detail)
+            continue
+
+        if _url_shape(url) in failed_shapes:
+            # prefix query failed for this namespace — slow per-URL CDX fallback
+            snapshot_ts, err = find_latest_200_snapshot(url)
+            time.sleep(CDX_POLITENESS)
+        else:
+            snapshot_ts = snapshots.get(url)
+            err = None if snapshot_ts else None  # authoritative absence
 
         if err:
             detail["classification"] = "cdx_error"
@@ -365,7 +461,8 @@ def print_summary(rep):
     print(
         "wayback: checked=%(checked)d archived=%(archived)d match=%(match)d "
         "mismatch=%(mismatch)d not_archived=%(not_archived)d "
-        "cdx_error=%(cdx_error)d download_error=%(download_error)d" % wb,
+        "cdx_error=%(cdx_error)d download_error=%(download_error)d "
+        "skipped_deadline=%(skipped_deadline)d" % wb,
         flush=True,
     )
     print("verdicts:", flush=True)

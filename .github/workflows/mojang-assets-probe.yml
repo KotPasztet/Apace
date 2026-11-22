@@ -19,7 +19,7 @@ jobs:
   probe:
     name: xforge liveness + Wayback coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
       - name: Check out full history (persona zips live in 043d7bb)
         uses: actions/checkout@v4
