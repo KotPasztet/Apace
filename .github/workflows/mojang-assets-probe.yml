@@ -1,0 +1,131 @@
+name: Mojang assets probe
+
+# WHY: the dev sandbox cannot reach archive.org (egress blocked) and xforge
+# responses from the sandbox IP look rate-limited (200 -> 404 after ~500
+# downloads). This workflow re-checks xforge liveness and Wayback coverage
+# from GitHub runner IPs and publishes the diagnostics as artifacts.
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/mojang-assets-probe.yml"
+      - "scripts/mojang_assets_probe.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: xforge liveness + Wayback coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out full history (persona zips live in 043d7bb)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run probe (xforge liveness + Wayback CDX + byte verification)
+        run: |
+          python3 scripts/mojang_assets_probe.py | tee probe_output.log
+
+      - name: Upload probe report and log
+        uses: actions/upload-artifact@v4
+        with:
+          name: mojang-assets-probe-report
+          path: |
+            mojang-assets-probe-report.json
+            probe_output.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Append summary to the job summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+
+          path = "mojang-assets-probe-report.json"
+          lines = []
+          try:
+              with open(path, encoding="utf-8") as fh:
+                  rep = json.load(fh)
+
+              lines.append("## Mojang assets probe — summary")
+              lines.append("")
+              lines.append(
+                  f"Generated: `{rep.get('generated_at', '?')}`"
+                  f" · commit `{rep.get('git_commit', '?')}`"
+              )
+              lines.append("")
+
+              lines.append("### xforge liveness (GitHub runner vantage)")
+              lines.append("")
+              lines.append("| endpoint | status | bytes | error |")
+              lines.append("|---|---|---|---|")
+              for name in ("thumbnail", "persona_1", "persona_2", "persona_3",
+                           "random_baseline"):
+                  e = (rep.get("xforge_liveness") or {}).get(name)
+                  if not e:
+                      continue
+                  lines.append(
+                      f"| `{name}` | {e.get('status')} | {e.get('bytes')}"
+                      f" | {e.get('error') or '—'} |"
+                  )
+              lines.append("")
+
+              wb = rep.get("wayback") or {}
+              lines.append("### Wayback coverage of persona zips")
+              lines.append("")
+              lines.append("| metric | count |")
+              lines.append("|---|---|")
+              for k in ("checked", "archived", "match", "mismatch",
+                        "not_archived", "cdx_error", "download_error"):
+                  lines.append(f"| {k} | {wb.get(k, 0)} |")
+              lines.append("")
+
+              v = rep.get("verdicts") or {}
+              lines.append("**Verdicts**")
+              lines.append("")
+              for k in ("xforge_persona_live", "wayback_recoverable_pct",
+                        "all_matches_byte_identical"):
+                  lines.append(f"- {k}: **{v.get(k, '?')}**")
+              lines.append("")
+
+              interesting = [
+                  d for d in wb.get("items", [])
+                  if d.get("classification") in ("match", "mismatch")
+              ][:20]
+              if interesting:
+                  lines.append("### First 20 match/mismatch items")
+                  lines.append("")
+                  lines.append("| file | classification | snapshot | wayback sha256 |")
+                  lines.append("|---|---|---|---|")
+                  for d in interesting:
+                      sha = (d.get("wayback_sha256") or "—")[:12]
+                      lines.append(
+                          f"| `{d.get('file', '?')}` | {d.get('classification')}"
+                          f" | {d.get('snapshot_timestamp', '—')} | `{sha}…` |"
+                      )
+                  lines.append("")
+          except Exception as exc:  # noqa: BLE001 — summary must not fail the job
+              lines.append("## Mojang assets probe — summary")
+              lines.append("")
+              lines.append(f"Could not render report ({path}): `{exc}`")
+              lines.append("")
+
+          out = os.environ.get("GITHUB_STEP_SUMMARY")
+          text = "\n".join(lines)
+          if out:
+              with open(out, "a", encoding="utf-8") as fh:
+                  fh.write(text)
+          else:
+              print(text)
+          PY
