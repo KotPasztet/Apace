@@ -174,19 +174,23 @@ public static class Program
         // on, the server refuses to boot without the additional Mojang assets in
         // the persistent assets dir — the panel must accept and download them
         // first. Without the flag the gate is disabled and the check is a warn.
+        // No manifest at all is not automatically fatal: while the legacy
+        // staticdata persona directory still has content (pre-gate installs /
+        // dev checkouts), the CDN controllers can serve it and the gate only
+        // warns (same policy as the panel's gate — docs/mojang-asset-gate.md).
         {
             string? manifestPath = Utils.MojangAssets.ResolveManifestPath(MojangAssetsDir, Log.Logger);
             int? missing = manifestPath is null ? null : Utils.MojangAssets.CountMissing(MojangAssetsDir, manifestPath, Log.Logger);
 
+            if (RequireMojangAssets && missing is null && !Utils.MojangAssets.HasLegacyPersonaAssets(options.StaticDataPath, MojangAssetsDir, Log.Logger))
+            {
+                Log.Fatal("Additional Mojang assets missing — run the panel to accept and download; server startup blocked");
+                Log.CloseAndFlush();
+                return 1;
+            }
+
             if (RequireMojangAssets)
             {
-                if (missing is null)
-                {
-                    Log.Fatal("Additional Mojang assets missing — run the panel to accept and download; server startup blocked");
-                    Log.CloseAndFlush();
-                    return 1;
-                }
-
                 if (missing > 0)
                 {
                     Log.Fatal("Additional Mojang assets missing — run the panel to accept and download; server startup blocked ({Count} file(s) incomplete in {Dir}, manifest {Manifest})", missing, MojangAssetsDir, manifestPath);
@@ -194,7 +198,14 @@ public static class Program
                     return 1;
                 }
 
-                Log.Information("Additional Mojang assets complete in {Dir}", MojangAssetsDir);
+                if (missing is null)
+                {
+                    Log.Warning("Mojang asset manifest not found — completeness cannot be verified, serving falls back to the legacy staticdata persona assets");
+                }
+                else
+                {
+                    Log.Information("Additional Mojang assets complete in {Dir}", MojangAssetsDir);
+                }
             }
             else if (missing is not null && missing > 0)
             {

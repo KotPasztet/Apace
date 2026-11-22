@@ -25,11 +25,13 @@ public static class MojangAssets
         "./" + ManifestFileName,
         // deployment layout: staticdata next to the components dir
         "../staticdata/playfab/" + ManifestFileName,
-        // dev checkouts (working directory is the project's bin output)
+        // dev checkouts (working directory is the project's bin output —
+        // bin/Debug/net10.0 is five levels below the repo root)
         "../staticdata-extras/playfab/" + ManifestFileName,
         "../../staticdata-extras/playfab/" + ManifestFileName,
         "../../../staticdata-extras/playfab/" + ManifestFileName,
         "../../../../staticdata-extras/playfab/" + ManifestFileName,
+        "../../../../../staticdata-extras/playfab/" + ManifestFileName,
     ];
 
     /// <summary>Resolves the manifest path (or null); logs which candidate was used.</summary>
@@ -58,6 +60,51 @@ public static class MojangAssets
 
         logger.Warning("Mojang asset manifest not found — searched: {Candidates}", string.Join(", ", candidates));
         return null;
+    }
+
+    /// <summary>
+    /// Fallback signal for the no-manifest case: the legacy staticdata layout
+    /// still has persona piece binaries (pre-gate installs / dev checkouts with
+    /// staticdata-extras committed), so the CDN controllers can serve them.
+    /// Mirrors the panel gate's missing-manifest policy (docs/mojang-asset-gate.md).
+    /// </summary>
+    public static bool HasLegacyPersonaAssets(string staticDataPath, string assetsDir, ILogger logger)
+    {
+        var candidates = new List<string>();
+        foreach (string manifestCandidate in ManifestPathCandidates)
+        {
+            string? directory = Path.GetDirectoryName(manifestCandidate);
+            if (directory is not null)
+            {
+                candidates.Add(Path.Combine(directory, "persona"));
+            }
+        }
+
+        candidates.Add(Path.Combine(staticDataPath, "playfab", "persona"));
+        candidates.Add(Path.Combine(assetsDir, "playfab", "persona"));
+
+        foreach (string candidate in candidates.Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                if (!Directory.Exists(candidate))
+                {
+                    continue;
+                }
+
+                if (Directory.EnumerateFiles(candidate, "*.zip").Any())
+                {
+                    logger.Information("Legacy persona assets found in {Dir} — proceeding without the manifest (completeness cannot be verified)", candidate);
+                    return true;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.Debug("Could not inspect persona directory {Dir}: {Reason}", candidate, ex.Message);
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

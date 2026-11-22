@@ -34,7 +34,10 @@ public class MojangImagesCdnController : ControllerBase
             ? "image/jpeg"
             : "image/png";
 
+        // No fileDownloadName: thumbnails are served inline exactly like the
+        // wwwroot copies picked up by UseStaticFiles (a Content-Disposition
+        // attachment would make browsers download instead of render).
         Stream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, useAsync: true);
-        return TypedResults.Stream(stream, contentType, fileDownloadName: fileName);
+        return TypedResults.Stream(stream, contentType);
     }
 }
