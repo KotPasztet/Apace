@@ -23,9 +23,14 @@ namespace Apace.LauncherUI.Services;
 //
 // Sync triggers: first panel start after the Mojang assets consent, then every
 // PersonaCatalogSyncIntervalHours (default 24), plus the admin panel's
-// "Sync now" button. Polite by design: one request per ~0.7 s, ContinuationToken
+// "Sync now" button. Polite by design: one request per ~0.7 s, skip/top
 // pagination, full catalog ≈ 400 pages (Server count ~40k entries, ~12k unique
 // pieces after dedupe).
+//
+// Pagination note: the live title-20ca2 Catalog/Search does not honour
+// ContinuationToken (verified 22.11: the token comes back absent or the same
+// page repeats; scripts/fetch_persona_catalog.py always used skip/top) — so the
+// walk pages with skip, deduped per piece below.
 public static class LivePersonaCatalogSync
 {
     private const string CatalogDirName = "persona-catalog";
@@ -229,7 +234,7 @@ public static class LivePersonaCatalogSync
     // The sync
     // ---------------------------------------------------------------------------
 
-    /// <summary>Full catalog sync: anonymous login → ContinuationToken pagination → volume cache. Never throws.</summary>
+    /// <summary>Full catalog sync: anonymous login → skip/top pagination → volume cache. Never throws.</summary>
     public static async Task<bool> SyncNowAsync(ILogger logger, CancellationToken cancellationToken)
     {
         if (IsSyncing)
@@ -251,16 +256,21 @@ public static class LivePersonaCatalogSync
             string masterToken = await LoginAsync(cancellationToken);
             logger.Information("Live persona catalog sync: logged in to PlayFab 20ca2 anonymously");
 
-            // 2. paginate the whole PersonaDurable catalog (~40k entries, ~400 pages)
+            // 2. walk the whole PersonaDurable catalog (~40k entries, ~400 pages of 100)
             var byPiece = new Dictionary<Guid, SyncIndexItem>();
             int emotes = 0, thumbUrls = 0;
-            string? continuationToken = null;
             var pieceTypes = new SortedDictionary<string, int>();
-            do
+            int skip = 0;
+            int? serverCount = null;
+            const int PageSize = 100;
+            while (!cancellationToken.IsCancellationRequested)
             {
-                string response = await PostCatalogSearchAsync(masterToken, continuationToken, cancellationToken);
+                string response = await PostCatalogSearchAsync(masterToken, skip, PageSize, cancellationToken);
                 using var doc = JsonDocument.Parse(response);
                 var data = doc.RootElement.GetProperty("data");
+                serverCount ??= data.TryGetProperty("Count", out var countProp) && countProp.ValueKind == JsonValueKind.Number
+                    ? countProp.GetInt32()
+                    : null;
                 int onPage = 0;
                 if (data.TryGetProperty("Items", out var items) && items.ValueKind == JsonValueKind.Array)
                 {
@@ -309,17 +319,19 @@ public static class LivePersonaCatalogSync
                         PagesFetched, RawItemsFetched, byPiece.Count);
                 }
 
-                continuationToken = data.TryGetProperty("ContinuationToken", out var tokenProp) && tokenProp.ValueKind == JsonValueKind.String
-                    ? tokenProp.GetString()
-                    : null;
+                // the sort is not unique across equal creationDate values — expect some
+                // overlap between pages, the per-piece dedupe absorbs it; stop on an
+                // empty/short page or once the server-reported count is covered
+                bool pageShort = onPage < PageSize;
+                skip += PageSize;
+                if (onPage == 0 || pageShort || (serverCount is { } reportedCount && skip >= reportedCount + PageSize))
+                {
+                    break;
+                }
 
                 // polite: ~1.4 req/s against the marketplace for the whole walk
-                if (continuationToken is not null)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(700), cancellationToken);
-                }
+                await Task.Delay(TimeSpan.FromMilliseconds(700), cancellationToken);
             }
-            while (!string.IsNullOrEmpty(continuationToken) && !cancellationToken.IsCancellationRequested);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -402,19 +414,16 @@ public static class LivePersonaCatalogSync
         return doc.RootElement.Clone();
     }
 
-    private static async Task<string> PostCatalogSearchAsync(string masterToken, string? continuationToken, CancellationToken cancellationToken)
+    private static async Task<string> PostCatalogSearchAsync(string masterToken, int skip, int top, CancellationToken cancellationToken)
     {
         var body = new Dictionary<string, object>
         {
             ["Filter"] = "(contentType eq 'PersonaDurable')",
             ["OrderBy"] = "creationDate asc",
             ["scid"] = "4fc10100-5f7a-4470-899b-280835760c07",
-            ["top"] = 100,
+            ["skip"] = skip,
+            ["top"] = top,
         };
-        if (continuationToken is not null)
-        {
-            body["ContinuationToken"] = continuationToken;
-        }
 
         var result = await PostAsync("/Catalog/Search", body, [masterToken], cancellationToken);
         return JsonSerializer.Serialize(result);

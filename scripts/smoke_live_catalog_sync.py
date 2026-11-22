@@ -2,17 +2,21 @@
 """Smoke sync of the live PlayFab 20ca2 persona catalog (small sample, sandbox-safe).
 
 Mirrors the panel's LivePersonaCatalogSync (anonymous AndroidDeviceID login ->
-master_player_account entity token -> Catalog/Search pagination via
-ContinuationToken, ~1 request/second) but stops after a few pages so it can be
-run in a sandbox. Everything lands in work/ (gitignored) — nothing here is
-meant for the repo.
+master_player_account entity token -> Catalog/Search pagination via skip/top,
+~1 request/second) but stops after a few pages so it can be run in a sandbox.
+Everything lands in work/ (gitignored) — nothing here is meant for the repo.
+
+Pagination note: the live API does not honour ContinuationToken (absent or the
+same page repeats — verified 22.11); it pages reliably with skip/top, the same
+way the reference scripts/fetch_persona_catalog.py does.
 
 Reports the numbers the real sync would log: item count seen, how many items
-carry a live Contents[0].Url, piece-type breakdown, and how many items carry
-lock fields (achievement tags / price / purchasable / hidden_offer) that the
-unlock-all offer strip must neutralize.
+carry a live Contents[0].Url (Search never returns Contents — resolved via
+Catalog/GetItem for a couple of items in the probe step), piece-type breakdown,
+and how many items carry lock fields (achievement tags / price / purchasable /
+hidden_offer) that the unlock-all offer strip must neutralize.
 
-Also probes one binary URL on both CDN shapes (old xforge + new
+Also resolves + probes two binaries on both CDN shapes (old xforge + new
 content1/content2.prod.catalog.playfab.com) to validate the lazy-probe shape.
 
 Usage:
@@ -153,25 +157,25 @@ def main():
     total = data.get("Count")
     print(f"server-reported PersonaDurable Count: {total}")
 
-    items, token, pages = [], data.get("ContinuationToken"), 0
+    items, pages = [], 0
     while pages < PAGES:
-        if pages > 0:
-            data = search(master, {
-                "Filter": "(contentType eq 'PersonaDurable')",
-                "OrderBy": "creationDate asc",
-                "scid": SCID,
-                "top": TOP,
-                **({"ContinuationToken": token} if token else {}),
-            })
-            token = data.get("ContinuationToken")
+        body = {
+            "Filter": "(contentType eq 'PersonaDurable')",
+            "OrderBy": "creationDate asc",
+            "scid": SCID,
+            "skip": pages * TOP,
+            "top": TOP,
+        }
+        data = search(master, body)
         items.extend(data.get("Items") or [])
         pages += 1
         if pages < PAGES:
             time.sleep(1.1)  # ~1 req/s, polite
 
-    print(f"sampled {len(items)} items over {pages} page(s)")
-    if token:
-        print(f"continuation token present: yes ({len(token)} chars)")
+    unique_ids = {it.get("Id") for it in items}
+    print(f"sampled {len(items)} items over {pages} page(s) — {len(unique_ids)} unique item id(s)")
+    if len(unique_ids) < len(items):
+        print("WARNING: page overlap — the server-side sort is unstable across equal creationDate values")
 
     by_type = {}
     for it in items:
@@ -218,19 +222,31 @@ def main():
             json.dump(emote_items, f, indent=1)
     time.sleep(1.1)
 
-    # 3. one lazy probe against both CDN shapes (newest sample item first: new
-    #    items live on the new content CDN, old ones are the dark xforge ones)
-    probe_targets = [
-        it for it in items
-        if (it.get("Contents") or []) and (it["Contents"][0] or {}).get("Url", "").startswith("http")
-    ]
-    probe_targets.reverse()  # newest first — the new CDN is the interesting shape
-    for it in probe_targets[:2]:
-        url = it["Contents"][0]["Url"]
+    # 3. lazy probe of two sample binaries: Catalog/Search never returns Contents,
+    #    so resolve each item's real URL via Catalog/GetItem (the endpoint the
+    #    ApiServer's lazy pipeline uses), then probe both CDN shapes
+    candidates = sorted(items, key=lambda it: it.get("CreationDate") or "", reverse=True)[:6]
+    probed = 0
+    for it in candidates:
+        if probed >= 2:
+            break
+        item_id = it.get("Id")
+        try:
+            got = post("/Catalog/GetItem", {"Id": item_id, "Scid": SCID}, {"X-EntityToken": master})["data"]
+        except urllib.error.HTTPError as e:
+            print(f"getitem {item_id}: HTTP {e.code}")
+            continue
+        contents = ((got.get("Item") or {}).get("Contents")) or []
+        url = (contents[0] or {}).get("Url") if contents else None
+        if not url or not str(url).startswith("http"):
+            print(f"probe {item_id}: no Contents url (dead — no-contents)")
+            probed += 1
+            continue
         statuses = {"primary": probe_head(url)}
         for alt in alternate_urls(url):
             statuses[alt.split("/")[2]] = probe_head(alt)
-        print(f"probe {it.get('Id')}: {json.dumps(statuses)}")
+        print(f"probe {item_id}: {json.dumps(statuses)}")
+        probed += 1
         time.sleep(1.0)
 
     return 0

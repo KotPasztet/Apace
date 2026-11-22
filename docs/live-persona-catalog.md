@@ -30,13 +30,13 @@ mirroring the asset-gate split (panel downloads, ApiServer serves):
 panel (Apace.LauncherUI)                          ApiServer (Apace.ApiServer)
 Services/LivePersonaCatalogSync.cs                Services/LivePersonaCatalog.cs
   anonymous AndroidDeviceID login (title 20ca2)     reads index.json (hot-reload on re-sync)
-  Catalog/Search pagination via                    builds the client offer (Catalog/Search +
-  ContinuationToken, ~1.4 req/s                    GetPublishedItem) with the unlock-all strip
-  writes raw facts into the volume:                lazy probe + proxy:
-    index.json  (deduped per-piece summary)          /playfab/persona/<itemId>.zip —
-    items/<id>.json (raw PlayFab metadata)           resolve URL (Catalog/GetItem), probe
-                                                     (404 -> new-CDN shapes -> dead), download
-                                                     into binaries/<itemId>.zip, serve
+  Catalog/Search pagination via skip/top           builds the client offer (Catalog/Search +
+  (the live API does not honour                    GetPublishedItem) with the unlock-all strip
+  ContinuationToken — verified 22.11),             lazy probe + proxy:
+  ~1.4 req/s                                        /playfab/persona/<itemId>.zip —
+  writes raw facts into the volume:                 resolve URL (Catalog/GetItem), probe
+    index.json  (deduped per-piece summary)         (404 -> new-CDN shapes -> dead), download
+    items/<id>.json (raw PlayFab metadata)          into binaries/<itemId>.zip, serve
 ```
 
 Settings (panel, System Configuration → Data Handling): **Live persona
@@ -96,6 +96,16 @@ same GUID re-hosted on the new PlayFab content CDN
 request). Everything is client-driven; there are **no bulk probe loops** — all
 remote calls funnel through a shared ≤2 req/s pacer with 3-attempt
 retry/backoff, and probe-state writes are debounced.
+
+Liveness evidence (22.11 probes): the bulk of the catalog is the MCE-era
+2019–2021 publication and its binaries are dark on every CDN shape, but the
+marketplace is still receiving content — the 100 newest `PersonaDurable`
+entries carry `creationDate` within the last weeks, and 8/8 of the newest items
+probed **live** with their `Catalog/GetItem` URL already on
+`content*.prod.catalog.playfab.com`. So the live offer grows from the recent
+publications, dead legacy entries drop out lazily as clients touch them, and a
+future Mojang re-host of the old GUIDs on the content CDN would revive them
+without any code change (the alternate-URL shape is already probed).
 
 Binaries are cached in the volume after the first download; thumbnails resolve
 the same way (first the thumbnail URL recorded at sync time, then the
