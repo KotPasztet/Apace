@@ -1,0 +1,573 @@
+using Serilog;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using ILogger = Serilog.ILogger;
+
+namespace Apace.LauncherUI.Services;
+
+// Live persona catalog sync (panel side).
+//
+// Walks the still-live PlayFab marketplace of the Minecraft Earth title (20ca2 —
+// the same anonymous AndroidDeviceID login scripts/fetch_persona_catalog.py uses)
+// and caches the whole PersonaDurable catalog in the persistent data volume:
+//
+//   <mojang-assets>/persona-catalog/index.json       deduped per-piece summary (facts)
+//   <mojang-assets>/persona-catalog/items/<id>.json  raw PlayFab item metadata (facts)
+//
+// The volume is the only place these data live — nothing catalog-shaped is
+// committed to the repo. The ApiServer reads the same volume (Services/
+// LivePersonaCatalog) and builds the client offer from it with the unlock-all
+// strip; binaries and thumbnails are downloaded lazily, on the first client
+// request, never during the sync.
+//
+// Sync triggers: first panel start after the Mojang assets consent, then every
+// PersonaCatalogSyncIntervalHours (default 24), plus the admin panel's
+// "Sync now" button. Polite by design: one request per ~0.7 s, ContinuationToken
+// pagination, full catalog ≈ 400 pages (Server count ~40k entries, ~12k unique
+// pieces after dedupe).
+public static class LivePersonaCatalogSync
+{
+    private const string CatalogDirName = "persona-catalog";
+    private const string IndexFileName = "index.json";
+    private const string ItemsDirName = "items";
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions RawItemJsonOptions = new(JsonSerializerDefaults.General) { WriteIndented = false };
+
+    public static string CatalogDir => Path.Combine(MojangAssetGate.MojangAssetsDir, CatalogDirName);
+    public static string IndexPath => Path.Combine(CatalogDir, IndexFileName);
+    public static string ItemsDir => Path.Combine(CatalogDir, ItemsDirName);
+
+    // Index shapes — must stay in sync with the ApiServer's LivePersonaCatalog
+    // records (separate processes share the volume, not the code).
+    public sealed record SyncItemReference(Guid Id, int Amount);
+
+    public sealed record SyncIndexItem(
+        string Id,
+        string Title,
+        string Description,
+        Dictionary<string, List<string>>? Keywords,
+        List<string> Tags,
+        string PieceType,
+        Guid PieceId,
+        string PieceVersion,
+        string Rarity,
+        string? CreatorName,
+        string? CreatorEntityId,
+        Guid? OfferId,
+        List<SyncItemReference> ItemReferences,
+        string? ThumbnailId,
+        string? ThumbnailUrl,
+        DateTime CreationDate,
+        DateTime LastModifiedDate,
+        DateTime? StartDate,
+        bool IsEmote);
+
+    public sealed record SyncIndex(DateTimeOffset? SyncedAt, int RawItemCount, int EmoteCount, List<SyncIndexItem> Items);
+
+    // ---------------------------------------------------------------------------
+    // Status (panel UI)
+    // ---------------------------------------------------------------------------
+
+    public static bool IsSyncing { get; private set; }
+    public static DateTimeOffset? LastSyncFinished { get; private set; }
+    public static string? LastError { get; private set; }
+    public static int PagesFetched { get; private set; }
+    public static int RawItemsFetched { get; private set; }
+
+    /// <summary>Last sync recorded in the volume (null = never synced).</summary>
+    public static DateTimeOffset? GetLastVolumeSync()
+    {
+        try
+        {
+            if (!File.Exists(IndexPath))
+            {
+                return null;
+            }
+
+            using var doc = JsonDocument.Parse(File.ReadAllText(IndexPath));
+            return doc.RootElement.TryGetProperty("syncedAt", out var syncedAt) && syncedAt.ValueKind == JsonValueKind.String
+                && DateTimeOffset.TryParse(syncedAt.GetString(), out var parsed)
+                    ? parsed
+                    : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Offer counters for the panel: unique/emote pieces + probe liveness from the volume.</summary>
+    public static (int Unique, int Emotes, int Live, int Dead, int CachedBinaries, int CachedThumbnails) GetCounters()
+    {
+        int unique = 0, emotes = 0;
+        try
+        {
+            if (File.Exists(IndexPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(IndexPath));
+                unique = doc.RootElement.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array
+                    ? items.GetArrayLength()
+                    : 0;
+                emotes = doc.RootElement.TryGetProperty("emoteCount", out var emoteCount) ? emoteCount.GetInt32() : 0;
+            }
+        }
+        catch
+        {
+            // unreadable index — report zeros
+        }
+
+        // the ApiServer writes probe-state.json into the same volume as the client
+        // browses; the panel only reads it here
+        int live = 0, dead = 0, binaries = 0, thumbnails = 0;
+        try
+        {
+            string probePath = Path.Combine(CatalogDir, "probe-state.json");
+            if (File.Exists(probePath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(probePath));
+                if (doc.RootElement.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var entry in items.EnumerateObject())
+                    {
+                        string? state = entry.Value.TryGetProperty("state", out var stateProp) ? stateProp.GetString() : null;
+                        if (state == "live")
+                        {
+                            live++;
+                        }
+                        else if (state == "dead")
+                        {
+                            dead++;
+                        }
+                    }
+                }
+            }
+
+            string binariesDir = Path.Combine(CatalogDir, "binaries");
+            if (Directory.Exists(binariesDir))
+            {
+                binaries = Directory.EnumerateFiles(binariesDir, "*.zip").Count();
+            }
+
+            string thumbnailsDir = Path.Combine(CatalogDir, "thumbnails");
+            if (Directory.Exists(thumbnailsDir))
+            {
+                thumbnails = Directory.EnumerateFiles(thumbnailsDir).Count();
+            }
+        }
+        catch
+        {
+            // counters are informational
+        }
+
+        return (unique, emotes, live, dead, binaries, thumbnails);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Scheduling
+    // ---------------------------------------------------------------------------
+
+    private static int _scheduledRunStarted;
+
+    /// <summary>
+    /// Starts the background sync when it is due: the asset gate consent is
+    /// recorded, the toggle is on, and the volume index is missing or older than
+    /// the configured interval. Safe to call from every startup path.
+    /// </summary>
+    public static void EnsureScheduledSyncStarted(Settings settings, ILogger logger)
+    {
+        if (settings.LivePersonaCatalog is false)
+        {
+            return; // toggle off — the live marketplace is disabled
+        }
+
+        if (!MojangAssetGate.HasConsent)
+        {
+            logger.Debug("Live persona catalog sync not started — the Mojang assets consent has not been recorded yet");
+            return;
+        }
+
+        if (IsSyncing)
+        {
+            return;
+        }
+
+        DateTimeOffset? lastSync = GetLastVolumeSync();
+        double intervalHours = Math.Clamp(settings.PersonaCatalogSyncIntervalHours ?? 24, 1, 168);
+        if (lastSync is not null && DateTimeOffset.UtcNow - lastSync < TimeSpan.FromHours(intervalHours))
+        {
+            logger.Debug("Live persona catalog synced {Ago} ago — next sync in {Remaining}", DateTimeOffset.UtcNow - lastSync,
+                TimeSpan.FromHours(intervalHours) - (DateTimeOffset.UtcNow - lastSync));
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _scheduledRunStarted, 1) == 1)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                logger.Information("Live persona catalog sync starting (background, last sync: {Last})", lastSync?.ToString("o", CultureInfo.InvariantCulture) ?? "never");
+                await SyncNowAsync(logger, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Live persona catalog sync failed");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _scheduledRunStarted, 0);
+            }
+        });
+    }
+
+    // ---------------------------------------------------------------------------
+    // The sync
+    // ---------------------------------------------------------------------------
+
+    /// <summary>Full catalog sync: anonymous login → ContinuationToken pagination → volume cache. Never throws.</summary>
+    public static async Task<bool> SyncNowAsync(ILogger logger, CancellationToken cancellationToken)
+    {
+        if (IsSyncing)
+        {
+            logger.Warning("A live persona catalog sync is already in progress");
+            return false;
+        }
+
+        IsSyncing = true;
+        LastError = null;
+        PagesFetched = 0;
+        RawItemsFetched = 0;
+        try
+        {
+            Directory.CreateDirectory(CatalogDir);
+            Directory.CreateDirectory(ItemsDir);
+
+            // 1. anonymous AndroidDeviceID login → master_player_account entity token
+            string masterToken = await LoginAsync(cancellationToken);
+            logger.Information("Live persona catalog sync: logged in to PlayFab 20ca2 anonymously");
+
+            // 2. paginate the whole PersonaDurable catalog (~40k entries, ~400 pages)
+            var byPiece = new Dictionary<Guid, SyncIndexItem>();
+            int emotes = 0, thumbUrls = 0;
+            string? continuationToken = null;
+            var pieceTypes = new SortedDictionary<string, int>();
+            do
+            {
+                string response = await PostCatalogSearchAsync(masterToken, continuationToken, cancellationToken);
+                using var doc = JsonDocument.Parse(response);
+                var data = doc.RootElement.GetProperty("data");
+                int onPage = 0;
+                if (data.TryGetProperty("Items", out var items) && items.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var raw in items.EnumerateArray())
+                    {
+                        onPage++;
+                        // raw item metadata lands in the volume verbatim (facts only)
+                        await WriteRawItemAsync(raw, cancellationToken);
+
+                        var record = BuildIndexRecord(raw);
+                        if (record is null)
+                        {
+                            continue; // not a persona_piece PersonaDurable (or no piece id)
+                        }
+
+                        if (record.IsEmote)
+                        {
+                            emotes++;
+                        }
+                        else
+                        {
+                            pieceTypes[record.PieceType] = pieceTypes.TryGetValue(record.PieceType, out int count) ? count + 1 : 1;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(record.ThumbnailUrl) && record.ThumbnailUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                        {
+                            thumbUrls++;
+                        }
+
+                        // dedupe: the marketplace keeps every re-publication of a piece;
+                        // the offer wants one entry per piece uuid — the newest wins
+                        if (byPiece.TryGetValue(record.PieceId, out var existing) && existing.CreationDate >= record.CreationDate)
+                        {
+                            continue;
+                        }
+
+                        byPiece[record.PieceId] = record;
+                    }
+                }
+
+                PagesFetched++;
+                RawItemsFetched += onPage;
+                if (PagesFetched % 25 == 0)
+                {
+                    logger.Information("Live persona catalog sync: {Pages} page(s), {Raw} raw item(s), {Unique} unique piece(s) so far",
+                        PagesFetched, RawItemsFetched, byPiece.Count);
+                }
+
+                continuationToken = data.TryGetProperty("ContinuationToken", out var tokenProp) && tokenProp.ValueKind == JsonValueKind.String
+                    ? tokenProp.GetString()
+                    : null;
+
+                // polite: ~1.4 req/s against the marketplace for the whole walk
+                if (continuationToken is not null)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(700), cancellationToken);
+                }
+            }
+            while (!string.IsNullOrEmpty(continuationToken) && !cancellationToken.IsCancellationRequested);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                LastError = "sync cancelled";
+                return false;
+            }
+
+            // 3. write the deduped index (atomic replace; the ApiServer hot-reloads it)
+            var index = new SyncIndex(DateTimeOffset.UtcNow, RawItemsFetched, emotes, [.. byPiece.Values.OrderBy(item => item.PieceType).ThenBy(item => item.Title)]);
+            string tempPath = IndexPath + ".tmp";
+            await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(index, JsonOptions), cancellationToken);
+            File.Move(tempPath, IndexPath, overwrite: true);
+
+            LastSyncFinished = DateTimeOffset.UtcNow;
+            logger.Information(
+                "Live persona catalog sync complete: {Raw} raw item(s) over {Pages} page(s) — {Unique} unique persona piece(s) indexed ({Types}), emotes: {Emotes} (not offered — see docs), thumbnails with a live URL: {Thumbs}. " +
+                "Search never returns Contents — piece binary URLs are resolved lazily per item via Catalog/GetItem on the first client request",
+                RawItemsFetched, PagesFetched, index.Items.Count, string.Join(", ", pieceTypes.Select(kv => $"{kv.Key}={kv.Value}")), emotes, thumbUrls);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            LastError = "sync cancelled";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+            logger.Error(ex, "Live persona catalog sync failed");
+            return false;
+        }
+        finally
+        {
+            IsSyncing = false;
+        }
+    }
+
+    private static async Task<string> LoginAsync(CancellationToken cancellationToken)
+    {
+        var login = await PostAsync("/Client/LoginWithAndroidDeviceID", new Dictionary<string, object>
+        {
+            ["TitleId"] = "20ca2",
+            ["AndroidDeviceId"] = "apace-catalog-fetcher",
+            ["AndroidDevice"] = "Pixel",
+            ["OS"] = "Linux",
+            ["CreateAccount"] = true,
+        }, [], cancellationToken);
+        string clientToken = login.GetProperty("data").GetProperty("EntityToken").GetProperty("EntityToken").GetString()
+            ?? throw new InvalidOperationException("login returned no entity token");
+        string playFabId = login.GetProperty("data").GetProperty("PlayFabId").GetString() ?? "";
+
+        var exchange = await PostAsync("/Authentication/GetEntityToken", new Dictionary<string, object>
+        {
+            ["Entity"] = new Dictionary<string, object> { ["Id"] = playFabId, ["Type"] = "master_player_account" },
+        }, [clientToken], cancellationToken);
+        string master = exchange.GetProperty("data").GetProperty("EntityToken").GetString()
+            ?? throw new InvalidOperationException("entity token exchange returned no token");
+        return master;
+    }
+
+    private static async Task<JsonElement> PostAsync(string path, Dictionary<string, object> body, IReadOnlyList<string> entityTokens, CancellationToken cancellationToken)
+    {
+        using var client = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(40),
+        };
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "KotPasztet/Apace live-persona-catalog-sync");
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"https://20ca2.playfabapi.com{path}")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"),
+        };
+        if (entityTokens.Count > 0)
+        {
+            request.Headers.Add("X-EntityToken", entityTokens[^1]);
+        }
+
+        using var response = await client.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        return doc.RootElement.Clone();
+    }
+
+    private static async Task<string> PostCatalogSearchAsync(string masterToken, string? continuationToken, CancellationToken cancellationToken)
+    {
+        var body = new Dictionary<string, object>
+        {
+            ["Filter"] = "(contentType eq 'PersonaDurable')",
+            ["OrderBy"] = "creationDate asc",
+            ["scid"] = "4fc10100-5f7a-4470-899b-280835760c07",
+            ["top"] = 100,
+        };
+        if (continuationToken is not null)
+        {
+            body["ContinuationToken"] = continuationToken;
+        }
+
+        var result = await PostAsync("/Catalog/Search", body, [masterToken], cancellationToken);
+        return JsonSerializer.Serialize(result);
+    }
+
+    private static async Task WriteRawItemAsync(JsonElement raw, CancellationToken cancellationToken)
+    {
+        string? id = raw.TryGetProperty("Id", out var idProp) && idProp.ValueKind == JsonValueKind.String ? idProp.GetString() : null;
+        if (string.IsNullOrWhiteSpace(id) || id.Contains('/') || id.Contains('\\') || id.Contains(".."))
+        {
+            return;
+        }
+
+        string path = Path.Combine(ItemsDir, $"{id}.json");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(raw, RawItemJsonOptions), cancellationToken);
+    }
+
+    /// <summary>
+    /// Turns a raw PlayFab PersonaDurable entry into the index record (facts from
+    /// the marketplace — the unlock-all strip happens on the offer output in the
+    /// ApiServer, never here). Null when the entry is not a persona_piece.
+    /// </summary>
+    private static SyncIndexItem? BuildIndexRecord(JsonElement raw)
+    {
+        string id = raw.GetProperty("Id").GetString() ?? "";
+        var display = raw.TryGetProperty("DisplayProperties", out var dp) && dp.ValueKind == JsonValueKind.Object ? dp : default;
+
+        string? pieceType = display.ValueKind != JsonValueKind.Undefined && display.TryGetProperty("pieceType", out var ptProp) && ptProp.ValueKind == JsonValueKind.String
+            ? ptProp.GetString()
+            : null;
+        JsonElement firstPack = display.ValueKind != JsonValueKind.Undefined
+            && display.TryGetProperty("packIdentity", out var packs) && packs.ValueKind == JsonValueKind.Array && packs.GetArrayLength() > 0
+                ? packs[0]
+                : default;
+        string? packType = firstPack.ValueKind != JsonValueKind.Undefined && firstPack.TryGetProperty("type", out var packTypeProp) ? packTypeProp.GetString() : null;
+        string? pieceIdRaw = firstPack.ValueKind != JsonValueKind.Undefined && firstPack.TryGetProperty("uuid", out var uuidProp) && uuidProp.ValueKind == JsonValueKind.String
+            ? uuidProp.GetString()
+            : null;
+        string pieceVersion = firstPack.ValueKind != JsonValueKind.Undefined && firstPack.TryGetProperty("version", out var versionProp) && versionProp.ValueKind == JsonValueKind.String
+            ? versionProp.GetString() ?? "1.0.0"
+            : "1.0.0";
+
+        if (pieceType is null || pieceIdRaw is null || packType != "persona_piece" || !Guid.TryParse(pieceIdRaw, out Guid pieceId))
+        {
+            return null;
+        }
+
+        var tags = new List<string>();
+        if (raw.TryGetProperty("Tags", out var tagsProp) && tagsProp.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var tag in tagsProp.EnumerateArray())
+            {
+                if (tag.ValueKind == JsonValueKind.String && tag.GetString() is { } tagValue)
+                {
+                    tags.Add(tagValue);
+                }
+            }
+        }
+
+        // hidden_offer entries never appeared in the dressing room (StoreConfig
+        // globalNotTags) — recorded in items/ but not offered
+        if (tags.Contains("hidden_offer", StringComparer.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var keywords = new Dictionary<string, List<string>>();
+        if (raw.TryGetProperty("Keywords", out var keywordsProp) && keywordsProp.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var keyword in keywordsProp.EnumerateObject())
+            {
+                if (keyword.Value.ValueKind == JsonValueKind.Object && keyword.Value.TryGetProperty("Values", out var values) && values.ValueKind == JsonValueKind.Array)
+                {
+                    var list = values.EnumerateArray()
+                        .Where(v => v.ValueKind == JsonValueKind.String)
+                        .Select(v => v.GetString() ?? "")
+                        .Where(v => v.Length > 0)
+                        .ToList();
+                    if (list.Count > 0)
+                    {
+                        keywords[keyword.Name] = list;
+                    }
+                }
+            }
+        }
+
+        string? thumbnailId = null, thumbnailUrl = null;
+        if (raw.TryGetProperty("Images", out var images) && images.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var image in images.EnumerateArray())
+            {
+                string? imageType = image.TryGetProperty("Type", out var typeProp) ? typeProp.GetString() : null;
+                if (imageType == "Thumbnail" || thumbnailId is null)
+                {
+                    thumbnailId = image.TryGetProperty("Id", out var imageIdProp) ? imageIdProp.GetString() : thumbnailId;
+                    thumbnailUrl = image.TryGetProperty("Url", out var urlProp) ? urlProp.GetString() : thumbnailUrl;
+                    if (imageType == "Thumbnail")
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        var references = new List<SyncItemReference>();
+        if (raw.TryGetProperty("ItemReferences", out var refsProp) && refsProp.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var reference in refsProp.EnumerateArray())
+            {
+                if (reference.TryGetProperty("Id", out var refId) && refId.ValueKind == JsonValueKind.String && Guid.TryParse(refId.GetString(), out Guid refGuid))
+                {
+                    references.Add(new SyncItemReference(refGuid, reference.TryGetProperty("Amount", out var amountProp) && amountProp.ValueKind == JsonValueKind.Number ? amountProp.GetInt32() : 1));
+                }
+            }
+        }
+
+        DateTime creationDate = raw.TryGetProperty("CreationDate", out var createdProp) && DateTime.TryParse(createdProp.GetString(), out var created) ? created.ToUniversalTime() : DateTime.UtcNow;
+        DateTime lastModified = raw.TryGetProperty("LastModifiedDate", out var modifiedProp) && DateTime.TryParse(modifiedProp.GetString(), out var modified) ? modified.ToUniversalTime() : creationDate;
+        DateTime? startDate = raw.TryGetProperty("StartDate", out var startProp) && startProp.ValueKind == JsonValueKind.String && DateTime.TryParse(startProp.GetString(), out var start) ? start.ToUniversalTime() : null;
+
+        return new SyncIndexItem(
+            id,
+            raw.TryGetProperty("Title", out var titleProp) ? FirstTranslation(titleProp) : id,
+            raw.TryGetProperty("Description", out var descProp) ? FirstTranslation(descProp) : "§",
+            keywords.Count > 0 ? keywords : null,
+            tags,
+            pieceType,
+            pieceId,
+            pieceVersion,
+            display.ValueKind != JsonValueKind.Undefined && display.TryGetProperty("rarity", out var rarityProp) && rarityProp.ValueKind == JsonValueKind.String ? rarityProp.GetString() ?? "common" : "common",
+            display.ValueKind != JsonValueKind.Undefined && display.TryGetProperty("creatorName", out var creatorProp) && creatorProp.ValueKind == JsonValueKind.String ? creatorProp.GetString() : "Minecraft",
+            raw.TryGetProperty("CreatorEntityKey", out var creatorKeyProp) && creatorKeyProp.TryGetProperty("Id", out var creatorIdProp) ? creatorIdProp.GetString() : "301F442C3B63DC20",
+            display.ValueKind != JsonValueKind.Undefined && display.TryGetProperty("offerId", out var offerProp) && offerProp.ValueKind == JsonValueKind.String && Guid.TryParse(offerProp.GetString(), out Guid offerGuid) ? offerGuid : null,
+            references,
+            thumbnailId,
+            thumbnailUrl,
+            creationDate,
+            lastModified,
+            startDate,
+            pieceType == "persona_emote"
+        );
+    }
+
+    private static string FirstTranslation(JsonElement translations)
+    {
+        foreach (string key in new[] { "neutral", "NEUTRAL", "en-US" })
+        {
+            if (translations.ValueKind == JsonValueKind.Object && translations.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()))
+            {
+                return value.GetString()!;
+            }
+        }
+
+        return "§";
+    }
+}

@@ -525,6 +525,11 @@ public sealed class ServerManager : IDisposable
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // Safety timeout
 
+        // Live persona marketplace: with the gate out of the way, kick the scheduled
+        // catalog sync (first start after consent, then every configured interval;
+        // runs in the background, the ApiServer hot-reloads the index when it lands).
+        Services.LivePersonaCatalogSync.EnsureScheduledSyncStarted(settings, logger);
+
         try
         {
             foreach (var comp in targets)
