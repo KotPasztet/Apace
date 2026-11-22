@@ -256,21 +256,21 @@ public static class LivePersonaCatalogSync
             string masterToken = await LoginAsync(cancellationToken);
             logger.Information("Live persona catalog sync: logged in to PlayFab 20ca2 anonymously");
 
-            // 2. walk the whole PersonaDurable catalog (~40k entries, ~400 pages of 100)
+            // 2. walk the whole PersonaDurable catalog (~40k entries). PlayFab caps
+            // skip at 10000 ("Skip must be between 0 and 10000, inclusively") — a
+            // plain paged walk would silently stop at ~10k entries — so the walk
+            // pages per creationDate window instead: any window holding more than
+            // ~9.5k entries is bisected on creationDate until each fits under the
+            // skip cap, then pages linearly with OrderBy creationDate asc.
             var byPiece = new Dictionary<Guid, SyncIndexItem>();
             int emotes = 0, thumbUrls = 0;
             var pieceTypes = new SortedDictionary<string, int>();
-            int skip = 0;
-            int? serverCount = null;
             const int PageSize = 100;
-            while (!cancellationToken.IsCancellationRequested)
+            const int SkipCap = 10000;
+            const int WindowSplitThreshold = 9500;
+
+            async Task<int> ProcessPage(JsonElement data)
             {
-                string response = await PostCatalogSearchAsync(masterToken, skip, PageSize, cancellationToken);
-                using var doc = JsonDocument.Parse(response);
-                var data = doc.RootElement.GetProperty("data");
-                serverCount ??= data.TryGetProperty("Count", out var countProp) && countProp.ValueKind == JsonValueKind.Number
-                    ? countProp.GetInt32()
-                    : null;
                 int onPage = 0;
                 if (data.TryGetProperty("Items", out var items) && items.ValueKind == JsonValueKind.Array)
                 {
@@ -311,8 +311,15 @@ public static class LivePersonaCatalogSync
                     }
                 }
 
+                return onPage;
+            }
+
+            async Task<int> PageAsync(JsonElement data)
+            {
+                int onPage = await ProcessPage(data);
                 PagesFetched++;
                 RawItemsFetched += onPage;
+
                 if (PagesFetched % 25 == 0)
                 {
                     logger.Information("Live persona catalog sync: {Pages} page(s), {Raw} raw item(s), {Unique} unique piece(s) so far",
@@ -338,18 +345,58 @@ public static class LivePersonaCatalogSync
                     }
                 }
 
-                // the sort is not unique across equal creationDate values — expect some
-                // overlap between pages, the per-piece dedupe absorbs it; stop on an
-                // empty/short page or once the server-reported count is covered
-                bool pageShort = onPage < PageSize;
-                skip += PageSize;
-                if (onPage == 0 || pageShort || (serverCount is { } reportedCount && skip >= reportedCount + PageSize))
-                {
-                    break;
-                }
+                return onPage;
+            }
 
-                // polite: ~1.4 req/s against the marketplace for the whole walk
-                await Task.Delay(TimeSpan.FromMilliseconds(700), cancellationToken);
+            string baseFilter = "(contentType eq 'PersonaDurable')";
+            DateTime? catalogMin = FirstCreationDate(await PostCatalogSearchAsync(masterToken, baseFilter, "creationDate asc", 0, 1, cancellationToken));
+            DateTime? catalogMax = FirstCreationDate(await PostCatalogSearchAsync(masterToken, baseFilter, "creationDate desc", 0, 1, cancellationToken));
+            if (catalogMin is not null && catalogMax is not null)
+            {
+                var windows = new Stack<(DateTime Lo, DateTime Hi)>();
+                windows.Push((catalogMin.Value, catalogMax.Value.AddSeconds(1)));
+                while (windows.Count > 0 && !cancellationToken.IsCancellationRequested)
+                {
+                    (DateTime lo, DateTime hi) = windows.Pop();
+                    string filter = WindowFilter(baseFilter, lo, hi);
+                    JsonElement probe = await PostCatalogSearchAsync(masterToken, filter, "creationDate asc", 0, 1, cancellationToken);
+                    int windowCount = probe.TryGetProperty("Count", out var windowCountProp) && windowCountProp.ValueKind == JsonValueKind.Number
+                        ? windowCountProp.GetInt32()
+                        : 0;
+                    if (windowCount == 0)
+                    {
+                        continue;
+                    }
+
+                    if (windowCount > WindowSplitThreshold && hi - lo > TimeSpan.FromMilliseconds(1))
+                    {
+                        DateTime mid = lo + TimeSpan.FromTicks((hi - lo).Ticks / 2);
+                        windows.Push((mid, hi));
+                        windows.Push((lo, mid));
+                        continue;
+                    }
+
+                    if (windowCount > SkipCap)
+                    {
+                        logger.Warning(
+                            "Live persona catalog sync: window {Lo} .. {Hi} holds {Count} entries within one millisecond — paging stops at the PlayFab skip cap and the excess is skipped",
+                            lo.ToString("o", CultureInfo.InvariantCulture), hi.ToString("o", CultureInfo.InvariantCulture), windowCount);
+                    }
+
+                    for (int skip = 0; skip < SkipCap; skip += PageSize)
+                    {
+                        JsonElement data = await PostCatalogSearchAsync(masterToken, filter, "creationDate asc", skip, PageSize, cancellationToken);
+                        int onPage = await PageAsync(data);
+                        bool pageShort = onPage < PageSize;
+                        if (onPage == 0 || pageShort)
+                        {
+                            break;
+                        }
+
+                        // polite: ~1.4 req/s against the marketplace for the whole walk
+                        await Task.Delay(TimeSpan.FromMilliseconds(700), cancellationToken);
+                    }
+                }
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -493,19 +540,43 @@ public static class LivePersonaCatalogSync
         _ => false,
     };
 
-    private static async Task<string> PostCatalogSearchAsync(string masterToken, int skip, int top, CancellationToken cancellationToken)
+    private static async Task<JsonElement> PostCatalogSearchAsync(string masterToken, string filter, string orderBy, int skip, int top, CancellationToken cancellationToken)
     {
         var body = new Dictionary<string, object>
         {
-            ["Filter"] = "(contentType eq 'PersonaDurable')",
-            ["OrderBy"] = "creationDate asc",
+            ["Filter"] = filter,
+            ["OrderBy"] = orderBy,
             ["scid"] = "4fc10100-5f7a-4470-899b-280835760c07",
             ["skip"] = skip,
             ["top"] = top,
         };
 
         var result = await PostAsync("/Catalog/Search", body, [masterToken], cancellationToken);
-        return JsonSerializer.Serialize(result);
+        return result.GetProperty("data");
+    }
+
+    /// <summary>Half-open [lo, hi) creationDate window over the persona content type.</summary>
+    private static string WindowFilter(string baseFilter, DateTime lo, DateTime hi)
+    {
+        return $"{baseFilter} and creationDate ge {FormatDate(lo)} and creationDate lt {FormatDate(hi)}";
+    }
+
+    private static string FormatDate(DateTime date)
+    {
+        return date.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>CreationDate of the first item of a search result (null when the page is empty).</summary>
+    private static DateTime? FirstCreationDate(JsonElement data)
+    {
+        if (data.TryGetProperty("Items", out var items) && items.ValueKind == JsonValueKind.Array && items.GetArrayLength() > 0
+            && items[0].TryGetProperty("CreationDate", out var created) && created.ValueKind == JsonValueKind.String
+            && DateTime.TryParse(created.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
+        {
+            return parsed.ToUniversalTime();
+        }
+
+        return null;
     }
 
     private static async Task WriteRawItemAsync(JsonElement raw, CancellationToken cancellationToken)
