@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
+using Apace.ApiServer.Services;
 
 namespace Apace.ApiServer.Controllers.EarthApi;
 
@@ -9,11 +11,18 @@ namespace Apace.ApiServer.Controllers.EarthApi;
 // staticdata/playfab/persona/ for installs that predate the gate. Files can be
 // managed through the panel's file browser or dropped in manually; only simple
 // file names are accepted.
+//
+// Live persona marketplace: when the item is NOT in either dir but the live catalog
+// has it, the controller runs the lazy pipeline (Services/LivePersonaCatalog) —
+// resolve the real CDN URL via Catalog/GetItem, probe it (the new PlayFab content
+// CDN serves the same GUIDs the dark xforge CDN once did), download the piece into
+// <mojang-assets>/persona-catalog/binaries/ and serve it. The client never sees a
+// live CDN URL: every offer advertises this proxy path.
 [Route("playfab/persona/{fileName}")]
 public class PersonaCdnController : ControllerBase
 {
     [HttpGet]
-    public Results<NotFound, FileStreamHttpResult> Get(string fileName)
+    public async Task<Results<NotFound, FileStreamHttpResult>> Get(string fileName)
     {
         // the route value must be a plain file name: reject anything that tries to
         // escape the persona directory (slashes, "..", rooted paths, ...)
@@ -27,6 +36,31 @@ public class PersonaCdnController : ControllerBase
         {
             string directory = Path.GetFullPath(Path.Combine(Program.staticData.Directory, "playfab", "persona"));
             filePath = Path.Combine(directory, fileName);
+        }
+
+        // live persona marketplace: a miss on both dirs is the lazy probe + download
+        // path for items the panel synced from the live marketplace
+        if (!System.IO.File.Exists(filePath) && LivePersonaCatalog.Enabled)
+        {
+            // <itemId>.zip — the same name the offer's Contents entry advertises
+            string itemId = fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                ? fileName[..^4]
+                : fileName;
+            if (Guid.TryParse(itemId, out _))
+            {
+                try
+                {
+                    if (await LivePersonaCatalog.TryEnsureBinaryAsync(itemId, Log.Logger, HttpContext.RequestAborted))
+                    {
+                        filePath = LivePersonaCatalog.BinaryPath(itemId);
+                    }
+                }
+                finally
+                {
+                    // burst-friendly: persist probe verdicts after each request
+                    LivePersonaCatalog.FlushProbeStates(Log.Logger);
+                }
+            }
         }
 
         if (!System.IO.File.Exists(filePath))

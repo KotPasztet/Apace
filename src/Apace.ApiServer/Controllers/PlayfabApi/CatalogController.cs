@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Apace.ApiServer.Models.Playfab;
+using Apace.ApiServer.Services;
 using Apace.Common.Utils;
 using CItem = Apace.StaticData.Playfab.Item;
 
@@ -82,7 +83,58 @@ internal sealed class CatalogController : ApaceControllerBase
             ),
             .. StaticData.Playfab.Items.Select(item => CIItemToItem(item.Value)),
         ];
+
+        // Bold Rabbit Feet item id — hardcoded above and required for the shop to
+        // load, so it survives the live-catalog offer even though it is a 1P persona item.
+        BoldRabbitFeetItemId = itemData[0].Id;
     }
+
+    private static Guid BoldRabbitFeetItemId { get; }
+
+    // The live persona marketplace (panel-toggled): when a synced catalog exists,
+    // the offer is the LIVE catalog — every 1P "Minecraft" persona piece from the
+    // legacy staticdata items drops out (their binaries are long dead; the live
+    // catalog replaces them) and the unlock-all live items are appended. The Apace
+    // custom pieces (creator KotPasztet), the client-config entries (layout,
+    // StoreConfig, skin packs) and the hardcoded Bold Rabbit Feet stay.
+    private static IEnumerable<Item> BaseOfferItems
+    {
+        get
+        {
+            if (!LivePersonaCatalog.IsAvailable)
+            {
+                return itemData;
+            }
+
+            return itemData.Where(item =>
+                item.ContentType != "PersonaDurable" ||
+                item.Id == BoldRabbitFeetItemId ||
+                item.DisplayProperties?.CreatorName is not "Minecraft");
+        }
+    }
+
+    // Mapped live offer items, cached per index version (the dressing room fires
+    // many searches; mapping ~10k items per request would dominate the request).
+    private static IReadOnlyList<Item> LiveOfferItems
+    {
+        get
+        {
+            long stamp = LivePersonaCatalog.IndexStamp;
+            if (_liveOfferStamp != stamp)
+            {
+                _liveOfferItems = LivePersonaCatalog.GetOfferItems().Select(CIItemToItem).ToArray();
+                _liveOfferById = _liveOfferItems.ToDictionary(item => item.Id);
+                _liveOfferStamp = stamp;
+                Log.Information("Live persona offer rebuilt: {Count} item(s) (index stamp {Stamp})", _liveOfferItems.Length, stamp);
+            }
+
+            return _liveOfferItems ?? [];
+        }
+    }
+
+    private static long? _liveOfferStamp;
+    private static Item[]? _liveOfferItems;
+    private static Dictionary<Guid, Item>? _liveOfferById;
 
     private sealed record CatalogSearchRequest(
         bool Count,
@@ -118,7 +170,11 @@ internal sealed class CatalogController : ApaceControllerBase
             string filter = request.Filter
                 .Replace("platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth')", "platforms/any(tp: tp eq 'android.googleplay') and platforms/any(tp: tp eq 'title.earth')");
 
-            var oDataQuery = itemData.AsQueryable().OData(settings =>
+            // base offer (staticdata) plus, when the live persona marketplace is on,
+            // the unlock-all live items — one OData filter over both
+            IEnumerable<Item> source = BaseOfferItems.Concat(LiveOfferItems);
+
+            var oDataQuery = source.AsQueryable().OData(settings =>
                 {
                     settings.EnableCaseInsensitive = true;
                     settings.ValidationSettings.MaxNodeCount = 10000;
@@ -226,6 +282,25 @@ internal sealed class CatalogController : ApaceControllerBase
                     ["ItemId"] = ["The ItemId field is required."]
                 }
             ));
+        }
+
+        // live persona offer resolves first (the legacy 1P persona items are replaced
+        // by their live twins when the live marketplace is on); staticdata stays for
+        // everything else (layout, store config, skin packs, buildplates, Apace pieces)
+        if (LivePersonaCatalog.IsAvailable && _liveOfferById is null)
+        {
+            _ = LiveOfferItems; // force the lazy build so the id map is populated
+        }
+
+        if (LivePersonaCatalog.IsAvailable && _liveOfferById is not null && _liveOfferById.TryGetValue(itemId, out var liveItem))
+        {
+            return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
+                200,
+                "OK",
+                new GetPublishedItemResponse(
+                    ToResponse(liveItem, Request)
+                )
+            ), jsonOptions), "application/json");
         }
 
         if (!StaticData.Playfab.Items.TryGetValue(itemId, out var cItem))

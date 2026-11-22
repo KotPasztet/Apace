@@ -33,6 +33,8 @@ public sealed class Settings
         OnlyAllowLocalLogin = false,
         BridgePort = 19132,
         RequireMojangAssets = true,
+        LivePersonaCatalog = true,
+        PersonaCatalogSyncIntervalHours = 24,
     };
 
     public static Settings Instance { get; set; } = Default;
@@ -69,6 +71,17 @@ public sealed class Settings
     /// Mojang assets are missing from the persistent data dir. Default true.
     /// </summary>
     public bool? RequireMojangAssets { get; set; }
+
+    /// <summary>
+    /// Live persona marketplace: the panel syncs the full PersonaDurable catalog
+    /// from the still-live PlayFab marketplace (title 20ca2) into the data volume
+    /// and the ApiServer serves it unlock-all instead of the dead legacy items.
+    /// Still behind the Mojang assets consent gate. Default true.
+    /// </summary>
+    public bool? LivePersonaCatalog { get; set; }
+
+    /// <summary>Hours between live persona catalog syncs (1..168). Default 24.</summary>
+    public int? PersonaCatalogSyncIntervalHours { get; set; }
 
     public enum TileDataSourceE
     {
@@ -224,6 +237,18 @@ public sealed class Settings
         {
             Log.Warning($"RequireMojangAssets is invalid, using default: '{Default.RequireMojangAssets}'");
             settings.RequireMojangAssets = Default.RequireMojangAssets;
+        }
+
+        if (settings.LivePersonaCatalog is null)
+        {
+            Log.Warning($"LivePersonaCatalog is invalid, using default: '{Default.LivePersonaCatalog}'");
+            settings.LivePersonaCatalog = Default.LivePersonaCatalog;
+        }
+
+        if (settings.PersonaCatalogSyncIntervalHours is not (>= 1 and <= 168))
+        {
+            Log.Warning($"PersonaCatalogSyncIntervalHours is invalid, using default: '{Default.PersonaCatalogSyncIntervalHours}'");
+            settings.PersonaCatalogSyncIntervalHours = Default.PersonaCatalogSyncIntervalHours;
         }
 
         Log.Information("Loaded settings");

@@ -54,6 +54,13 @@ internal static class ApiServer
             arguments.Add("--require-mojang-assets");
         }
 
+        // Live persona marketplace: serve the panel-synced live catalog (unlock-all
+        // offer, lazy binary probe) instead of the dead legacy 1P persona items.
+        if (settings.LivePersonaCatalog is not false)
+        {
+            arguments.Add("--live-persona-catalog");
+        }
+
         return Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)), arguments)
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),

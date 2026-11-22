@@ -1,9 +1,11 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-22T13:26:04Z",
+  "generatedAt": "2026-11-22T16:40:47Z",
   "sources": {
     "catalog": "https://20ca2.playfabapi.com",
     "assetCdn": "https://xforgeassets001.xboxlive.com",
+    "alternateAssetCdn": "content1.prod.catalog.playfab.com, content2.prod.catalog.playfab.com",
+    "personaMirror": "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror",
     "skinTextures": "https://minecraft.wiki"
   },
   "items": [
@@ -12,6 +14,9 @@
       "file": "playfab/persona/006ba854-c27b-483d-9a61-648a12cfc10d.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/4996b2ce-5579-4df6-9dab-2ead4908c8bd/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/006ba854-c27b-483d-9a61-648a12cfc10d.zip"
+      ],
       "sha256": "6c44f10813985f234e81cc1c98e03226a8c02da40acf92df9cc1f151207307ae",
       "size": 93430
     },
@@ -28,6 +33,9 @@
       "file": "playfab/persona/0134ddfb-9759-40f6-8e08-3d49e654ffe5.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/25a64e7b-75ba-4cee-97bd-c92183835d1e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/0134ddfb-9759-40f6-8e08-3d49e654ffe5.zip"
+      ],
       "sha256": "a17b0f996daf51ee92815ba13625ff89a60bb6400fa7897e1f6cc8494b548f29",
       "size": 123517
     },
@@ -44,6 +52,9 @@
       "file": "playfab/persona/01483121-8882-4bbc-8d31-5403ecf9cafb.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/118eee8f-e9e2-4397-8d32-1847ae6d12b0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/01483121-8882-4bbc-8d31-5403ecf9cafb.zip"
+      ],
       "sha256": "bc21cab1894c4f10e0499c05d03f1a38f4b7c7ba8d6230acc94ed1f0f1b7a8b5",
       "size": 16432
     },
@@ -60,6 +71,9 @@
       "file": "playfab/persona/0254c2b5-f6f0-487d-874d-d0d5077a42d7.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/081d244d-79d5-43e2-9666-c545b1e8086d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/0254c2b5-f6f0-487d-874d-d0d5077a42d7.zip"
+      ],
       "sha256": "1d11128a22b8729570fce93ffaeeefe7451f2b93915961d44d68f0cf91380066",
       "size": 23818
     },
@@ -76,6 +90,9 @@
       "file": "playfab/persona/02766e6d-7506-408c-bdc5-aff00f6863df.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/f412c4e7-573e-456e-971c-6739fee7bd0d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/02766e6d-7506-408c-bdc5-aff00f6863df.zip"
+      ],
       "sha256": "49b7a687df46b5b4de40164f1c14167db6cabd4a725274ed680e3db9d31cf9a4",
       "size": 121178
     },
@@ -92,6 +109,9 @@
       "file": "playfab/persona/0388aad8-020f-4149-88d2-cec75498d6d1.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/17f55c76-621f-422d-94e4-8cb3a3069a78/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/0388aad8-020f-4149-88d2-cec75498d6d1.zip"
+      ],
       "sha256": "861d616a2164764e2df3ac3d0b2e118e15778ea6c7e322baff1af88e5901f82d",
       "size": 177672
     },
@@ -108,6 +128,9 @@
       "file": "playfab/persona/0621076d-2540-4b51-b221-1ada84e1e02a.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/27f942b3-73b4-4756-8d49-eaf8bb9587d5/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/0621076d-2540-4b51-b221-1ada84e1e02a.zip"
+      ],
       "sha256": "ec3279bfa04b5cc813d06774acec5aaf3a47057d2b00512ec094f06e5a7ae7c3",
       "size": 158117
     },
@@ -124,6 +147,9 @@
       "file": "playfab/persona/07825658-cc37-41d4-a723-ce94b62bbe93.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/ae72e231-9e88-4849-b260-d889676c2776/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/07825658-cc37-41d4-a723-ce94b62bbe93.zip"
+      ],
       "sha256": "453961c1fa8d5598d5c4e64cdc89b2e7ed319479bab8cc75c78399a77a01c0bd",
       "size": 37085
     },
@@ -140,6 +166,9 @@
       "file": "playfab/persona/07917303-ee33-4a1e-b0e8-6f171cc1247f.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/9d1af836-84ba-4029-aed0-eed33c89862e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/07917303-ee33-4a1e-b0e8-6f171cc1247f.zip"
+      ],
       "sha256": "8dc0ffae456eaed5a8ead6455946042db24c5316f08758c7e1384456fbc8baf3",
       "size": 76072
     },
@@ -156,6 +185,9 @@
       "file": "playfab/persona/08682ab6-9063-4dc3-9bb7-2fe54ca58abc.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/a0667dc1-ba37-483e-8981-8fe718557edd/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/08682ab6-9063-4dc3-9bb7-2fe54ca58abc.zip"
+      ],
       "sha256": "775d4f0d28d780fe0d4030f57a32628aefaaf859a3448bfb12b1a1d754cdd5a3",
       "size": 77246
     },
@@ -172,6 +204,9 @@
       "file": "playfab/persona/08a76f92-81ed-4ccd-a3ad-557f87cf29e4.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/a09aadea-ee8f-49a6-b60a-cd6329df7270/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/08a76f92-81ed-4ccd-a3ad-557f87cf29e4.zip"
+      ],
       "sha256": "d692e0225248ba8067dc2b14129d98779f7f860a69d9e5f24bb8edc5070fb368",
       "size": 114647
     },
@@ -188,6 +223,9 @@
       "file": "playfab/persona/08b33f73-460e-4387-ba87-3a0c1ab3de58.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/6f7f086c-8a94-4551-b604-144e4853ae71/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/08b33f73-460e-4387-ba87-3a0c1ab3de58.zip"
+      ],
       "sha256": "85cf9649a49fdd69c0aa304d501e06adeb66b92018dade602ece8e0df537b1f1",
       "size": 30988
     },
@@ -204,6 +242,9 @@
       "file": "playfab/persona/0d144f77-1c32-4076-805e-d680db8ccc28.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/63ceef87-8e86-4bb0-977c-6871da006229/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/0d144f77-1c32-4076-805e-d680db8ccc28.zip"
+      ],
       "sha256": "ee17cb410bb45a95fb394700be429c6ca280d5d1c595a1e4bbf41b836c3d351b",
       "size": 2317281
     },
@@ -220,6 +261,9 @@
       "file": "playfab/persona/0f152f8c-60ae-4311-8e1e-347e23623bad.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/9631af7a-f98d-4661-af6d-fe593df60b33/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/0f152f8c-60ae-4311-8e1e-347e23623bad.zip"
+      ],
       "sha256": "452f0c4ecdb82d6182b85e312e99f064616bf3a52d6b0d0d83c112d6e25fffd9",
       "size": 143117
     },
@@ -236,6 +280,9 @@
       "file": "playfab/persona/137d6375-0ce1-41a0-905b-654fed2197b9.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/68afa33f-1500-4cd1-9d07-3ac69bba78f0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/137d6375-0ce1-41a0-905b-654fed2197b9.zip"
+      ],
       "sha256": "cce1a18591f19a6d7d7feeca16162ede1824cccf2a8543f4786fd1e392aa618f",
       "size": 91193
     },
@@ -252,6 +299,9 @@
       "file": "playfab/persona/155eaab6-f7d8-4689-be12-bbe4f79e1d76.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/ba65c63e-aadf-41ff-86d7-9f3ec03cd8ce/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/155eaab6-f7d8-4689-be12-bbe4f79e1d76.zip"
+      ],
       "sha256": "67cafd51cec669a94f458ec3ee5789f3b7ca661f9488d9a5250679306d8a7548",
       "size": 108027
     },
@@ -268,6 +318,9 @@
       "file": "playfab/persona/15ce9809-e0ff-4c12-9fec-55537e9da910.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/5a7dba0b-3e9a-4899-94cc-0129545638d1/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/15ce9809-e0ff-4c12-9fec-55537e9da910.zip"
+      ],
       "sha256": "9fc0074badbaa8e9ffa914f1cece94d1bba181e324332cf04446e4926e2ef390",
       "size": 26123
     },
@@ -284,6 +337,9 @@
       "file": "playfab/persona/1a0d99ef-fd9b-4af1-b9b6-e587974c87ff.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/084b9775-3d36-4247-9843-a5663e5fa8e9/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/1a0d99ef-fd9b-4af1-b9b6-e587974c87ff.zip"
+      ],
       "sha256": "d321855777de5000397313256bc60dc492efe1d78e5c96c850de5a4626e84658",
       "size": 114335
     },
@@ -300,6 +356,9 @@
       "file": "playfab/persona/1acdb55a-2abe-4881-8d4d-6ec7c6371902.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/7db9291e-9677-46e6-87f3-bb3105739f31/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/1acdb55a-2abe-4881-8d4d-6ec7c6371902.zip"
+      ],
       "sha256": "7721817fa485a3b746321a9e9c2f5d5e2e9b96140054c5a5c9d27fa6f2204dda",
       "size": 62153
     },
@@ -316,6 +375,9 @@
       "file": "playfab/persona/1c6c45c6-ff4f-4bb8-8fa1-2930996865ad.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/628ad125-9cac-43f8-a844-bf94c506ac39/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/1c6c45c6-ff4f-4bb8-8fa1-2930996865ad.zip"
+      ],
       "sha256": "7b56d31eca4af08c3a27332e9a7c8965843e084065b7e4350719db0ca35e0025",
       "size": 83063
     },
@@ -332,6 +394,9 @@
       "file": "playfab/persona/1c6fbc95-2555-45c4-b447-5cd1805333b5.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/8ae86072-b419-4409-b470-9ef332d991ab/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/1c6fbc95-2555-45c4-b447-5cd1805333b5.zip"
+      ],
       "sha256": "4f786b35657ef8d873106e2b0129bb173e62543e2368fd890e54e65a4ad662b5",
       "size": 93481
     },
@@ -348,6 +413,9 @@
       "file": "playfab/persona/1f69cf65-d553-4015-be26-b693ce3b9a98.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/18d7968b-2f2d-4ced-b20d-a02a7f311af8/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/1f69cf65-d553-4015-be26-b693ce3b9a98.zip"
+      ],
       "sha256": "e1623db15a188fc61730ff8e7bcf47df4cc5f85e4b234b0bf5fe50adf7d64247",
       "size": 111585
     },
@@ -364,6 +432,9 @@
       "file": "playfab/persona/1ffced49-7971-4f6d-9cda-afc966df6329.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/41c9bdd5-55bc-4de0-abd1-f826f1fe92f8/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/1ffced49-7971-4f6d-9cda-afc966df6329.zip"
+      ],
       "sha256": "a5450a29cc38cb83af7dd65a12023a8a1b188a536be716090daa499f071be610",
       "size": 92362
     },
@@ -380,6 +451,9 @@
       "file": "playfab/persona/21705d8d-820c-4eac-84d3-b1af159f9ca3.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/1a34b25c-9d63-48d9-9076-91e341f68f0d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/21705d8d-820c-4eac-84d3-b1af159f9ca3.zip"
+      ],
       "sha256": "cef3900a399f99e4199ca6bb574256255a73e20f9d9d1153c335ac75e8eb0bdc",
       "size": 73071
     },
@@ -396,6 +470,9 @@
       "file": "playfab/persona/21c1aedf-fe9d-400d-82a1-7b3f13edc123.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/d9b43975-26d5-4e86-962b-8899320ebe92/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/21c1aedf-fe9d-400d-82a1-7b3f13edc123.zip"
+      ],
       "sha256": "418ca91554f9f5c852299e7c649c8244fe8cb03e766f3582e9c11e4c1b2f15f7",
       "size": 26160
     },
@@ -412,6 +489,9 @@
       "file": "playfab/persona/21ecda7b-a5ef-4bf5-88dd-481e58ac7844.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/1e28252c-85d9-430d-bd82-d41ba82a86da/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/21ecda7b-a5ef-4bf5-88dd-481e58ac7844.zip"
+      ],
       "sha256": "35be8d271b03c4c7056eb8b5134d67228e4ce8976bc5877dcc97017dc4ba56bd",
       "size": 51957
     },
@@ -428,6 +508,9 @@
       "file": "playfab/persona/237e7e9d-84e1-40ba-864a-0dfb256303ba.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/c778b39f-54a7-4f2f-8c75-31b97f5d7607/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/237e7e9d-84e1-40ba-864a-0dfb256303ba.zip"
+      ],
       "sha256": "62921cd6064c1c1eb8f5aaac4b84cd973eee09fb1695eb506df2fafc3646f35a",
       "size": 91611
     },
@@ -444,6 +527,9 @@
       "file": "playfab/persona/23d3e05c-3402-420d-88ec-d1bee25c86e3.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/a7bbe3cf-9926-47b6-b9ad-28ac02074221/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/23d3e05c-3402-420d-88ec-d1bee25c86e3.zip"
+      ],
       "sha256": "e545f440c3cad2bb76e6bdaf6103150893db57daac12b67a4a7920748d0214c2",
       "size": 87657
     },
@@ -460,6 +546,9 @@
       "file": "playfab/persona/24857fea-1933-462f-b9e6-a477e254ec94.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/72f4cffa-077b-4c18-9474-e5fc38679f98/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/24857fea-1933-462f-b9e6-a477e254ec94.zip"
+      ],
       "sha256": "d1bf31b4779509f313d6a615f67bd59f839f67cfddb4f3ce8159de2ce633f87b",
       "size": 1100708
     },
@@ -476,6 +565,9 @@
       "file": "playfab/persona/283f8848-a8b3-4b1d-8dab-fa3041726caa.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/dd9c4858-53be-4eb8-9ce7-c5f2b1e458c6/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/283f8848-a8b3-4b1d-8dab-fa3041726caa.zip"
+      ],
       "sha256": "80580e98a0d263a1824595b64bc570942ba1fa9fecb6c5fc9aa02257b669aa29",
       "size": 140693
     },
@@ -492,6 +584,9 @@
       "file": "playfab/persona/2955699d-b5f5-49a2-831a-5c15904c45fc.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/5049bf52-c68f-4e97-b3a9-f51ef6688bf8/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/2955699d-b5f5-49a2-831a-5c15904c45fc.zip"
+      ],
       "sha256": "5d97bba908274e2d4197185e62a80f1f333d6552335cbeee751c4e2d4147a6de",
       "size": 56426
     },
@@ -508,6 +603,9 @@
       "file": "playfab/persona/2a0f3e25-8cdd-46c8-a151-5b2d98e8cfa4.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/32999cce-f4c9-4b2c-bdf3-a8f045ffdc5f/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/2a0f3e25-8cdd-46c8-a151-5b2d98e8cfa4.zip"
+      ],
       "sha256": "922578d674c87cdb645c6a85214a2dfcbffd6bf51f310cb44528dab2439d2500",
       "size": 215629
     },
@@ -524,6 +622,9 @@
       "file": "playfab/persona/2b746862-3931-475e-a0b4-4df26a8a0159.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/6bf95f3a-b9d1-4c52-a3be-29bcee6c36e0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/2b746862-3931-475e-a0b4-4df26a8a0159.zip"
+      ],
       "sha256": "8471e6f612b7eda5c09f779ddf01fe680af6178a71d1a7e689711199e52843aa",
       "size": 111266
     },
@@ -540,6 +641,9 @@
       "file": "playfab/persona/2ca6f4ab-3514-4eaf-a63a-5400de65fef1.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/c08497f2-f5c3-4a15-996a-a88ee74738c1/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/2ca6f4ab-3514-4eaf-a63a-5400de65fef1.zip"
+      ],
       "sha256": "232e441bd5b537756da238dea19cd055813a2e802bbe441ed9ad6f59bb4c2f2c",
       "size": 105197
     },
@@ -556,6 +660,9 @@
       "file": "playfab/persona/2dbb5eea-8fb3-42e9-b2a6-08b989a2bbf7.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/ea6f9656-7f65-4d4a-9485-97894a88ab88/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/2dbb5eea-8fb3-42e9-b2a6-08b989a2bbf7.zip"
+      ],
       "sha256": "f0a32f83a5b9ca6a3594acffad6b6ea4a465f9f780fe89acde7f19de8ba653c7",
       "size": 54223
     },
@@ -572,6 +679,9 @@
       "file": "playfab/persona/2dc6f7f3-c325-4c4a-9ec0-bdda4adc764c.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/bae1200a-e9e3-46b9-b6f5-240d11452b3a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/2dc6f7f3-c325-4c4a-9ec0-bdda4adc764c.zip"
+      ],
       "sha256": "8c8dff01f0318f5957577c2cd2d9c02e8bec497402d72c0de1f16222dfd7896e",
       "size": 84273
     },
@@ -588,6 +698,9 @@
       "file": "playfab/persona/2de297b8-87c0-4eb2-87c2-f2ceb26cdaf8.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/c34c585c-007c-4568-9a98-49153586bab0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/2de297b8-87c0-4eb2-87c2-f2ceb26cdaf8.zip"
+      ],
       "sha256": "6ae46bc6be84f69e688b0b1f9ac9811e7317ac835fd3431e8acc7069e6b5d346",
       "size": 26165
     },
@@ -604,6 +717,9 @@
       "file": "playfab/persona/2f9de70c-1975-42b5-b4a0-5772a06ecb00.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/d52df8a5-43bb-4ab1-b42e-39f694c1fbbd/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/2f9de70c-1975-42b5-b4a0-5772a06ecb00.zip"
+      ],
       "sha256": "0ccbb97fda52b3ef7c9e6f2add68ca8ec5f33713d5590bb95b81527358378307",
       "size": 111682
     },
@@ -620,6 +736,9 @@
       "file": "playfab/persona/30532b3c-e969-41d4-ae20-137865df5767.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b09c295f-4ce3-4d39-acb9-29aa24fb284a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/30532b3c-e969-41d4-ae20-137865df5767.zip"
+      ],
       "sha256": "a843e064a3c55ec6e10d1cf8a99b052de67d00897d577ec832b1193421fc6b42",
       "size": 92439
     },
@@ -636,6 +755,9 @@
       "file": "playfab/persona/317c8ef3-446f-4435-b299-cf65c27bf7dc.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/e406efc6-2378-46ff-a33e-632bc2ad64d4/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/317c8ef3-446f-4435-b299-cf65c27bf7dc.zip"
+      ],
       "sha256": "8bc3ef1e595aaff16801cacc90f0f9bb37f79e11333f4713b0b9c83a7b325080",
       "size": 163827
     },
@@ -652,6 +774,9 @@
       "file": "playfab/persona/336ca2f6-cca5-470e-9361-8293433e078a.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/0002b40e-112d-44f7-a877-c4935270d5f3/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/336ca2f6-cca5-470e-9361-8293433e078a.zip"
+      ],
       "sha256": "a28f2ced0fbd8e74d28c2ed3d5a85f2eff637367bb9cfb34cbd52c9aa22cba27",
       "size": 24119
     },
@@ -668,6 +793,9 @@
       "file": "playfab/persona/36424ba1-beaf-406b-9fdb-fbd68b3f5f54.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/623b276e-10af-4002-ad32-9dab6f20273e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/36424ba1-beaf-406b-9fdb-fbd68b3f5f54.zip"
+      ],
       "sha256": "c86118e20e478cc82e27b7cc5f19240213848f4bf4e1bece7b72c87fb5d50a24",
       "size": 40171
     },
@@ -684,6 +812,9 @@
       "file": "playfab/persona/36c9009f-9758-45f5-a837-44f4555a1386.zip",
       "url": "https://xforgeassets002.xboxlive.com/serviceid-18231953-4b1d-472c-a39e-48b10105b7b7/db1205ea-6029-41eb-a674-8e2340bed8d7/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/36c9009f-9758-45f5-a837-44f4555a1386.zip"
+      ],
       "sha256": "7896ea8787cb7181b82980f5bc00b823f2b4d94778b3bbc31a3f562cc00b55eb",
       "size": 25735
     },
@@ -700,6 +831,9 @@
       "file": "playfab/persona/3770989a-1187-4a59-906c-02008fea7394.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/57738080-9f00-4b95-b8dc-288eea68f98a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/3770989a-1187-4a59-906c-02008fea7394.zip"
+      ],
       "sha256": "afb6454c2776b00ca0eb587bbd1a8b9640c310aa984fdc569dbb520325529e3e",
       "size": 60974
     },
@@ -716,6 +850,9 @@
       "file": "playfab/persona/3882a9a0-55d8-4322-88c6-dd1b1cfc3ebc.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/81a89fb0-4cfe-4ee0-b558-8c1c4ceadabb/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/3882a9a0-55d8-4322-88c6-dd1b1cfc3ebc.zip"
+      ],
       "sha256": "ba9cbf4dfbc41f28383ef327c0ab00c4c8d3b48830f1f84099c5750f470ced49",
       "size": 139107
     },
@@ -732,6 +869,9 @@
       "file": "playfab/persona/3915377b-2472-4053-8629-b4ddda4344fb.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/69773832-56d7-4ba2-b7eb-ae0b4e101637/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/3915377b-2472-4053-8629-b4ddda4344fb.zip"
+      ],
       "sha256": "c99606e414d107cf6a73032b9c4510808e72ca17553ebfa79f308cc00701fbdb",
       "size": 8175
     },
@@ -748,6 +888,9 @@
       "file": "playfab/persona/39bf152f-a856-406f-ada9-72241e3e06da.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/81d1e3c6-a89a-47a1-a8b4-093e39ed0755/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/39bf152f-a856-406f-ada9-72241e3e06da.zip"
+      ],
       "sha256": "2c857789322260a511cb3b6690aecdd0ec05e8720f71dc81f953d78bbbf23a8f",
       "size": 9666
     },
@@ -764,6 +907,9 @@
       "file": "playfab/persona/3a50f3c7-b876-4e56-b457-4d7af5a954a8.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/820f3868-68f1-4e76-a301-b8984c458d66/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/3a50f3c7-b876-4e56-b457-4d7af5a954a8.zip"
+      ],
       "sha256": "d04de16785634785c3f51b4681640b5690fbfd6139c560b549513bbd251fbc38",
       "size": 99948
     },
@@ -780,6 +926,9 @@
       "file": "playfab/persona/3c2f0361-c565-41a6-be0d-62f563c24f6c.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/4ca6be6f-a58a-4996-aeb2-02addab523c8/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/3c2f0361-c565-41a6-be0d-62f563c24f6c.zip"
+      ],
       "sha256": "512204748c18555bb1684c8e01db272cbcefda9de4c76bcd446b1270e38d7c7e",
       "size": 86683
     },
@@ -796,6 +945,9 @@
       "file": "playfab/persona/3c311e0d-710c-4447-aeff-2b9e3ab589a5.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/0e00c538-fedb-43d0-a233-d30d6fad8d5a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/3c311e0d-710c-4447-aeff-2b9e3ab589a5.zip"
+      ],
       "sha256": "e74ec6858e8dc60d1027455ab4778a5b7fb57b7a9fe49d06cf5ef3f2db5421e7",
       "size": 94081
     },
@@ -812,6 +964,9 @@
       "file": "playfab/persona/406ec4f1-5ff9-4348-b364-d97a4341df03.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/c692bbb0-85de-44e0-a478-f6f42d2bf776/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/406ec4f1-5ff9-4348-b364-d97a4341df03.zip"
+      ],
       "sha256": "63ff26ba6e541a1c76ec8f9cee196bcbe53ed2f5cf58016f686e1ae1384099f5",
       "size": 76075
     },
@@ -828,6 +983,9 @@
       "file": "playfab/persona/420f1d38-544b-4861-9de5-bc51ef0bb277.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/54ac38ac-5215-483a-9ba3-21f0ecc299a0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/420f1d38-544b-4861-9de5-bc51ef0bb277.zip"
+      ],
       "sha256": "8d0a51e6bbff852541b6436e23e556f3c01e3c14436237365842128300c4b0b5",
       "size": 36871
     },
@@ -844,6 +1002,9 @@
       "file": "playfab/persona/43c812a0-24ab-454e-88a3-d0d2dd9c9ea7.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/16bacbe6-1968-44c1-8419-84c90f1f9eec/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/43c812a0-24ab-454e-88a3-d0d2dd9c9ea7.zip"
+      ],
       "sha256": "38e0e59b8c78e6395383307bf1de3a05d1854efdba94409ab2cbc095b603f3be",
       "size": 92854
     },
@@ -860,6 +1021,9 @@
       "file": "playfab/persona/44b834f0-be75-4de6-ac20-7fde6e80fb5b.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/04d6e355-f9d1-4237-8569-f0af69976f8a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/44b834f0-be75-4de6-ac20-7fde6e80fb5b.zip"
+      ],
       "sha256": "fb96aeb2af313627ec389694468b4a6dc2699341a729c921e77248f92a615a71",
       "size": 44683
     },
@@ -876,6 +1040,9 @@
       "file": "playfab/persona/459abdfd-fc14-4ae2-b714-d166aaa17dec.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/397c9e60-da14-4e5a-b1ce-30bb7265fa98/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/459abdfd-fc14-4ae2-b714-d166aaa17dec.zip"
+      ],
       "sha256": "4060161b8de718a5d47f19974a5a17e7034a04123de9b927cb97e2d616e5bfa1",
       "size": 29941
     },
@@ -892,6 +1059,9 @@
       "file": "playfab/persona/45a5756c-5222-44a3-af40-841e48be6847.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/82124a57-cb48-4eea-8176-d0ee6385d2f4/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/45a5756c-5222-44a3-af40-841e48be6847.zip"
+      ],
       "sha256": "fb05283c6166634c78f6ee94ff3070e691c2e843cc27485ecf665add61aa287c",
       "size": 26912
     },
@@ -908,6 +1078,9 @@
       "file": "playfab/persona/45ae49fb-064a-4efe-95a0-01f0fa4bebf1.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/bb24e66f-ac96-4c9f-87c5-f9563ddc9390/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/45ae49fb-064a-4efe-95a0-01f0fa4bebf1.zip"
+      ],
       "sha256": "d4918c2003348ae197b37008d74ab1d97dbcc6a3cd56f016d788c8c573c9e522",
       "size": 92449
     },
@@ -924,6 +1097,9 @@
       "file": "playfab/persona/45b4a1d3-7c40-4ea3-840e-9af9fb70ad4b.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/17875ff3-be9f-4d4b-bc03-05ba2b92dac9/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/45b4a1d3-7c40-4ea3-840e-9af9fb70ad4b.zip"
+      ],
       "sha256": "d36f8e74cca814029046fa0e0622c0860c85566624ce1df470a1eca17349dbd7",
       "size": 194370
     },
@@ -940,6 +1116,9 @@
       "file": "playfab/persona/45ceb11f-2271-4b04-9d56-bc34ecfc3295.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/65cc2d47-83d4-4f20-a959-4848844a19ea/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/45ceb11f-2271-4b04-9d56-bc34ecfc3295.zip"
+      ],
       "sha256": "445d53544b1b61aa8cbe37d4f4684d680463150eb00aea5d3f2f77bc4ddcaf17",
       "size": 26150
     },
@@ -956,6 +1135,9 @@
       "file": "playfab/persona/480aa0dd-4b2c-462b-b48b-f2c3aa02d3bc.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/13bd5f00-7b51-4ef9-aa17-24d2aa5fb333/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/480aa0dd-4b2c-462b-b48b-f2c3aa02d3bc.zip"
+      ],
       "sha256": "fa52e0ed7320f6dcea5b72d2f0b49738411558d766aa8195c05a2cea23ff3cef",
       "size": 38262
     },
@@ -972,6 +1154,9 @@
       "file": "playfab/persona/4968efcc-12c1-4bc1-a852-405d633a25e5.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/59d93f05-e5fe-4b0f-84db-c91dea1a82d5/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/4968efcc-12c1-4bc1-a852-405d633a25e5.zip"
+      ],
       "sha256": "3fd90a18df38f31d61de8e4c2c4f639c80bb689c226e259e6b94b2bb3d886fbc",
       "size": 92564
     },
@@ -988,6 +1173,9 @@
       "file": "playfab/persona/49d34653-6cdf-46f6-ba01-e857d0dc8b47.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/d2f7a436-904d-4290-a730-0e057873f4a3/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/49d34653-6cdf-46f6-ba01-e857d0dc8b47.zip"
+      ],
       "sha256": "66d88da31cc1da7b21b40bdf52d729ad07b1ba350bd69797329bd99fe233b237",
       "size": 87449
     },
@@ -1004,6 +1192,9 @@
       "file": "playfab/persona/4a67b2a2-67f3-4d23-a9b7-73d022e02a58.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/861a7e10-cff6-4783-86bf-7572a2f525e2/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/4a67b2a2-67f3-4d23-a9b7-73d022e02a58.zip"
+      ],
       "sha256": "2cd6944dc268927c42f1487a654fcd9a5c9a4636bd481818b83c3a632dde4ddf",
       "size": 29064
     },
@@ -1020,6 +1211,9 @@
       "file": "playfab/persona/4ddf0981-bef9-4b16-beda-56610ee94f0e.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/187ee7bc-6fcf-44df-aa23-967761cb8544/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/4ddf0981-bef9-4b16-beda-56610ee94f0e.zip"
+      ],
       "sha256": "12727f3da50752102d106eb03c38fc4a193b6abdaf3795b3a31792db8c436112",
       "size": 83442
     },
@@ -1036,6 +1230,9 @@
       "file": "playfab/persona/4e950e9c-90d7-43ed-8e50-aa5a6e23a4f4.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/266f8072-7f56-4557-8738-e7e9d191812e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/4e950e9c-90d7-43ed-8e50-aa5a6e23a4f4.zip"
+      ],
       "sha256": "bf7e74d327e4b1fb2e4495df31e11d9e203a0d65a7ce56ca0e51bed028434c2c",
       "size": 28381
     },
@@ -1052,6 +1249,9 @@
       "file": "playfab/persona/4f09c5c8-927a-4348-8cca-b5c0a11f19df.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b68f5de3-2643-4c86-aff6-fc10b08f2484/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/4f09c5c8-927a-4348-8cca-b5c0a11f19df.zip"
+      ],
       "sha256": "bf6f2dfed0b8026d58cb52ec347e051c642a2ad5c0271937836b10953ef2ebec",
       "size": 86452
     },
@@ -1068,6 +1268,9 @@
       "file": "playfab/persona/4f0ea898-5d07-461a-b19e-5b390dbf6222.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/f1d857e1-d125-430b-a5ce-e3c640a0e0e1/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/4f0ea898-5d07-461a-b19e-5b390dbf6222.zip"
+      ],
       "sha256": "8d513d42f093599a2cd6e2de324071bc6e5e7e75f414528c4e66f203f9d99948",
       "size": 48776
     },
@@ -1084,6 +1287,9 @@
       "file": "playfab/persona/4f296b27-5c19-4bf8-8f1c-9229525a5a51.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/930f989f-4b5a-4df7-9907-dc5305103e4d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/4f296b27-5c19-4bf8-8f1c-9229525a5a51.zip"
+      ],
       "sha256": "1349367ae5034e8e915be6e05b0c1060bb9766249d1396138e7a68837322d38e",
       "size": 86721
     },
@@ -1100,6 +1306,9 @@
       "file": "playfab/persona/4ff78778-72f6-4fc0-a527-cf9008545149.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/0f3daaa5-76cc-45f9-923d-676cc845be31/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/4ff78778-72f6-4fc0-a527-cf9008545149.zip"
+      ],
       "sha256": "1dea010164214b2858e97b5091165ecacded8173677ff3615b7b8b60c629d137",
       "size": 26252
     },
@@ -1116,6 +1325,9 @@
       "file": "playfab/persona/520eda4b-d68f-4ec3-b75b-7f932c765ab6.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/5a2dbb9d-3e58-421a-b651-1cbc6509c28d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/520eda4b-d68f-4ec3-b75b-7f932c765ab6.zip"
+      ],
       "sha256": "62ec63316fa9c45692b1924fdd597db62cb8ba0ec8981e486b8627b66e43a2ba",
       "size": 213092
     },
@@ -1132,6 +1344,9 @@
       "file": "playfab/persona/53d429d4-900f-41ff-a174-bf079ec897b2.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/5f63187c-c9ea-4664-94e3-72c2f8253495/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/53d429d4-900f-41ff-a174-bf079ec897b2.zip"
+      ],
       "sha256": "9d173a4b94418efd0d55d49242c2fce13c9851120dff7c4befe87be64cb02ac1",
       "size": 92842
     },
@@ -1148,6 +1363,9 @@
       "file": "playfab/persona/5467aa72-444d-46a0-869d-9b0562a388a6.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/55c55954-36c9-45ab-b4d5-0cd1b50c1eaa/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/5467aa72-444d-46a0-869d-9b0562a388a6.zip"
+      ],
       "sha256": "db97aeb7b2fbbef3a174d436cc212480f98579cbdcd6c4d8c076511d754e58a1",
       "size": 87064
     },
@@ -1164,6 +1382,9 @@
       "file": "playfab/persona/5502da39-2b7f-484d-afd9-e640f036d921.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/ead3976b-05e7-4c9c-ab23-df87cde9969e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/5502da39-2b7f-484d-afd9-e640f036d921.zip"
+      ],
       "sha256": "d712c2861e9b6f0929e64501cdb4d9e45760cd0f5223ea96bca493f61640c45d",
       "size": 72829
     },
@@ -1180,6 +1401,9 @@
       "file": "playfab/persona/55116df7-9147-4871-a1ed-60e3858c825e.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/55356786-50f1-4a5b-8912-c5a884ba4782/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/55116df7-9147-4871-a1ed-60e3858c825e.zip"
+      ],
       "sha256": "42cca39edddfca14d088567e04851b240b1988c5588c4f3977d011a75bc9443d",
       "size": 55667
     },
@@ -1196,6 +1420,9 @@
       "file": "playfab/persona/5a00c855-85bd-4971-8567-ede6a67fdeab.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/1c5d98b2-96ce-4549-b4bf-42cb72363062/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/5a00c855-85bd-4971-8567-ede6a67fdeab.zip"
+      ],
       "sha256": "6b141ec338e8b3670304a4cd4e8a3333db063354bfd11ce72f779b636e36293a",
       "size": 31333
     },
@@ -1212,6 +1439,9 @@
       "file": "playfab/persona/5a55abf5-ce14-4238-b52f-40920e7e8ada.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b2d680d7-0a4e-4e09-8077-776686d8510c/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/5a55abf5-ce14-4238-b52f-40920e7e8ada.zip"
+      ],
       "sha256": "b6a124c05b4efbd888b9a5e0e993bd01ba12229f425acde5a43d771dfd7cefdf",
       "size": 51085
     },
@@ -1228,6 +1458,9 @@
       "file": "playfab/persona/5a666fc6-907b-4993-9891-3488e4aeae9d.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/86386cfc-1d9e-4e25-9286-e8169b81496f/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/5a666fc6-907b-4993-9891-3488e4aeae9d.zip"
+      ],
       "sha256": "9ffa2972660ac7f49f13f4b8d61e455e3a81b021630132b860c772ebef3e21df",
       "size": 116667
     },
@@ -1244,6 +1477,9 @@
       "file": "playfab/persona/5b95ea28-57f2-45a4-a583-26e7136ab652.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/5bcc3d96-4161-46ad-b3c7-0232ffead695/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/5b95ea28-57f2-45a4-a583-26e7136ab652.zip"
+      ],
       "sha256": "b503d798fae3a99e3a509bd0ff5d3165fd7d169f76a08c2ac239b956ecdad06b",
       "size": 25896
     },
@@ -1260,6 +1496,9 @@
       "file": "playfab/persona/5d5b15eb-9c03-4160-851b-76154c6b8b9c.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/ba6c9de6-ad34-4c16-ad37-88be5297bcb6/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/5d5b15eb-9c03-4160-851b-76154c6b8b9c.zip"
+      ],
       "sha256": "6ff36d59e6c2da1281b2274a6879e17db25e696c2bf85877c86586d71b6d74f4",
       "size": 93059
     },
@@ -1276,6 +1515,9 @@
       "file": "playfab/persona/5d7abb16-8a02-499b-83a7-102bfe233c51.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/25d1cff4-2728-4a1f-a454-8b6efcee9cc5/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/5d7abb16-8a02-499b-83a7-102bfe233c51.zip"
+      ],
       "sha256": "a18ee807705f73ac36ed17157069808b6afe45b8b2105a0170a03597a820c1cc",
       "size": 88857
     },
@@ -1292,6 +1534,9 @@
       "file": "playfab/persona/61b96dc9-1f4f-44f3-95a8-48fdb9f861dc.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b7c163dd-4b30-4b5f-8c73-02236ff08b7d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/61b96dc9-1f4f-44f3-95a8-48fdb9f861dc.zip"
+      ],
       "sha256": "f331413ecfd4f6bf717a2f90c2c35539ac38d43681efe2b53e6dd21e03b8dfc9",
       "size": 62314
     },
@@ -1308,6 +1553,9 @@
       "file": "playfab/persona/6254bdb8-7ba0-40c1-a5b6-a8dacc398728.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/af2e65be-3adb-4523-b539-f8792895099e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/6254bdb8-7ba0-40c1-a5b6-a8dacc398728.zip"
+      ],
       "sha256": "4212ebd1708dff6f6a11999c7457af2f36ae326d761fc4e4099171c919e87de2",
       "size": 136467
     },
@@ -1324,6 +1572,9 @@
       "file": "playfab/persona/638e7d2e-5d4e-4dde-a979-f342b91cb4da.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/e4681558-bf9c-4889-ac86-98bab3f68df8/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/638e7d2e-5d4e-4dde-a979-f342b91cb4da.zip"
+      ],
       "sha256": "0b8cfeebb8e2a471fad4058ce5ae16afbd29e5e21affaddc34d382879330d1c9",
       "size": 44123
     },
@@ -1340,6 +1591,9 @@
       "file": "playfab/persona/63f3fa37-ed83-4090-85b0-639bc7a446d7.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/ebdf8194-0114-49ef-bbd6-9c1dcfe8b919/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/63f3fa37-ed83-4090-85b0-639bc7a446d7.zip"
+      ],
       "sha256": "30c357379689efb25ad830b46ccd379dde71e9621cfa6dfa6fcc84a5d8e889c5",
       "size": 77351
     },
@@ -1356,6 +1610,9 @@
       "file": "playfab/persona/645d6e6b-4c01-4aae-9c5d-c3d2ebf73d1d.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/db182ed9-e492-44ae-8e43-7d6ca8d3aeb1/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/645d6e6b-4c01-4aae-9c5d-c3d2ebf73d1d.zip"
+      ],
       "sha256": "a0e9bdda40f30045fbf14d6b1b8c2d720296e7ef6a35413dc3beaefb8e82ccc1",
       "size": 147745
     },
@@ -1372,6 +1629,9 @@
       "file": "playfab/persona/64baec66-5088-4533-9840-963c691c44b8.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/00ed65c7-4fea-463f-8e63-53c54767658a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/64baec66-5088-4533-9840-963c691c44b8.zip"
+      ],
       "sha256": "114c6092b23a17af9cee7804109943d45689ebf9ca9594d520c8cc3f8c7f14b6",
       "size": 89865
     },
@@ -1388,6 +1648,9 @@
       "file": "playfab/persona/6516d383-e0c3-40d6-8c8a-6cea10c583ec.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/c4e0512b-de99-4248-922b-584fac075838/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/6516d383-e0c3-40d6-8c8a-6cea10c583ec.zip"
+      ],
       "sha256": "1d30b25db40020e4b23eba6e49be6692d319f9b3fe8549b1c75db76c01ba0755",
       "size": 42102
     },
@@ -1404,6 +1667,9 @@
       "file": "playfab/persona/6573f2ab-a1b1-4f9f-ad6b-b00ad619d43a.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b1ce5bd0-3d10-43f5-b4ca-aae5d115ea3d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/6573f2ab-a1b1-4f9f-ad6b-b00ad619d43a.zip"
+      ],
       "sha256": "61f9fc7b6e87aa129e05493805753adf580aa06e60cb844cd74ba9fed7b03dd7",
       "size": 310217
     },
@@ -1420,6 +1686,9 @@
       "file": "playfab/persona/65e2a258-6a53-44ee-994c-ba6de08807da.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/d132a82a-5dac-41c6-8946-94eb1ab43080/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/65e2a258-6a53-44ee-994c-ba6de08807da.zip"
+      ],
       "sha256": "95455c96d2fb0adcb785355d81408b4204260908ffbc566e5ffe37102c45df1b",
       "size": 90499
     },
@@ -1436,6 +1705,9 @@
       "file": "playfab/persona/6790dae1-e0fb-4bf8-a483-61622dd6a0a5.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/87a1ee8d-9ac5-43b9-a2f6-2e1ed469a45e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/6790dae1-e0fb-4bf8-a483-61622dd6a0a5.zip"
+      ],
       "sha256": "3f9d1aec0e7a8bc60fb41e05b75ba4f36b459c4abdc65d3b5a0e130e7221beb3",
       "size": 118310
     },
@@ -1452,6 +1724,9 @@
       "file": "playfab/persona/67ea4ebc-5c51-4837-8cb7-042d08999f5b.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/bf346d50-00b0-465f-bfa8-9077c83a394d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/67ea4ebc-5c51-4837-8cb7-042d08999f5b.zip"
+      ],
       "sha256": "4e3289a0e7c4c3c39c0d02b35cff0af97921e8f6a0629c54aaccbf053878e459",
       "size": 108052
     },
@@ -1468,6 +1743,9 @@
       "file": "playfab/persona/68413906-2348-4f6e-b2d0-9e85f2a5394f.zip",
       "url": "https://xforgeassets002.xboxlive.com/serviceid-18231953-4b1d-472c-a39e-48b10105b7b7/b0778323-0ba7-4a8f-aa95-afb91aca9cbd/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/68413906-2348-4f6e-b2d0-9e85f2a5394f.zip"
+      ],
       "sha256": "713b20d2f6887faae7116fa9017fe7fd47dd97aceae4ebd7ec72917dd171bd8d",
       "size": 24133
     },
@@ -1484,6 +1762,9 @@
       "file": "playfab/persona/6a3ffd8d-d5d0-4a89-90b5-6cb058189108.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/177476bb-b097-4cfd-94dc-a4ed29874c4a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/6a3ffd8d-d5d0-4a89-90b5-6cb058189108.zip"
+      ],
       "sha256": "8008642ab4b9ecc62f1338d1300bd3973bdf5ca0b1e27f69efa381f2ddc87644",
       "size": 69482
     },
@@ -1500,6 +1781,9 @@
       "file": "playfab/persona/6c3e67c0-5255-44a9-9483-b12d5ba49c0b.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/9714c706-7456-42d7-bd1d-59072d29c1c7/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/6c3e67c0-5255-44a9-9483-b12d5ba49c0b.zip"
+      ],
       "sha256": "f3cd605f5f42d15fb4532504e5e90b79ab86875d4e2275846f9a4785c2afd092",
       "size": 75340
     },
@@ -1516,6 +1800,9 @@
       "file": "playfab/persona/6fcf0312-0d2b-495a-bbb8-de953df570ac.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/ed88fbfe-cb25-4dd0-913f-3ec89c9cc5ab/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/6fcf0312-0d2b-495a-bbb8-de953df570ac.zip"
+      ],
       "sha256": "93c910b610d671a90074ab18d56c739e174b46d9c24cf1c60541ff1153f27f8c",
       "size": 190398
     },
@@ -1532,6 +1819,9 @@
       "file": "playfab/persona/6fe6431d-544f-488c-b306-373e9b20f603.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/82d97376-3ccb-4df1-b5c8-7acb644496b3/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/6fe6431d-544f-488c-b306-373e9b20f603.zip"
+      ],
       "sha256": "9c106a9f1901e20a90453608353bd272c6d9cb9e86d37114e8c786183076d022",
       "size": 93516
     },
@@ -1548,6 +1838,9 @@
       "file": "playfab/persona/7091d81d-6c8b-46d8-b221-18b74a3708d5.zip",
       "url": "https://xforgeassets002.xboxlive.com/serviceid-18231953-4b1d-472c-a39e-48b10105b7b7/4d8d0609-61db-4b9b-b1f1-5bb4ccdc8653/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/7091d81d-6c8b-46d8-b221-18b74a3708d5.zip"
+      ],
       "sha256": "eaa7d7ddbfb5db54102d265442da695cc71178635b3cdd76a088def8bb4ad379",
       "size": 88301
     },
@@ -1564,6 +1857,9 @@
       "file": "playfab/persona/70e5822a-b1aa-4b1d-9a6e-4156a5987244.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/80022c2f-5976-4232-9299-687bc8f2373b/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/70e5822a-b1aa-4b1d-9a6e-4156a5987244.zip"
+      ],
       "sha256": "a2c1e994783a6904a88af8d954455e1ae2664772fee47939d8bc497b34006f72",
       "size": 16466
     },
@@ -1580,6 +1876,9 @@
       "file": "playfab/persona/71a5b157-000c-45db-88d9-e043bfd3dc05.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/5b91fa60-ce7a-40b4-8d78-c3e6b5867e27/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/71a5b157-000c-45db-88d9-e043bfd3dc05.zip"
+      ],
       "sha256": "50c88e4554051e01ed3675f8975c3e2dd653cc19e1521c7dc76468938f545744",
       "size": 178399
     },
@@ -1596,6 +1895,9 @@
       "file": "playfab/persona/7201e9f7-50a6-4926-9f1d-a015efae57db.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b13279e6-6c52-4640-9a1b-17df894eece1/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/7201e9f7-50a6-4926-9f1d-a015efae57db.zip"
+      ],
       "sha256": "f12bd48d8467bc2cd34559c2d27bdb1a01e4cd350b60ad3a9d20f70219bafa50",
       "size": 68942
     },
@@ -1612,6 +1914,9 @@
       "file": "playfab/persona/73c7c41c-bf02-418a-a0c1-d82e4d4fe5a3.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/94634955-a362-4e44-8b5f-1b93f91cb774/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/73c7c41c-bf02-418a-a0c1-d82e4d4fe5a3.zip"
+      ],
       "sha256": "1ec6b3fb9f3d316fd7be9be2d2955a35bd5e4764c5e6c3fe68a16da3b0911c62",
       "size": 87869
     },
@@ -1628,6 +1933,9 @@
       "file": "playfab/persona/73d69fbc-fad6-48c4-b87a-5d1bbd10818c.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/27dc8eba-299a-47ef-9318-9d6500b662ef/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/73d69fbc-fad6-48c4-b87a-5d1bbd10818c.zip"
+      ],
       "sha256": "e9e7f84c432acd68111e1e254bf8438fb743ad85451380fd0a596d73c51b9ac8",
       "size": 82480
     },
@@ -1644,6 +1952,9 @@
       "file": "playfab/persona/7574cd23-2ccf-42ae-a47d-f89de3536e0a.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/12550d7c-78ae-4ed8-b701-aab8e6b8f74f/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/7574cd23-2ccf-42ae-a47d-f89de3536e0a.zip"
+      ],
       "sha256": "a66b6780aeb6bf4a9ec67fe7d2c0420781df0650fe8b1ffb1f520d08ca98f8e1",
       "size": 111018
     },
@@ -1660,6 +1971,9 @@
       "file": "playfab/persona/75a1ac78-b291-430a-9f6b-236dd79e27dc.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/25fdb956-7ec1-4871-a4ce-1ab14fc325c0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/75a1ac78-b291-430a-9f6b-236dd79e27dc.zip"
+      ],
       "sha256": "cd905549b86fa5d736d78f31211c1d887db3b1e6d8a728f77a2668949024346f",
       "size": 84214
     },
@@ -1676,6 +1990,9 @@
       "file": "playfab/persona/75e6c7bd-5d70-4eb1-b083-fcdb186e7324.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/2818b412-8c2a-4236-aed7-3b20bc184978/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/75e6c7bd-5d70-4eb1-b083-fcdb186e7324.zip"
+      ],
       "sha256": "b1bf618d434c6923c0179bd9057629c8b59e0366ead980d9efe5d56ac7e6a6d4",
       "size": 120414
     },
@@ -1692,6 +2009,9 @@
       "file": "playfab/persona/76f94877-d1d7-464d-a71b-106a61793794.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/97f1017f-0bee-4bee-b5ec-2506538474c4/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/76f94877-d1d7-464d-a71b-106a61793794.zip"
+      ],
       "sha256": "96fcd2d50fa6ae968005339f452a32e61cde37bb436ebcdd072dc215a03b8de5",
       "size": 26140
     },
@@ -1708,6 +2028,9 @@
       "file": "playfab/persona/7702b152-321b-4125-99fc-435737df206c.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/e9ad8dd1-e49c-459a-88a5-5b55e7648566/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/7702b152-321b-4125-99fc-435737df206c.zip"
+      ],
       "sha256": "3cc135b5997a5a76ed27b0f08c57d91b66308077d6005a35ec42d10701823866",
       "size": 86424
     },
@@ -1724,6 +2047,9 @@
       "file": "playfab/persona/77bc22e4-b6ac-4232-87df-e7d0c7645f24.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/ce793c52-5924-4246-81d7-57cf5067c497/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/77bc22e4-b6ac-4232-87df-e7d0c7645f24.zip"
+      ],
       "sha256": "83c70c0c0b780c66ce2b9cceaf9487fd569e1cc80095a03e3f3bd1725b291e5b",
       "size": 36425
     },
@@ -1740,6 +2066,9 @@
       "file": "playfab/persona/79a3e65f-d2da-4d4c-88a3-7c60e4bc72bc.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/8deb4cd2-c990-4ae1-bee7-aa52da6cb196/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/79a3e65f-d2da-4d4c-88a3-7c60e4bc72bc.zip"
+      ],
       "sha256": "d2b39f240d33e5828a0b60c2cc414a163bb70ef24d702104d9db5036c145377f",
       "size": 93541
     },
@@ -1756,6 +2085,9 @@
       "file": "playfab/persona/79f91a0c-0c7a-4d3e-85db-84b68d05e14b.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/aab48cd2-5241-4119-9c4b-5ceef6834fb6/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/79f91a0c-0c7a-4d3e-85db-84b68d05e14b.zip"
+      ],
       "sha256": "a73f54ab224f34c68b472ee408e88295de371c5b8d0933a72679aa2d9472faa4",
       "size": 157436
     },
@@ -1772,6 +2104,9 @@
       "file": "playfab/persona/7d59fca9-c0da-4a6f-b750-bac963bd85ba.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/c8974bf1-24ee-4737-b4de-c56ce6c1ac11/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/7d59fca9-c0da-4a6f-b750-bac963bd85ba.zip"
+      ],
       "sha256": "40bf1ef0a6c31e0bad44eed344737c79d441e9d1ade128df098af56f72228918",
       "size": 94367
     },
@@ -1788,6 +2123,9 @@
       "file": "playfab/persona/7d75e2c9-f726-48c6-bb59-7b540fd93b1d.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/5f1f4e09-a146-4760-b58f-08db3d9105a6/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/7d75e2c9-f726-48c6-bb59-7b540fd93b1d.zip"
+      ],
       "sha256": "3e168f2391fb005d707a231089915e63bf6b9bc553ca8a09e4d9ef5b0859ebc6",
       "size": 125761
     },
@@ -1804,6 +2142,9 @@
       "file": "playfab/persona/8011898c-e01a-4a22-8d1a-de9646553211.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/bba532f7-ab8f-4178-af81-b7a92e306bc0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8011898c-e01a-4a22-8d1a-de9646553211.zip"
+      ],
       "sha256": "f4c5fe0dee3db745fb1901cc82b3d51846cac51cc0a094313add0da201df093a",
       "size": 84155
     },
@@ -1820,6 +2161,9 @@
       "file": "playfab/persona/81899c88-3621-4f28-9ec8-cd82686716d9.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/7e228c7f-85f3-4fd6-bc56-f520d2205bdf/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/81899c88-3621-4f28-9ec8-cd82686716d9.zip"
+      ],
       "sha256": "840461fb5ac34a91a3d5e43814bb21923a29bc073317497adecd0d81f9778773",
       "size": 108453
     },
@@ -1836,6 +2180,9 @@
       "file": "playfab/persona/81b31b04-085d-42c9-a455-ab5bd8bd4f7a.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/dddb441a-4191-422d-9d6d-4997c780443b/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/81b31b04-085d-42c9-a455-ab5bd8bd4f7a.zip"
+      ],
       "sha256": "4122060a7ac6ab9895eff34860fc33219349684dc2395634954c32e2a5acecd3",
       "size": 86415
     },
@@ -1852,6 +2199,9 @@
       "file": "playfab/persona/81f60b47-5fbf-49bf-8392-02dbe95006a1.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/407d6114-dcdf-4a5f-8c91-c20d1dbec0dd/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/81f60b47-5fbf-49bf-8392-02dbe95006a1.zip"
+      ],
       "sha256": "784612dfd60bd4611953c9442b4775c98d52166d18a0754dcc85a38e1859fcf1",
       "size": 144549
     },
@@ -1868,6 +2218,9 @@
       "file": "playfab/persona/829922ed-444c-4eba-a488-04a0edb2a247.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/18cd521a-bc36-4532-a1fd-991b4991e3e0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/829922ed-444c-4eba-a488-04a0edb2a247.zip"
+      ],
       "sha256": "84f4615a0a3959e81808b1d2786ca37c34821224245429a45c33e84200c698e6",
       "size": 94609
     },
@@ -1884,6 +2237,9 @@
       "file": "playfab/persona/846b7b9d-6ba0-4956-a457-4141b1427971.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/22920f97-6850-49a8-89b8-ca2c5946797a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/846b7b9d-6ba0-4956-a457-4141b1427971.zip"
+      ],
       "sha256": "4e4d73920b46a410b46234c8fd82cc4cdcd6799c08ecad422727b2c61d955510",
       "size": 16128
     },
@@ -1900,6 +2256,9 @@
       "file": "playfab/persona/84b74820-4a6b-41bd-80e7-68ade8aeb95f.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/88c315b3-9ffb-400a-bafb-24b17b3bc403/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/84b74820-4a6b-41bd-80e7-68ade8aeb95f.zip"
+      ],
       "sha256": "6aff740e321e60ed5d27188ff404faa23ca0a46d01a636c03209d1599da29c21",
       "size": 167901
     },
@@ -1916,6 +2275,9 @@
       "file": "playfab/persona/86e61638-2ae4-432c-802e-cec6f4715873.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/f7a82219-9f91-4378-a934-bd909736e8a5/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/86e61638-2ae4-432c-802e-cec6f4715873.zip"
+      ],
       "sha256": "117c01b07c4a7e7e7c7f88a5f57900a7db1078cae6100554cd5c49a1b612ce38",
       "size": 92317
     },
@@ -1932,6 +2294,9 @@
       "file": "playfab/persona/894a9ae4-4be4-46ba-848f-14c127a5c24d.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/36d543ad-b555-4327-a095-50b11a73f9ee/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/894a9ae4-4be4-46ba-848f-14c127a5c24d.zip"
+      ],
       "sha256": "cd7c32bbe3e317aff9531e27cc9313fdb3f70191a6db63d3e08f682bf55e5304",
       "size": 89291
     },
@@ -1948,6 +2313,9 @@
       "file": "playfab/persona/8ac772e5-2fd4-4bc9-8242-45ca3bf4072b.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/0cd0e091-e133-4a48-837e-be9b56881101/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8ac772e5-2fd4-4bc9-8242-45ca3bf4072b.zip"
+      ],
       "sha256": "88cb8df6d52112f0ef9d4663b1ea4b014838aece90b6bd3b79ca64d6320c4788",
       "size": 30317
     },
@@ -1964,6 +2332,9 @@
       "file": "playfab/persona/8adcd987-0693-47ad-b358-07b867039221.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/09a9b34f-7310-4a4d-9a2b-a91278267383/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8adcd987-0693-47ad-b358-07b867039221.zip"
+      ],
       "sha256": "f7ef84e7d9149083d68b52edfc3d4913c0fd690e101223259b65a37b977d06bb",
       "size": 233274
     },
@@ -1980,6 +2351,9 @@
       "file": "playfab/persona/8b1252a1-c2a4-48a7-9db4-7e591e4608d2.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/77d91ac2-1433-4381-9fed-9383cfb130af/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8b1252a1-c2a4-48a7-9db4-7e591e4608d2.zip"
+      ],
       "sha256": "d88dfbaee75e2c0661d21febbd322e9a9d810936403f90da532f2612ec9963e8",
       "size": 183081
     },
@@ -1996,6 +2370,9 @@
       "file": "playfab/persona/8c4d2bd2-c8b5-4d3f-9b6d-cb05c244fad3.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/c2dbbe17-7d4d-4d2c-872e-786737a5ba45/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8c4d2bd2-c8b5-4d3f-9b6d-cb05c244fad3.zip"
+      ],
       "sha256": "42a7952f787fc072cad536f389fe09fb7e8f6be58bdeac25119360549a158b8b",
       "size": 62273
     },
@@ -2012,6 +2389,9 @@
       "file": "playfab/persona/8c722223-a061-48ae-98a6-d9d8b21f0686.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/83173f5d-1c06-4d98-b0a0-f8780e1fac1e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8c722223-a061-48ae-98a6-d9d8b21f0686.zip"
+      ],
       "sha256": "67601417297d3409c409693b442245bcf5efc0e8b1654a8588bc9daea1d89725",
       "size": 100599
     },
@@ -2028,6 +2408,9 @@
       "file": "playfab/persona/8d380230-fb60-4860-9474-f9981a6c320d.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/a7311a72-5955-481d-a0af-cc6f8d1de7d6/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8d380230-fb60-4860-9474-f9981a6c320d.zip"
+      ],
       "sha256": "50129c9b977f50ec9f067798c1e320fb86903c6ee0e0bbd711da7768b57996c6",
       "size": 184879
     },
@@ -2044,6 +2427,9 @@
       "file": "playfab/persona/8e391ca7-23c8-48f8-9f91-8d8fa3a4cd78.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/ca7cce61-f670-470b-8795-29448ce8fc3d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8e391ca7-23c8-48f8-9f91-8d8fa3a4cd78.zip"
+      ],
       "sha256": "1f1115fc9389b99858ab19f8d5151f72bd2f8503d5a6face2ac232f22f0f9e58",
       "size": 90247
     },
@@ -2060,6 +2446,9 @@
       "file": "playfab/persona/8f66da13-a950-4683-a097-1979f1c46177.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/01a77062-fbe7-48c2-9812-7a366d5c816e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8f66da13-a950-4683-a097-1979f1c46177.zip"
+      ],
       "sha256": "8a888eaf62e14fcca213b0668a4f642dd5e0233b8009e3d54e58f850702bcf92",
       "size": 314982
     },
@@ -2076,6 +2465,9 @@
       "file": "playfab/persona/8f7250c7-d08b-464c-accb-a5eeb4dd813a.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/4285c619-1c81-45cf-a6bb-27efb4fb7867/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/8f7250c7-d08b-464c-accb-a5eeb4dd813a.zip"
+      ],
       "sha256": "ee444bc637e861370eb50db96769315423d0517b136665cea093d8ec639efeeb",
       "size": 93151
     },
@@ -2092,6 +2484,9 @@
       "file": "playfab/persona/920444cc-1bd5-4a58-8cdf-4891e302a0b9.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/cc48757f-7a22-4f75-bd79-1eebbd312f8c/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/920444cc-1bd5-4a58-8cdf-4891e302a0b9.zip"
+      ],
       "sha256": "16e9c5b93da9fe450a571b23fa72d120c63d07d964f1f8202506a48facde0818",
       "size": 185345
     },
@@ -2108,6 +2503,9 @@
       "file": "playfab/persona/93567e9e-f210-4223-add4-217bf191d665.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/a4fd9fd2-b7f1-40fd-b04d-0c65df1334ff/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/93567e9e-f210-4223-add4-217bf191d665.zip"
+      ],
       "sha256": "45eaed205d6314c72fea8e12eee0f8fa3a44ed8e4da978c462e31a161911f56a",
       "size": 70184
     },
@@ -2124,6 +2522,9 @@
       "file": "playfab/persona/9460f2ab-424e-497b-8e6a-33746fc9cc5a.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/5ad4f0d0-7d56-4499-b1c4-4761a5ca3ceb/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9460f2ab-424e-497b-8e6a-33746fc9cc5a.zip"
+      ],
       "sha256": "991db0a058c8b69d0f3162b920cf7b0bf9c6794c3b00e7e0e7936f9a3a634bd7",
       "size": 26964
     },
@@ -2140,6 +2541,9 @@
       "file": "playfab/persona/947b2649-a417-480d-9ce2-01051f46079c.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b6c5e86e-655d-4035-845a-2bc70e9ea972/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/947b2649-a417-480d-9ce2-01051f46079c.zip"
+      ],
       "sha256": "67aabda99a868d68cd31a157cdb7ed1a18dd54d839a46440667cb65f0f87cbfc",
       "size": 522004
     },
@@ -2156,6 +2560,9 @@
       "file": "playfab/persona/9763d462-7cea-4236-b1d2-5e65c89362f0.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/6497ab0c-e281-40d0-b55d-73021b0ad82e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9763d462-7cea-4236-b1d2-5e65c89362f0.zip"
+      ],
       "sha256": "51aebd850f9a2031500f7f72c10d4858cd7152189527a32f7ba363c80a7c8353",
       "size": 228347
     },
@@ -2172,6 +2579,9 @@
       "file": "playfab/persona/97d601d3-212a-4ffe-9f6c-edb5101db010.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/6fb743c8-b0e0-47b3-9619-40bf08c3d478/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/97d601d3-212a-4ffe-9f6c-edb5101db010.zip"
+      ],
       "sha256": "d768e6cfc6466fa5583caf896146b1eea214530101826c77237f174eec4c56ec",
       "size": 36503
     },
@@ -2188,6 +2598,9 @@
       "file": "playfab/persona/993610c2-6d20-484e-94ac-56f16f68baba.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/064ff183-019b-4c43-87af-31f4cfbd89e3/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/993610c2-6d20-484e-94ac-56f16f68baba.zip"
+      ],
       "sha256": "474966ae4c813530776ff049ec018b19e4c3c54439d085d8616600e112910b7d",
       "size": 83472
     },
@@ -2204,6 +2617,9 @@
       "file": "playfab/persona/9c586991-508e-4d0e-a256-b8205b4ad8ba.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/1d78591f-b6c0-4f42-8edb-c4a036315ff2/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9c586991-508e-4d0e-a256-b8205b4ad8ba.zip"
+      ],
       "sha256": "5653ebcc891318f7f0668d37f5b82d3fd073a59083975b7d690295a048c4a8ef",
       "size": 89636
     },
@@ -2220,6 +2636,9 @@
       "file": "playfab/persona/9cd6159e-d9e5-4909-a059-a6dea10447ba.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/fb6ebfb4-e84d-48be-bcd6-e154610c6040/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9cd6159e-d9e5-4909-a059-a6dea10447ba.zip"
+      ],
       "sha256": "45da79d9d7608b73fb7def4951b1249e15345496416167e932efed9c1d70b272",
       "size": 46732
     },
@@ -2236,6 +2655,9 @@
       "file": "playfab/persona/9d366d03-1edf-4b08-a1ac-a9311ae9d44b.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/9abc68be-4fb2-46f4-9834-d694b6e5afa0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9d366d03-1edf-4b08-a1ac-a9311ae9d44b.zip"
+      ],
       "sha256": "98a8b40e80ed06fb40b22c62e38e00b1729851232b8561d9011844c07fd48880",
       "size": 213967
     },
@@ -2252,6 +2674,9 @@
       "file": "playfab/persona/9d93b7f3-3bc8-493d-ad79-f171ea6a484c.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/f6bb8082-5904-4778-b575-bcbc478a24b1/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9d93b7f3-3bc8-493d-ad79-f171ea6a484c.zip"
+      ],
       "sha256": "e2c32d0745cf8a272660452efabeb9032749618dfaa95184dead090703a35e09",
       "size": 31075
     },
@@ -2268,6 +2693,9 @@
       "file": "playfab/persona/9dc0aaba-b74d-4dc0-90d4-e6c8ca6d385d.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/26fbbdd5-d04f-4d49-9b64-0bffb53a62d6/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9dc0aaba-b74d-4dc0-90d4-e6c8ca6d385d.zip"
+      ],
       "sha256": "3896af5ad4f218b272072ce53caf3686e260fab1092f27c96aa2837aa54ff28e",
       "size": 94624
     },
@@ -2284,6 +2712,9 @@
       "file": "playfab/persona/9e2ef3e3-b15d-4a41-8fbf-5ca13b3bdff0.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/a0dffa1f-d166-4a10-a0de-091574793532/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9e2ef3e3-b15d-4a41-8fbf-5ca13b3bdff0.zip"
+      ],
       "sha256": "6b733d7300312c4a021aa9e546eaafa832d83d86dfb8876553269042ad80bcc1",
       "size": 113857
     },
@@ -2300,6 +2731,9 @@
       "file": "playfab/persona/9f858224-4a91-42ee-a583-c043e1ee0f7f.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/c7733268-0b46-4cb5-9c46-de7c436c83d7/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/9f858224-4a91-42ee-a583-c043e1ee0f7f.zip"
+      ],
       "sha256": "df527efa92c6d67a3d4d9b75fb5e6c1100e624a08e76e4aa60178978b67770cf",
       "size": 93354
     },
@@ -2316,6 +2750,9 @@
       "file": "playfab/persona/a02ef943-fa2c-4b5b-82f1-8891177f5604.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/c2176143-83b1-4252-89a9-0a79e65a7695/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/a02ef943-fa2c-4b5b-82f1-8891177f5604.zip"
+      ],
       "sha256": "74f7ffce7be6c940f71a69db08a4c3b998625d5a4a37eb0404076c4729eab606",
       "size": 262209
     },
@@ -2332,6 +2769,9 @@
       "file": "playfab/persona/a072af5d-794e-4e95-b521-466c1775eeda.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/95c3e7c6-275b-48a4-9a98-bbf63b6c1485/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/a072af5d-794e-4e95-b521-466c1775eeda.zip"
+      ],
       "sha256": "43d0a0473ad1f82cb3889861d2f33c5cdf1c5f72a0012a68ae49d3eb9787e012",
       "size": 26847
     },
@@ -2348,6 +2788,9 @@
       "file": "playfab/persona/a62b2a97-36d7-43f9-8ad3-86c8b8ec5026.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/bcf23cda-896b-4aad-9487-21aa76b8edea/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/a62b2a97-36d7-43f9-8ad3-86c8b8ec5026.zip"
+      ],
       "sha256": "d19e707c139bfac6818a67e8ee17507b56c7fa06a639b1f4b87a2279eb838bcf",
       "size": 29963
     },
@@ -2364,6 +2807,9 @@
       "file": "playfab/persona/a704de64-ad2c-48e4-aa72-4c2a17a450af.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/e9a62032-fc9a-46e0-89a9-b34922d7016c/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/a704de64-ad2c-48e4-aa72-4c2a17a450af.zip"
+      ],
       "sha256": "d930b9f0edd606e45cf944e81d785531e361344cec86166271093aedec75ed8e",
       "size": 33124
     },
@@ -2380,6 +2826,9 @@
       "file": "playfab/persona/a71b287d-1d5d-46e8-8628-0517a61c7830.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/f44c638f-aa1d-4b05-bf7f-44af9f743e9e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/a71b287d-1d5d-46e8-8628-0517a61c7830.zip"
+      ],
       "sha256": "4b9d252696950270ec7ebb41cc3f059d6b409a4fa34d6b3d5ebb94f1b1f7244a",
       "size": 136953
     },
@@ -2396,6 +2845,9 @@
       "file": "playfab/persona/a90ce6f2-f438-48d0-82ee-d3702dad3da6.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/2d1dbdfa-d886-4a3b-a463-7258e1a1bacd/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/a90ce6f2-f438-48d0-82ee-d3702dad3da6.zip"
+      ],
       "sha256": "aafe6a881b5c164fa80b693cc44e87b484a19c1dd5e3c6c1f48d8aad22f602d4",
       "size": 114448
     },
@@ -2412,6 +2864,9 @@
       "file": "playfab/persona/a9980eae-4e87-4f40-b55e-766606cb06f6.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/3e442d02-5093-4b48-8793-f1fbeab6b041/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/a9980eae-4e87-4f40-b55e-766606cb06f6.zip"
+      ],
       "sha256": "2bd12ca10bd08ad4a8a6ca49e2960508d67be81878ab79caddcb349ad98fc370",
       "size": 91820
     },
@@ -2428,6 +2883,9 @@
       "file": "playfab/persona/ad3324bb-2786-4ca5-9e95-53cfa6a21e83.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/cf28c213-96a0-4f5d-bd49-45590af31789/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ad3324bb-2786-4ca5-9e95-53cfa6a21e83.zip"
+      ],
       "sha256": "4de711436c77f685e73bdf2ceca74ac6e60eb333ddbdec607798fdd50858bc78",
       "size": 60272
     },
@@ -2444,6 +2902,9 @@
       "file": "playfab/persona/aea8d3b3-0839-49f3-9cf0-66d7b7b485fb.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/69433376-7567-40cf-997b-1f162a515273/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/aea8d3b3-0839-49f3-9cf0-66d7b7b485fb.zip"
+      ],
       "sha256": "2135f445700218fd01daf770546db33be3dc1add8bd98da21ecb75770f7c9b2e",
       "size": 93278
     },
@@ -2460,6 +2921,9 @@
       "file": "playfab/persona/b06aa45c-816d-490e-a53c-f2e55c59d3e6.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/49c3a1c0-a6a4-46ee-9c8c-c1eda9e00954/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b06aa45c-816d-490e-a53c-f2e55c59d3e6.zip"
+      ],
       "sha256": "78a8c2f20fddaac9010390b86dbae685c8d6358f66999e92dbc4526612abb205",
       "size": 82011
     },
@@ -2476,6 +2940,9 @@
       "file": "playfab/persona/b133d891-b4e0-46c8-ad29-a680adf32b0d.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/12e3b726-0635-43df-a95a-fc8eb269be5a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b133d891-b4e0-46c8-ad29-a680adf32b0d.zip"
+      ],
       "sha256": "9fa2119395cf23adc256d1c1091933935097b6b95fc4df4078fb32c53781c4b0",
       "size": 82756
     },
@@ -2492,6 +2959,9 @@
       "file": "playfab/persona/b28b7831-db2f-48b5-bd01-d41e9292f323.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/688553d0-a33f-444a-b03f-0bf5aa53e6a9/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b28b7831-db2f-48b5-bd01-d41e9292f323.zip"
+      ],
       "sha256": "be512d0f3eb2ffc7de9b9154d83ee4cc6ca6cdb29f477d52ac022e7b429688c3",
       "size": 133430
     },
@@ -2508,6 +2978,9 @@
       "file": "playfab/persona/b2c821b4-8e8e-48d1-987f-c9709e2cce74.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/3b152917-3f56-402f-96be-10cd25d66c47/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b2c821b4-8e8e-48d1-987f-c9709e2cce74.zip"
+      ],
       "sha256": "afea33ce711ffebef679cadd79ebaaa9fa43282d51a123b134d7cb2617ffdc65",
       "size": 137526
     },
@@ -2524,6 +2997,9 @@
       "file": "playfab/persona/b4573a19-76ee-4437-b6e3-b7f092ad699f.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/88cc8f25-77e7-4146-983c-ba931f010419/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b4573a19-76ee-4437-b6e3-b7f092ad699f.zip"
+      ],
       "sha256": "783afecd650bf187d593f387432079c48fe3e4f10a43e3d34ea3169fbe947fc2",
       "size": 88045
     },
@@ -2540,6 +3016,9 @@
       "file": "playfab/persona/b4de61b7-6022-4b3c-ae9d-4c52e7b539e8.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/bd540a16-dc90-45f4-9eb9-48a073c7aeb7/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b4de61b7-6022-4b3c-ae9d-4c52e7b539e8.zip"
+      ],
       "sha256": "78149f88b72d57aeda90cf9636602eae3826211ed6c5b0ac18f29546d95c02dd",
       "size": 88193
     },
@@ -2556,6 +3035,9 @@
       "file": "playfab/persona/b5632254-9645-4616-bf6c-9b8b391d684f.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/ea5bcde3-50ff-4e70-ae77-98fa29c4a67c/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b5632254-9645-4616-bf6c-9b8b391d684f.zip"
+      ],
       "sha256": "3bede0fd70ff6bd5d6ab4bc4344429b31aa707635c7094745ba46f171142ce09",
       "size": 117419
     },
@@ -2572,6 +3054,9 @@
       "file": "playfab/persona/b5c80c78-5c3e-4477-af7d-5ece09450fc1.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/49c49193-148a-4ae8-a1d9-34ba91757ee2/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b5c80c78-5c3e-4477-af7d-5ece09450fc1.zip"
+      ],
       "sha256": "fc5294e17b30c71bfad2f39e543dda47c3131ab49954809ae7cb390ea9d1d3dc",
       "size": 140320
     },
@@ -2588,6 +3073,9 @@
       "file": "playfab/persona/b8daac74-7711-4e0c-9cc3-3e3f787092c3.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/3ba8eb73-82d5-4d6e-8006-b40c18454f32/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b8daac74-7711-4e0c-9cc3-3e3f787092c3.zip"
+      ],
       "sha256": "d9ee69bd575a5ace22055db160229e83a9f62054ff1ed57555526989ba547706",
       "size": 22971
     },
@@ -2604,6 +3092,9 @@
       "file": "playfab/persona/b93d6d07-6efc-4015-9d29-3f1f6639b568.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/8a36cec6-494d-4f0d-9026-05ea46138140/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b93d6d07-6efc-4015-9d29-3f1f6639b568.zip"
+      ],
       "sha256": "a3cfc80c0186c85a747b7f32627291b3427f7771297231d506bef459022f6155",
       "size": 25830
     },
@@ -2620,6 +3111,9 @@
       "file": "playfab/persona/b95c223c-7593-4eca-9f61-3772266300c6.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/d308d657-54f9-44c9-ae4e-10ba68e09ab3/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/b95c223c-7593-4eca-9f61-3772266300c6.zip"
+      ],
       "sha256": "989a9b7a9ea83ceed5c31f7bba34d07c60559670f0e1847ecfa811e57d109111",
       "size": 31238
     },
@@ -2636,6 +3130,9 @@
       "file": "playfab/persona/bc04cc53-bc84-4106-b34c-014b21deeb07.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/fe6b062e-b0ca-44f7-ab61-4b93b8d3a141/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/bc04cc53-bc84-4106-b34c-014b21deeb07.zip"
+      ],
       "sha256": "4ad6944737e6e23a569463dd83d5a6d6d07e86b0fc11a10087ddf712004cc721",
       "size": 65954
     },
@@ -2652,6 +3149,9 @@
       "file": "playfab/persona/be3117b9-a5c4-48e0-965a-a3150f4fc9ef.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/8cf4b643-aa5c-4816-84f4-7aa0e5ecb471/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/be3117b9-a5c4-48e0-965a-a3150f4fc9ef.zip"
+      ],
       "sha256": "7dfab54af27e92dfbac195301862213c9ad0fe978f0a0bd32030295cfbd33a3e",
       "size": 87398
     },
@@ -2668,6 +3168,9 @@
       "file": "playfab/persona/bf4e382b-3a49-4ee4-a00d-718a7d342254.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/9e803c92-f2e3-48c3-84e9-a9d8ce8e2074/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/bf4e382b-3a49-4ee4-a00d-718a7d342254.zip"
+      ],
       "sha256": "83c718e3f6b379a415ade8ff8ee12aec8e24994e8f82355afd88f5b77f836b2a",
       "size": 85549
     },
@@ -2684,6 +3187,9 @@
       "file": "playfab/persona/bf7b53eb-d6a0-407e-be11-0e8ca7568cd9.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/4db4d108-e735-439e-b168-24f2052ffad2/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/bf7b53eb-d6a0-407e-be11-0e8ca7568cd9.zip"
+      ],
       "sha256": "a35dd09bc6118992f8526c91eb77b8e2daa5529cfdc891775289270d76851291",
       "size": 141406
     },
@@ -2700,6 +3206,9 @@
       "file": "playfab/persona/bf8e383d-ec76-4e7b-9792-f939b6afac44.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/4a212c43-c946-42e3-bb45-b78309c74e92/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/bf8e383d-ec76-4e7b-9792-f939b6afac44.zip"
+      ],
       "sha256": "868000d6e894a6fb28bf5761da47b15622aa6e445448aad75705e0b91e5ce526",
       "size": 44180
     },
@@ -2716,6 +3225,9 @@
       "file": "playfab/persona/bf8ecd88-e4ab-46f3-8a5a-e4df2bcaa16d.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/e3017041-bf27-496d-aea7-de036222f561/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/bf8ecd88-e4ab-46f3-8a5a-e4df2bcaa16d.zip"
+      ],
       "sha256": "1a50552cd19df15bc4748d78ff452e2b28d05c19c35e8f60ab090f82601c7ef4",
       "size": 111541
     },
@@ -2732,6 +3244,9 @@
       "file": "playfab/persona/bfd27f0c-3143-4fe2-920c-2d944dddad0d.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b971a65f-9881-4ef8-810f-71d659424948/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/bfd27f0c-3143-4fe2-920c-2d944dddad0d.zip"
+      ],
       "sha256": "056482ab7bc08312a6601d8f48585867c354eb75fb80b9014e9dd8e3a0a095ce",
       "size": 91823
     },
@@ -2748,6 +3263,9 @@
       "file": "playfab/persona/bfd72532-f354-4f5d-9575-681b826a9473.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/fdc11483-b9c2-4f5b-8cb9-eafa9f5d5c79/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/bfd72532-f354-4f5d-9575-681b826a9473.zip"
+      ],
       "sha256": "04a9f48b0d45bf0f13eed03729c882a6f6cf46bb9dd890728a86ecf8c382b382",
       "size": 220578
     },
@@ -2764,6 +3282,9 @@
       "file": "playfab/persona/bfe35427-426d-4f44-9f67-b7cbb077e27d.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/30659b1f-1e66-4f5c-b1e4-12e0cf0020b4/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/bfe35427-426d-4f44-9f67-b7cbb077e27d.zip"
+      ],
       "sha256": "3dc295c6d813941da9308d55798040ca01fd41686f17444738d916d2f14cc183",
       "size": 44531
     },
@@ -2780,6 +3301,9 @@
       "file": "playfab/persona/c0b7cde4-ff04-4028-a80b-258741a41980.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/3dca13bb-4790-4d64-855e-924d2208c9eb/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c0b7cde4-ff04-4028-a80b-258741a41980.zip"
+      ],
       "sha256": "19d9a35552657ec6328034d415bdf10738c56f6522623acf8b748b9407841d81",
       "size": 41949
     },
@@ -2796,6 +3320,9 @@
       "file": "playfab/persona/c1ecccfb-4418-4839-8483-e1842ff4f20a.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/df0579cd-27ac-4c2f-b657-cb9d02b6670c/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c1ecccfb-4418-4839-8483-e1842ff4f20a.zip"
+      ],
       "sha256": "ac554aae2b520fc8d4b464818cb17a3d0fba9ffc542ce4b961c6f091991f5e0d",
       "size": 111476
     },
@@ -2812,6 +3339,9 @@
       "file": "playfab/persona/c3e6b59b-e9c3-47d8-80cd-3f322823ae09.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/57f00266-c20d-4767-8d0d-0d74846b7db2/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c3e6b59b-e9c3-47d8-80cd-3f322823ae09.zip"
+      ],
       "sha256": "fe392ba66a3ac741dc0c0e81c7238b2637442003fd70382f0d13cc9320aa3c0b",
       "size": 109314
     },
@@ -2828,6 +3358,9 @@
       "file": "playfab/persona/c4aa54dd-5e44-45f6-b670-f42749b47a66.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/2fc305d7-99cd-49f1-9272-1c6bdb438f4d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c4aa54dd-5e44-45f6-b670-f42749b47a66.zip"
+      ],
       "sha256": "f2436b57b07dc88cbf392832dbee023998aa4f5c7d05a88cb33ac398d2a90b19",
       "size": 93443
     },
@@ -2844,6 +3377,9 @@
       "file": "playfab/persona/c4ebc190-585b-4b5d-b20e-f33f027f07c5.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/569deb06-3361-4628-ae37-05af70f0bd72/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c4ebc190-585b-4b5d-b20e-f33f027f07c5.zip"
+      ],
       "sha256": "faa52d0c82006a1a75e5400be5f8714ae0b34a9614780ac528438a2611077dc4",
       "size": 30993
     },
@@ -2860,6 +3396,9 @@
       "file": "playfab/persona/c52276e1-53f1-44ca-97c7-d52198db8d69.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/24d30d02-2f2c-4357-a239-c459dd8caaf2/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c52276e1-53f1-44ca-97c7-d52198db8d69.zip"
+      ],
       "sha256": "a0539592553abc46fb3c6b4503d7b293d88ef514d34819be2d5dc30638784d0b",
       "size": 26844
     },
@@ -2876,6 +3415,9 @@
       "file": "playfab/persona/c5459c3d-d8da-48c1-afba-89d63eaea78c.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/650e585c-e22d-4757-bd6a-72bf96986493/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c5459c3d-d8da-48c1-afba-89d63eaea78c.zip"
+      ],
       "sha256": "af969631eb9e59bd25b84a00fc8554175847f343acff450f074d7d026efd6a08",
       "size": 24804
     },
@@ -2892,6 +3434,9 @@
       "file": "playfab/persona/c6d400c7-7f09-4e04-8f2e-c5793fe42c8e.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/e516c788-d16f-4769-9ac9-0128e4211ef2/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c6d400c7-7f09-4e04-8f2e-c5793fe42c8e.zip"
+      ],
       "sha256": "22116e460ed739e98e875336206bff10f15c63bd1d13272734e9cd4dd82145c9",
       "size": 91649
     },
@@ -2908,6 +3453,9 @@
       "file": "playfab/persona/c6ea9f28-b1f5-4414-9726-7dad2da3b0bb.zip",
       "url": "https://xforgeassets002.xboxlive.com/serviceid-18231953-4b1d-472c-a39e-48b10105b7b7/106c98dc-809e-4906-978a-bff8b8f25d6b/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/c6ea9f28-b1f5-4414-9726-7dad2da3b0bb.zip"
+      ],
       "sha256": "d59020d34124f8baac54285b0b519d34a1dd8cdba37279a1589fc191b6acdbd4",
       "size": 72176
     },
@@ -2924,6 +3472,9 @@
       "file": "playfab/persona/ca6344db-6a34-4444-a02f-471b713f93a8.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/7a7d4f16-ad61-45d6-97b4-27fee3499445/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ca6344db-6a34-4444-a02f-471b713f93a8.zip"
+      ],
       "sha256": "83f9d37b51d27b4d9602bb22029480e4eeea6d8755122c62164d40d6e45d5dbe",
       "size": 41066
     },
@@ -2940,6 +3491,9 @@
       "file": "playfab/persona/ca94203a-fb82-4bef-a88c-8fe508c51266.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/e19c6d5c-7e14-40ab-818e-5dc1ce3a30be/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ca94203a-fb82-4bef-a88c-8fe508c51266.zip"
+      ],
       "sha256": "4a666b7691bf5df42d3f7f25d33985811f447bb21e77d1e8739afea48d3804e7",
       "size": 82214
     },
@@ -2956,6 +3510,9 @@
       "file": "playfab/persona/cac80642-6b11-4e0a-9322-141ffa2ec2ca.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/555218c3-bbb5-46b9-9925-e9601b3b76cf/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/cac80642-6b11-4e0a-9322-141ffa2ec2ca.zip"
+      ],
       "sha256": "23c09c09b8223bb5f35e584b4aa7ce6aeea4b415e97487ca1778cc15b1ba8b5d",
       "size": 89639
     },
@@ -2972,6 +3529,9 @@
       "file": "playfab/persona/ce5f12e7-e951-4c8a-95b1-80c4c3db8a3d.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/27194dc3-dbc2-454a-9e19-aa22b6d9561e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ce5f12e7-e951-4c8a-95b1-80c4c3db8a3d.zip"
+      ],
       "sha256": "802fca6abe668578ad2f69f691d4378f15e423d0f69d822be4d4e4c6ed665f4f",
       "size": 62084
     },
@@ -2988,6 +3548,9 @@
       "file": "playfab/persona/d20c3315-2467-4bf8-9095-ab816ee3b9f2.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/740ccbeb-3b98-4fe3-b6da-2e5b67bd70a0/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/d20c3315-2467-4bf8-9095-ab816ee3b9f2.zip"
+      ],
       "sha256": "45cf0b69122b7cd016b7b5af06fecfc0c921fb6be154372fdba0596dbde8db32",
       "size": 82878
     },
@@ -3004,6 +3567,9 @@
       "file": "playfab/persona/d21e654a-68b6-403b-9cba-f350b20b8113.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/016fe4cb-93f7-413d-bc2d-4dcdc753ba00/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/d21e654a-68b6-403b-9cba-f350b20b8113.zip"
+      ],
       "sha256": "49f4bca9af3b44f4689164c720ca60629490a9650b5024ab8c890ca245b9240b",
       "size": 92167
     },
@@ -3020,6 +3586,9 @@
       "file": "playfab/persona/d2e0085e-ad20-4710-b8a2-cde5376378e2.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/be042a91-7c35-42bb-9552-b6bdd6cf34a7/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/d2e0085e-ad20-4710-b8a2-cde5376378e2.zip"
+      ],
       "sha256": "3bf30ca6e07b2d8c96f87abc1f787b1d28360fea26554da2d4481d72e9359d16",
       "size": 46917
     },
@@ -3036,6 +3605,9 @@
       "file": "playfab/persona/d4f67116-2c9b-4790-89d7-b2dce1e5b536.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/7ba0643e-4b1e-4191-b76f-25b65bd9d40c/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/d4f67116-2c9b-4790-89d7-b2dce1e5b536.zip"
+      ],
       "sha256": "d62f61654e79d86bd8830a4573c8665b01e25c37da1bad46aab48148dbdadc66",
       "size": 78066
     },
@@ -3052,6 +3624,9 @@
       "file": "playfab/persona/d7cc02f9-84d8-4fc3-83c3-3bc0b6d50162.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/b151575c-8532-48bd-8af1-8171a0097a93/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/d7cc02f9-84d8-4fc3-83c3-3bc0b6d50162.zip"
+      ],
       "sha256": "f1e3f3e782d432a51835a6eb17060ba083277bb4a84516fcdc390dc753e459e2",
       "size": 155801
     },
@@ -3068,6 +3643,9 @@
       "file": "playfab/persona/d7f44a57-822a-4c6d-a678-ff9d67a8a1ab.zip",
       "url": "https://xforgeassets001.xboxlive.com/serviceid-18231953-4b1d-472c-a39e-48b10105b7b7/779a473a-c886-49b1-9092-187f691def5c/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/d7f44a57-822a-4c6d-a678-ff9d67a8a1ab.zip"
+      ],
       "sha256": "bbab24b0fd1a10ec3d31c8120e1c8af979db2346cebf5dd984d13d36c356545f",
       "size": 87027
     },
@@ -3084,6 +3662,9 @@
       "file": "playfab/persona/d8a273d3-ff36-4545-96f8-519e979c1a58.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/477dd42e-bf34-4b9b-b0f7-e6934c7ff3ad/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/d8a273d3-ff36-4545-96f8-519e979c1a58.zip"
+      ],
       "sha256": "edb9c71bce83a30b70d6b2513a85baf91de88c3d4c4366514ab718dc569102d5",
       "size": 101298
     },
@@ -3100,6 +3681,9 @@
       "file": "playfab/persona/d9be82f1-ecef-44b7-85c1-be1ff9f14f85.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/ae88e910-f9fa-4a72-9a24-42b9e705b62a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/d9be82f1-ecef-44b7-85c1-be1ff9f14f85.zip"
+      ],
       "sha256": "c8e5a39337b0894adf651048eb9a818f4d6dfd7da93a18c5a8a82884252ef9c0",
       "size": 213158
     },
@@ -3116,6 +3700,9 @@
       "file": "playfab/persona/da790aa8-5887-45fc-a8f7-0a76b49b8309.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/4d412558-aeb9-4524-bbbe-e7615ba197c6/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/da790aa8-5887-45fc-a8f7-0a76b49b8309.zip"
+      ],
       "sha256": "f1436cea314e7ba2a8949474ca3134631fb2d8250fe637da7f4a54e1c5250413",
       "size": 114172
     },
@@ -3132,6 +3719,9 @@
       "file": "playfab/persona/da7bd336-f702-48f4-b61e-b6287e10f5d3.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/18475d50-1e0b-404a-ac30-3c9d017f8ad5/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/da7bd336-f702-48f4-b61e-b6287e10f5d3.zip"
+      ],
       "sha256": "5ebcb87be79ed8ccb97286cd95b28f82696ae2e0449ffbbf6cbb70edb7eb836e",
       "size": 7762
     },
@@ -3148,6 +3738,9 @@
       "file": "playfab/persona/dc10ed73-e742-4908-bf6f-e04d3e6bdbd5.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/6101da7a-7285-4797-8664-938ead40c5e1/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/dc10ed73-e742-4908-bf6f-e04d3e6bdbd5.zip"
+      ],
       "sha256": "df790cb978178c25072a075bb7258269646ad27f2c8934623fa25b94ad48a05f",
       "size": 82564
     },
@@ -3164,6 +3757,9 @@
       "file": "playfab/persona/ddeb191a-a90b-4efe-9db1-9dc25b0c165c.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/8b9eb716-e9ca-48b5-8f8b-289158ead2fa/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ddeb191a-a90b-4efe-9db1-9dc25b0c165c.zip"
+      ],
       "sha256": "8e43df29a7d8a162af1f0a667aca02b4ddb688179fc4653a183e7a475fcb996b",
       "size": 199669
     },
@@ -3180,6 +3776,9 @@
       "file": "playfab/persona/de7fea77-8771-43ec-b75e-fea8bca7cbb7.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/5f22cabd-212b-493a-b708-1bfdac20f3f1/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/de7fea77-8771-43ec-b75e-fea8bca7cbb7.zip"
+      ],
       "sha256": "e8315692c7c10f14a3ad3584b087e6a8487434935813d505cfd27400f9955162",
       "size": 128896
     },
@@ -3196,6 +3795,9 @@
       "file": "playfab/persona/e10605c6-071c-4b5d-85c9-e9842b221513.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/60934495-f160-4de3-9342-e6a2480607b9/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e10605c6-071c-4b5d-85c9-e9842b221513.zip"
+      ],
       "sha256": "009ac01e94ef916c53492c8c7f4d61692832c3eeeba55216e0c68409043a034a",
       "size": 102287
     },
@@ -3212,6 +3814,9 @@
       "file": "playfab/persona/e289a047-f821-4078-b943-db0ecdf2b467.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/d823ff48-e908-4ca5-b057-e99a2a22b656/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e289a047-f821-4078-b943-db0ecdf2b467.zip"
+      ],
       "sha256": "3b4606eb6090c461495767148e59559e0411761ad46a6faa7ec8d99f2b5ea1c5",
       "size": 139390
     },
@@ -3228,6 +3833,9 @@
       "file": "playfab/persona/e2904a01-654c-4fed-b67b-837154480149.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/164bd02d-941c-44df-a350-4795b4949f34/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e2904a01-654c-4fed-b67b-837154480149.zip"
+      ],
       "sha256": "430766a1d8790ce4e2b7b7dc13d2e04edb23749a7fd964f86e4e05ae130b6af4",
       "size": 149408
     },
@@ -3244,6 +3852,9 @@
       "file": "playfab/persona/e2a48c5d-2ea3-4a9f-8566-9d05105f8d96.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/00310005-09cc-44cf-84c4-639d233c8922/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e2a48c5d-2ea3-4a9f-8566-9d05105f8d96.zip"
+      ],
       "sha256": "2f5aa8a03e3f6b5364ec73e36f718d49df07c7e32613f4ff2a6704c911ae1907",
       "size": 91812
     },
@@ -3260,6 +3871,9 @@
       "file": "playfab/persona/e2e44223-e4ac-43a7-974c-f5a3024c8894.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/94397288-1d4d-4375-867e-18b2d407f75e/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e2e44223-e4ac-43a7-974c-f5a3024c8894.zip"
+      ],
       "sha256": "df1469a084c140dce889ad4c741d6c783658758ef77019db17be49152ed7b934",
       "size": 82489
     },
@@ -3276,6 +3890,9 @@
       "file": "playfab/persona/e3f4e021-8c44-4337-a798-426fb4bf17aa.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/923d98d9-10c8-4a50-afc0-440b22b33f59/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e3f4e021-8c44-4337-a798-426fb4bf17aa.zip"
+      ],
       "sha256": "471c6f2b49f1849de7ed38d088695f0adec6f605b0a0a6ba109697bb6564158a",
       "size": 230796
     },
@@ -3292,6 +3909,9 @@
       "file": "playfab/persona/e4bf59f6-cead-4c19-9cbe-faded7b6c2a3.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/f75ac548-9cef-4d6a-b270-9c0d1ab2e6f2/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e4bf59f6-cead-4c19-9cbe-faded7b6c2a3.zip"
+      ],
       "sha256": "87c64dff368897027577c377e7c96b08c9f42fb2174d75e63380283f447822fe",
       "size": 85787
     },
@@ -3308,6 +3928,9 @@
       "file": "playfab/persona/e4c6874b-fbe2-4908-b7ff-04fe1cbdf18c.zip",
       "url": "https://xforgeassets001.xboxlive.com/serviceid-18231953-4b1d-472c-a39e-48b10105b7b7/76af25e8-fcf5-498b-8a77-0dc89a33839f/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e4c6874b-fbe2-4908-b7ff-04fe1cbdf18c.zip"
+      ],
       "sha256": "8c931cd5d41852f88d62d073febe05fc84a811995dfbecb34951d058c7310b08",
       "size": 113687
     },
@@ -3324,6 +3947,9 @@
       "file": "playfab/persona/e5c247a0-df11-40e8-96c8-04f9a827ae75.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/7affbe9c-5b60-4627-b43f-c13e1f2dc562/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e5c247a0-df11-40e8-96c8-04f9a827ae75.zip"
+      ],
       "sha256": "88901b49d09a91485ff3809dacf8d7f91b19b4f8519f52a5b3c899c043d9f19e",
       "size": 195155
     },
@@ -3340,6 +3966,9 @@
       "file": "playfab/persona/e81dd105-8233-404a-9de0-e482db536ed6.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/c3907449-28f1-4c7f-9553-e8436e77260f/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e81dd105-8233-404a-9de0-e482db536ed6.zip"
+      ],
       "sha256": "71b7896fcc4a3f4b22fadfc7d3a706c5922c36668435c5139cea88dcbb2fdea7",
       "size": 47388
     },
@@ -3356,6 +3985,9 @@
       "file": "playfab/persona/e9033215-0ed6-40d1-a69f-37aa1571c8eb.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/2b04f470-0a61-4c83-bc02-60bb777d28cb/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/e9033215-0ed6-40d1-a69f-37aa1571c8eb.zip"
+      ],
       "sha256": "a7876f7fba5937530f6d8f517ad3e5f8bf1706bee67567e0bb08d1d324012d35",
       "size": 87784
     },
@@ -3372,6 +4004,9 @@
       "file": "playfab/persona/ea526583-89e0-439f-b09f-e495397adfba.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/52fbf754-283d-4dd4-b562-59099b1b1523/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ea526583-89e0-439f-b09f-e495397adfba.zip"
+      ],
       "sha256": "6767fd55c712f2c5c212b8988af90483e8f30a731911eb54450f6bb086d3c950",
       "size": 28393
     },
@@ -3388,6 +4023,9 @@
       "file": "playfab/persona/eab000e0-d344-4355-804e-8950cf95e40f.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-namespace-b63a0803d3653643/01eee1fb-61a0-4517-b7de-5e8acedcc731/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/eab000e0-d344-4355-804e-8950cf95e40f.zip"
+      ],
       "sha256": "79e8c8e31a84ea10372551d9d642704205fa1a0e0354615e822cd2ea357a9908",
       "size": 158404
     },
@@ -3404,6 +4042,9 @@
       "file": "playfab/persona/ebfd92ed-33da-487d-bd41-8ec78cec2e8d.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/453161f4-d87b-4f92-be32-04cacf2605ad/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ebfd92ed-33da-487d-bd41-8ec78cec2e8d.zip"
+      ],
       "sha256": "71fee8969c347204deb06208ea4ff13381c2a8dceb134028fd48c972070f10e9",
       "size": 122045
     },
@@ -3420,6 +4061,9 @@
       "file": "playfab/persona/ec8d1aca-32b7-4c12-988d-2877cf85d2f3.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/70e4af4b-e91d-4df3-aa2a-3bb323325e8d/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ec8d1aca-32b7-4c12-988d-2877cf85d2f3.zip"
+      ],
       "sha256": "6fd128b12a372ced49feb7497277c959714c9a40af55b49188eccf62b03e5c27",
       "size": 69691
     },
@@ -3436,6 +4080,9 @@
       "file": "playfab/persona/edfa576d-1057-4f5a-9d0e-6c81e377544c.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/e7b8d195-290c-49ff-8ff6-23884a23ba45/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/edfa576d-1057-4f5a-9d0e-6c81e377544c.zip"
+      ],
       "sha256": "8872e097ecc6183406be5f640a5e397c9b9dc875c9210afaf6171cfd78f5f9b3",
       "size": 26088
     },
@@ -3452,6 +4099,9 @@
       "file": "playfab/persona/ee133a33-6bd5-4586-9be7-90fef151287b.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/dfa108c2-72d1-4541-98bb-cef12823f8c5/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ee133a33-6bd5-4586-9be7-90fef151287b.zip"
+      ],
       "sha256": "9416d1e29e928a882eee565e147cb09c3ef5062d7e2d9667017179a9cedc46d1",
       "size": 468395
     },
@@ -3468,6 +4118,9 @@
       "file": "playfab/persona/ee9d1a56-ef33-432a-b9fc-d10827660521.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/25ae1aeb-bd87-4483-9fb2-0c438bafb316/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ee9d1a56-ef33-432a-b9fc-d10827660521.zip"
+      ],
       "sha256": "7a18bb63149e7434e2b4d45cc91561938efcd8f7dd53132ae8167d4400f0fdc2",
       "size": 91404
     },
@@ -3484,6 +4137,9 @@
       "file": "playfab/persona/eeb67014-a9c3-41c4-a722-7da60f8ab2d1.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/99dc7bf1-deb3-4eac-9aa3-0bb623d3843b/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/eeb67014-a9c3-41c4-a722-7da60f8ab2d1.zip"
+      ],
       "sha256": "62de9478ba3852af94454dd762f3b3661f39071e27b3ddae90398d3d68aa00c9",
       "size": 83896
     },
@@ -3500,6 +4156,9 @@
       "file": "playfab/persona/efe442bd-5d7c-4241-8f86-03c9ff1b3726.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-namespace-b63a0803d3653643/ceb97008-3378-47c0-91a4-727070d62a46/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/efe442bd-5d7c-4241-8f86-03c9ff1b3726.zip"
+      ],
       "sha256": "7655a71260ede1b9fee35ad6149b29de07cfe7c2250f4d4500b07f36dd5d60e5",
       "size": 26099
     },
@@ -3516,6 +4175,9 @@
       "file": "playfab/persona/efe7e73d-a6d7-4740-9db8-4f0f2b352d74.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/4f086419-3f83-4a01-8796-ac1083c900c3/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/efe7e73d-a6d7-4740-9db8-4f0f2b352d74.zip"
+      ],
       "sha256": "89db3fd47ecedb86c4c2581a5830edac6572a64bee29f9c5d1c9a68108b052f5",
       "size": 26294
     },
@@ -3532,6 +4194,9 @@
       "file": "playfab/persona/f27e23fa-5c39-4ed2-a109-0c34a63dc14d.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/71c49ebe-b5ff-4355-b187-58c7e23c5e4a/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/f27e23fa-5c39-4ed2-a109-0c34a63dc14d.zip"
+      ],
       "sha256": "c8541288c24b98a2bb5a660be676bb0bb3c26eec02acfd9af33d4d9eaf7529c2",
       "size": 89576
     },
@@ -3548,6 +4213,9 @@
       "file": "playfab/persona/f376dd31-9025-4aa5-89c1-17c196e18bf5.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/703d3989-4f65-4680-9ff7-d58d222b9796/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/f376dd31-9025-4aa5-89c1-17c196e18bf5.zip"
+      ],
       "sha256": "af7b7b3c0837f69e14d18959f44be7b08d3a0368c21e399330174c6cf2df541a",
       "size": 149559
     },
@@ -3564,6 +4232,9 @@
       "file": "playfab/persona/f3a11681-e82b-4009-aa25-0c0c2e3221bb.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/7aa4a3f6-204b-4510-abe3-ddd298b27938/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/f3a11681-e82b-4009-aa25-0c0c2e3221bb.zip"
+      ],
       "sha256": "ec64c0d72ef4a2bcdfa5f4f45b672d7be76d51915ec6cfe6cd1631099746c036",
       "size": 29872
     },
@@ -3580,6 +4251,9 @@
       "file": "playfab/persona/f3c020a7-2620-4d38-a345-9be2d7266009.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/9b50649b-1a6d-4a1b-9eaf-f9b20f995775/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/f3c020a7-2620-4d38-a345-9be2d7266009.zip"
+      ],
       "sha256": "acc06aec020703dbd86c7edcd3ef1e86217d50c18024e9ecb04a7c0c6be1c984",
       "size": 69131
     },
@@ -3596,6 +4270,9 @@
       "file": "playfab/persona/f3ea8158-a116-4ce0-83ec-6b27202f64cc.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-ee7b/cfde77a4-9e5a-4a37-8b76-edcdd4a9d447/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/f3ea8158-a116-4ce0-83ec-6b27202f64cc.zip"
+      ],
       "sha256": "ef7efbe01380be17740d0e3918a2c4fc92cbf9517d11f6b5575814e74cd7b3e5",
       "size": 278861
     },
@@ -3612,6 +4289,9 @@
       "file": "playfab/persona/f5a1bf60-8208-41e0-b015-55c3f7160f19.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/1eb0afee-055c-4fbd-a6bb-0a04eb9bc429/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/f5a1bf60-8208-41e0-b015-55c3f7160f19.zip"
+      ],
       "sha256": "c87ff67ef6b57a1756007e232bc77b3be0717108917efd3911ba8f7c57cafce2",
       "size": 125029
     },
@@ -3628,6 +4308,9 @@
       "file": "playfab/persona/faa8daec-3bc4-42f9-9d8d-2edf57ce4a5a.zip",
       "url": "https://xforgeassets001.xboxlive.com/pf-title-b63a0803d3653643-20ca2/bbed1bbb-4aaf-430c-80c7-c9524f85d7fa/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/faa8daec-3bc4-42f9-9d8d-2edf57ce4a5a.zip"
+      ],
       "sha256": "f32ab25e120d381c2c4db45e6bdafbdfd3f5b793ef793321ce6058ed0a65efdc",
       "size": 71514
     },
@@ -3644,6 +4327,9 @@
       "file": "playfab/persona/fb46a128-0a2f-4b3b-8207-50ced2597b19.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-ee7b/964fce23-b98d-4ff1-9f74-5f8835573425/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/fb46a128-0a2f-4b3b-8207-50ced2597b19.zip"
+      ],
       "sha256": "9c8521afcfb6184f500dac6e8ec01bbcf92ae6a1981590792a4ac36b6c98f7f0",
       "size": 87044
     },
@@ -3660,6 +4346,9 @@
       "file": "playfab/persona/fb67df37-4c8a-4a6f-93ba-4a34953b7838.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/a85ca9fc-97cf-4c17-8a92-e85d6dea6fa5/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/fb67df37-4c8a-4a6f-93ba-4a34953b7838.zip"
+      ],
       "sha256": "cbef624cbd9486e2f00fb1a81e047f25936f6edade8a7f8ef429afac70b95596",
       "size": 105497
     },
@@ -3676,6 +4365,9 @@
       "file": "playfab/persona/fd69b962-b741-4273-ae2c-96c0a97ae38f.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/3a805dd4-1fde-4080-a64d-f286355dca13/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/fd69b962-b741-4273-ae2c-96c0a97ae38f.zip"
+      ],
       "sha256": "514c59b79af5ee230350b2fd86be1b84838b3e6aa27443324b58c35880e0751b",
       "size": 56744
     },
@@ -3692,6 +4384,9 @@
       "file": "playfab/persona/ff26afce-764f-4ad8-988a-50094552e418.zip",
       "url": "https://xforgeassets002.xboxlive.com/pf-title-b63a0803d3653643-20ca2/2f4414fc-4dde-4fe3-9b75-2d8b8b0c2cfc/primary.zip",
       "verified": false,
+      "fallbackUrls": [
+        "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror/ff26afce-764f-4ad8-988a-50094552e418.zip"
+      ],
       "sha256": "bb9c574a024abbfb06d64039daed21a971889500472abbe5dfb2fc67ce54a15c",
       "size": 91800
     },

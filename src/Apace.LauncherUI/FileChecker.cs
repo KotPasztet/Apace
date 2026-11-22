@@ -150,6 +150,10 @@ internal static class FileChecker
             logger.Information("Additional Mojang assets accepted and downloaded — continuing startup");
         }
 
+        // Live persona marketplace: same trigger policy as the component-start path —
+        // syncs when consent exists and the volume index is missing or stale.
+        Services.LivePersonaCatalogSync.EnsureScheduledSyncStarted(settings, logger);
+
         bool error = false;
         if (!EventBusServer.Check(settings, logger) ||
             !ObjectStoreServer.Check(settings, logger) ||
