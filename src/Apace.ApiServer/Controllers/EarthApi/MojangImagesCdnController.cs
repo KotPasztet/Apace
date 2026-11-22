@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
+using Apace.ApiServer.Services;
 
 namespace Apace.ApiServer.Controllers.EarthApi;
 
@@ -9,11 +11,16 @@ namespace Apace.ApiServer.Controllers.EarthApi;
 // data-volume source for installs where the repo no longer ships the images
 // (the asset gate downloads them to <data>/mojang-assets/images/).
 // Only simple file names are accepted.
+//
+// Live persona marketplace: thumbnails for items the panel synced from the live
+// marketplace are fetched lazily into <mojang-assets>/persona-catalog/thumbnails/
+// (Services/LivePersonaCatalog) — first from the thumbnail URL recorded at sync
+// time (the live CDN), then from the Bedrock-Persona mirror (runtime URL fact only).
 [Route("playfab/images/{fileName}")]
 public class MojangImagesCdnController : ControllerBase
 {
     [HttpGet]
-    public Results<NotFound, FileStreamHttpResult> Get(string fileName)
+    public async Task<Results<NotFound, FileStreamHttpResult>> Get(string fileName)
     {
         // the route value must be a plain file name: reject anything that tries to
         // escape the images directory (slashes, "..", rooted paths, ...)
@@ -24,6 +31,22 @@ public class MojangImagesCdnController : ControllerBase
 
         string directory = Path.Combine(Program.MojangAssetsDir, "images");
         string filePath = Path.Combine(directory, fileName);
+        if (!System.IO.File.Exists(filePath) && LivePersonaCatalog.Enabled)
+        {
+            try
+            {
+                string? livePath = await LivePersonaCatalog.TryEnsureThumbnailAsync(Path.GetFileNameWithoutExtension(fileName), Log.Logger, HttpContext.RequestAborted);
+                if (livePath is not null)
+                {
+                    filePath = livePath;
+                }
+            }
+            catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                // client gone — nothing to serve
+            }
+        }
+
         if (!System.IO.File.Exists(filePath))
         {
             return TypedResults.NotFound();

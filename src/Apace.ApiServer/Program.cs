@@ -33,6 +33,7 @@ public static class Program
     internal static int PlayableScale { get; private set; } = 4;
     internal static bool LocalLoginOnly { get; private set; }
     internal static bool RequireMojangAssets { get; private set; }
+    internal static bool LivePersonaCatalogEnabled { get; private set; }
 
     /// <summary>
     /// Persistent directory with the additional Mojang assets (default
@@ -77,6 +78,9 @@ public static class Program
 
         [Option("mojang-assets-dir", Default = null, Required = false, HelpText = "Persistent directory holding the additional Mojang assets (default ../data/mojang-assets)")]
         public string? MojangAssetsDir { get; set; }
+
+        [Option("live-persona-catalog", Default = false, Required = false, HelpText = "Serve the live persona marketplace catalog synced by the panel into <mojang-assets>/persona-catalog (unlock-all offer, lazy binary probe)")]
+        public bool LivePersonaCatalog { get; set; }
     }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
@@ -139,6 +143,7 @@ public static class Program
         LocalLoginOnly = options.LocalLoginOnly;
         RequireMojangAssets = options.RequireMojangAssets;
         MojangAssetsDir = Path.GetFullPath(options.MojangAssetsDir ?? Path.Combine("..", "data", "mojang-assets"));
+        Services.LivePersonaCatalog.Enabled = options.LivePersonaCatalog;
 
         var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()
