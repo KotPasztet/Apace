@@ -8,7 +8,14 @@ namespace Apace.LauncherUI.Services;
 //
 // Intended for later pipeline stages (e.g. building a Bedrock skin pack from
 // skins/<Name>.png into playfab/skinpacks/<offerId>.zip, generating geometry
-// jsons, etc.). Register steps at panel startup, BEFORE the first start:
+// jsons, etc.). Steps are registered HERE so every panel start runs the full
+// pipeline before the first gate pass — currently:
+//
+//     MojangSkinPackBuilder.BuildAsync  ("Minecraft Default Skins" pack from
+//                                       the downloaded default skin textures)
+//
+// Additional steps can be appended to the Steps initializer below (or extra
+// Register calls added at panel startup, BEFORE the first start):
 //
 //     MojangAssetPostProcessor.Register(async mojangAssetsDir =>
 //     {
@@ -22,7 +29,7 @@ public static class MojangAssetPostProcessor
     /// <summary>Signature of a post-processing step: the resolved Mojang assets dir.</summary>
     public delegate Task PostProcessStep(string mojangAssetsDir);
 
-    private static readonly List<PostProcessStep> Steps = [];
+    private static readonly List<PostProcessStep> Steps = [MojangSkinPackBuilder.BuildAsync];
 
     /// <summary>Registers a post-processing step (call once at startup; duplicates are ignored).</summary>
     public static void Register(PostProcessStep step)
