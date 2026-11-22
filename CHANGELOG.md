@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased (dev) — Mojang asset gate: verified manifest, default skins and the persona mirror
+
+> The 231 real Minecraft dressing-room piece binaries are no longer shipped in the repo and their xforge CDN went dark (22.11 probe: 0/231 alive anywhere in the network). The repo now ships only facts — `staticdata-extras/playfab/mojang-assets.manifest.json` — and the panel downloads the assets through a consent-gated flow with mirror fallback. Unverified sources never block startup.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **Asset gate + manifest** (`MojangAssetGate.cs`): 471 entries — 231 persona piece binaries, 231 dressing-room thumbnails, 9 default-skin textures — each with recorded sha256 + size. On startup the gate compares the manifest against `<data>/mojang-assets/`, shows a one-time consent prompt, silently auto-redownloads after redeploys (consent recorded in `consent.json`) and never blocks on entries whose source was offline at generation time (`verified: false`; persona is one of them — the recorded URLs are facts, not guarantees).
+- **Mirror fallback** (`fallbackUrls` per persona entry): when the primary URL answers non-200 or is unreachable, the gate tries the mirrors in order and logs which source delivered the file; the sha256/size verification applies to every source equally. The only mirror today is the `mojang-persona-mirror` GitHub release, to be built from the byte-identical copies of commit `043d7bb` (creating the release is a separate, explicit step — nothing is published by this change).
+- **Generator hardened** (`scripts/generate_mojang_asset_manifest.py`): every persona binary is probed on its catalog URL AND on the same namespace/GUID path re-hosted on the PlayFab content CDN (`content1`/`content2.prod.catalog.playfab.com`) — a future Mojang migration or restore is picked up automatically at the next regen. Facts survive offline sources: sha256/size fall back to the repo copy or the byte-identical git-history copy (`043d7bb`).
+- **Minecraft Default Skins** (Steve, Alex, Sunny, Kai, Makena, Zuri, Efe, Ari, Noor): 64×64 textures verified by download from minecraft.wiki, fetched into `skins/` of the assets dir and served as the default dressing-room set.
+- **Repo slimmed**: the 231 persona binaries left the tree — byte-identical copies remain in git history (`043d7bb`) and in the locally prepared release payload (231/231 sha256-verified against the manifest).
+
 ## Unreleased (dev) — Apace Cape crash fix: real encrypted container + server-delivered content key
 
 > Equipping any Apace Cape hard-crashed the MCE client (`std::bad_alloc`, `malloc(18446744073709551504)`) ~100ms after the piece download. Root cause (reverse-engineered from `libgenoa.so`): the previous synthesized `contents.json` copied the real 256-byte ContentIdentity header, so the client picked the DERIVED (encrypted-pack) strategy and computed `bodyLen − 256` on a 133-byte file — a size_t underflow into `operator new`.
