@@ -20,6 +20,13 @@ public sealed record MojangAssetManifestItem
     /// <summary>Source URL the file is downloaded from (a recorded fact, may be offline).</summary>
     public string Url { get; init; } = "";
 
+    /// <summary>
+    /// Mirror locations tried in order when the primary URL fails (non-200 or
+    /// unreachable). The payload must still match the recorded sha256/size, so
+    /// a mirror is exactly as trustworthy as the primary source.
+    /// </summary>
+    public List<string>? FallbackUrls { get; init; }
+
     /// <summary>Known sha256 of the file (hex), when it could be verified at manifest generation time.</summary>
     public string? Sha256 { get; init; }
 
@@ -540,7 +547,7 @@ public static class MojangAssetGate
                     {
                         try
                         {
-                            await DownloadItemAsync(item, cancellationToken);
+                            await DownloadItemAsync(item, logger, cancellationToken);
                             break;
                         }
                         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -618,25 +625,77 @@ public static class MojangAssetGate
         "skins",
     ];
 
-    private static async Task DownloadItemAsync(MojangAssetManifestItem item, CancellationToken cancellationToken)
+    // The primary URL first, then the entry's fallbackUrls in order — the first
+    // source that answers 200 wins and the rest are not contacted. A candidate
+    // failure (non-200 or transport error) is logged and the walk continues, so
+    // a dead primary CDN transparently hands over to the mirrors; the sha256/
+    // size verification below applies to the payload whichever source served it.
+    private static async Task DownloadItemAsync(MojangAssetManifestItem item, ILogger logger, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(item.Url))
         {
             throw new InvalidOperationException("manifest entry has no source URL");
         }
 
+        List<string> candidates = [item.Url, .. (item.FallbackUrls ?? []).Where(u => !string.IsNullOrWhiteSpace(u))];
         string destPath = GetAssetPath(item.File);
         Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
         string partPath = destPath + ".part";
 
-        using (var response = await HttpClient.GetAsync(item.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+        Exception? lastError = null;
+        bool downloaded = false;
+        foreach (string candidate in candidates)
         {
-            response.EnsureSuccessStatusCode();
-            await using (var content = await response.Content.ReadAsStreamAsync(cancellationToken))
-            await using (var fileStream = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+            try
             {
-                await content.CopyToAsync(fileStream, cancellationToken);
+                using (var response = await HttpClient.GetAsync(candidate, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        lastError = new HttpRequestException($"HTTP {(int)response.StatusCode}");
+                        logger.Information(
+                            "Mojang asset source unavailable for {File}: {Url} answered {Status} — trying the next source",
+                            item.File, candidate, (int)response.StatusCode);
+                        continue;
+                    }
+
+                    await using (var content = await response.Content.ReadAsStreamAsync(cancellationToken))
+                    await using (var fileStream = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                    {
+                        await content.CopyToAsync(fileStream, cancellationToken);
+                    }
+                }
+
+                downloaded = true;
+                if (candidate == item.Url)
+                {
+                    logger.Debug("Mojang asset {File} downloaded from the primary source", item.File);
+                }
+                else
+                {
+                    logger.Warning(
+                        "Mojang asset {File} restored from a mirror: {Url} (the primary source failed) — sha256 still verified",
+                        item.File, candidate);
+                }
+
+                break;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+            {
+                lastError = ex;
+                logger.Information(
+                    "Mojang asset source unreachable for {File}: {Url} ({Reason}) — trying the next source",
+                    item.File, candidate, ex.Message);
+            }
+        }
+
+        if (!downloaded)
+        {
+            throw lastError ?? new HttpRequestException($"no source answered 200 ({candidates.Count} tried)");
         }
 
         if (item.Size is { } expectedSize && new FileInfo(partPath).Length != expectedSize)
