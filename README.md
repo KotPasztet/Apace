@@ -44,6 +44,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 
 * *Minecraft Earth™* is a trademark of Microsoft Corporation. All trademarks and registered trademarks are the property of their respective owners.
 * This project does not distribute, host, or provide access to original game assets, proprietary binaries, or resource packs. Users are responsible for providing their own legally obtained assets.
+* On first start the panel's asset gate asks for a one-time consent and downloads additional Mojang assets (character creator pieces, dressing room thumbnails, default character textures) into the persistent data volume from their original, still-live sources — see [docs/mojang-asset-gate.md](docs/mojang-asset-gate.md). The repo ships only a manifest of facts (source URLs, sha256), never the assets.
 * This software is provided solely for educational, research, and archival purposes to restore functionality to a discontinued service.
 * This project is provided "as-is" without any warranty of any kind, express or implied. In no event shall the authors be held liable for any claim, damages, or other liability.
 
