@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 
 namespace Apace.ApiServer.Controllers.EarthApi;
 
@@ -31,6 +32,10 @@ public class SkinPackCdnController : ControllerBase
 
         if (!System.IO.File.Exists(filePath))
         {
+            // a 404 here means the client wants a pack whose zip the volume never
+            // got (builder did not run / assets incomplete) — make it visible,
+            // these used to vanish as INF noise in the access log
+            Log.Warning("Skin pack zip not found on this install: {FileName} (looked in the data volume and staticdata)", fileName);
             return TypedResults.NotFound();
         }
 

@@ -162,7 +162,12 @@ public static class MojangSkinPackBuilder
             DateTimeOffset newestTexture = included.Max(entry => new FileInfo(entry.Path).LastWriteTimeUtc);
             if (targetInfo.LastWriteTimeUtc >= newestTexture)
             {
-                logger.Debug("Minecraft Default Skins pack up to date at {Path} ({Skins} skins)", targetPath, included.Count);
+                // Information, not Debug: the deploy log should always show which
+                // pack version the volume carries (a stale version is the #1 reason
+                // the client keeps its cached empty import and never re-downloads)
+                logger.Information(
+                    "Minecraft Default Skins pack up to date at {Path} (version {Version}, {Skins} skins)",
+                    targetPath, PackVersion, included.Count);
                 return;
             }
         }
