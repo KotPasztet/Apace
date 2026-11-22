@@ -345,10 +345,13 @@ else
     ];
 
     // Same lookup as PersonaImagesController; duplicated so the export can attach
-    // thumbnails without a round-trip through the HTTP endpoint.
-    private static readonly string[] ThumbnailDirs =
+    // thumbnails without a round-trip through the HTTP endpoint. Resolved per use
+    // (expression-bodied) — Program.DataDir is set after static init.
+    private static string[] ThumbnailDirs =>
     [
         Path.Combine(Program.ProgramsDir, "wwwroot", "playfab", "images"),
+        Path.Combine(Services.MojangAssetGate.MojangAssetsDir, "images"),
+        Path.Combine(Services.MojangAssetGate.MojangAssetsDir, "persona-catalog", "thumbnails"),
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Apace.ApiServer", "wwwroot", "playfab", "images")),
     ];
 
