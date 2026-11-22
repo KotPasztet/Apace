@@ -278,12 +278,28 @@ the server only supplies the catalog scaffolding around them:
   free "Standard" pack offer: `displayProperties.packIdentity[0].uuid` is the client's own
   vanilla pack uuid, so the client resolves it locally ("Skin pack is in repo") and offers
   Steve/Alex for picking. `skinPack.count: 3`.
-- `staticdata-extras/playfab/items/b3099ceb-…json` — real 1P "City Folk Skin Pack" offer
-  (the client hardcodes a search for tag `acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806`, which is
-  that pack's uuid; the item comes from the live catalog unchanged). Its pack binary is not
-  servable (the real download went through the marketplace DLC pipeline and no copy of the
-  bytes is reachable — the live offer, its referenced product stub and the xforge CDN all
-  404), so picking it shows the offer but the pack cannot actually download.
+- `staticdata-extras/playfab/items/90860f69-…json` — **"Minecraft Default Skins"**, free
+  1P offer that replaces the retired City Folk pack below: it inherits the same
+  `packIdentity` uuid `acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806` (the tag the client hardcodes
+  its Classic Skins search on), but its `Contents` carries a servable `skinbinary` at
+  `/playfab/skinpacks/90860f69-….zip`. That zip is **not in the repo** — it is built at
+  runtime by the panel's `MojangSkinPackBuilder` (a `MojangAssetPostProcessor` step) from
+  the nine default character textures (`skins/Steve.png`, `skins/Alex.png`, `skins/Sunny.png`,
+  `skins/Kai.png`, `skins/Makena.png`, `skins/Zuri.png`, `skins/Efe.png`, `skins/Ari.png`,
+  `skins/Noor.png`) that the Mojang asset gate downloads into
+  `<data>/mojang-assets/skins/` after the user accepts the Mojang assets prompt. The
+  builder writes the pack into `<data>/mojang-assets/playfab/skinpacks/` (idempotently —
+  rebuilt only when the zip is missing or older than a re-downloaded texture; missing
+  textures are skipped with a warning), where `SkinPackCdnController` serves it. Without
+  the gated assets the offer shows but its binary 404s, mirroring the old City Folk
+  behaviour minus the dead binary.
+- ~~`staticdata-extras/playfab/items/b3099ceb-…json` — real 1P "City Folk Skin Pack"
+  offer~~ — **removed** (Mojang content cleanup): the pack's binary was never servable
+  (the real download went through the marketplace DLC pipeline and no copy of the bytes
+  is reachable — the live offer, its referenced product stub and the xforge CDN all
+  404), so picking it showed the offer but the pack could not download. The
+  "Minecraft Default Skins" offer above now occupies its Classic Skins slot, reusing
+  the `acf11539-…` packIdentity uuid so the client's hardcoded search keeps matching.
 
 ### Downloadable skin packs (skinbinary)
 
@@ -309,11 +325,13 @@ as the client's built-in `assets/skin_packs/vanilla`.
   `PersonaCdnController`). The skin texture is a **placeholder** generated in the Apace
   Cape palette — the real skin should be KotPasztet's own 64x64 drawing (replace
   `apace.png` inside the zip; the cape banner art cannot be re-cut into a skin layout).
-- Discovery: the committed layout manifest (`a2e12d4d`) only lists the two original offers
-  in `skinPackFeaturedQuery.productIds`. Instead of editing it, `CatalogController` appends
-  the ids of **every `MarketplaceDurableCatalog_V1.2` item tagged `has_skinpack`** to the
-  served featured query at response time — a new skin pack is just an item JSON with that
-  tag, the manifest file never changes.
+- Discovery: the committed layout manifest (`a2e12d4d`) lists the Standard and
+  Minecraft Default Skins offers in `skinPackFeaturedQuery.productIds` (row order:
+  Standard → Minecraft Default Skins → Apace Skins). Instead of further editing it,
+  `CatalogController` appends the ids of **every `MarketplaceDurableCatalog_V1.2` item
+  tagged `has_skinpack`** that is not already listed to the served featured query at
+  response time — a new skin pack is just an item JSON with that tag, the manifest file
+  never changes.
 
 Adding another downloadable pack: build the Bedrock skin pack zip, drop it into
 `staticdata-extras/playfab/skinpacks/<offerId>.zip`, add an offer item JSON

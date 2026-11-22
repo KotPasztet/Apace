@@ -1,0 +1,64 @@
+{
+  "Purchasable": true,
+  "Data": {
+    "Type": "ClientConfig",
+    "ContentType": "MarketplaceDurableCatalog_V1.2",
+    "ResponseType": "bundle",
+    "MinClientVersion": "1.0.0",
+    "MaxClientVersion": "65535.65535.65535",
+    "IsStackable": false,
+    "Price": 0,
+    "DisplayProperties": {
+      "creatorName": "Minecraft",
+      "offerId": "bb111cab-b44d-46cc-b0c4-2316fcf4a494",
+      "price": 0,
+      "purchasable": true,
+      "packIdentity": [
+        {
+          "type": "skinpack",
+          "uuid": "acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806",
+          "version": "1.0.0"
+        }
+      ],
+      "skinPack": {
+        "count": 9
+      }
+    }
+  },
+  "Title": "Minecraft Default Skins",
+  "Description": "The nine Minecraft default skins - Steve, Alex, Sunny, Kai, Makena, Zuri, Efe, Ari and Noor.",
+  "ThumbnailImageId": "6192ef59-f090-423d-8471-90ddeaff3624",
+  "CreationDate": "2026-11-22T00:00:00.000Z",
+  "LastModifiedDate": "2026-11-22T00:00:00.000Z",
+  "StartDate": "2019-10-01T00:00:00Z",
+  "Id": "90860f69-bcc5-46c4-9e76-b56b9db5d729",
+  "FriendlyId": "bb111cab-b44d-46cc-b0c4-2316fcf4a494",
+  "SourceEntityId": "B63A0803D3653643",
+  "CreatorEntityId": "301F442C3B63DC20",
+  "Tags": [
+    "90860f69-bcc5-46c4-9e76-b56b9db5d729",
+    "acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806",
+    "skinpack",
+    "has_skinpack",
+    "1P"
+  ],
+  "Keywords": {},
+  "Contents": [
+    {
+      "Id": "bb111cab-b44d-46cc-b0c4-2316fcf4a494",
+      "Url": "/playfab/skinpacks/90860f69-bcc5-46c4-9e76-b56b9db5d729.zip",
+      "MaxClientVersion": "65535.65535.65535",
+      "MinClientVersion": "1.0.0",
+      "Tags": [],
+      "Type": "skinbinary"
+    }
+  ],
+  "ItemReferences": [
+    {
+      "Id": "6192ef59-f090-423d-8471-90ddeaff3624",
+      "Amount": 1
+    }
+  ],
+  "TitleTranslations": {},
+  "DescriptionTranslations": {}
+}
