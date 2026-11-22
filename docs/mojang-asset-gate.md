@@ -18,7 +18,9 @@ server startup.
    - consent already recorded but files missing → **silent auto-redownload**;
      if that fails, the prompt is armed and offers **Retry**;
    - no consent yet → the prompt is armed and startup parks on the gate's
-     `TaskCompletionSource` (same pattern as the EULA prompt).
+     `TaskCompletionSource` (same pattern as the EULA prompt);
+   - manifest itself unavailable → legacy persona fallback (see
+     [Missing manifest policy](#missing-manifest-policy) below).
 3. The prompt appears on the **Server Status** page: *"Additional Mojang assets
    required"*, describing what is downloaded, from where and into which
    directory, with an **Accept & Download** button. Accepting writes the
@@ -40,9 +42,27 @@ the panel UI part lives in `Components/Pages/ServerStatus.razor`.
 | Manifest (committed) | `staticdata-extras/playfab/mojang-assets.manifest.json` |
 
 The manifest is read from (first existing wins, logged):
-`../staticdata/playfab/`, then `staticdata-extras/playfab/` walked up from the
-working directory **and** from `AppContext.BaseDirectory`, then
-`<configured StaticDataPath>/playfab/`.
+`../staticdata/playfab/` (the deployment layout — `publish.ps1` overlays
+`staticdata-extras` onto `staticdata`), then `staticdata-extras/playfab/`
+walked up from the working directory **and** from `AppContext.BaseDirectory`
+(up to five levels, which covers dev `bin/Debug/net10.0` outputs), then the
+panel's `../staticdata` (`Program.StaticDataDir`).
+
+### Missing manifest policy
+
+The manifest is a separate deliverable — a checkout or image can legitimately
+carry none. In that case the gate does **not** silently pass; instead it falls
+back to the legacy layout:
+
+- If the legacy staticdata persona directory (`staticdata/playfab/persona/` or
+  the committed `staticdata-extras/playfab/persona/` twins) still contains
+  persona piece binaries, the start proceeds with a loud **warning** — the CDN
+  controllers serve from staticdata and the gate cannot verify completeness.
+- With **neither** manifest **nor** legacy persona assets the start is
+  **blocked** (fail-closed, mirrors the ApiServer fail-fast) with a clear log
+  message: generate the manifest or disable the gate in Server Options.
+- The ApiServer direct start applies the same policy: no manifest + no legacy
+  persona assets → `Log.Fatal` + exit 1 even with `--require-mojang-assets`.
 
 ## Consent format (`consent.json`)
 
@@ -118,6 +138,16 @@ this includes the gate). Two consequences:
   (`EnsureComponentsOnline`) keep honouring the gate regardless of
   `SkipFileChecks`, which arms the consent prompt as the recovery path.
 - `SkipFileChecks` does **not** clear the consent or the settings toggle.
+
+## Downloads
+
+Each file downloads to `<file>.part` first, is size- and sha256-checked
+(when the manifest records them) and only then moved into place. Transient
+failures (dead host, reset connection, truncated body) are retried up to
+**3 attempts** per file (2 s / 4 s backoff); the per-request connect timeout
+is 20 s and the overall request timeout 10 minutes. Files that still fail are
+listed in the alert's error list with a **Retry** button — the gate stays
+closed until every verified asset is in place.
 
 ## Post-processor hook (pipeline integration point)
 
