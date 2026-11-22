@@ -502,3 +502,48 @@ src/data/patcher/uploads/
 /mce-decoded/
 # Persona catalog fetch/generation scratch data (scripts/fetch_persona_catalog.py)
 work/
+
+# Mojang-owned persona piece binaries and dressing room thumbnails are no longer
+# shipped in the repo — the runtime Mojang asset gate downloads them into the
+# persistent data dir (<data>/mojang-assets/{playfab/persona,images}) and the
+# CDN controllers serve them from there. Only Apace-authored files below.
+staticdata-extras/playfab/persona/*
+!staticdata-extras/playfab/persona/1981967a-7662-45a6-813d-176792cfc68e.zip
+!staticdata-extras/playfab/persona/6e8671bd-7d35-442c-8e7c-39b6562490ca.zip
+!staticdata-extras/playfab/persona/a5d108fa-13d8-4b42-ac22-9ddc659d1eaf.zip
+src/Apace.ApiServer/wwwroot/playfab/images/*
+!src/Apace.ApiServer/wwwroot/playfab/images/015592b9-ca4e-4a3f-abc1-bb7bb00181ae.png
+!src/Apace.ApiServer/wwwroot/playfab/images/10413b0a-1dfd-48d1-9215-22c0d41624ca.png
+!src/Apace.ApiServer/wwwroot/playfab/images/128aed3c-b85b-45f9-a396-c4d6005fb197.png
+!src/Apace.ApiServer/wwwroot/playfab/images/16cab7d1-0577-4e0f-840d-827d0e125ba9.png
+!src/Apace.ApiServer/wwwroot/playfab/images/172a2675-d175-47bd-8e7b-b82fd8fa7430.png
+!src/Apace.ApiServer/wwwroot/playfab/images/1bd18df9-a672-4825-8203-739db70fcb19.png
+!src/Apace.ApiServer/wwwroot/playfab/images/20fc3ae1-1ea9-4aff-8f46-d1ab810c68b3.png
+!src/Apace.ApiServer/wwwroot/playfab/images/2f38d89e-da5b-4852-8368-2be195547a5c.png
+!src/Apace.ApiServer/wwwroot/playfab/images/2f3b3018-b468-4a0d-88e3-69169497abbd.png
+!src/Apace.ApiServer/wwwroot/playfab/images/3087325d-d676-4c39-830d-95b269b9da60.png
+!src/Apace.ApiServer/wwwroot/playfab/images/34342e2f-b2f8-4c66-8ae4-f20c6c0ee4d7.png
+!src/Apace.ApiServer/wwwroot/playfab/images/4ef41e47-cba1-4358-a84f-2d265c286f0f.png
+!src/Apace.ApiServer/wwwroot/playfab/images/6192ef59-f090-423d-8471-90ddeaff3624.png
+!src/Apace.ApiServer/wwwroot/playfab/images/6a1cca97-7077-4258-be0c-85ea88c74519.png
+!src/Apace.ApiServer/wwwroot/playfab/images/7728b1be-a612-42c4-85bc-82da52212b7d.png
+!src/Apace.ApiServer/wwwroot/playfab/images/80c2781c-f8c0-48e0-8f7b-f972d9b3b14c.png
+!src/Apace.ApiServer/wwwroot/playfab/images/8b52ee1a-9c4b-4a70-9f6e-2d47a53b1c04.png
+!src/Apace.ApiServer/wwwroot/playfab/images/8c12e03b-9af9-4dc6-88b5-f5e87556d381.png
+!src/Apace.ApiServer/wwwroot/playfab/images/8ee46c7d-bf0b-4663-8dff-486b46e690e3.png
+!src/Apace.ApiServer/wwwroot/playfab/images/8f0f03f2-4cf8-4a24-8ad0-f391c9f11208.png
+!src/Apace.ApiServer/wwwroot/playfab/images/91e19aa2-4fb1-4b1f-bfa4-169e15d5e5e9.png
+!src/Apace.ApiServer/wwwroot/playfab/images/95b32b25-24a7-48c2-baeb-c0c42c9b4033.png
+!src/Apace.ApiServer/wwwroot/playfab/images/96cc346f-f238-4e09-be30-e267422f67d0.png
+!src/Apace.ApiServer/wwwroot/playfab/images/a99f8157-2a8e-498e-9069-f61c11eb6b1d.png
+!src/Apace.ApiServer/wwwroot/playfab/images/acd68c11-76a2-4058-a033-7e2ebf05aefa.png
+!src/Apace.ApiServer/wwwroot/playfab/images/b1095ab1-980d-49a0-bf92-3bbbace48003.png
+!src/Apace.ApiServer/wwwroot/playfab/images/b16d3009-a43c-419a-8f79-3e3429261fe1.png
+!src/Apace.ApiServer/wwwroot/playfab/images/bce81236-561b-46c0-9386-038160ed80de.png
+!src/Apace.ApiServer/wwwroot/playfab/images/c327033b-e8e7-4ab2-9bd1-6ab20ae0e8b7.png
+!src/Apace.ApiServer/wwwroot/playfab/images/d94eccde-16f1-429e-b253-89c21d345e06.png
+!src/Apace.ApiServer/wwwroot/playfab/images/dd643a45-af85-472c-aabe-19d50119ac5d.png
+!src/Apace.ApiServer/wwwroot/playfab/images/deb54fe3-e6b4-4e23-bba5-40c069e6dd83.png
+!src/Apace.ApiServer/wwwroot/playfab/images/f5c84c8b-3613-4783-9f5c-d9f910469332.png
+!src/Apace.ApiServer/wwwroot/playfab/images/fbbaa5a1-a49d-45b5-aa8f-19f08dde5cce.png
+!src/Apace.ApiServer/wwwroot/playfab/images/shoes_bold_striped_rabbit_thumbnail_0.png
