@@ -32,6 +32,14 @@ public static class Program
     internal static Importer importer;
     internal static int PlayableScale { get; private set; } = 4;
     internal static bool LocalLoginOnly { get; private set; }
+    internal static bool RequireMojangAssets { get; private set; }
+
+    /// <summary>
+    /// Persistent directory with the additional Mojang assets (default
+    /// ../data/mojang-assets — the docker data volume). The CDN controllers
+    /// serve from here first and fall back to staticdata.
+    /// </summary>
+    internal static string MojangAssetsDir { get; private set; } = "";
 
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private sealed class Options
@@ -63,6 +71,12 @@ public static class Program
 
         [Option("local-login-only", Default = false, Required = false, HelpText = "Whether to only allow local accounts, or also allow microsoft accounts")]
         public bool LocalLoginOnly { get; set; }
+
+        [Option("require-mojang-assets", Default = false, Required = false, HelpText = "Block startup while the additional Mojang assets are incomplete in the Mojang assets dir")]
+        public bool RequireMojangAssets { get; set; }
+
+        [Option("mojang-assets-dir", Default = null, Required = false, HelpText = "Persistent directory holding the additional Mojang assets (default ../data/mojang-assets)")]
+        public string? MojangAssetsDir { get; set; }
     }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
@@ -123,6 +137,8 @@ public static class Program
 
         PlayableScale = Math.Clamp(options.PlayableScale, 1, 32);
         LocalLoginOnly = options.LocalLoginOnly;
+        RequireMojangAssets = options.RequireMojangAssets;
+        MojangAssetsDir = Path.GetFullPath(options.MojangAssetsDir ?? Path.Combine("..", "data", "mojang-assets"));
 
         var loggerConfig = new LoggerConfiguration()
             .WriteTo.Console()
@@ -152,6 +168,38 @@ public static class Program
             // informational only — the default login mode signs clients in through the login
             // page (the fake login.live.com flow); this is NOT an error
             Log.Information("Login mode: Microsoft-style account login (clients sign in through the login page)");
+        }
+
+        // Mojang asset gate (direct start path): when the panel flagged the gate
+        // on, the server refuses to boot without the additional Mojang assets in
+        // the persistent assets dir — the panel must accept and download them
+        // first. Without the flag the gate is disabled and the check is a warn.
+        {
+            string? manifestPath = Utils.MojangAssets.ResolveManifestPath(MojangAssetsDir, Log.Logger);
+            int? missing = manifestPath is null ? null : Utils.MojangAssets.CountMissing(MojangAssetsDir, manifestPath, Log.Logger);
+
+            if (RequireMojangAssets)
+            {
+                if (missing is null)
+                {
+                    Log.Fatal("Additional Mojang assets missing — run the panel to accept and download; server startup blocked");
+                    Log.CloseAndFlush();
+                    return 1;
+                }
+
+                if (missing > 0)
+                {
+                    Log.Fatal("Additional Mojang assets missing — run the panel to accept and download; server startup blocked ({Count} file(s) incomplete in {Dir}, manifest {Manifest})", missing, MojangAssetsDir, manifestPath);
+                    Log.CloseAndFlush();
+                    return 1;
+                }
+
+                Log.Information("Additional Mojang assets complete in {Dir}", MojangAssetsDir);
+            }
+            else if (missing is not null && missing > 0)
+            {
+                Log.Warning("Additional Mojang assets incomplete ({Count} file(s) in {Dir}) — the asset gate is disabled, serving may fall back to staticdata", missing, MojangAssetsDir);
+            }
         }
 
         Log.Information("Loading configuration");
