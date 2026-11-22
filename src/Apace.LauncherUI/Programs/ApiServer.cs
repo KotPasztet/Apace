@@ -45,6 +45,15 @@ internal static class ApiServer
             arguments.Add($"--local-login-only");
         }
 
+        // Mojang asset gate wiring: the ApiServer fail-fasts on a direct start
+        // when the gate is on and the assets are incomplete; the assets dir is
+        // always passed so the CDN controllers can serve from the data volume.
+        arguments.Add($"--mojang-assets-dir={Apace.LauncherUI.Services.MojangAssetGate.MojangAssetsDir}");
+        if (settings.RequireMojangAssets is not false)
+        {
+            arguments.Add("--require-mojang-assets");
+        }
+
         return Process.Start(new ProcessStartInfo(Path.GetFullPath(Path.Combine(Program.ProgramsDir, ExeName)), arguments)
         {
             WorkingDirectory = Path.GetFullPath(Program.ProgramsDir),

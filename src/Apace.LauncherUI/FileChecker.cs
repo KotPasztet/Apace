@@ -4,6 +4,7 @@ using System.Reflection;
 using Apace.Common;
 using Apace.Common.Utils;
 using Apace.LauncherUI.Programs;
+using Apace.LauncherUI.Services;
 using ILogger = Serilog.ILogger;
 
 namespace Apace.LauncherUI;
@@ -119,6 +120,34 @@ internal static class FileChecker
         {
             logger.Warning("Skipped file validation, you can turn it back on in 'Configure/Skip file validation before starting'");
             return true;
+        }
+
+        // Mojang asset gate — blocks startup until the additional Mojang assets
+        // are complete in the persistent data dir (unless disabled in settings).
+        // Mirrors the EULA flow: CheckAsync parks on the gate's TaskCompletionSource
+        // while the panel shows the consent alert; the panel's download completes
+        // the source ONLY when every verified asset is in place, so a failed
+        // download keeps the gate closed and the alert offers Retry.
+        if (!await MojangAssetGate.EnsureReadyAsync(settings, logger, cancellationToken))
+        {
+            logger.Error("Additional Mojang assets missing — server startup blocked by the asset gate (waiting for the panel)");
+            while (MojangAssetGate.Pending && !cancellationToken.IsCancellationRequested)
+            {
+                var delay = Task.Delay(1000, cancellationToken);
+                await Task.WhenAny(delay, MojangAssetGate.CompletionTask!);
+                if (MojangAssetGate.CompletionTask!.IsCompleted)
+                {
+                    break;
+                }
+            }
+
+            if (MojangAssetGate.Pending || !await MojangAssetGate.EnsureReadyAsync(settings, logger, cancellationToken))
+            {
+                logger.Error("Additional Mojang assets are still missing — startup aborted (accept the download or disable the gate in Server Options)");
+                return false;
+            }
+
+            logger.Information("Additional Mojang assets accepted and downloaded — continuing startup");
         }
 
         bool error = false;

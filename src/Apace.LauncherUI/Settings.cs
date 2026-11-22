@@ -32,6 +32,7 @@ public sealed class Settings
         PlayableScale = 4,
         OnlyAllowLocalLogin = false,
         BridgePort = 19132,
+        RequireMojangAssets = true,
     };
 
     public static Settings Instance { get; set; } = Default;
@@ -62,6 +63,12 @@ public sealed class Settings
     public bool? OnlyAllowLocalLogin { get; set; }
 
     public ushort? BridgePort { get; set; }
+
+    /// <summary>
+    /// Mojang asset gate: the server refuses to start while the additional
+    /// Mojang assets are missing from the persistent data dir. Default true.
+    /// </summary>
+    public bool? RequireMojangAssets { get; set; }
 
     public enum TileDataSourceE
     {
@@ -211,6 +218,12 @@ public sealed class Settings
         {
             Log.Warning($"Bridge port is invalid, using default: '{Default.BridgePort}'");
             settings.BridgePort = Default.BridgePort;
+        }
+
+        if (settings.RequireMojangAssets is null)
+        {
+            Log.Warning($"RequireMojangAssets is invalid, using default: '{Default.RequireMojangAssets}'");
+            settings.RequireMojangAssets = Default.RequireMojangAssets;
         }
 
         Log.Information("Loaded settings");
