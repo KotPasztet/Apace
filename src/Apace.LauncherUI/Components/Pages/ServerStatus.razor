@@ -126,12 +126,22 @@
                 @if (_mojangAssetsErrors is { Count: > 0 })
                 {
                     <br />
-                    <small class="text-danger">Download failed: @_mojangAssetsErrors[0]@(_mojangAssetsErrors.Count > 1 ? $" (+{_mojangAssetsErrors.Count - 1} more)" : "")</small>
+                    <small class="text-danger">Download failed — retry below:</small>
+                    <ul class="text-danger mb-0 ps-3">
+                        @foreach (var error in _mojangAssetsErrors.Take(3))
+                        {
+                            <li><small>@error</small></li>
+                        }
+                    </ul>
+                    @if (_mojangAssetsErrors.Count > 3)
+                    {
+                        <small class="text-danger">(+@(_mojangAssetsErrors.Count - 3) more — see the panel logs)</small>
+                    }
                 }
             </div>
             <div>
                 <button class="btn btn-warning btn-sm" @onclick="AcceptMojangAssets" disabled="@(_downloadingMojangAssets || _mojangAssetsSummary is null)">
-                    ✓ Accept &amp; Download
+                    @(_mojangAssetsErrors is { Count: > 0 } ? "↻ Retry" : "✓ Accept & Download")
                 </button>
             </div>
         </div>

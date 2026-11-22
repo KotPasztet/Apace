@@ -157,10 +157,12 @@ public static class MojangAssetGate
             // overlaid onto staticdata, which sits next to the panel's working dir.
             "../staticdata/playfab/" + ManifestFileName,
             // Dev checkouts: the manifest is committed under staticdata-extras.
-            // Walk up until the repo root's copy matches.
+            // Walk up until the repo root's copy matches (e.g. a working directory
+            // or AppContext.BaseDirectory of bin/Debug/net10.0 is five levels deep).
             "../../staticdata-extras/playfab/" + ManifestFileName,
             "../../../staticdata-extras/playfab/" + ManifestFileName,
             "../../../../staticdata-extras/playfab/" + ManifestFileName,
+            "../../../../../staticdata-extras/playfab/" + ManifestFileName,
             // Custom staticdata location configured in settings.
             Path.Combine(Program.StaticDataDir, "playfab", ManifestFileName),
         ];
@@ -212,6 +214,55 @@ public static class MojangAssetGate
         }
 
         logger.Warning("Mojang asset manifest not found — searched: {Candidates}", string.Join(", ", ManifestPathCandidates().Select(Path.GetFullPath)));
+        return false;
+    }
+
+    // The manifest resolver candidates point at the playfab directory that holds
+    // the manifest — the same playfab directory (or its legacy staticdata twins)
+    // holds playfab/persona, which the CDN controllers fall back to when the
+    // manifest is unavailable.
+    private static IEnumerable<string> PersonaDirCandidates()
+    {
+        foreach (string candidate in ManifestPathCandidates())
+        {
+            string? directory = Path.GetDirectoryName(candidate);
+            if (directory is null)
+            {
+                continue;
+            }
+
+            yield return Path.Combine(directory, "persona");
+        }
+    }
+
+    /// <summary>
+    /// True when the legacy staticdata layout still has persona piece binaries
+    /// (pre-gate installs / dev checkouts where staticdata-extras is committed).
+    /// Used as the fallback signal when the manifest itself is unavailable.
+    /// </summary>
+    private static bool LegacyPersonaAssetsPresent(ILogger logger)
+    {
+        foreach (string candidate in PersonaDirCandidates().Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                if (!Directory.Exists(candidate))
+                {
+                    continue;
+                }
+
+                if (Directory.EnumerateFiles(candidate, "*.zip").Any())
+                {
+                    logger.Information("Legacy persona assets found in {Dir} — the CDN controllers can serve them while the manifest is unavailable", candidate);
+                    return true;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.Debug("Could not inspect persona directory {Dir}: {Reason}", candidate, ex.Message);
+            }
+        }
+
         return false;
     }
 
@@ -324,18 +375,38 @@ public static class MojangAssetGate
     {
         if (settings.RequireMojangAssets is false)
         {
+            CompletePending();
             return true;
         }
 
         if (!TryLoadManifest(logger))
         {
-            // Fail-open: without a manifest the gate has nothing to enforce.
-            return true;
+            // No manifest (not committed yet, stripped image, exotic working dir).
+            // Policy (docs/mojang-asset-gate.md): fall back to the legacy layout —
+            // when the staticdata persona directory still has content the CDN
+            // controllers can serve it, so the start proceeds with a loud warning;
+            // with NEITHER manifest NOR legacy persona assets the start is blocked
+            // with a clear message (fail-closed — mirrors the ApiServer fail-fast).
+            if (LegacyPersonaAssetsPresent(logger))
+            {
+                logger.Warning(
+                    "Mojang asset manifest not found — proceeding on the legacy staticdata persona assets; the gate cannot verify completeness " +
+                    "(generate mojang-assets.manifest.json to enforce it, or disable the gate in Server Options)");
+                return true;
+            }
+
+            logger.Error(
+                "Additional Mojang assets cannot be enforced — manifest not found and no legacy persona assets in staticdata — server startup blocked " +
+                "(generate mojang-assets.manifest.json or disable the gate in Server Options)");
+            return false;
         }
 
         List<MojangAssetManifestItem> missing = GetMissingFiles();
         if (missing.Count == 0)
         {
+            // Also releases a prompt armed earlier (e.g. assets restored manually
+            // or by another process) so the panel alert does not stick around.
+            CompletePending();
             await RunPostProcessorAsync(logger);
             return true;
         }
@@ -434,6 +505,7 @@ public static class MojangAssetGate
             var targets = GetMissingFiles();
             if (targets.Count == 0)
             {
+                CompletePending();
                 await RunPostProcessorAsync(logger);
                 return true;
             }
@@ -459,7 +531,29 @@ public static class MojangAssetGate
                 progress?.Report(new MojangAssetDownloadProgress(DownloadedCount, TotalCount, item.File));
                 try
                 {
-                    await DownloadItemAsync(item, cancellationToken);
+                    // Transient network failures (dead host, reset connection,
+                    // truncated body) retry a few times before the file is
+                    // reported as failed — a 200-file manifest must not need
+                    // 200 manual Retry clicks.
+                    const int MaxAttempts = 3;
+                    for (int attempt = 1; ; attempt++)
+                    {
+                        try
+                        {
+                            await DownloadItemAsync(item, cancellationToken);
+                            break;
+                        }
+                        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex) when (attempt < MaxAttempts)
+                        {
+                            logger.Warning("Mojang asset download attempt {Attempt}/{Max} failed for {File}: {Reason}", attempt, MaxAttempts, item.File, ex.Message);
+                            await Task.Delay(TimeSpan.FromSeconds(2 * attempt), cancellationToken);
+                        }
+                    }
+
                     DownloadedCount++;
                     progress?.Report(new MojangAssetDownloadProgress(DownloadedCount, TotalCount, item.File));
                 }
