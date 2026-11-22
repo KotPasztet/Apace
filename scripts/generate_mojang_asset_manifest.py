@@ -32,12 +32,24 @@ Source URLs come from the still-live PlayFab catalog (Minecraft Earth title
 
 Every asset URL is probed: a successful download with the expected payload
 signature (zip magic / PNG magic + dimensions) yields sha256 + size and
-"verified": true. On a failed download the generator falls back to hashing the
-byte-identical copy shipped in the repo (staticdata-extras/playfab/persona/,
-src/Apace.ApiServer/wwwroot/playfab/images/) and records "verified": false —
-the URL is still recorded as a fact, but the gate will not block startup on
-unverified items (no reachable source at generation time). Definitive HTTP
-failures (404/410) are not retried.
+"verified": true. Persona binaries are probed on TWO URL shapes per item:
+the original catalog (xforge) URL and the same GUID re-hosted on the new
+PlayFab content CDN (content1/content2.prod.catalog.playfab.com) — whichever
+answers verifies the entry, so a Mojang CDN migration or restore is picked
+up automatically on the next regeneration. On a failed download the
+generator falls back to hashing the byte-identical copy shipped in the repo
+(staticdata-extras/playfab/persona/, src/Apace.ApiServer/wwwroot/playfab/images/)
+or, when that was cleaned out of the tree, the byte-identical git-history
+copy (043d7bb) — either way it records "verified": false: the URL is still
+recorded as a fact, but the gate will not block startup on unverified items
+(no reachable source at generation time). Definitive HTTP failures (404/410)
+are not retried.
+
+Persona entries additionally carry "fallbackUrls": mirror locations the gate
+tries in order when the primary (xforge) URL answers with a non-200. The only
+mirror is the mojang-persona-mirror GitHub release (KotPasztet/Apace); the
+release may not exist yet — the field is a retry path for the gate, not a
+guarantee, and unverified persona items still never block startup.
 
 Default skins are hosted on minecraft.wiki (the File: pages of the default skin
 articles; the Bedrock vanilla skin pack textures — the "(texture)" files
@@ -57,6 +69,7 @@ import hashlib
 import json
 import os
 import struct
+import subprocess
 import sys
 import time
 import urllib.request
@@ -69,6 +82,32 @@ OUT = os.path.join(REPO, "staticdata-extras/playfab/mojang-assets.manifest.json"
 WORK = os.environ.get("MOJANG_MANIFEST_WORKDIR", "/tmp/mojang-manifest-work")
 DEVICE_ID = "apace-manifest-fetcher"
 UA = "ApaceDataGen/1.0"
+
+# GitHub Releases mirror for the persona piece binaries (the gate walks these
+# URLs when the primary xforge URL returns a non-200). The release is built
+# from the byte-identical copies of commit 043d7bb; it may not exist yet —
+# that is fine: unverified persona entries never block startup.
+PERSONA_MIRROR_BASE = "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror"
+
+# The catalog's old asset CDN (xforgeassets*.xboxlive.com) went dark for the
+# 231 persona binaries (22.11 probe: 0/231 alive). The PlayFab content CDN
+# hosts the same namespace/GUID path under two hostnames — the probe found
+# 8/8 NEW catalog items alive there (the old GUIDs did not migrate). Both
+# shapes are probed per item so a migration/restore is detected at regen.
+ALTERNATE_CDN_HOSTS = [
+    "content1.prod.catalog.playfab.com",
+    "content2.prod.catalog.playfab.com",
+]
+
+# The MCE PlayFab namespace (the title hash): the path segment the old xforge
+# URLs carried as pf-namespace-<ns>, and the shape the new content CDN serves.
+MCE_NAMESPACE = "b63a0803d3653643"
+
+# Byte-identical git-history copy of the persona binaries (removed from the
+# tree by the repo cleanup): used to record sha256/size facts when neither a
+# live download nor a repo-shipped copy is available.
+HISTORY_REF = "043d7bb"
+HISTORY_PERSONA_DIR = "staticdata-extras/playfab/persona"
 
 PERSONA_DIR = os.path.join(REPO, "staticdata-extras/playfab/persona")
 ITEMS_DIR = os.path.join(REPO, "staticdata-extras/playfab/items")
@@ -177,6 +216,62 @@ def hash_repo_copy(path):
         return None
 
 
+def hash_history_copy(rel_path):
+    """Hash the byte-identical git-history copy of a file removed from the tree.
+
+    Same contract as hash_repo_copy: a recorded fact about the payload, never a
+    verified reachable source. Used for the persona binaries cleaned out of the
+    tree (they live in HISTORY_REF, which is also what the mirror release ships).
+    """
+    try:
+        blob = subprocess.run(
+            ["git", "-C", REPO, "show", f"{HISTORY_REF}:{rel_path}"],
+            capture_output=True, check=True,
+        ).stdout
+        return sha256_bytes(blob), len(blob)
+    except (subprocess.CalledProcessError, OSError):
+        return None
+
+
+def history_persona_ids():
+    """Item ids that have a persona zip in the history copy (HISTORY_REF)."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", REPO, "ls-tree", "--name-only", HISTORY_REF, "--", HISTORY_PERSONA_DIR + "/"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+    except (subprocess.CalledProcessError, OSError) as e:
+        print(f"WARNING: cannot list {HISTORY_REF}:{HISTORY_PERSONA_DIR}/ — {e}")
+        return set()
+    return {os.path.basename(line)[:-4] for line in out.splitlines() if line.endswith(".zip")}
+
+
+def alternate_cdn_urls(url):
+    """The same payload re-hosted on the PlayFab content CDN (content1/content2).
+
+    The new CDN serves pf-namespace/<guid>/<file> paths (the 22.11 probe found
+    8/8 NEW catalog items alive there). A URL already carrying a pf-namespace
+    path keeps it as-is; a pf-title path (what Catalog/GetItem serves today)
+    contributes its trailing <guid>/<file> tail rebuilt as pf-namespace-<ns>.
+    Anything else has no known alternate shape.
+    """
+    def guidish(segment):
+        return 32 <= len(segment) <= 36 and all(c in "0123456789abcdefABCDEF-" for c in segment)
+
+    if "/pf-namespace-" in url:
+        tail = url.split("/pf-namespace-", 1)[1]
+        if not tail or "://" in tail.split("/", 1)[0]:
+            return []
+        return [f"https://{host}/pf-namespace-{tail}" for host in ALTERNATE_CDN_HOSTS]
+    if "/pf-title-" in url:
+        segments = [s for s in url.split("/") if s]
+        if len(segments) < 2 or not guidish(segments[-2]):
+            return []
+        tail = f"{segments[-2]}/{segments[-1]}"
+        return [f"https://{host}/pf-namespace-{MCE_NAMESPACE}/{tail}" for host in ALTERNATE_CDN_HOSTS]
+    return []
+
+
 def login():
     login = post("/Client/LoginWithAndroidDeviceID", {
         "TitleId": "20ca2",
@@ -196,9 +291,11 @@ def load_repo_items():
 
     Exactly the 231 items committed in 043d7bb — Apace's own pieces (capes,
     skin packs, store config, ...) have a different creator or no persona zip
-    and are excluded automatically.
+    and are excluded automatically. Since the repo cleanup removed the binaries
+    from the tree, a history copy (HISTORY_REF) also counts as present.
     """
     items = {}
+    history = history_persona_ids()
     for fn in sorted(os.listdir(ITEMS_DIR)):
         if not fn.endswith(".json"):
             continue
@@ -208,11 +305,15 @@ def load_repo_items():
         if data.get("CreatorName") != "Minecraft":
             continue
         item_id = d["Id"]
-        if not os.path.exists(os.path.join(PERSONA_DIR, item_id + ".zip")):
-            print(f"  skipped (no persona zip): {item_id} {d.get('Title')}")
+        in_repo = os.path.exists(os.path.join(PERSONA_DIR, item_id + ".zip"))
+        in_history = item_id in history
+        if not in_repo and not in_history:
+            print(f"  skipped (no persona zip in repo or history): {item_id} {d.get('Title')}")
             continue
         items[item_id] = d
-    print("repo Mojang persona items:", len(items))
+    in_tree = sum(1 for i in items if os.path.exists(os.path.join(PERSONA_DIR, i + ".zip")))
+    print("repo Mojang persona items:", len(items),
+          f"(zip in tree: {in_tree}, in history only: {len(items) - in_tree})")
     return items
 
 
@@ -280,6 +381,68 @@ def get_full_item(master, item_id):
             time.sleep(3)
 
 
+def validate_manifest(manifest):
+    """Schema + value validation for the manifest we are about to publish.
+
+    Hard-fails (SystemExit) on anything that would confuse the gate:
+      - items: kind/file/url shape, safe relative file paths, known kinds
+      - sha256: 64 hex chars when present; size: positive int when present
+      - verified: bool
+      - fallbackUrls (persona only, optional): list of non-empty https URLs,
+        no duplicates inside one entry, no duplicates with the primary url
+    Returns the number of validated fallbackUrls (for the summary line).
+    """
+    problems = []
+    fallback_count = 0
+    seen_files = set()
+    kinds = {"persona", "thumbnail", "skin-texture"}
+
+    for idx, item in enumerate(manifest["items"]):
+        where = f"item[{idx}] {item.get('file') or item.get('url') or '?'}"
+        kind = item.get("kind")
+        if kind not in kinds:
+            problems.append(f"{where}: unknown kind {kind!r}")
+        file = item.get("file", "")
+        if not file or file in seen_files:
+            problems.append(f"{where}: duplicate or empty file {file!r}")
+        seen_files.add(file)
+        if file.startswith("/") or ".." in file.split("/"):
+            problems.append(f"{where}: unsafe relative file path {file!r}")
+        if not isinstance(item.get("url"), str):
+            problems.append(f"{where}: url must be a string")
+        if "verified" in item and not isinstance(item["verified"], bool):
+            problems.append(f"{where}: verified must be a bool")
+        sha = item.get("sha256")
+        if sha is not None and (len(sha) != 64 or any(c not in "0123456789abcdef" for c in sha.lower())):
+            problems.append(f"{where}: sha256 is not 64 hex chars: {sha!r}")
+        size = item.get("size")
+        if size is not None and (not isinstance(size, int) or size <= 0):
+            problems.append(f"{where}: size must be a positive int: {size!r}")
+
+        fallbacks = item.get("fallbackUrls")
+        if fallbacks is not None:
+            if kind != "persona":
+                problems.append(f"{where}: fallbackUrls only expected on persona entries")
+            if not isinstance(fallbacks, list) or not fallbacks or not all(isinstance(u, str) and u for u in fallbacks):
+                problems.append(f"{where}: fallbackUrls must be a non-empty list of strings")
+            else:
+                fallback_count += len(fallbacks)
+                if len(set(fallbacks)) != len(fallbacks):
+                    problems.append(f"{where}: duplicate fallbackUrls")
+                for u in fallbacks:
+                    if not u.startswith("https://") or not u.split("://", 1)[-1]:
+                        problems.append(f"{where}: fallback URL is not an absolute https URL: {u!r}")
+                    elif u == item.get("url"):
+                        problems.append(f"{where}: fallback URL duplicates the primary url: {u!r}")
+
+    if problems:
+        print(f"manifest validation FAILED ({len(problems)} problem(s)):")
+        for p in problems[:20]:
+            print("  " + p)
+        sys.exit(1)
+    return fallback_count
+
+
 def main():
     skip_binaries = "--skip-binaries" in sys.argv
     skip_thumbs = "--skip-thumbs" in sys.argv
@@ -313,28 +476,52 @@ def main():
             binary = next((c for c in contents if c.get("Type") == "personabinary"), contents[0] if contents else None)
             if binary:
                 url = binary.get("Url", "")
-        if skip_binaries:
-            data = None
-        else:
-            data = cached_get("persona", item_id + ".zip", url) if url else None
+        # probe the original catalog URL first, then the same GUID on the new
+        # PlayFab content CDN (content1/content2) — first shape that downloads
+        # a real zip wins and the entry is verified
+        probe_urls = ([url] if url else []) + (alternate_cdn_urls(url) if url else [])
+        data = None
+        used_url = None
+        if not skip_binaries:
+            for probe in probe_urls:
+                label = probe.split("//", 1)[-1].split("/", 1)[0].split(".")[0]
+                data = cached_get("persona", f"{label}-{item_id}.zip", probe)
+                if data is not None and len(data) > 100 and data[:4] == b"PK\x03\x04":
+                    used_url = probe
+                    break
+                data = None
+        # mirror locations the gate tries (in order) when the primary URL
+        # answers with a non-200: a working alternate CDN shape first (a live
+        # one beats a not-yet-existing release), then the GitHub release built
+        # from the byte-identical 043d7bb copies — so the gate's sha256 check
+        # still applies to every source
+        fallbacks = []
+        if used_url and used_url != url:
+            fallbacks.append(used_url)
+        fallbacks.append(f"{PERSONA_MIRROR_BASE}/{item_id}.zip")
         entry = {
             "kind": "persona",
             "file": f"playfab/persona/{item_id}.zip",
             "url": url,
             "verified": False,
+            "fallbackUrls": fallbacks,
         }
-        if data is not None and len(data) > 100 and data[:4] == b"PK\x03\x04":
+        if data is not None:
             entry["sha256"] = sha256_bytes(data)
             entry["size"] = len(data)
             entry["verified"] = True
+            if used_url != url:
+                print(f"  persona verified via alternate CDN: {item_id} ({used_url.split('/', 3)[2]})")
         else:
-            # fall back to the byte-identical copy shipped in the repo
-            # (staticdata-extras/playfab/persona/) to still record the facts
-            fact = hash_repo_copy(os.path.join(PERSONA_DIR, item_id + ".zip"))
+            # fall back to the byte-identical copy shipped in the repo or, after
+            # the repo cleanup, the byte-identical history copy (043d7bb) — the
+            # sha256/size stay recorded facts even with no reachable source
+            fact = hash_repo_copy(os.path.join(PERSONA_DIR, item_id + ".zip")) \
+                or hash_history_copy(f"{HISTORY_PERSONA_DIR}/{item_id}.zip")
             if fact:
                 entry["sha256"], entry["size"] = fact
             if url:
-                print(f"  persona source offline, hashed repo copy: {item_id}")
+                print(f"  persona source offline on {len(probe_urls)} shape(s), hashed repo/history copy: {item_id}")
         manifest_items.append(entry)
 
         # --- thumbnail (file name = shipped ThumbnailImageId; URL = live fact) ---
@@ -410,10 +597,14 @@ def main():
         "sources": {
             "catalog": API,
             "assetCdn": "https://xforgeassets001.xboxlive.com",
+            "alternateAssetCdn": ", ".join(ALTERNATE_CDN_HOSTS),
+            "personaMirror": PERSONA_MIRROR_BASE,
             "skinTextures": "https://minecraft.wiki",
         },
         "items": manifest_items,
     }
+
+    fallback_count = validate_manifest(manifest)
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w") as f:
@@ -421,6 +612,7 @@ def main():
         f.write("\n")
 
     print(f"manifest written: {OUT}")
+    print(f"  fallbackUrls: {fallback_count} (persona mirror base: {PERSONA_MIRROR_BASE})")
     for k, (total, ok, size) in sorted(by_kind.items()):
         print(f"  {k}: {ok}/{total} verified, {size / 1024:.0f} KiB")
     print(f"  total: {verified}/{len(manifest_items)} verified")
