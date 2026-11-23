@@ -5,7 +5,10 @@
    plus the classic skin packs (selected by pack uuid). A candidate list under a
    search box plus removable chips for the selection. Far more usable than
    hundreds of stacked checkboxes (the marketplace carries ~280 distinct theme
-   tags). Stale entries (dropped by a re-sync, or legacy skin-pack uuids that
+   tags). The candidate list is virtualized: the full sorted index (~8K rows) is
+   materialized once per query/index change and rendered through <Virtualize>,
+   so every pack is reachable by scrolling instead of only a capped top slice.
+   Stale entries (dropped by a re-sync, or legacy skin-pack uuids that
    are no longer in the index) stay listed as warning chips under their raw id
    so they can still be removed. The chip remove control is a real button, not
    an anchor: a href="#" click resolves against the base href and navigates to
@@ -13,33 +16,37 @@
 
 <div class="pack-picker">
     <input class="form-control form-control-sm" type="search" placeholder="@Placeholder"
-           value="@_query" @oninput="@(e => _query = (string?)e.Value ?? "")" />
-    <div class="list-group mt-1 border rounded overflow-auto" style="max-height: 240px;">
+           value="@_query" @oninput="@(e => { _query = (string?)e.Value ?? ""; RefreshMatches(); })" />
+    <div class="list-group mt-1 border rounded overflow-auto" style="max-height: 480px;">
         @if (Packs.Count == 0)
         {
             <div class="list-group-item py-1 small text-muted">No packs indexed yet — run the live persona catalog sync first.</div>
         }
-        else if (!Matches.Any())
+        else if (_matches.Count == 0)
         {
             <div class="list-group-item py-1 small text-muted">No packs match "@_query".</div>
         }
-        @foreach (var pack in Matches)
+        else
         {
-            bool selected = Selected.Contains(pack.Tag);
-            <button type="button" class="list-group-item list-group-item-action py-1 small d-flex justify-content-between align-items-center @(selected ? "active" : "")"
-                    @onclick="@(async () => await ToggleAsync(pack.Tag))">
-                <span>
-                    @pack.Title
-                    @if (pack.IsSkinPack)
-                    {
-                        <span class="badge text-bg-info fw-normal ms-1">classic</span>
-                    }
-                    <span class="text-muted small ms-1">@pack.Types</span>
-                </span>
-                <span class="small @(selected ? "" : "text-muted")">
-                    @(selected ? "✓ selected" : $"+ add ({pack.PieceCount} {CountNoun(pack)})")
-                </span>
-            </button>
+            <Virtualize Items="@_matches" ItemSize="32" OverscanCount="10" Context="pack">
+                @{
+                    bool selected = Selected.Contains(pack.Tag);
+                }
+                <button type="button" class="list-group-item list-group-item-action py-1 small d-flex justify-content-between align-items-center @(selected ? "active" : "")"
+                        @onclick="@(async () => await ToggleAsync(pack.Tag))">
+                    <span>
+                        @pack.Title
+                        @if (pack.IsSkinPack)
+                        {
+                            <span class="badge text-bg-info fw-normal ms-1">classic</span>
+                        }
+                        <span class="text-muted small ms-1">@pack.Types</span>
+                    </span>
+                    <span class="small @(selected ? "" : "text-muted")">
+                        @(selected ? "✓ selected" : $"+ add ({pack.PieceCount} {CountNoun(pack)})")
+                    </span>
+                </button>
+            </Virtualize>
         }
     </div>
     <div class="mt-2">
@@ -78,21 +85,33 @@
     [Parameter]
     public List<PersonaPackIndex.ThemePackRow> Packs { get; set; } = [];
 
-    private const int MatchCap = 10;
-
     private string _query = string.Empty;
 
-    private IEnumerable<PersonaPackIndex.ThemePackRow> Matches
+    // The full candidate list, materialized and cached: Virtualize needs a
+    // countable list, and lazily re-sorting the ~8K-row index on every render
+    // would thrash. It is recomputed only when the query changes (the search
+    // input handler) or when the parent replaces the index (OnParametersSet,
+    // by reference — selection toggles re-set Selected without re-sorting).
+    private List<PersonaPackIndex.ThemePackRow> _matches = [];
+    private List<PersonaPackIndex.ThemePackRow> _sourcePacks = [];
+
+    protected override void OnParametersSet()
     {
-        get
+        if (!ReferenceEquals(_sourcePacks, Packs))
         {
-            string filter = _query.Trim();
-            var rows = filter.Length == 0
-                ? Packs
-                : Packs.Where(row => row.Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                    || row.Tag.Contains(filter, StringComparison.OrdinalIgnoreCase));
-            return rows.OrderBy(row => row.Title, StringComparer.OrdinalIgnoreCase).Take(MatchCap);
+            _sourcePacks = Packs;
+            RefreshMatches();
         }
+    }
+
+    private void RefreshMatches()
+    {
+        string filter = _query.Trim();
+        var rows = filter.Length == 0
+            ? Packs
+            : Packs.Where(row => row.Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || row.Tag.Contains(filter, StringComparison.OrdinalIgnoreCase));
+        _matches = rows.OrderBy(row => row.Title, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     private bool Known(string tag)
