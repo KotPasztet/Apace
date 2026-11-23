@@ -133,8 +133,8 @@ internal sealed class CatalogController : ApaceControllerBase
             if (_customOfferStamp != (long)stamp || _customOfferItems is null)
             {
                 _customOfferItems = CustomCosmetics.Items
-                    .Where(item => item.Enabled)
-                    .Select(item => new CItem(
+                    .Where(item => item.Enabled != false && Guid.TryParse(item.Id, out _))
+                    .Select(item => CIItemToItem(new CItem(
                         true, // Purchasable — the panel prices it; unlock-all rules apply the same
                         new CItem.PersonaData(
                             item.PieceType,
@@ -171,7 +171,7 @@ internal sealed class CatalogController : ApaceControllerBase
                         [],
                         new Dictionary<string, string>(),
                         new Dictionary<string, string>()
-                    ))
+                    )))
                     .ToArray();
                 _customOfferStamp = (long)stamp;
                 Log.Information("Custom cosmetics offer rebuilt: {Count} item(s) (stamp {Stamp})", _customOfferItems.Length, stamp);
@@ -320,79 +320,6 @@ internal sealed class CatalogController : ApaceControllerBase
         return kept;
     }
 
-    // The panel's custom cosmetics (persona-catalog/custom-cosmetics.json) mapped
-    // to PersonaDurable offer items, cached per custom-cosmetics stamp like the
-    // live offer is per index stamp. Own content, served like staticdata: never
-    // pack-gated, composed BEFORE the live items so the grouped per-category
-    // limit counts them first (a full outerwear tab must not squeeze the own
-    // pieces out). The piece binaries ride the panel's encrypted-container packs:
-    // the Contents entry points at /playfab/persona/<itemId>.zip (PersonaCdnController
-    // serves the panel-uploaded zip) and the decryption key is delivered through
-    // the inventory receipt (CustomCosmetics.Entitlements — InventoryController).
-    // Disabled entries (Enabled = false) and hand-edited entries without GUID
-    // ids are skipped.
-    private static ulong? _customOfferStamp;
-    private static (Item[] Items, Dictionary<Guid, Item> ById)? _customOfferCache;
-
-    private static (Item[] Items, Dictionary<Guid, Item> ById) CustomOffer
-    {
-        get
-        {
-            ulong stamp = CustomCosmetics.Stamp;
-            if (_customOfferStamp != stamp || _customOfferCache is null)
-            {
-                var items = new List<Item>();
-                var byId = new Dictionary<Guid, Item>();
-                foreach (CustomCosmeticItem custom in CustomCosmetics.Items)
-                {
-                    if (!Guid.TryParse(custom.Id, out Guid itemId) || !Guid.TryParse(custom.PieceId, out Guid pieceId))
-                    {
-                        Log.Warning("Custom cosmetic {Id} has a non-GUID item or piece id — skipped in the catalog offer", custom.Id);
-                        continue;
-                    }
-
-                    Item item = CIItemToItem(new CItem(
-                        true, // Purchasable — unlock-all like every other offer entry
-                        new CItem.PersonaData(
-                            custom.PieceType,
-                            pieceId,
-                            itemId, // OfferId — the item id, like the live offer's
-                            "1.1.0",
-                            custom.Rarity,
-                            custom.Price,
-                            custom.Creator,
-                            $"{custom.Id}.zip" // the panel stores the piece zip at playfab/persona/<itemId>.zip
-                        ),
-                        custom.Title,
-                        string.IsNullOrWhiteSpace(custom.Description) ? "§" : custom.Description,
-                        custom.ThumbnailId,
-                        DateTime.UtcNow.Date, // stable within the day so client sorting does not reshuffle
-                        DateTime.UtcNow.Date,
-                        DateTime.UtcNow.Date,
-                        itemId,
-                        itemId, // FriendlyId
-                        "B63A0803D3653643",
-                        "301F442C3B63DC20",
-                        custom.Tags,
-                        new Dictionary<string, CItem.KeywordValues>(),
-                        [],
-                        [],
-                        [],
-                        []
-                    ));
-                    items.Add(item);
-                    byId[item.Id] = item;
-                }
-
-                _customOfferCache = (items.ToArray(), byId);
-                _customOfferStamp = stamp;
-                Log.Information("Custom cosmetics offer rebuilt: {Count} item(s) (stamp {Stamp})", items.Count, stamp);
-            }
-
-            return _customOfferCache;
-        }
-    }
-
     // Thematic skin packs (MarketplaceDurableCatalog_V1.2 bundles) mapped from the
     // index, cached per index stamp like the persona pieces. The packIdentity uuid
     // stays aligned with the item list so the gate filter is a plain array lookup.
@@ -500,9 +427,8 @@ internal sealed class CatalogController : ApaceControllerBase
                 string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
                 IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
                 IEnumerable<Item> source = BaseOfferItems
-                    .Concat(CustomOffer.Items)
+                    .Concat(CustomOfferItems) // customs count first for the grouped per-category limit
                     .Concat(await LiveOfferItemsFor(callerId, cancellationToken))
-                    .Concat(CustomOfferItems)
                     .Concat(livePacks);
 
                 int categoryLimit = PersonaPackGate.CategoryLimit;
@@ -663,22 +589,6 @@ internal sealed class CatalogController : ApaceControllerBase
             ), jsonOptions), "application/json");
         }
 
-        if (CustomCosmetics.Items.Count > 0 && CustomOffer.ById.TryGetValue(itemId, out var customItem))
-        {
-            if (PersonaPackGate.OnlySupported && !PersonaPieceTypes.IsSupportedCosmetic(itemId.ToString()))
-            {
-                return TypedResults.NotFound();
-            }
-
-            return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
-                200,
-                "OK",
-                new GetPublishedItemResponse(
-                    ToResponse(customItem, Request)
-                )
-            ), jsonOptions), "application/json");
-        }
-
         if (LivePersonaCatalog.IsAvailable && _liveSkinPackById is not null && servedPackIds.Contains(itemId) && _liveSkinPackById.TryGetValue(itemId, out var livePack))
         {
             return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
@@ -695,6 +605,11 @@ internal sealed class CatalogController : ApaceControllerBase
         Item? customItem = CustomOfferItems.FirstOrDefault(candidate => candidate.Id == itemId);
         if (customItem is not null)
         {
+            if (PersonaPackGate.OnlySupported && !PersonaPieceTypes.IsSupportedCosmetic(itemId.ToString()))
+            {
+                return TypedResults.NotFound();
+            }
+
             return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
                 200,
                 "OK",

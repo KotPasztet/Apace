@@ -184,7 +184,10 @@ public static class PersonaPieceTypes
     {
         private readonly Dictionary<string, int> _counts = new(StringComparer.OrdinalIgnoreCase);
 
-        public GroupLimitCounter(int limit) => Limit = limit;
+        public GroupLimitCounter(int limit)
+        {
+            Limit = limit;
+        }
 
         public int Limit { get; }
 

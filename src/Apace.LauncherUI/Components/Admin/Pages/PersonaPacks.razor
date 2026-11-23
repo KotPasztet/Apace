@@ -768,7 +768,7 @@
             return;
         }
 
-        await using var source = await _formZipFile.OpenReadStream(CustomCosmeticsStore.MaxZipBytes);
+        await using var source = _formZipFile.OpenReadStream(CustomCosmeticsStore.MaxZipBytes);
         await CustomCosmeticsStore.SaveZipAsync(itemId, source);
     }
 
@@ -779,7 +779,7 @@
             return;
         }
 
-        await using var source = await _formThumbFile.OpenReadStream(CustomCosmeticsStore.MaxThumbnailBytes);
+        await using var source = _formThumbFile.OpenReadStream(CustomCosmeticsStore.MaxThumbnailBytes);
         await CustomCosmeticsStore.SaveThumbnailAsync(thumbnailId, source);
     }
 

@@ -24,8 +24,7 @@ public sealed record CustomCosmeticItem(
     string PackUuid,
     string ContentKey,
     string? ThumbnailId,
-    bool? Enabled = null,
-    bool Enabled = true);
+    bool? Enabled = null);
 
 // Custom cosmetics store (panel-defined dressing room items).
 //
