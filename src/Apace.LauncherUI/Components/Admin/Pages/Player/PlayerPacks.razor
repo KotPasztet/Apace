@@ -76,7 +76,7 @@
         {
             if (!(Settings.Instance.PersonaPackGating ?? false))
             {
-                return "Pack gating is OFF — this player currently sees the whole live marketplace.";
+                return $"Pack gating is OFF — this player currently sees the whole live marketplace, up to {Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit} piece(s) per category.";
             }
 
             var defaults = Settings.Instance.PersonaDefaultPacks ?? [];
