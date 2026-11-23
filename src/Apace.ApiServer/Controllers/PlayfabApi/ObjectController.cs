@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Serilog;
 using Apace.ApiServer.Models.Playfab;
+using Apace.ApiServer.Services;
 using Apace.ApiServer.Utils;
 using Apace.Common.Utils;
 using Apace.DB;
@@ -146,12 +148,22 @@ internal sealed class ObjectController : ApaceControllerBase
         try
         {
             PersonaProfiles profiles = await GetStoredProfilesAsync(playerId);
+            // the pack-gate allowed set (defaults ∪ grants; null = nothing
+            // configured, no gating) — read once per request, cached ~30s
+            IReadOnlySet<string>? allowedPacks = await PersonaPackGate.AllowedPackUuidsAsync(playerId, Request.HttpContext.RequestAborted);
 
             foreach (SetObjectsRequest.SetObjectR obj in request.Objects)
             {
                 if (!string.IsNullOrEmpty(obj.ObjectName) && obj.DataObject is not null)
                 {
-                    profiles.Objects[obj.ObjectName] = obj.DataObject.Value.Clone();
+                    JsonElement dataObject = obj.DataObject.Value;
+                    if (obj.ObjectName.StartsWith("personaProfile", StringComparison.Ordinal))
+                    {
+                        // the equipped-piece lists: enforce the catalog policy on store
+                        dataObject = SanitizePersonaObjects(playerId, obj.ObjectName, dataObject, allowedPacks);
+                    }
+
+                    profiles.Objects[obj.ObjectName] = dataObject.Clone();
                 }
             }
 
@@ -165,6 +177,129 @@ internal sealed class ObjectController : ApaceControllerBase
         }
 
         return TypedResults.Ok();
+    }
+
+    // Equip-side enforcement for the persona profile objects (personaProfile..4):
+    // their personaCollection.universalApp entries carry the equipped pieces and
+    // used to be stored verbatim — a crafted or stale payload could equip pieces
+    // the current catalog policy does not serve. Every entry with a piece id
+    // ("…/d", "…/l/d", "…/r/d" suffixes kept verbatim) resolves through
+    // PersonaPieceTypes and then:
+    //
+    //  - unknown ids (the built-in client pieces, custom skins, pieces the live
+    //    index no longer offers) are KEPT — we never block what we cannot
+    //    classify, including the bare {"arm","skcol","skin"} base entry, which
+    //    has no id at all;
+    //  - entries resolving to a live piece whose compat verdict is risky are
+    //    DROPPED when packs.json onlySupported is on (default true); unknown
+    //    verdicts serve; staticdata-resolved pieces have no live compat metadata
+    //    and always serve;
+    //  - entries resolving to a themed live Minecraft piece none of whose packs
+    //    are in the caller's allowed set are DROPPED while pack gating is active
+    //    (defaults ∪ grants — the same rule the search offer enforces; base
+    //    pieces without theme tags, non-Minecraft creators and staticdata serve);
+    //  - a piece occupies at most one slot per (category group, side slot): the
+    //    first entry per group+slot in array order wins — left/right variants
+    //    are separate slots (one piece can be worn on both hands), so adding a
+    //    second piece from an already-filled category is refused while the
+    //    replace flow keeps working (the client's replace payload carries the
+    //    final selection with the old entry gone);
+    //  - resolvable entries beyond the grouped per-category limit are DROPPED —
+    //    backstop under the slot rule, the same grouping the search offer is
+    //    capped with.
+    //
+    // When nothing was dropped the original DataObject is stored unchanged (the
+    // common case keeps its exact stored shape); other object names pass
+    // through untouched. Rate limiting happens in the caller.
+    private static JsonElement SanitizePersonaObjects(string playerId, string objectName, JsonElement dataObject, IReadOnlySet<string>? allowedPacks)
+    {
+        try
+        {
+            if (JsonNode.Parse(dataObject.GetRawText()) is not JsonObject root
+                || root["personaCollection"] is not JsonObject collection
+                || collection["universalApp"] is not JsonArray entries
+                || entries.Count == 0)
+            {
+                return dataObject;
+            }
+
+            var counter = new PersonaPieceTypes.GroupLimitCounter(PersonaPackGate.CategoryLimit);
+            var takenSlots = new HashSet<(string Group, string Slot)>();
+            bool onlySupported = PersonaPackGate.OnlySupported;
+            var dropped = new List<int>();
+            int kept = 0, unsupported = 0, packBlocked = 0, duplicateSlot = 0, overLimit = 0;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i] is not JsonObject entry)
+                {
+                    kept++; // non-object entries pass through
+                    continue;
+                }
+
+                string? id = entry["id"] is JsonValue idValue && idValue.TryGetValue<string>(out string? idString) ? idString : null;
+                if (string.IsNullOrWhiteSpace(id) || !PersonaPieceTypes.TryResolvePiece(id, out PersonaPieceTypes.ResolvedPiece piece))
+                {
+                    kept++; // unknown ids and the id-less base entry always survive
+                    continue;
+                }
+
+                if (onlySupported && piece.LiveItemId is not null && !PersonaPieceTypes.IsSupportedCosmetic(piece.LiveItemId))
+                {
+                    dropped.Add(i);
+                    unsupported++;
+                    continue;
+                }
+
+                if (allowedPacks is not null
+                    && piece.LiveItemId is not null
+                    && piece.CreatorName is "Minecraft"
+                    && piece.ThemeTags.Length > 0
+                    && !piece.ThemeTags.Any(allowedPacks.Contains))
+                {
+                    dropped.Add(i);
+                    packBlocked++;
+                    continue;
+                }
+
+                string group = PersonaPieceTypes.CategoryGroupOf(piece.PieceType);
+                if (!takenSlots.Add((group, piece.Slot)))
+                {
+                    dropped.Add(i);
+                    duplicateSlot++;
+                    continue;
+                }
+
+                if (!counter.Allows(group))
+                {
+                    dropped.Add(i);
+                    overLimit++;
+                    continue;
+                }
+
+                kept++;
+            }
+
+            if (dropped.Count == 0)
+            {
+                Log.Debug("Persona profile {Object} for {Player}: all {Kept} entries pass the equip checks", objectName, playerId, kept);
+                return dataObject;
+            }
+
+            for (int i = dropped.Count - 1; i >= 0; i--)
+            {
+                entries.RemoveAt(dropped[i]);
+            }
+
+            Log.Information("Persona profile {Object} for {Player}: dropped {Dropped} of {Total} equipped entries ({Unsupported} risky, {PackBlocked} outside the enabled packs, {DuplicateSlot} filling an occupied category slot, {OverLimit} over the category limit)",
+                objectName, playerId, dropped.Count, dropped.Count + kept, unsupported, packBlocked, duplicateSlot, overLimit);
+
+            return JsonSerializer.SerializeToElement(root);
+        }
+        catch (JsonException ex)
+        {
+            Log.Warning(ex, "Persona profile {Object} for {Player}: DataObject is not valid JSON — storing verbatim", objectName, playerId);
+            return dataObject;
+        }
     }
 
     private static async Task<PersonaProfiles> GetStoredProfilesAsync(string playerId)

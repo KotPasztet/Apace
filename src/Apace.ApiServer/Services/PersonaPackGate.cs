@@ -10,47 +10,91 @@ namespace Apace.ApiServer.Services;
 // accessory pack entities — pieces carry exactly one packIdentity (themselves;
 // probe: scripts/probe_persona_tags.py) — so packs are the pieces' marketplace
 // theme tags (tag.*): enabling a pack serves every themed piece across all
-// categories, pieces without a theme tag (the base content) always serve, and
-// the classic-skin packs keep following the gate by their pack uuid. The panel
-// writes packs.json next to the catalog index (hot-reloaded like the index
-// itself); per-player grants live in earth.db (objects type "personaPacks")
-// and are cached here briefly so panel edits apply within ~30s without
-// hitting SQLite on every search.
+// categories, and the classic-skin packs follow the gate by their pack uuid.
+//
+// packs.json (written by the panel next to the catalog index, hot-reloaded by
+// mtime) holds { defaultPacks, categoryLimit, onlySupported }; old files may
+// still carry the deprecated "gating" flag — it is ignored (the deserializer
+// drops unknown members). Gating is now implicit AUTO-GATING: a NON-EMPTY
+// allowed set (defaults ∪ per-player grants) enforces filtering, an empty set
+// serves everything — "configured packs = enforced filtering". With packs
+// configured the gate is STRICT for pieces: only pieces carrying an allowed
+// theme tag serve (see CatalogController.LiveOfferItemsFor), and the
+// classic-skin packs keep following the allowed set by their pack uuid.
+//
+// Per-player grants live in earth.db (objects type "personaPacks") and are
+// cached here briefly so panel edits apply within ~30s without hitting SQLite
+// on every search.
 public static class PersonaPackGate
 {
     public const int DefaultCategoryLimit = 30;
 
-    private sealed record PackConfig(bool? Gating, List<string>? DefaultPacks, int? CategoryLimit);
+    private sealed record PackConfig(List<string>? DefaultPacks, int? CategoryLimit, bool? OnlySupported,
+        string? MaxGeometryFormatVersion, string? MaxAnimationFormatVersion);
+
+    // Documented default compat thresholds (see PersonaPieceTypes.IsSupportedCosmetic):
+    // geometry / animation format_version at or past the max breaks on the frozen
+    // client; legacy versions and ordinary bone animations are fine. Configurable
+    // via packs.json "maxGeometryFormatVersion" / "maxAnimationFormatVersion".
+    public static readonly Version DefaultMaxGeometryFormatVersion = new(1, 21, 0, 0);
+    public static readonly Version DefaultMaxAnimationFormatVersion = new(1, 21, 0, 0);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly ConcurrentDictionary<string, (DateTimeOffset Expires, IReadOnlyCollection<string> Packs)> GrantCache = new();
-    private static readonly IReadOnlyCollection<string> NoPacks = [];
 
     private static string ConfigPath => Path.Combine(Program.MojangAssetsDir, "persona-catalog", "packs.json");
 
-    private static bool _gating;
     private static IReadOnlySet<string> _defaults = new HashSet<string>();
     private static int _categoryLimit = DefaultCategoryLimit;
+    private static bool _onlySupported = true;
+    private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
+    private static Version _maxAnimationFormatVersion = DefaultMaxAnimationFormatVersion;
     private static long _configStamp;
 
+    /// <summary>Max geometry format_version the frozen client renders (packs.json
+    /// "maxGeometryFormatVersion", default "1.21.0") — at or past it, UV rotation /
+    /// per-face UV / transform pivots break. See PersonaPieceTypes.IsSupportedCosmetic.</summary>
+    public static Version MaxGeometryFormatVersion => _maxGeometryFormatVersion;
+
+    /// <summary>Max animation format_version the frozen client renders (packs.json
+    /// "maxAnimationFormatVersion", default "1.21.0") — ordinary bone animations below
+    /// it serve; at or past it the piece is risky.</summary>
+    public static Version MaxAnimationFormatVersion => _maxAnimationFormatVersion;
+
     /// <summary>
-    /// Max live pieces served per piece type (one shared knob for every dressing
-    /// room category — tops, capes, beards, …). The marketplace has no
-    /// per-category size control of its own and the frozen client chokes on huge
-    /// category lists; the panel's Marketplace Management page configures this
-    /// and the gate hot-reloads it from packs.json. 0 = no limit.
+    /// Max pieces served per dressing-room category GROUP (the client renders
+    /// one tab per group — e.g. outerwear = persona_outerwear + persona_hood —
+    /// see PersonaPieceTypes for the grouping). One shared knob for every
+    /// group, independent of pack gating and applied over the whole composed
+    /// offer (staticdata pieces count too) — the marketplace has no
+    /// per-category size control of its own and the frozen client chokes on
+    /// huge category lists. The panel's Marketplace Management page configures
+    /// this and the gate hot-reloads it from packs.json. 0 = no limit.
     /// </summary>
     public static int CategoryLimit => _categoryLimit;
 
     /// <summary>
-    /// The gating flag only (no DB access) — for pages that just show the state.
+    /// True when only client-supported live pieces serve (packs.json
+    /// "onlySupported", default true when absent): pieces whose geometry the
+    /// frozen client cannot render (see PersonaPieceTypes.IsSupportedCosmetic)
+    /// are hidden in the offer and refused on equip. Pieces without compat
+    /// metadata are served — the filter only ever hides pieces with positive
+    /// evidence of incompatibility.
+    /// </summary>
+    public static bool OnlySupported => _onlySupported;
+
+    /// <summary>
+    /// The auto-gating state (no DB access) — for pages that just show the
+    /// state: gating is active for a player when at least one pack is
+    /// configured for them (defaults ∪ grants); without a player, the
+    /// configured defaults.
     /// </summary>
     public static (bool Gating, int CategoryLimit) ConfigSnapshot
     {
         get
         {
             LoadConfig();
-            return (_gating, _categoryLimit);
+            return (_defaults.Count > 0, _categoryLimit);
         }
     }
 
@@ -63,10 +107,12 @@ public static class PersonaPackGate
                 if (_configStamp != 0)
                 {
                     _configStamp = 0;
-                    _gating = false;
                     _defaults = new HashSet<string>();
                     _categoryLimit = DefaultCategoryLimit;
-                    Log.Information("Persona pack config gone from {Path} — gating off", ConfigPath);
+                    _onlySupported = true;
+                    _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
+                    _maxAnimationFormatVersion = DefaultMaxAnimationFormatVersion;
+                    Log.Information("Persona pack config gone from {Path} — no packs configured, everything serves", ConfigPath);
                 }
 
                 return;
@@ -79,13 +125,18 @@ public static class PersonaPackGate
             }
 
             var loaded = JsonSerializer.Deserialize<PackConfig>(File.ReadAllText(ConfigPath), JsonOptions);
-            _gating = loaded?.Gating ?? false;
             _defaults = (loaded?.DefaultPacks ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
             _categoryLimit = Math.Max(0, loaded?.CategoryLimit ?? DefaultCategoryLimit);
+            _onlySupported = loaded?.OnlySupported ?? true;
+            _maxGeometryFormatVersion = ParseVersion(loaded?.MaxGeometryFormatVersion, DefaultMaxGeometryFormatVersion);
+            _maxAnimationFormatVersion = ParseVersion(loaded?.MaxAnimationFormatVersion, DefaultMaxAnimationFormatVersion);
             _configStamp = stamp;
-            Log.Information("Persona pack config loaded from {Path} — gating: {Gating}, default packs: {Packs}, category limit: {Limit}",
-                ConfigPath, _gating, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
-                _categoryLimit == 0 ? "none" : _categoryLimit.ToString());
+            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, max geometry version: {GeometryVersion}, max animation version: {AnimationVersion}",
+                ConfigPath, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
+                _categoryLimit == 0 ? "none" : _categoryLimit.ToString(),
+                _onlySupported,
+                MaxGeometryFormatVersion.ToString(),
+                MaxAnimationFormatVersion.ToString());
         }
         catch (Exception ex)
         {
@@ -93,22 +144,51 @@ public static class PersonaPackGate
         }
     }
 
+    // "1.21.0" / "1.16.200" style threshold strings — leading numeric components,
+    // zero-padded to four; unparsable values fall back to the default.
+    private static Version ParseVersion(string? value, Version fallback)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                string[] parts = value.Trim().Split('.');
+                int[] components = new int[4];
+                for (int i = 0; i < parts.Length && i < 4; i++)
+                {
+                    if (!int.TryParse(parts[i], out int n) || n < 0)
+                    {
+                        return fallback;
+                    }
+
+                    components[i] = n;
+                }
+
+                return new Version(components[0], components[1], components[2], components[3]);
+            }
+        }
+        catch (Exception)
+        {
+            // fall through to the default
+        }
+
+        return fallback;
+    }
+
     /// <summary>
     /// The thematic packs this player may see (theme tags for persona pieces,
-    /// pack uuids for classic-skin packs), or null when gating is off (serve
-    /// everything — the pre-gating behavior). Defaults always apply; grants add
-    /// per-player extras. Entries predating the theme model (piece type names or
-    /// orphaned skin-pack uuids) simply never match a theme tag and are ignored.
-    /// Staticdata offers (the committed legacy catalog and the Default Skins
-    /// pack) are never gated.
+    /// pack uuids for classic-skin packs), or null when nothing is configured
+    /// for the caller (defaults ∪ grants empty) — serve everything, the
+    /// pre-gating behavior. Any non-empty set enforces filtering regardless of
+    /// the legacy "gating" flag packs.json may still carry (AUTO-GATING:
+    /// configured packs = enforced filtering). Entries predating the theme
+    /// model (piece type names or orphaned skin-pack uuids) simply never match
+    /// a theme tag and are ignored. Staticdata offers (the committed legacy
+    /// catalog and the Default Skins pack) are never gated.
     /// </summary>
     public static async Task<IReadOnlySet<string>?> AllowedPackUuidsAsync(string? playerId, CancellationToken cancellationToken)
     {
         LoadConfig();
-        if (!_gating)
-        {
-            return null;
-        }
 
         var allowed = new HashSet<string>(_defaults, StringComparer.OrdinalIgnoreCase);
         if (!string.IsNullOrWhiteSpace(playerId))
@@ -119,7 +199,7 @@ public static class PersonaPackGate
             }
         }
 
-        return allowed;
+        return allowed.Count == 0 ? null : allowed;
     }
 
     private static async Task<IReadOnlyCollection<string>> PlayerGrantsAsync(string playerId, CancellationToken cancellationToken)
@@ -135,14 +215,14 @@ public static class PersonaPackGate
             EarthDB.Results results = await new EarthDB.Query(false)
                 .Get("personaPacks", key, typeof(PersonaPackGrants))
                 .ExecuteAsync(Program.DB, cancellationToken);
-            var grants = results.Get<PersonaPackGrants>("personaPacks")?.Packs ?? NoPacks;
+            var grants = results.Get<PersonaPackGrants>("personaPacks")?.Packs ?? [];
             GrantCache[key] = (DateTimeOffset.UtcNow.AddSeconds(30), grants);
             return grants;
         }
         catch (EarthDB.DatabaseException ex)
         {
             Log.Warning(ex, "Could not read persona pack grants for {Player} — serving default packs only", key);
-            return NoPacks;
+            return [];
         }
     }
 }

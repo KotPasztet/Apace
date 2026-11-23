@@ -115,40 +115,143 @@ internal sealed class CatalogController : ApaceControllerBase
 
     // Mapped live offer items, cached per index version (the dressing room fires
     // many searches; mapping ~10k items per request would dominate the request).
-    // Theme tags ride along per item (aligned by index) so the pack gate filters
-    // without re-reading the volume.
-    private static IReadOnlyList<Item> LiveOfferItems
+    // One immutable record per index stamp: the items, their gating theme tags
+    // (aligned by index) and the id maps the pack gate and GetPublishedItem
+    // resolve against.
+    // Custom cosmetics (panel-defined, hot-reloaded from the volume) mapped to
+    // offer items, cached per store stamp like the live offer per index stamp.
+    // Creator is never "Minecraft", so the pack gate exempts them (auto-gating);
+    // the onlySupported compat gate still applies via PersonaPieceTypes.
+    private static long? _customOfferStamp;
+    private static Item[]? _customOfferItems;
+
+    private static Item[] CustomOfferItems
+    {
+        get
+        {
+            ulong stamp = CustomCosmetics.Stamp;
+            if (_customOfferStamp != (long)stamp || _customOfferItems is null)
+            {
+                _customOfferItems = CustomCosmetics.Items
+                    .Where(item => item.Enabled)
+                    .Select(item => new CItem(
+                        true, // Purchasable — the panel prices it; unlock-all rules apply the same
+                        new CItem.PersonaData(
+                            item.PieceType,
+                            Guid.Parse(item.PieceId),
+                            Guid.Parse(item.Id),
+                            "1.0.0",
+                            string.IsNullOrWhiteSpace(item.Rarity) ? "common" : item.Rarity,
+                            Math.Max(0, item.Price),
+                            string.IsNullOrWhiteSpace(item.Creator) ? "KotPasztet" : item.Creator,
+                            null // AssetFileName — the binary rides the Contents personabinary entry
+                        ),
+                        item.Title,
+                        string.IsNullOrWhiteSpace(item.Description) ? "§" : item.Description,
+                        item.ThumbnailId,
+                        DateTime.UtcNow,
+                        DateTime.UtcNow,
+                        DateTime.UtcNow,
+                        Guid.Parse(item.Id),
+                        Guid.Parse(item.Id),
+                        "B63A0803D3653643",
+                        "301F442C3B63DC20",
+                        [.. item.Tags.Where(tag => !string.IsNullOrWhiteSpace(tag)), "custom", "1P"],
+                        new Dictionary<string, CItem.KeywordValues>(),
+                        [
+                            new CItem.QueryManifestContent(
+                                $"{item.PieceId}_personabinary",
+                                $"/playfab/persona/{item.Id}.zip",
+                                "65535.65535.65535",
+                                "1.13.0",
+                                [],
+                                "personabinary"
+                            ),
+                        ],
+                        [],
+                        new Dictionary<string, string>(),
+                        new Dictionary<string, string>()
+                    ))
+                    .ToArray();
+                _customOfferStamp = (long)stamp;
+                Log.Information("Custom cosmetics offer rebuilt: {Count} item(s) (stamp {Stamp})", _customOfferItems.Length, stamp);
+            }
+
+            return _customOfferItems;
+        }
+    }
+
+    private sealed record LiveOfferCache(
+        Item[] Items,
+        string[][] ThemeTags,
+        Dictionary<Guid, Item> ById,
+        Dictionary<Guid, string[]> ThemeTagsById);
+
+    private static long? _liveOfferStamp;
+    private static LiveOfferCache? _liveOfferCache;
+
+    private static LiveOfferCache LiveOffer
     {
         get
         {
             long stamp = LivePersonaCatalog.IndexStamp;
-            if (_liveOfferStamp != stamp)
+            if (_liveOfferStamp != stamp || _liveOfferCache is null)
             {
                 var offer = LivePersonaCatalog.GetOffer();
-                _liveOfferItems = offer.Items.Select(CIItemToItem).ToArray();
-                _liveItemThemeTags = [.. offer.ThemeTags.Select(tags => tags.ToArray())];
-                _liveOfferById = _liveOfferItems.ToDictionary(item => item.Id);
+                Item[] items = offer.Items.Select(CIItemToItem).ToArray();
+                string[][] themes = [.. offer.ThemeTags.Select(tags => tags.ToArray())];
+                var byId = new Dictionary<Guid, Item>(items.Length);
+                var themeTagsById = new Dictionary<Guid, string[]>(items.Length);
+                for (int i = 0; i < items.Length; i++)
+                {
+                    byId[items[i].Id] = items[i];
+                    themeTagsById[items[i].Id] = themes[i];
+                }
+
+                _liveOfferCache = new LiveOfferCache(items, themes, byId, themeTagsById);
                 _liveOfferStamp = stamp;
-                Log.Information("Live persona offer rebuilt: {Count} item(s) (index stamp {Stamp})", _liveOfferItems.Length, stamp);
+                Log.Information("Live persona offer rebuilt: {Count} item(s) (index stamp {Stamp})", items.Length, stamp);
+
+                // Diagnostic for "cosmetic cannot be equipped": a piece type the
+                // committed dressing-room layout does not query has NO tab that
+                // would show it, so it can never be browsed or equipped (the
+                // layout is Mojang-derived and committed — not patched here).
+                var unmapped = items
+                    .Select(item => item.DisplayProperties?.PieceType)
+                    .Where(pieceType => pieceType is not null
+                        && PersonaPieceTypes.CategoryGroupOf(pieceType).StartsWith("persona_", StringComparison.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (unmapped.Count > 0)
+                {
+                    Log.Warning(
+                        "Live persona offer holds {Count} piece type(s) the dressing-room layout does not know ({Types}) — no client tab queries them, so those pieces cannot be browsed or equipped",
+                        unmapped.Count, string.Join(", ", unmapped));
+                }
             }
 
-            return _liveOfferItems ?? [];
+            return _liveOfferCache;
         }
     }
 
-    private static long? _liveOfferStamp;
-    private static Item[]? _liveOfferItems;
-    private static Dictionary<Guid, Item>? _liveOfferById;
-    private static string[][]? _liveItemThemeTags;
-
-    // The live persona offer for one player. Two independent levers compose:
-    // the pack gate (pieces without a marketplace theme tag — the base content —
-    // always serve; themed pieces need one of their theme packs enabled from the
-    // panel defaults ∪ per-player grants; gating off = serve all) and the
-    // per-category size limit (one shared knob, always on, 0 = off) that keeps
-    // every piece type at a count the frozen client can render. The first N
-    // pieces per type in offer order win — stable per index stamp, so players
-    // don't see the catalog reshuffle between requests.
+    // The live persona offer for one player, after the two per-player levers:
+    //
+    //  - the pack gate (AUTO-GATING — no flag: a NON-EMPTY allowed set enforces
+    //    it, defaults ∪ per-player grants): a themed piece only serves when it
+    //    carries one of the allowed theme tags; pieces without any theme tag
+    //    are the base content and ALWAYS serve (the panel's Marketplace
+    //    Management page and docs/live-persona-catalog.md promise exactly
+    //    that). Pieces of non-Minecraft creators (the Apace customs etc.) are
+    //    exempt, and with nothing configured everything serves as before.
+    //  - the supported-only gate (packs.json "onlySupported", default true):
+    //    pieces whose compat verdict is risky drop out (see
+    //    PersonaPieceTypes.IsSupportedCosmetic).
+    //
+    // The per-category size limit is applied by the caller over the whole
+    // composed offer (staticdata pieces count too — see ApplyGroupedCategoryLimit),
+    // not here. The first N pieces per dressing-room group in offer order win —
+    // stable per index stamp, so players don't see the catalog reshuffle between
+    // requests.
     private static async Task<IReadOnlyList<Item>> LiveOfferItemsFor(string? playerId, CancellationToken cancellationToken)
     {
         if (!LivePersonaCatalog.IsAvailable)
@@ -156,45 +259,138 @@ internal sealed class CatalogController : ApaceControllerBase
             return [];
         }
 
-        IReadOnlyList<Item> all = LiveOfferItems;
+        LiveOfferCache live = LiveOffer;
         IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPackUuidsAsync(playerId, cancellationToken);
-        string[][]? themes = _liveItemThemeTags;
-        int limit = PersonaPackGate.CategoryLimit;
-        bool packFilter = allowed is not null && themes is not null && themes.Length == all.Count;
-        if (!packFilter && limit <= 0)
+        bool onlySupported = PersonaPackGate.OnlySupported;
+        if (allowed is null && !onlySupported)
         {
-            return all;
+            return live.Items;
         }
 
-        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var filtered = new List<Item>(all.Count);
-        for (int i = 0; i < all.Count; i++)
+        string[][] themes = live.ThemeTags;
+        var filtered = new List<Item>(live.Items.Length);
+        for (int i = 0; i < live.Items.Length; i++)
         {
-            if (packFilter)
+            Item item = live.Items[i];
+            if (allowed is not null && item.DisplayProperties?.CreatorName is "Minecraft")
             {
-                string[] tags = themes![i];
-                if (tags.Length > 0 && !tags.Any(allowed!.Contains))
+                string[] tags = themes[i];
+                if (tags.Length > 0 && !tags.Any(allowed.Contains))
                 {
-                    continue;
+                    continue; // themed piece with none of its packs enabled — base pieces always serve
                 }
             }
 
-            string pieceType = all[i].DisplayProperties?.PieceType ?? "";
-            if (limit > 0 && pieceType.Length > 0)
+            if (onlySupported && !PersonaPieceTypes.IsSupportedCosmetic(item.Id.ToString()))
             {
-                int count = counts.TryGetValue(pieceType, out int seen) ? seen : 0;
-                if (count >= limit)
-                {
-                    continue;
-                }
-
-                counts[pieceType] = count + 1;
+                continue;
             }
 
-            filtered.Add(all[i]);
+            filtered.Add(item);
         }
 
         return filtered;
+    }
+
+    // The per-category size limit, counted per dressing-room GROUP (see
+    // PersonaPieceTypes — the client renders one tab per group, e.g. outerwear =
+    // persona_outerwear + persona_hood, so the old per-piece-type cap let
+    // grouped tabs show 2-3x the limit). Runs over the whole composed persona
+    // offer in SearchAsync: staticdata persona pieces (Bold Rabbit Feet, the
+    // Apace capes, the legacy catalog when the live marketplace is off) count
+    // first, live pieces fill their group up to the limit. Only persona pieces
+    // are counted — the layout, store config and skin pack entries have no
+    // piece type and must keep serving untouched; pieces with a missing/empty
+    // piece type get their own shared bucket instead of escaping the cap.
+    // Eager on purpose: the OData query may enumerate the source more than
+    // once and the counter is stateful.
+    private static IReadOnlyList<Item> ApplyGroupedCategoryLimit(IEnumerable<Item> items, int limit)
+    {
+        var counter = new PersonaPieceTypes.GroupLimitCounter(limit);
+        var kept = new List<Item>();
+        foreach (Item item in items)
+        {
+            if (item.ContentType is not "PersonaDurable"
+                || counter.Allows(PersonaPieceTypes.CategoryGroupOf(item.DisplayProperties?.PieceType)))
+            {
+                kept.Add(item);
+            }
+        }
+
+        return kept;
+    }
+
+    // The panel's custom cosmetics (persona-catalog/custom-cosmetics.json) mapped
+    // to PersonaDurable offer items, cached per custom-cosmetics stamp like the
+    // live offer is per index stamp. Own content, served like staticdata: never
+    // pack-gated, composed BEFORE the live items so the grouped per-category
+    // limit counts them first (a full outerwear tab must not squeeze the own
+    // pieces out). The piece binaries ride the panel's encrypted-container packs:
+    // the Contents entry points at /playfab/persona/<itemId>.zip (PersonaCdnController
+    // serves the panel-uploaded zip) and the decryption key is delivered through
+    // the inventory receipt (CustomCosmetics.Entitlements — InventoryController).
+    // Disabled entries (Enabled = false) and hand-edited entries without GUID
+    // ids are skipped.
+    private static ulong? _customOfferStamp;
+    private static (Item[] Items, Dictionary<Guid, Item> ById)? _customOfferCache;
+
+    private static (Item[] Items, Dictionary<Guid, Item> ById) CustomOffer
+    {
+        get
+        {
+            ulong stamp = CustomCosmetics.Stamp;
+            if (_customOfferStamp != stamp || _customOfferCache is null)
+            {
+                var items = new List<Item>();
+                var byId = new Dictionary<Guid, Item>();
+                foreach (CustomCosmeticItem custom in CustomCosmetics.Items)
+                {
+                    if (!Guid.TryParse(custom.Id, out Guid itemId) || !Guid.TryParse(custom.PieceId, out Guid pieceId))
+                    {
+                        Log.Warning("Custom cosmetic {Id} has a non-GUID item or piece id — skipped in the catalog offer", custom.Id);
+                        continue;
+                    }
+
+                    Item item = CIItemToItem(new CItem(
+                        true, // Purchasable — unlock-all like every other offer entry
+                        new CItem.PersonaData(
+                            custom.PieceType,
+                            pieceId,
+                            itemId, // OfferId — the item id, like the live offer's
+                            "1.1.0",
+                            custom.Rarity,
+                            custom.Price,
+                            custom.Creator,
+                            $"{custom.Id}.zip" // the panel stores the piece zip at playfab/persona/<itemId>.zip
+                        ),
+                        custom.Title,
+                        string.IsNullOrWhiteSpace(custom.Description) ? "§" : custom.Description,
+                        custom.ThumbnailId,
+                        DateTime.UtcNow.Date, // stable within the day so client sorting does not reshuffle
+                        DateTime.UtcNow.Date,
+                        DateTime.UtcNow.Date,
+                        itemId,
+                        itemId, // FriendlyId
+                        "B63A0803D3653643",
+                        "301F442C3B63DC20",
+                        custom.Tags,
+                        new Dictionary<string, CItem.KeywordValues>(),
+                        [],
+                        [],
+                        [],
+                        []
+                    ));
+                    items.Add(item);
+                    byId[item.Id] = item;
+                }
+
+                _customOfferCache = (items.ToArray(), byId);
+                _customOfferStamp = stamp;
+                Log.Information("Custom cosmetics offer rebuilt: {Count} item(s) (stamp {Stamp})", items.Count, stamp);
+            }
+
+            return _customOfferCache;
+        }
     }
 
     // Thematic skin packs (MarketplaceDurableCatalog_V1.2 bundles) mapped from the
@@ -233,9 +429,14 @@ internal sealed class CatalogController : ApaceControllerBase
             return [];
         }
 
+        // read the uuid map and the items back-to-back so both come from the same
+        // cache generation — a rebuild during the grant await below must not pair a
+        // fresh uuid list with a stale item list (that mismatch would serve every
+        // pack ungated); with a consistent pair the stale generation is still
+        // filtered correctly
+        string[]? uuids = _liveSkinPackPackUuids;
         IReadOnlyList<Item> all = LiveSkinPackItems;
         IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPackUuidsAsync(playerId, cancellationToken);
-        string[]? uuids = _liveSkinPackPackUuids;
         if (allowed is null || uuids is null || uuids.Length != all.Count)
         {
             return all;
@@ -287,15 +488,28 @@ internal sealed class CatalogController : ApaceControllerBase
             string filter = request.Filter
                 .Replace("platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth')", "platforms/any(tp: tp eq 'android.googleplay') and platforms/any(tp: tp eq 'title.earth')");
 
-                // base offer (staticdata) plus, when the live persona marketplace is on,
-                // the unlock-all live items — one OData filter over both. The pack gate
-                // decides which theme-tag packs are on by default and per player; base
-                // pieces (no theme tag) always serve, and staticdata is never gated.
+                // base offer (staticdata) plus the panel's custom cosmetics (own
+                // content — never pack-gated, like staticdata) and, when the live
+                // persona marketplace is on, the unlock-all live items — one OData
+                // filter over all of it. The pack gate decides which theme-tag packs
+                // are on by default and per player (with packs configured, themed
+                // pieces outside them are hidden — auto-gating); base content always
+                // serves. The grouped per-category limit caps every dressing-room tab
+                // over the whole composed offer — staticdata persona pieces and the
+                // customs count first, live pieces fill their group up to the limit.
                 string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
                 IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
                 IEnumerable<Item> source = BaseOfferItems
+                    .Concat(CustomOffer.Items)
                     .Concat(await LiveOfferItemsFor(callerId, cancellationToken))
+                    .Concat(CustomOfferItems)
                     .Concat(livePacks);
+
+                int categoryLimit = PersonaPackGate.CategoryLimit;
+                if (categoryLimit > 0)
+                {
+                    source = ApplyGroupedCategoryLimit(source, categoryLimit);
+                }
 
             var oDataQuery = source.AsQueryable().OData(settings =>
                 {
@@ -408,26 +622,59 @@ internal sealed class CatalogController : ApaceControllerBase
         }
 
         // live persona offer resolves first (the legacy 1P persona items are replaced
-        // by their live twins when the live marketplace is on); live skin packs come
-        // next (gated — a pack outside defaults ∪ grants resolves like any unknown
-        // id); staticdata stays for everything else (layout, store config, skin
-        // packs, buildplates, Apace pieces)
+        // by their live twins when the live marketplace is on); the panel's custom
+        // cosmetics come next (own content — never pack-gated, the supported-only
+        // gate still applies); live skin packs follow (gated — a pack outside
+        // defaults ∪ grants resolves like any unknown id); staticdata stays for
+        // everything else (layout, store config, skin packs, buildplates, Apace
+        // pieces). A live piece resolves like an unknown id too when the pack gate
+        // hides it from this caller (same rule as the search offer — themed pieces
+        // need an enabled pack, base pieces always serve) or its compat verdict is
+        // risky (onlySupported).
         string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
         IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
         HashSet<Guid> servedPackIds = [.. livePacks.Select(pack => pack.Id)];
 
-        if (LivePersonaCatalog.IsAvailable && _liveOfferById is null)
-        {
-            _ = LiveOfferItems; // force the lazy build so the id map is populated
-        }
+        LiveOfferCache? live = LivePersonaCatalog.IsAvailable ? LiveOffer : null;
+        IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPackUuidsAsync(callerId, cancellationToken);
 
-        if (LivePersonaCatalog.IsAvailable && _liveOfferById is not null && _liveOfferById.TryGetValue(itemId, out var liveItem))
+        if (live is not null && live.ById.TryGetValue(itemId, out var liveItem))
         {
+            if (allowed is not null
+                && liveItem.DisplayProperties?.CreatorName is "Minecraft"
+                && live.ThemeTagsById.TryGetValue(itemId, out string[]? themeTags)
+                && themeTags.Length > 0
+                && !themeTags.Any(allowed.Contains))
+            {
+                return TypedResults.NotFound();
+            }
+
+            if (PersonaPackGate.OnlySupported && !PersonaPieceTypes.IsSupportedCosmetic(itemId.ToString()))
+            {
+                return TypedResults.NotFound();
+            }
+
             return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
                 200,
                 "OK",
                 new GetPublishedItemResponse(
                     ToResponse(liveItem, Request)
+                )
+            ), jsonOptions), "application/json");
+        }
+
+        if (CustomCosmetics.Items.Count > 0 && CustomOffer.ById.TryGetValue(itemId, out var customItem))
+        {
+            if (PersonaPackGate.OnlySupported && !PersonaPieceTypes.IsSupportedCosmetic(itemId.ToString()))
+            {
+                return TypedResults.NotFound();
+            }
+
+            return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
+                200,
+                "OK",
+                new GetPublishedItemResponse(
+                    ToResponse(customItem, Request)
                 )
             ), jsonOptions), "application/json");
         }
@@ -439,6 +686,20 @@ internal sealed class CatalogController : ApaceControllerBase
                 "OK",
                 new GetPublishedItemResponse(
                     WithSkinPackRow(ToResponse(livePack, Request), livePacks)
+                )
+            ), jsonOptions), "application/json");
+        }
+
+        // custom cosmetics resolve like any other item id (their ids are panel
+        // GUIDs that never collide with staticdata or the live catalog)
+        Item? customItem = CustomOfferItems.FirstOrDefault(candidate => candidate.Id == itemId);
+        if (customItem is not null)
+        {
+            return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
+                200,
+                "OK",
+                new GetPublishedItemResponse(
+                    ToResponse(customItem, Request)
                 )
             ), jsonOptions), "application/json");
         }
@@ -520,9 +781,9 @@ internal sealed class CatalogController : ApaceControllerBase
 
     // The response-time half of the featured-query merge: the staticdata ids were
     // already appended when the cache was mapped (CIItemToItem); this pass appends
-    // the LIVE skin pack ids the current caller may see — all of them with gating
-    // off, defaults ∪ grants with gating on. Runs per response, never per cache
-    // build, because the list is per-player.
+    // the LIVE skin pack ids the current caller may see — all of them when no
+    // packs are configured, defaults ∪ grants otherwise. Runs per response, never
+    // per cache build, because the list is per-player.
     private static Item WithSkinPackRow(Item item, IReadOnlyList<Item> livePacks)
     {
         if (livePacks.Count == 0
