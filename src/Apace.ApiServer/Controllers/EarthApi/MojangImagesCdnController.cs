@@ -31,6 +31,15 @@ public class MojangImagesCdnController : ControllerBase
 
         string directory = Path.Combine(Program.MojangAssetsDir, "images");
         string filePath = Path.Combine(directory, fileName);
+        if (!System.IO.File.Exists(filePath))
+        {
+            // custom cosmetics: the panel saves custom thumbnails under
+            // <mojang-assets>/playfab/images/<id>.png — the assets-tree fallback
+            // next to the wwwroot copies UseStaticFiles already tried before this
+            // controller runs (same inline serving semantics, no caching/resize)
+            filePath = Path.Combine(Program.MojangAssetsDir, "playfab", "images", fileName);
+        }
+
         if (!System.IO.File.Exists(filePath) && LivePersonaCatalog.Enabled)
         {
             try

@@ -36,6 +36,11 @@ public class PersonaCdnController : ControllerBase
         {
             string directory = Path.GetFullPath(Path.Combine(Program.staticData.Directory, "playfab", "persona"));
             filePath = Path.Combine(directory, fileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                // cape diagnostics: which copy answered — the data volume or the legacy staticdata tree
+                Log.Debug("Persona zip {FileName} resolved from the staticdata fallback ({Path})", fileName, filePath);
+            }
         }
 
         // live persona marketplace: a miss on both dirs is the lazy probe + download

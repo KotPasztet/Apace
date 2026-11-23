@@ -1,4 +1,5 @@
 using Serilog;
+using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ILogger = Serilog.ILogger;
@@ -351,8 +352,11 @@ public static class LivePersonaCatalog
     /// The offer item for one thematic skin pack: a ClientConfig bundle entry the
     /// client parses itself (same shape as the committed "Standard" pack) —
     /// unlock-all pricing, tags kept verbatim (store searches filter on them).
-    /// The client resolves the pack files from its skin_packs repository via the
-    /// packIdentity uuid, so the offer carries no Contents entries.
+    /// Packs the client does not have built in are imported by fetching the offer's
+    /// skinbinary Contents entry (docs/custom-persona-items.md "Downloadable skin
+    /// packs") — it points at the proxy path SkinPackCdnController serves, and the
+    /// zip behind it is resolved and downloaded lazily on the first client request
+    /// (<see cref="TryEnsureSkinPackZipAsync"/>), like the persona piece binaries.
     /// </summary>
     public static CItem BuildSkinPackOfferItem(LiveSkinPack pack)
     {
@@ -366,6 +370,14 @@ public static class LivePersonaCatalog
         if (!tags.Contains("has_skinpack", StringComparer.OrdinalIgnoreCase))
         {
             tags.Add("has_skinpack");
+        }
+
+        // the Classic Skins tab's own search (StoreConfig dressingRoomClassicSkinsSearch)
+        // looks for tag.cat — the committed skin pack offers carry it for the same
+        // reason, and a live pack without it never surfaces in that search
+        if (!tags.Contains("tag.cat", StringComparer.OrdinalIgnoreCase))
+        {
+            tags.Add("tag.cat");
         }
 
         Guid id = Guid.Parse(pack.Id);
@@ -402,7 +414,21 @@ public static class LivePersonaCatalog
             "301F442C3B63DC20",
             tags,
             new Dictionary<string, CItem.KeywordValues>(),
-            [],
+            [
+                // the client imports a pack it does not have built in from the item's
+                // skinbinary content — always through OUR proxy path; the real URL is
+                // resolved server-side on the first request (TryEnsureSkinPackZipAsync
+                // below). Same shape as the committed skin pack offers: Contents entry
+                // id = the offer id, MinClientVersion 1.0.0.
+                new CItem.QueryManifestContent(
+                    pack.Id,
+                    $"/playfab/skinpacks/{pack.Id}.zip",
+                    "65535.65535.65535",
+                    "1.0.0",
+                    [],
+                    "skinbinary"
+                ),
+            ],
             pack.ItemReferences.Select(reference => new CItem.ItemReference(reference.Id, reference.Amount)).ToList(),
             new Dictionary<string, string>(),
             new Dictionary<string, string>()
@@ -419,12 +445,37 @@ public static class LivePersonaCatalog
         DateTimeOffset CheckedAt,
         string? Source);
 
+    /// <summary>
+    /// Geometry compatibility facts for one piece binary, captured by opening the
+    /// zip (see <see cref="InspectGeometryCompat"/>): the geometry format_version
+    /// the frozen MCE client (Jan 2021) can render, plus whether the piece
+    /// animates or references particles. Null fields are unknown — only clear
+    /// signals ever set true/false, and a parse failure leaves everything null.
+    /// </summary>
+    public sealed record GeometryCompatInfo(
+        string? FormatVersion,
+        bool? HasAnimations,
+        bool? HasParticles,
+        // Forward-compat part of the pipeline contract — the panel's
+        // CosmeticCompatIndex reads the same keys and its risky rule includes
+        // render controllers and face bones; the inspect pass records them
+        // once it scans for them, and a file without the keys leaves them
+        // null (null = not scanned, not disqualifying on their own).
+        bool? HasRenderControllers = null,
+        bool? HasFaceBones = null);
+
     private sealed class ProbeStateFile
     {
         public Dictionary<string, ProbeEntry> Items { get; set; } = [];
+
+        // Parallel to Items and persisted in the same file, keyed by item id:
+        // compat facts are independent of the probe verdict (a mirror-served piece
+        // is alive without ever being probed upstream, and vice versa).
+        public Dictionary<string, GeometryCompatInfo> Geometry { get; set; } = [];
     }
 
     private static readonly Dictionary<string, ProbeEntry> ProbeStates = [];
+    private static readonly Dictionary<string, GeometryCompatInfo> GeometryCompatStates = [];
     private static bool _probeStatesLoaded;
     private static bool _probeStateDirty;
     private static DateTime _probeStateLastSave = DateTime.MinValue;
@@ -452,6 +503,14 @@ public static class LivePersonaCatalog
                     ProbeStates[itemId] = entry;
                 }
             }
+
+            if (file?.Geometry is not null)
+            {
+                foreach (var (itemId, compat) in file.Geometry)
+                {
+                    GeometryCompatStates[itemId] = compat;
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -465,38 +524,45 @@ public static class LivePersonaCatalog
     private static bool IsStaleDead(ProbeEntry entry)
         => entry.State == "dead" && entry.CheckedAt < (LastSyncAt ?? DateTimeOffset.UtcNow.AddDays(-1)) - TimeSpan.FromHours(24);
 
-    /// <summary>Item ids the offer must hide (probed dead, verdict still fresh).</summary>
+    /// <summary>Item ids the offer must hide (probed dead, verdict still fresh).
+    /// A dead verdict never hides a piece whose binary exists in the mojang-assets
+    /// primary dir (<see cref="GetLocalPersonaBinaries"/>) — a locally mirrored file
+    /// overrides the verdict, whatever an earlier upstream probe concluded.</summary>
     public static HashSet<string> GetDeadItemIds()
     {
         lock (StateLock)
         {
             LoadProbeStates();
+            Dictionary<string, string> local = GetLocalPersonaBinaries();
             return ProbeStates
-                .Where(kv => kv.Value.State == "dead" && !IsStaleDead(kv.Value))
+                .Where(kv => kv.Value.State == "dead" && !IsStaleDead(kv.Value) && !local.ContainsKey(kv.Key))
                 .Select(kv => kv.Key)
                 .ToHashSet();
         }
     }
 
-    // Panel counter: live / dead / unchecked.
+    // Panel counter: live / dead / unchecked. A dead verdict whose binary is
+    // present in the mojang-assets primary dir counts as live (mirror override,
+    // same rule as GetDeadItemIds).
     public static (int Live, int Dead, int Unchecked, int CachedBinaries, int CachedThumbnails) GetProbeSummary()
     {
         lock (StateLock)
         {
             LoadProbeStates();
+            Dictionary<string, string> local = GetLocalPersonaBinaries();
             int live = 0, dead = 0;
-            foreach (var entry in ProbeStates.Values)
+            foreach (var kv in ProbeStates)
             {
-                if (IsStaleDead(entry))
+                if (IsStaleDead(kv.Value))
                 {
                     continue;
                 }
 
-                if (entry.State == "live")
+                if (kv.Value.State == "live" || local.ContainsKey(kv.Key))
                 {
                     live++;
                 }
-                else if (entry.State == "dead")
+                else if (kv.Value.State == "dead")
                 {
                     dead++;
                 }
@@ -524,7 +590,7 @@ public static class LivePersonaCatalog
         {
             Directory.CreateDirectory(CatalogDir);
             string tempPath = ProbeStatePath + ".tmp";
-            File.WriteAllText(tempPath, JsonSerializer.Serialize(new ProbeStateFile { Items = ProbeStates }, JsonOptions));
+            File.WriteAllText(tempPath, JsonSerializer.Serialize(new ProbeStateFile { Items = ProbeStates, Geometry = GeometryCompatStates }, JsonOptions));
             File.Move(tempPath, ProbeStatePath, overwrite: true);
             _probeStateDirty = false;
             _probeStateLastSave = DateTime.UtcNow;
@@ -817,10 +883,83 @@ public static class LivePersonaCatalog
     public static string BinaryPath(string itemId) => Path.Combine(BinariesDir, $"{itemId}.zip");
 
     /// <summary>
-    /// The client asked for a live piece binary: serve from cache, else run the
-    /// lazy pipeline — resolve the URL (GetItem), probe it (404 → alternate CDN
-    /// shapes → dead), download to the volume cache. Returns false when the item
-    /// is dead (the controller answers 404 and the item leaves the offer).
+    /// The mojang-assets primary persona path the panel's asset gate fills from the
+    /// committed manifest (mirror-backed legacy binaries land here on consent):
+    /// <c>&lt;MojangAssetsDir&gt;/playfab/persona/&lt;itemId&gt;.zip</c>. PersonaCdnController
+    /// checks this dir before the lazy pipeline, and a dead probe verdict from
+    /// before the mirror landed must not keep such a piece hidden.
+    /// </summary>
+    public static string LocalPersonaPath(string itemId) => Path.Combine(Program.MojangAssetsDir, "playfab", "persona", $"{itemId}.zip");
+
+    // item id → file path of persona zips present in the mojang-assets primary
+    // dir. Recomputed only when the directory changes (one stat per check): the
+    // asset gate downloads files there lazily (consent flow / mirror restore can
+    // land long after any probe verdict), so this map is the dead→alive bridge.
+    private static long _localPersonaStamp = -1;
+    private static readonly Dictionary<string, string> LocalPersonaBinaries = new(StringComparer.OrdinalIgnoreCase);
+
+    // Caller must hold StateLock.
+    private static Dictionary<string, string> GetLocalPersonaBinaries()
+    {
+        string dir = Path.Combine(Program.MojangAssetsDir, "playfab", "persona");
+        long stamp;
+        try
+        {
+            stamp = Directory.Exists(dir) ? Directory.GetLastWriteTimeUtc(dir).ToUniversalTime().Ticks : 0;
+        }
+        catch (Exception)
+        {
+            stamp = 0;
+        }
+
+        if (stamp == _localPersonaStamp)
+        {
+            return LocalPersonaBinaries;
+        }
+
+        _localPersonaStamp = stamp;
+        LocalPersonaBinaries.Clear();
+        try
+        {
+            if (Directory.Exists(dir))
+            {
+                foreach (string file in Directory.EnumerateFiles(dir, "*.zip"))
+                {
+                    string itemId = Path.GetFileNameWithoutExtension(file);
+                    if (Guid.TryParse(itemId, out _))
+                    {
+                        LocalPersonaBinaries[itemId] = file;
+                    }
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // unreadable dir — no local overrides this round
+        }
+
+        return LocalPersonaBinaries;
+    }
+
+    private static bool FileExistsNonEmpty(string path)
+    {
+        try
+        {
+            var info = new FileInfo(path);
+            return info.Exists && info.Length > 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// The client asked for a live piece binary: serve from the mojang-assets
+    /// mirror dir or the volume cache, else run the lazy pipeline — resolve the
+    /// URL (GetItem), probe it (404 → alternate CDN shapes → dead), download to
+    /// the volume cache. Returns false when the item is dead (the controller
+    /// answers 404 and the item leaves the offer).
     /// </summary>
     public static async Task<bool> TryEnsureBinaryAsync(string itemId, ILogger logger, CancellationToken cancellationToken)
     {
@@ -828,16 +967,39 @@ public static class LivePersonaCatalog
         await gate.WaitAsync(cancellationToken);
         try
         {
+            // mirror-first: the asset gate fills <mojang-assets>/playfab/persona/<itemId>.zip
+            // lazily, possibly long AFTER an upstream probe declared the item dead —
+            // a locally mirrored binary makes the item ALIVE again with no upstream
+            // access, overriding any stale verdict (RecordProbe refreshes it so the
+            // offer and the panel counters follow).
+            string? localMirrorPath = null;
             lock (StateLock)
             {
                 LoadProbeStates();
+                if (GetLocalPersonaBinaries().TryGetValue(itemId, out string? mirrorPath) && FileExistsNonEmpty(mirrorPath))
+                {
+                    localMirrorPath = mirrorPath;
+                    if (!ProbeStates.TryGetValue(itemId, out var mirrored) || mirrored.State != "live")
+                    {
+                        RecordProbe(itemId, "live", null, "local", logger);
+                        logger.Information("Live persona piece {Item} is alive locally — mirrored binary present in {Path}, no upstream probe needed", itemId, localMirrorPath);
+                    }
+                }
+            }
+
+            if (localMirrorPath is not null)
+            {
+                ImportLocalBinary(itemId, localMirrorPath, logger);
+                EnsureGeometryCompatCaptured(itemId, logger, localMirrorPath, BinaryPath(itemId));
+                return true;
             }
 
             string path = BinaryPath(itemId);
             if (ProbeStates.TryGetValue(itemId, out var state))
             {
-                if (state.State == "live" && File.Exists(path) && new FileInfo(path).Length > 0)
+                if (state.State == "live" && FileExistsNonEmpty(path))
                 {
+                    EnsureGeometryCompatCaptured(itemId, logger, path);
                     return true; // cached from an earlier request
                 }
 
@@ -893,11 +1055,37 @@ public static class LivePersonaCatalog
             // 3. download into the volume cache (retry/backoff like the asset gate)
             await DownloadBinaryAsync(resolved, path, logger, cancellationToken);
             logger.Information("Live persona piece {Item} downloaded from {Source} into the volume cache", itemId, source);
+            EnsureGeometryCompatCaptured(itemId, logger, path);
             return true;
         }
         finally
         {
             gate.Release();
+        }
+    }
+
+    // Warm the binaries cache from the mojang-assets mirror copy so every caller
+    // that resolves BinaryPath afterwards (and the panel's cached-binaries counter)
+    // sees the piece through the same path upstream downloads land in. Best effort:
+    // the primary-dir copy stays the servable source even when the import fails
+    // (PersonaCdnController checks that dir first anyway). Runs under the item gate.
+    private static void ImportLocalBinary(string itemId, string sourcePath, ILogger logger)
+    {
+        try
+        {
+            string destPath = BinaryPath(itemId);
+            if (FileExistsNonEmpty(destPath))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(BinariesDir);
+            File.Copy(sourcePath, destPath, overwrite: true);
+            logger.Debug("Live persona piece {Item} imported from {Source} into the binaries cache", itemId, sourcePath);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Live persona piece {Item} could not be imported into the binaries cache — the mojang-assets copy stays the servable source", itemId);
         }
     }
 
@@ -956,11 +1144,409 @@ public static class LivePersonaCatalog
     }
 
     // ---------------------------------------------------------------------------
+    // Lazy skin pack zip ensure (SkinPackCdnController miss path)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// The servable skin pack zip path — the same dir the panel's MojangSkinPackBuilder
+    /// writes the committed packs into and SkinPackCdnController serves:
+    /// <c>&lt;MojangAssetsDir&gt;/playfab/skinpacks/&lt;offerId&gt;.zip</c>.
+    /// </summary>
+    public static string SkinPackZipPath(string offerId) => Path.Combine(Program.MojangAssetsDir, "playfab", "skinpacks", $"{offerId}.zip");
+
+    /// <summary>
+    /// The client asked for a live skin pack zip (the offer's skinbinary Contents
+    /// entry points at <see cref="SkinPackZipPath"/>): serve from the volume when
+    /// present (built locally or cached from an earlier request), else run the lazy
+    /// pipeline — resolve the real URL (Catalog/GetItem; Search never returns
+    /// Contents), probe it (404 → alternate CDN shapes), download into the volume.
+    /// Returns false when the pack is not a live catalog bundle or nothing answers
+    /// upstream — the controller then answers 404. Unlike persona pieces a failed
+    /// pack stays in the offer (no probe-state entry): the next client request
+    /// retries, paced like every remote call here, and self-heals when Mojang
+    /// re-hosts the pack.
+    /// </summary>
+    public static async Task<bool> TryEnsureSkinPackZipAsync(string offerId, ILogger logger, CancellationToken cancellationToken)
+    {
+        var index = Index;
+        LiveSkinPack? pack = index?.SkinPacks.FirstOrDefault(entry => string.Equals(entry.Id, offerId, StringComparison.OrdinalIgnoreCase));
+        if (pack is null)
+        {
+            return false; // not a live catalog skin pack (the committed packs are files already)
+        }
+
+        var gate = GetItemLock($"skinpack:{offerId}");
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            string path = SkinPackZipPath(offerId);
+            if (FileExistsNonEmpty(path))
+            {
+                return true; // cached from an earlier request
+            }
+
+            // 1. resolve the real URL (Search never returns Contents; GetItem does)
+            string? url = await ResolveBinaryUrlAsync(offerId, logger, cancellationToken);
+            if (url is null)
+            {
+                logger.Information("Live skin pack {Pack} ({Title}) has no downloadable content upstream — the client cannot import it", offerId, pack.Title);
+                return false;
+            }
+
+            // 2. probe: primary first, then the same GUID on the new content CDN
+            int? status = await ProbeUrlAsync(url, cancellationToken);
+            string resolved = url;
+            if (status is not (200 or 206))
+            {
+                foreach (string alternate in AlternateCdnUrls(url))
+                {
+                    int? alternateStatus = await ProbeUrlAsync(alternate, cancellationToken);
+                    if (alternateStatus is 200 or 206)
+                    {
+                        resolved = alternate;
+                        status = alternateStatus;
+                        break;
+                    }
+                }
+            }
+
+            if (status is not (200 or 206))
+            {
+                logger.Information("Live skin pack {Pack} ({Title}) probed dead (primary {Primary}, alternates tried) — the client cannot import it until a source revives",
+                    offerId, pack.Title, status ?? 0);
+                return false;
+            }
+
+            // 3. download into the servable volume dir (retry/backoff like the persona binaries)
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            await DownloadBinaryAsync(resolved, path, logger, cancellationToken);
+            logger.Information("Live skin pack {Pack} ({Title}) downloaded from {Source} into the volume cache",
+                offerId, pack.Title, resolved.Split('/')[2]);
+            return true;
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Geometry compat capture (frozen-MCE-client compatibility facts)
+    // ---------------------------------------------------------------------------
+
+    // The MCE client froze in January 2021: piece binaries using geometry
+    // format_version >= 1.16.0 or animated pieces render broken (floating parts).
+    // Whenever a binary is downloaded or first served from disk we open the zip
+    // once and record the facts in probe-state.json (GeometryCompatInfo, parallel
+    // "geometry" dictionary) — CatalogController consumes them via
+    // TryGetGeometryCompat. Lazy and cheap: a binary is parsed at most once, and
+    // files already on disk are picked up on the first touch of their item.
+    private const int MaxCompatEntryBytes = 2 * 1024 * 1024;
+
+    /// <summary>
+    /// Geometry compatibility facts for a piece binary — geometry format_version,
+    /// animation and particle presence — captured when the binary is downloaded
+    /// or first served, and lazily for binaries already on disk that no request
+    /// has touched yet. Returns false when nothing is known for the item (never
+    /// seen on disk, or the zip could not be parsed).
+    /// </summary>
+    public static bool TryGetGeometryCompat(string itemId, out string? formatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones)
+    {
+        lock (StateLock)
+        {
+            LoadProbeStates();
+            if (GeometryCompatStates.TryGetValue(itemId, out GeometryCompatInfo? known))
+            {
+                formatVersion = known.FormatVersion;
+                hasAnimations = known.HasAnimations;
+                hasParticles = known.HasParticles;
+                hasRenderControllers = known.HasRenderControllers;
+                hasFaceBones = known.HasFaceBones;
+                return formatVersion is not null || known.HasAnimations is not null || known.HasParticles is not null;
+            }
+        }
+
+        // lazy capture: a binary already on disk (asset-gate mirror copy or cache)
+        // that nothing has touched yet — inspect it on the first ask
+        string? path = null;
+        lock (StateLock)
+        {
+            if (GetLocalPersonaBinaries().TryGetValue(itemId, out string? localPath) && FileExistsNonEmpty(localPath))
+            {
+                path = localPath;
+            }
+        }
+
+        if (path is null)
+        {
+            string cached = BinaryPath(itemId);
+            if (FileExistsNonEmpty(cached))
+            {
+                path = cached;
+            }
+        }
+
+        if (path is not null)
+        {
+            EnsureGeometryCompatCaptured(itemId, Log.Logger, path);
+            lock (StateLock)
+            {
+                if (GeometryCompatStates.TryGetValue(itemId, out GeometryCompatInfo? captured))
+                {
+                    formatVersion = captured.FormatVersion;
+                    hasAnimations = captured.HasAnimations;
+                    hasParticles = captured.HasParticles;
+                    hasRenderControllers = captured.HasRenderControllers;
+                    hasFaceBones = captured.HasFaceBones;
+                    return formatVersion is not null || captured.HasAnimations is not null || captured.HasParticles is not null;
+                }
+            }
+        }
+
+        formatVersion = null;
+        hasAnimations = null;
+        hasParticles = null;
+        hasRenderControllers = null;
+        hasFaceBones = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Captures the geometry compat facts for a piece binary once — the first
+    /// candidate path that exists wins. An unparseable zip is cached as an
+    /// all-unknown fact so it is not re-parsed on every request;
+    /// <see cref="TryGetGeometryCompat"/> still reports false (unknown) for those.
+    /// </summary>
+    private static void EnsureGeometryCompatCaptured(string itemId, ILogger logger, params string[] candidatePaths)
+    {
+        lock (StateLock)
+        {
+            LoadProbeStates();
+            if (GeometryCompatStates.ContainsKey(itemId))
+            {
+                return;
+            }
+        }
+
+        string? path = candidatePaths.FirstOrDefault(FileExistsNonEmpty);
+        if (path is null)
+        {
+            return; // nothing on disk yet — captured on a later touch
+        }
+
+        GeometryCompatInfo info = InspectGeometryCompat(path) ?? new GeometryCompatInfo(null, null, null);
+        lock (StateLock)
+        {
+            GeometryCompatStates[itemId] = info;
+            MarkProbeStateDirty(logger);
+        }
+
+        logger.Debug(
+            "Geometry compat captured for {Item}: formatVersion {FormatVersion}, animations {Animations}, particles {Particles} ({Path})",
+            itemId,
+            info.FormatVersion ?? "unknown",
+            info.HasAnimations?.ToString() ?? "unknown",
+            info.HasParticles?.ToString() ?? "unknown",
+            path);
+    }
+
+    /// <summary>
+    /// Opens a piece binary zip and reads the geometry compatibility facts. Real
+    /// pieces are an outer zip holding one nested ppack0.zip (flat custom zips are
+    /// accepted too) — both layers are searched. Only clear signals set a value:
+    /// the geometry json's format_version, a non-empty top-level animations object
+    /// or *.animation.json entries, and particle/flipbook references in meta or
+    /// manifest json. Returns null when the zip cannot be opened at all.
+    /// </summary>
+    private static GeometryCompatInfo? InspectGeometryCompat(string zipPath)
+    {
+        try
+        {
+            using ZipArchive zip = ZipFile.OpenRead(zipPath);
+            var entries = new List<ZipArchiveEntry>();
+            CollectZipEntries(zip, entries);
+            return InspectCompatEntries(entries);
+        }
+        catch (Exception)
+        {
+            return null; // unreadable/partial zip — the fields stay unknown
+        }
+    }
+
+    private static void CollectZipEntries(ZipArchive archive, List<ZipArchiveEntry> into)
+    {
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            into.Add(entry);
+            if (entry.FullName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    using var nested = new ZipArchive(entry.Open(), ZipArchiveMode.Read, leaveOpen: false);
+                    CollectZipEntries(nested, into);
+                }
+                catch (Exception)
+                {
+                    // not a readable nested zip — its entries are skipped
+                }
+            }
+        }
+    }
+
+    private static GeometryCompatInfo? InspectCompatEntries(List<ZipArchiveEntry> entries)
+    {
+        string? formatVersion = null;
+        bool? hasAnimations = null;
+        bool? hasParticles = null;
+        bool sawGeometry = false;
+        bool sawMetaOrManifest = false;
+        var geometryCandidates = new List<ZipArchiveEntry>();
+
+        void ParseGeometryCandidate(ZipArchiveEntry entry)
+        {
+            string? text = TryReadEntryText(entry);
+            if (text is null)
+            {
+                return;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(text);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                sawGeometry = true;
+                JsonElement root = doc.RootElement;
+                if (formatVersion is null && root.TryGetProperty("format_version", out JsonElement version))
+                {
+                    formatVersion = version.ValueKind == JsonValueKind.String ? version.GetString() : version.GetRawText();
+                }
+
+                // a top-level, non-empty "animations" object in the geometry json
+                if (hasAnimations is not true
+                    && root.TryGetProperty("animations", out JsonElement animations)
+                    && animations.ValueKind == JsonValueKind.Object
+                    && animations.EnumerateObject().Any())
+                {
+                    hasAnimations = true;
+                }
+            }
+            catch (JsonException)
+            {
+                // malformed geometry json — the fields it could answer stay unknown
+            }
+        }
+
+        foreach (ZipArchiveEntry entry in entries)
+        {
+            if (entry.Name.EndsWith(".geometry.json", StringComparison.OrdinalIgnoreCase))
+            {
+                geometryCandidates.Add(entry);
+            }
+            else if (entry.Name.EndsWith(".animation.json", StringComparison.OrdinalIgnoreCase))
+            {
+                hasAnimations = true; // animation files in the zip — a clear signal
+            }
+            else if (entry.Name.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase)
+                     || entry.Name.Equals("manifest.json", StringComparison.OrdinalIgnoreCase))
+            {
+                sawMetaOrManifest = true;
+                string? text = TryReadEntryText(entry);
+                if (text is null)
+                {
+                    continue;
+                }
+
+                if (text.Contains("particle", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("flipbook", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasParticles = true; // particle/flipbook reference in meta/manifest
+                }
+
+                // a meta may point at its geometry files by name (geometry_sources
+                // references) — collect those as candidates too
+                try
+                {
+                    using var doc = JsonDocument.Parse(text);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object
+                        && doc.RootElement.TryGetProperty("geometry_sources", out JsonElement sources)
+                        && sources.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (JsonProperty source in sources.EnumerateObject())
+                        {
+                            string? reference = source.Value.ValueKind switch
+                            {
+                                JsonValueKind.String => source.Value.GetString(),
+                                JsonValueKind.Object when source.Value.TryGetProperty("file", out JsonElement file) => file.GetString(),
+                                _ => null,
+                            };
+                            if (string.IsNullOrWhiteSpace(reference))
+                            {
+                                continue;
+                            }
+
+                            geometryCandidates.AddRange(entries.Where(candidate => candidate.Name.Equals(reference, StringComparison.OrdinalIgnoreCase)));
+                        }
+                    }
+                }
+                catch (JsonException)
+                {
+                    // meta json is not parseable — the particle scan above still counted
+                }
+            }
+        }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (ZipArchiveEntry candidate in geometryCandidates)
+        {
+            if (seen.Add(candidate.FullName))
+            {
+                ParseGeometryCandidate(candidate);
+            }
+        }
+
+        if (!sawGeometry && formatVersion is null && !sawMetaOrManifest && hasAnimations is not true && hasParticles is not true)
+        {
+            return null; // nothing inspectable in the zip — all fields unknown
+        }
+
+        // conservative negatives: the zip held a geometry file with no animation
+        // signal anywhere, or meta/manifest text without a particle reference
+        hasAnimations ??= sawGeometry ? false : null;
+        hasParticles ??= sawMetaOrManifest ? false : null;
+
+        return new GeometryCompatInfo(formatVersion, hasAnimations, hasParticles);
+    }
+
+    private static string? TryReadEntryText(ZipArchiveEntry entry)
+    {
+        try
+        {
+            if (entry.Length is < 0 or > MaxCompatEntryBytes)
+            {
+                return null;
+            }
+
+            using var stream = entry.Open();
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            return reader.ReadToEnd();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    // ---------------------------------------------------------------------------
     // Lazy thumbnail ensure (MojangImagesCdnController miss path)
     // ---------------------------------------------------------------------------
 
     /// <summary>
-    /// The dressing room asked for a live item thumbnail: serve from cache, else
+    /// The dressing room asked for a live item thumbnail — a persona piece's or a
+    /// classic skin pack's (the Classic Skins row tiles): serve from cache, else
     /// download from the thumbnail URL recorded at sync time; on failure try the
     /// Bedrock-Persona mirror. Returns the cached file path or null.
     /// </summary>
@@ -973,9 +1559,18 @@ public static class LivePersonaCatalog
         }
 
         var entry = index.Items.FirstOrDefault(item => item.ThumbnailId == imageId);
+        string? recordedUrl = entry?.ThumbnailUrl;
         if (entry is null)
         {
-            return null; // not a live catalog thumbnail
+            // the sync records a thumbnail id/URL per skin pack too — the Classic
+            // Skins row's tiles resolve through the same lazy pipeline
+            var skinPack = index.SkinPacks.FirstOrDefault(packEntry => packEntry.ThumbnailId == imageId);
+            if (skinPack is null)
+            {
+                return null; // not a live catalog thumbnail
+            }
+
+            recordedUrl = skinPack.ThumbnailUrl;
         }
 
         var gate = GetItemLock($"thumb:{imageId}");
@@ -992,7 +1587,7 @@ public static class LivePersonaCatalog
             // the mirror is flat (no piece type in the path) and the repo has a
             // handful of zero-byte PNGs — retrying on the next miss self-heals
             string mirrorUrl = $"{ThumbnailMirrorBase}/{imageId}.png";
-            foreach (string candidate in new[] { entry.ThumbnailUrl, mirrorUrl }.Where(u => !string.IsNullOrWhiteSpace(u)).Distinct())
+            foreach (string candidate in new[] { recordedUrl, mirrorUrl }.Where(u => !string.IsNullOrWhiteSpace(u)).Distinct())
             {
                 try
                 {
