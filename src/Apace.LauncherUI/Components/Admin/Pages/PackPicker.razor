@@ -122,9 +122,13 @@
             ? $"{match.Title} ({match.PieceCount} {CountNoun(match)})"
             : $"{tag} (no longer in the index)";
 
-    // "piece(s)" for thematic packs, "skin(s)" for classic skin packs.
+    // "accessory"/"accessories" for thematic packs (their count is accessories
+    // only — skins are the classic bundles' content), "skin(s)" for classic
+    // skin packs.
     private static string CountNoun(PersonaPackIndex.ThemePackRow row)
-        => row.IsSkinPack ? $"skin{(row.PieceCount == 1 ? "" : "s")}" : $"piece{(row.PieceCount == 1 ? "" : "s")}";
+        => row.IsSkinPack
+            ? $"skin{(row.PieceCount == 1 ? "" : "s")}"
+            : row.PieceCount == 1 ? "accessory" : "accessories";
 
     private async Task ToggleAsync(string tag)
     {

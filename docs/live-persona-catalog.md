@@ -156,13 +156,15 @@ The marketplace's own thematic grouping of accessories is its **theme-tag
 metadata** (`tag.*` — Cool, Dark, Cute, Halloween, Fantasy, …; ~284 distinct
 values, ~55% of pieces carry one). So:
 
-- one pack = one theme tag; enabling it serves every piece carrying the tag,
-  across all piece categories (a pack spans head + tops + footwear + …);
-- pieces **without** a theme tag are the base content and keep serving while
-  any pack is configured;
-- with **nothing configured** (defaults ∪ per-player grants empty) the whole
-  live marketplace is gated off — **0 live pieces serve**, themed or tagless,
-  live classic skin packs included. What still shows is the always-served
+- one pack = one theme tag; enabling it serves every **accessory** carrying the
+  tag, across all piece categories (a pack spans head + tops + footwear + …);
+- **accessories serve only from the selected packs**: a Minecraft-creator
+  accessory needs the allowed set non-empty AND one of its theme tags in it —
+  accessories **without** a theme tag never serve;
+- **skins are exempt from pack selection**: `persona_skin` pieces and the
+  classic-skin packs (MarketplaceDurableCatalog bundles) serve regardless;
+- with **nothing configured** (defaults ∪ per-player grants empty) **0
+  accessories serve** — skins still do. What always shows is the always-served
   staticdata (the built-in "Minecraft Default Skins" pack, the client's
   vanilla Standard pack scaffolding, Bold Rabbit Feet, the Apace capes,
   layout/StoreConfig) and the custom cosmetics (non-Minecraft creators are
@@ -172,16 +174,16 @@ values, ~55% of pieces carry one). So:
   on both sides (panel `PersonaPackIndex.ReadThemePacks`, ApiServer
   `LivePersonaCatalog.GetOffer` — separate processes share the volume, not the
   code);
-- the classic-skin packs keep following the same allowed set by their pack
-  uuid (with packs configured; legacy saved selections keep working; entries
-  that never match — e.g. piece-type names from the first gating iteration —
-  are ignored);
+- enforcement points: the search offer, `Catalog/GetPublishedItem` at equip
+  resolve (a non-selected accessory 404s like an unknown id), the saved persona
+  profiles (`ObjectController.SanitizePersonaObjects`) and the binary endpoint —
+  `LivePersonaCatalog.TryEnsureBinaryAsync` refuses to download a non-selected
+  accessory's zip (pre-existing mirror/staticdata files and customs always
+  serve; refusals log once per piece per run);
+- the per-category limit caps whatever serves — default **45** per
+  dressing-room category group, `packs.json` `categoryLimit` overrides;
 - gating config (`packs.json`, defaults ∪ per-player grants, ~30 s grant
-  cache) and the staticdata exemption are unchanged; `Catalog/GetPublishedItem`
-  re-checks the same gate at equip resolve (a themed live Minecraft piece
-  outside the allowed set — and, with nothing configured, every live Minecraft
-  piece — 404s like an unknown id, while non-Minecraft creators and staticdata
-  resolve; a live skin pack only resolves when the gated search served it).
+  cache) and the staticdata exemption are unchanged.
 
 ## Rate limits (polite by design)
 

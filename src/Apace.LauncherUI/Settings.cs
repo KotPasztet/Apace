@@ -106,7 +106,7 @@ public sealed class Settings
     /// tops, capes and beards each count on their own where the client groups
     /// them), always applied, 0 = no limit. The marketplace has no per-category
     /// size control of its own and the frozen client chokes on huge category
-    /// lists. Default 30; the ApiServer reads it from packs.json (hot-reloaded).
+    /// lists. Default 45; the ApiServer reads it from packs.json (hot-reloaded).
     /// </summary>
     public int? PersonaCategoryLimit { get; set; }
 

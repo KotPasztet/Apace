@@ -10,6 +10,19 @@
 - **Pack version 1.0.2** (`MojangSkinPackBuilder.PackVersion` + `staticdata-extras/playfab/items/90860f69-….json`): forces clients that cached the empty import to re-import; the builder's "pack not built" warning now says the dressing room rows stay empty until the texture fetch succeeds (naming the `skins/` dir).
 - **Diagnostics** (`SkinPackCdnController.Get`): a missing zip that belongs to a staticdata skin-pack offer (the `CatalogController.SkinPackOfferIds` set) logs the offer id, the expected `<mojang-assets>/playfab/skinpacks/` path and the default-skins texture-fetch hint, so operators see exactly why the rows are empty.
 
+## Unreleased (dev) — strict accessory enforcement: the dressing room serves accessories ONLY from the selected packs; skins un-gated
+
+> Pack selection was not actually enforced: every live piece without a theme tag slipped through the gate unchanged, so dressing-room categories filled with ~30 accessories from ALL packs instead of only the selected bundles, and the classic skin packs resolved only when a selection contained their exact pack uuid — effectively never ("skiny nie działają"). The gate is now strict for accessories (catalog offer, equip resolve, saved profiles AND the physical binary download) and gone for skins; the category limit defaults to 45 and the picker shows real accessory counts.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **Strict accessory enforcement** (`CatalogController.LiveOfferItemsFor` + `GetPublishedItem`, `ObjectController.SanitizePersonaObjects`): a Minecraft-creator accessory serves only when the allowed set (defaults ∪ per-player grants) is non-empty AND one of its theme tags is in it — tagless accessories never serve, and with nothing selected exactly 0 accessories serve. `persona_skin` pieces are exempt at all three points.
+- **Skins and skin packs un-gated** (`CatalogController.LiveSkinPackItemsFor`): the allowed-set filter is gone — every indexed live classic skin pack serves and resolves in `GetPublishedItem` regardless of the pack selection.
+- **Physical binary gate** (`LivePersonaCatalog.TryEnsureBinaryAsync`): the persona CDN endpoint refuses to resolve/probe/download a Minecraft accessory outside the allowed set — pre-existing mirror/staticdata files and custom cosmetics are never affected. The endpoint is unauthenticated, so it gates against defaults ∪ ALL players' grants (`PersonaPackGate.AllAllowedPackUuidsAsync`: a ~30 s-cached SQLite scan of the personaPacks objects via the new `EarthDB.ReadObjectsByTypeAsync`); refusals log once per piece per run.
+- **Category limit default 30 → 45** (`PersonaPackGate.DefaultCategoryLimit` + the panel's mirrored constant, form text and field init — packs.json `categoryLimit` still overrides at runtime).
+- **Accessory counts in the pack picker** (`PersonaPackIndex.ReadThemePacks` + `PackPicker.razor`): thematic bundle rows count ACCESSORIES only (no more skin/mixed counts, rows read "+ add (N accessories)"); classic skin-pack rows keep their skin count.
+- **Shorter panel text**: the player page's long Auto-gating paragraph is now one short line (the empty-selection variant stays one short line too).
+
 ## Unreleased (dev) — compat gate: the pieces the frozen client renders broken are actually refused now
 
 > Some live marketplace accessories rendered visually broken on the frozen MCE client (floating/misaligned parts — "Ashen Mantle", "Anime Fighter Tank Top") while the compat gate let them through: the enforced band was `[1.12.0, 1.21.0)` although the repo's own research note says geometry `format_version >= 1.16.0` renders broken, the inspector recorded only the FIRST parseable geometry of the piece (a benign tall-size variant hid the broken small-size one), and the declared render-controller / face-bone signals were never actually scanned. The gate now refuses what the client cannot render, and says so once per piece in the log.

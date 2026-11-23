@@ -43,7 +43,7 @@
             <div class="col-12 col-lg-6">
                 <label class="form-label small text-muted mb-1" for="category-limit">Max pieces per category</label>
                 <input type="number" min="0" step="1" class="form-control form-control-sm" id="category-limit" @bind="_categoryLimit" />
-                <div class="form-text small">Per dressing-room category group. 0 = no limit, default 30.</div>
+                <div class="form-text small">Per dressing-room category group. 0 = no limit, default 45.</div>
             </div>
         </div>
 
@@ -61,7 +61,7 @@
         }
         <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
                     SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
-                    EmptyHint="Nothing selected — players get 0 marketplace cosmetics (the built-in Steve/Alex default skins still serve)." />
+                    EmptyHint="Nothing selected — players get 0 accessories (default skins and custom cosmetics still serve)." />
 
         <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
             @if (_savingDefaults)
@@ -274,10 +274,9 @@
 @code {
     // Written to <mojang-assets>/persona-catalog/packs.json (hot-reloaded by the
     // ApiServer). No `gating` flag anymore: the server gates per player from the
-    // allowed pack set (default packs ∪ player grants) — an empty set gates the
-    // whole live marketplace off (only staticdata and the custom cosmetics
-    // serve), a non-empty set enforces tag filtering with the tagless base
-    // pieces still serving.
+    // allowed pack set (default packs ∪ player grants) — accessories serve only
+    // when one of their theme tags is in the set (tagless accessories never
+    // serve), skins and skin packs serve regardless.
     private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit);
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
@@ -314,7 +313,7 @@
     private List<PersonaPackIndex.ThemePackRow> _packs = [];
     private string? _packSummary;
     private bool _onlySupported = true;
-    private int _categoryLimit = 30;
+    private int _categoryLimit = 45;
     private HashSet<string> _defaults = [];
     private HashSet<string> _grants = [];
     private string? _selectedPlayerId;

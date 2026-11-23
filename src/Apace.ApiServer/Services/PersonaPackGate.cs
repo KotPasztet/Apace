@@ -18,20 +18,19 @@ namespace Apace.ApiServer.Services;
 // keeps only its own fields); old files may
 // still carry the deprecated "gating" flag — it is ignored (the deserializer
 // drops unknown members). Gating is implicit AUTO-GATING from the allowed set
-// (defaults ∪ per-player grants): an EMPTY set gates the whole live marketplace
-// off — zero live pieces serve, themed or tagless (players keep the staticdata
-// defaults: the built-in Default Skins pack, Bold Rabbit Feet, the customs,
-// layout/StoreConfig); a NON-EMPTY set enforces filtering — only pieces
-// carrying an allowed theme tag serve while the tagless base pieces keep
-// serving (see CatalogController.LiveOfferItemsFor), and the classic-skin
-// packs follow the allowed set by their pack uuid.
+// (defaults ∪ per-player grants): Minecraft-creator ACCESSORIES serve only from
+// the selected packs — the set must be non-empty AND one of the piece's theme
+// tags must be in it, so tagless accessories never serve; persona_skin pieces
+// and the classic-skin packs are exempt and serve regardless. Players keep the
+// staticdata defaults (the built-in Default Skins pack, Bold Rabbit Feet, the
+// customs, layout/StoreConfig) — see CatalogController.LiveOfferItemsFor.
 //
 // Per-player grants live in earth.db (objects type "personaPacks") and are
 // cached here briefly so panel edits apply within ~30s without hitting SQLite
 // on every search.
 public static class PersonaPackGate
 {
-    public const int DefaultCategoryLimit = 30;
+    public const int DefaultCategoryLimit = 45;
 
     private sealed record PackConfig(List<string>? DefaultPacks, int? CategoryLimit, bool? OnlySupported,
         string? MaxGeometryFormatVersion);
@@ -47,6 +46,7 @@ public static class PersonaPackGate
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly ConcurrentDictionary<string, (DateTimeOffset Expires, IReadOnlyCollection<string> Packs)> GrantCache = new();
+    private static (DateTimeOffset Expires, IReadOnlySet<string> Packs)? _allGrantsCache;
 
     private static string ConfigPath => Path.Combine(Program.MojangAssetsDir, "persona-catalog", "packs.json");
 
@@ -94,11 +94,11 @@ public static class PersonaPackGate
 
     /// <summary>
     /// The auto-gating state (no DB access) — for pages that just show the
-    /// state: gating filters the live marketplace for a player when at least
+    /// state: gating restricts the live accessories for a player when at least
     /// one pack is configured for them (defaults ∪ grants); with no defaults
-    /// configured (Gating false) the live marketplace is gated off entirely
-    /// unless the player has grants — without a player, the configured
-    /// defaults.
+    /// configured (Gating false) no accessory serves unless the player has
+    /// grants — without a player, the configured defaults. Skins serve
+    /// regardless.
     /// </summary>
     public static (bool Gating, int CategoryLimit) ConfigSnapshot
     {
@@ -185,15 +185,14 @@ public static class PersonaPackGate
 
     /// <summary>
     /// The allowed pack uuid set for the caller (theme tags for persona
-    /// pieces, pack uuids for classic-skin packs): defaults ∪ per-player
-    /// grants. An EMPTY set gates the whole live marketplace off — zero live
-    /// pieces serve, themed or tagless; staticdata offers (the committed
-    /// legacy catalog and the Default Skins pack) and the custom cosmetics
-    /// are never gated. A non-empty set enforces filtering: themed pieces
-    /// need one of the allowed theme tags while the tagless base pieces keep
-    /// serving, and the classic-skin packs follow the set by their pack
-    /// uuid. Entries predating the theme model (piece type names or orphaned
-    /// skin-pack uuids) simply never match a theme tag and are ignored.
+    /// accessories): defaults ∪ per-player grants. Minecraft-creator
+    /// accessories serve only from these packs — the set must be non-empty AND
+    /// one of the piece's theme tags must be in it (tagless accessories never
+    /// serve); persona_skin pieces and the classic-skin packs are exempt.
+    /// staticdata offers (the committed legacy catalog and the Default Skins
+    /// pack) and the custom cosmetics are never gated. Entries predating the
+    /// theme model (piece type names or orphaned skin-pack uuids) simply never
+    /// match a theme tag and are ignored.
     /// </summary>
     public static async Task<IReadOnlySet<string>> AllowedPackUuidsAsync(string? playerId, CancellationToken cancellationToken)
     {
@@ -233,5 +232,46 @@ public static class PersonaPackGate
             Log.Warning(ex, "Could not read persona pack grants for {Player} — serving default packs only", key);
             return [];
         }
+    }
+
+    /// <summary>
+    /// defaults ∪ every player's personaPacks grants — the allowed set for the
+    /// unauthenticated binary endpoint (no player identity): everything the
+    /// catalog can serve to anyone, so a piece some player sees also downloads,
+    /// while accessories no pack selection anywhere covers refuse. Full
+    /// SQLite scan over the personaPacks objects, cached ~30 s like the
+    /// per-player grants; on a database error it falls back to defaults-only.
+    /// </summary>
+    public static async Task<IReadOnlySet<string>> AllAllowedPackUuidsAsync(CancellationToken cancellationToken)
+    {
+        LoadConfig();
+
+        if (_allGrantsCache is { } cached && cached.Expires > DateTimeOffset.UtcNow)
+        {
+            return cached.Packs;
+        }
+
+        var allowed = new HashSet<string>(_defaults, StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            await foreach (PersonaPackGrants grants in Program.DB.ReadObjectsByTypeAsync<PersonaPackGrants>("personaPacks", cancellationToken))
+            {
+                foreach (string pack in grants.Packs)
+                {
+                    allowed.Add(pack);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Could not scan persona pack grants — the binary endpoint gates against the configured defaults only");
+        }
+
+        _allGrantsCache = (DateTimeOffset.UtcNow.AddSeconds(30), allowed);
+        return allowed;
     }
 }

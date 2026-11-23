@@ -170,6 +170,44 @@ public sealed class EarthDB : IDisposable
         }
     }
 
+    /// <summary>
+    /// Streams every stored object of one type (read-only scan of the objects
+    /// table) — for aggregates that need all players' objects of that type,
+    /// e.g. the persona pack grants union behind
+    /// PersonaPackGate.AllAllowedPackUuidsAsync. Deserialization uses the same
+    /// camelCase options the objects were written with; unparsable values are
+    /// skipped.
+    /// </summary>
+    public async IAsyncEnumerable<T> ReadObjectsByTypeAsync<T>(string type, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        using var connection = OpenConnection(false);
+
+        using (var command = new SqliteCommand($"SELECT value FROM {ObjectsTable} WHERE type == $type;", connection))
+        {
+            command.Parameters.AddWithValue("$type", type);
+            using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            {
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    T? value;
+                    try
+                    {
+                        value = JsonSerializer.Deserialize<T>(reader.GetString(0), jsonOptions);
+                    }
+                    catch (JsonException)
+                    {
+                        continue; // a corrupt row must not break the whole scan
+                    }
+
+                    if (value is not null)
+                    {
+                        yield return value;
+                    }
+                }
+            }
+        }
+    }
+
     public sealed class Query
     {
         public static Query Empty => new Query(false);

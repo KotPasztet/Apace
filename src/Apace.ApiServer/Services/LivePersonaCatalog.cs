@@ -241,16 +241,23 @@ public static class LivePersonaCatalog
                 && !typeSuffixes.Contains(tag["tag.".Length..]))
             .Distinct(StringComparer.OrdinalIgnoreCase)];
 
+    /// <summary>A piece's gating theme tags — the same tags the offer's pack gate
+    /// matches against (marketplace tag.* minus the type-ish suffixes).</summary>
+    public static IReadOnlyList<string> ThemeTagsOf(LiveIndexItem entry)
+    {
+        var index = Index;
+        return index is null ? [] : ThemeTagsOf(entry, TypeTagSuffixes(index));
+    }
+
     /// <summary>
     /// The offer plus each item's gating theme tags, aligned with Items. The
     /// marketplace has no accessory pack entities — every PersonaDurable entry
     /// carries exactly one packIdentity, the piece itself (probe:
     /// scripts/probe_persona_tags.py) — so the pack gate runs on the pieces'
     /// marketplace theme tags (tag.*): a pack spans every piece category the tag
-    /// appears on, pieces without a theme tag are the base content that keeps
-    /// serving while any pack is configured (with nothing selected the whole
-    /// live marketplace is gated off — see PersonaPackGate), and the filtering
-    /// itself happens per request in the controllers.
+    /// appears on, Minecraft accessories need one of their tags in the allowed
+    /// set (tagless accessories never serve; skins are exempt), and the
+    /// filtering itself happens per request in the controllers.
     /// </summary>
     public static LiveOffer GetOffer()
     {
@@ -295,6 +302,11 @@ public static class LivePersonaCatalog
         var entry = index.Items.FirstOrDefault(item => item.Id == itemId);
         return entry is not null && !entry.IsEmote && !GetDeadItemIds().Contains(entry.Id) ? BuildOfferItem(entry) : null;
     }
+
+    /// <summary>The raw index entry for one piece id, or null when the id is not
+    /// indexed (ids outside the index are never pack-gated).</summary>
+    public static LiveIndexItem? GetIndexEntry(string itemId)
+        => Index?.Items.FirstOrDefault(item => item.Id == itemId);
 
     /// <summary>unlock-all: the offer item is a plain free item, whatever the marketplace says.</summary>
     public static CItem BuildOfferItem(LiveIndexItem entry)
@@ -976,12 +988,32 @@ public static class LivePersonaCatalog
         }
     }
 
+    private static readonly HashSet<string> PackGateRefusalsLogged = [];
+
+    // One line per refused item id per run (same dedup as
+    // PersonaPieceTypes.LogCompatVerdictOnce) — the client retries the same
+    // binary, the refusal must not flood the log.
+    private static void LogPackGateRefusalOnce(string itemId, string reason, ILogger logger)
+    {
+        lock (PackGateRefusalsLogged)
+        {
+            if (!PackGateRefusalsLogged.Add(itemId))
+            {
+                return;
+            }
+        }
+
+        logger.Information("Pack gate refuses live accessory {Item}: {Reason} — binaries of accessories outside the selected packs are never fetched", itemId, reason);
+    }
+
     /// <summary>
     /// The client asked for a live piece binary: serve from the mojang-assets
     /// mirror dir or the volume cache, else run the lazy pipeline — resolve the
     /// URL (GetItem), probe it (404 → alternate CDN shapes → dead), download to
-    /// the volume cache. Returns false when the item is dead (the controller
-    /// answers 404 and the item leaves the offer).
+    /// the volume cache. Minecraft-creator accessories outside the selected
+    /// packs are refused on the lazy path (skins exempt — see PersonaPackGate).
+    /// Returns false when the item is dead (the controller answers 404 and the
+    /// item leaves the offer).
     /// </summary>
     public static async Task<bool> TryEnsureBinaryAsync(string itemId, ILogger logger, CancellationToken cancellationToken)
     {
@@ -1014,6 +1046,24 @@ public static class LivePersonaCatalog
                 ImportLocalBinary(itemId, localMirrorPath, logger);
                 EnsureGeometryCompatCaptured(itemId, logger, localMirrorPath, BinaryPath(itemId));
                 return true;
+            }
+
+            // pack gate for live accessories (PersonaCdnController has already served
+            // the mirror/staticdata dirs — pre-existing files and customs are never
+            // gated): a Minecraft-creator piece that is not a skin downloads only
+            // when its theme tags intersect the allowed set (defaults ∪ every
+            // player's grants) — an empty set or no matching tag refuses, tagless
+            // accessories included. Skins (persona_skin) are exempt.
+            if (GetIndexEntry(itemId) is { } entry
+                && entry.CreatorName is null or "Minecraft"
+                && entry.PieceType is not "persona_skin")
+            {
+                IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(cancellationToken);
+                if (allowed.Count == 0 || !ThemeTagsOf(entry).Any(allowed.Contains))
+                {
+                    LogPackGateRefusalOnce(itemId, allowed.Count == 0 ? "no packs selected" : "theme tags outside the selected packs", logger);
+                    return false;
+                }
             }
 
             string path = BinaryPath(itemId);

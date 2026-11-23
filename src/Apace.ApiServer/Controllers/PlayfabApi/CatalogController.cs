@@ -237,15 +237,11 @@ internal sealed class CatalogController : ApaceControllerBase
     // The live persona offer for one player, after the two per-player levers:
     //
     //  - the pack gate (AUTO-GATING — no flag, defaults ∪ per-player grants):
-    //    an EMPTY allowed set gates the whole live marketplace off — zero live
-    //    pieces serve, themed or tagless (players keep the staticdata defaults
-    //    and the customs — see PersonaPackGate.AllowedPackUuidsAsync); a
-    //    NON-EMPTY set enforces filtering: a themed piece only serves when it
-    //    carries one of the allowed theme tags, while pieces without any theme
-    //    tag are the base content and keep serving (the panel's Marketplace
-    //    Management page and docs/live-persona-catalog.md promise exactly
-    //    that). Pieces of non-Minecraft creators (the Apace customs etc.) are
-    //    exempt either way.
+    //    Minecraft-creator ACCESSORIES serve only from the selected packs — the
+    //    allowed set must be non-empty AND one of the piece's theme tags must be
+    //    in it, so tagless accessories never serve; persona_skin pieces are
+    //    exempt and serve regardless. Non-Minecraft creators (the Apace customs
+    //    etc.) are exempt either way.
     //  - the supported-only gate (packs.json "onlySupported", default true):
     //    pieces whose compat verdict is risky drop out (see
     //    PersonaPieceTypes.IsSupportedCosmetic).
@@ -271,12 +267,13 @@ internal sealed class CatalogController : ApaceControllerBase
         for (int i = 0; i < live.Items.Length; i++)
         {
             Item item = live.Items[i];
-            if (item.DisplayProperties?.CreatorName is "Minecraft")
+            if (item.DisplayProperties?.CreatorName is "Minecraft"
+                && item.DisplayProperties?.PieceType is not "persona_skin")
             {
                 string[] tags = themes[i];
-                if (allowed.Count == 0 || (tags.Length > 0 && !tags.Any(allowed.Contains)))
+                if (allowed.Count == 0 || !tags.Any(allowed.Contains))
                 {
-                    continue; // nothing selected — the whole live marketplace is gated off (themed and tagless alike); with packs configured, only a themed piece with none of its packs enabled drops — tagless base pieces keep serving
+                    continue; // accessories serve ONLY from the selected packs: an empty allowed set (nothing selected) or no matching theme tag drops them — tagless accessories included; persona_skin pieces are exempt
                 }
             }
 
@@ -326,12 +323,10 @@ internal sealed class CatalogController : ApaceControllerBase
     }
 
     // Thematic skin packs (MarketplaceDurableCatalog_V1.2 bundles) mapped from the
-    // index, cached per index stamp like the persona pieces. The packIdentity uuid
-    // stays aligned with the item list so the gate filter is a plain array lookup.
+    // index, cached per index stamp like the persona pieces.
     private static long? _liveSkinPackStamp;
     private static Item[]? _liveSkinPackItems;
     private static Dictionary<Guid, Item>? _liveSkinPackById;
-    private static string[]? _liveSkinPackPackUuids;
 
     private static IReadOnlyList<Item> LiveSkinPackItems
     {
@@ -342,7 +337,6 @@ internal sealed class CatalogController : ApaceControllerBase
             {
                 var source = LivePersonaCatalog.GetSkinPacks();
                 _liveSkinPackItems = source.Select(LivePersonaCatalog.BuildSkinPackOfferItem).Select(CIItemToItem).ToArray();
-                _liveSkinPackPackUuids = [.. source.Select(pack => pack.PackUuid)];
                 _liveSkinPackById = _liveSkinPackItems.ToDictionary(item => item.Id);
                 _liveSkinPackStamp = stamp;
                 Log.Information("Live skin pack offer rebuilt: {Count} pack(s) (index stamp {Stamp})", _liveSkinPackItems.Length, stamp);
@@ -352,44 +346,10 @@ internal sealed class CatalogController : ApaceControllerBase
         }
     }
 
-    // The live skin packs one player may see, filtered through the pack gate
-    // (the allowed set holds thematic pack uuids).
-    private static async Task<IReadOnlyList<Item>> LiveSkinPackItemsFor(string? playerId, CancellationToken cancellationToken)
-    {
-        if (!LivePersonaCatalog.IsAvailable)
-        {
-            return [];
-        }
-
-        // read the uuid map and the items back-to-back so both come from the same
-        // cache generation — a rebuild during the grant await below must not pair a
-        // fresh uuid list with a stale item list (that mismatch would serve every
-        // pack ungated); with a consistent pair the stale generation is still
-        // filtered correctly
-        string[]? uuids = _liveSkinPackPackUuids;
-        IReadOnlyList<Item> all = LiveSkinPackItems;
-        IReadOnlySet<string> allowed = await PersonaPackGate.AllowedPackUuidsAsync(playerId, cancellationToken);
-        if (allowed.Count == 0)
-        {
-            return []; // nothing selected — the whole live marketplace is gated off, live classic skin packs included
-        }
-
-        if (uuids is null || uuids.Length != all.Count)
-        {
-            return all;
-        }
-
-        var filtered = new List<Item>(all.Count);
-        for (int i = 0; i < all.Count; i++)
-        {
-            if (allowed.Contains(uuids[i]))
-            {
-                filtered.Add(all[i]);
-            }
-        }
-
-        return filtered;
-    }
+    // The live classic skin packs. NOT pack-gated: skins are exempt from pack
+    // selection — every indexed live skin pack serves (skins serve regardless,
+    // see PersonaPackGate).
+    private static IReadOnlyList<Item> LiveSkinPackItemsFor() => LiveSkinPackItems;
 
     private sealed record CatalogSearchRequest(
         bool Count,
@@ -429,16 +389,14 @@ internal sealed class CatalogController : ApaceControllerBase
                 // content — never pack-gated, like staticdata) and, when the live
                 // persona marketplace is on, the unlock-all live items — one OData
                 // filter over all of it. The pack gate decides which theme-tag packs
-                // are on by default and per player: nothing selected gates the whole
-                // live marketplace off (zero live pieces — staticdata and customs
-                // still serve), and with packs configured the themed pieces outside
-                // them are hidden while the tagless base pieces keep serving
-                // (auto-gating). The grouped per-category limit caps every
-                // dressing-room tab over the whole composed offer — staticdata
-                // persona pieces and the customs count first, live pieces fill
-                // their group up to the limit.
+                // are on by default and per player: Minecraft accessories serve only
+                // when one of their theme tags is in the allowed set (nothing
+                // selected = 0 accessories); skins and skin packs are exempt. The
+                // grouped per-category limit caps every dressing-room tab over the
+                // whole composed offer — staticdata persona pieces and the customs
+                // count first, live pieces fill their group up to the limit.
                 string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
-                IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
+                IReadOnlyList<Item> livePacks = LiveSkinPackItemsFor();
                 IEnumerable<Item> source = BaseOfferItems
                     .Concat(CustomOfferItems) // customs count first for the grouped per-category limit
                     .Concat(await LiveOfferItemsFor(callerId, cancellationToken))
@@ -563,16 +521,16 @@ internal sealed class CatalogController : ApaceControllerBase
         // live persona offer resolves first (the legacy 1P persona items are replaced
         // by their live twins when the live marketplace is on); the panel's custom
         // cosmetics come next (own content — never pack-gated, the supported-only
-        // gate still applies); live skin packs follow (gated — a pack outside
-        // defaults ∪ grants resolves like any unknown id); staticdata stays for
+        // gate still applies); live skin packs follow (skins are exempt from pack
+        // selection — every indexed pack resolves); staticdata stays for
         // everything else (layout, store config, skin packs, buildplates, Apace
         // pieces). A live piece resolves like an unknown id too when the pack gate
-        // hides it from this caller (same rule as the search offer — with nothing
-        // selected every live Minecraft piece is refused, themed or tagless;
-        // otherwise themed pieces need an enabled pack while the tagless base
-        // pieces serve) or its compat verdict is risky (onlySupported).
+        // hides it from this caller — Minecraft-creator accessories need the
+        // allowed set non-empty AND one of their theme tags in it (tagless
+        // accessories never resolve; persona_skin pieces are exempt) — or its
+        // compat verdict is risky (onlySupported).
         string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
-        IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
+        IReadOnlyList<Item> livePacks = LiveSkinPackItemsFor();
         HashSet<Guid> servedPackIds = [.. livePacks.Select(pack => pack.Id)];
 
         LiveOfferCache? live = LivePersonaCatalog.IsAvailable ? LiveOffer : null;
@@ -581,12 +539,12 @@ internal sealed class CatalogController : ApaceControllerBase
         if (live is not null && live.ById.TryGetValue(itemId, out var liveItem))
         {
             if (liveItem.DisplayProperties?.CreatorName is "Minecraft"
+                && liveItem.DisplayProperties?.PieceType is not "persona_skin"
                 && (allowed.Count == 0
-                    || (live.ThemeTagsById.TryGetValue(itemId, out string[]? themeTags)
-                        && themeTags.Length > 0
-                        && !themeTags.Any(allowed.Contains))))
+                    || !live.ThemeTagsById.TryGetValue(itemId, out string[]? themeTags)
+                    || !themeTags.Any(allowed.Contains)))
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound(); // accessories serve only from the selected packs — tagless accessories never resolve; persona_skin pieces are exempt
             }
 
             if (PersonaPackGate.OnlySupported)

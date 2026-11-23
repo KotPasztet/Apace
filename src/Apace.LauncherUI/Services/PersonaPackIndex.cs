@@ -11,27 +11,26 @@ namespace Apace.LauncherUI.Services;
 // itself (probe: scripts/probe_persona_tags.py, 1200 entries, zero multi-entry /
 // non-piece identities) — so the marketplace's own thematic grouping of
 // accessories is its tag.* metadata, and those tags are the thematic packs;
-// pieces without a theme tag are the base content — they serve while any pack
-// is configured (with nothing selected the whole live marketplace is gated
-// off; see PersonaPackGate.AllowedPackUuidsAsync on the ApiServer). The
-// MarketplaceDurableCatalog bundles (the index's skinPacks array, written by
-// the sync) are the classic skin packs: they gate by their pack uuid
-// (PersonaPackGate.AllowedPackUuidsAsync + CatalogController.LiveSkinPackItemsFor
-// on the ApiServer), so their selectable value is the uuid string itself.
+// Minecraft accessories serve only when one of their tags is selected (tagless
+// accessories never serve; see PersonaPackGate.AllowedPackUuidsAsync on the
+// ApiServer). The MarketplaceDurableCatalog bundles (the index's skinPacks
+// array, written by the sync) are the classic skin packs — skins are exempt
+// from pack selection and serve regardless; their selectable value is the uuid
+// string itself.
 public static class PersonaPackIndex
 {
     // Shared with the ApiServer's PersonaPackGate.DefaultCategoryLimit (separate
     // processes share the volume, not the code) — keep both in sync.
-    public const int DefaultCategoryLimit = 30;
+    public const int DefaultCategoryLimit = 45;
 
     // One selectable pack row. A thematic pack (IsSkinPack = false) is a
-    // marketplace theme tag (tag.*) and the persona pieces carrying it — Tag
-    // holds the tag, and the pack spans every piece category it appears on
+    // marketplace theme tag (tag.*) and the persona ACCESSORIES carrying it —
+    // Tag holds the tag, and the pack spans every piece category it appears on
     // (head, tops, footwear…); enabling it serves all of them — no
     // per-category toggles. A classic skin pack (IsSkinPack = true) is a
-    // MarketplaceDurableCatalog bundle — Tag holds the pack uuid verbatim,
-    // which is what the panel defaults and per-player grants must contain for
-    // the ApiServer's pack gate to serve the pack.
+    // MarketplaceDurableCatalog bundle — Tag holds the pack uuid verbatim.
+    // PieceCount is the accessory count for thematic packs and the skin count
+    // for classic packs.
     public sealed record ThemePackRow(string Tag, string Title, int PieceCount, string Types, bool IsSkinPack = false);
 
     private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items, List<IndexSkinPack>? SkinPacks);
@@ -47,10 +46,11 @@ public static class PersonaPackIndex
     /// <summary>
     /// The packs in the synced index, largest first, plus a one-line summary for
     /// the page header or null when the index is unusable: the pieces' marketplace
-    /// theme tags grouped into thematic packs, plus the classic skin packs from
-    /// the index's skinPacks array (selectable by pack uuid). Type-ish tags (the
-    /// piece type restated as a tag, e.g. tag.hair on hair pieces) don't form
-    /// packs — they are excluded here AND on the ApiServer gate
+    /// theme tags grouped into thematic packs (counting ACCESSORIES only —
+    /// persona_skin pieces belong to the classic bundles), plus the classic skin
+    /// packs from the index's skinPacks array (selectable by pack uuid). Type-ish
+    /// tags (the piece type restated as a tag, e.g. tag.hair on hair pieces) don't
+    /// form packs — they are excluded here AND on the ApiServer gate
     /// (LivePersonaCatalog.GetOffer — separate processes share the volume, not
     /// the code), or pieces tagged only with their own type would vanish when
     /// gating is on. Tolerates indexes from before the skinPacks array existed.
@@ -82,15 +82,17 @@ public static class PersonaPackIndex
             var byTag = new Dictionary<string, (int Count, Dictionary<string, int> Types)>(StringComparer.OrdinalIgnoreCase);
             foreach (var item in index.Items)
             {
-                if (item.IsEmote)
+                if (item.IsEmote
+                    || item.PieceType.Equals("persona_skin", StringComparison.OrdinalIgnoreCase)
+                    || item.PieceType.Equals("persona_emote", StringComparison.OrdinalIgnoreCase))
                 {
-                    continue; // never offered — the dressing room has no emote category
+                    continue; // the picker counts ACCESSORIES per bundle — skins are the classic packs' content, emotes are never offered
                 }
 
                 List<string> themes = [.. (item.Tags ?? []).Where(IsThemeTag).Distinct(StringComparer.OrdinalIgnoreCase)];
                 if (themes.Count == 0)
                 {
-                    continue; // base pieces without a theme tag form no selectable pack (they serve while any pack is configured)
+                    continue; // tagless accessories form no selectable pack — they never serve
                 }
 
                 foreach (string tag in themes)

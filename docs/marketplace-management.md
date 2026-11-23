@@ -13,7 +13,7 @@ no restart needed.
   dressing-room category group: hoodies + outerwear count together, tops +
   capes + beards each count on their own where the client groups them. The
   limit is enforced on equips too, even when pack filtering is on.
-  `0` = no limit, default `30`.
+  `0` = no limit, default `45`.
 - **Allow only supported cosmetics** hides pieces the frozen Minecraft Earth
   client cannot render. Every piece carries a compat profile from the metadata
   pipeline; the **Compat** badge on each item shows the verdict:
@@ -37,19 +37,20 @@ no restart needed.
 ## Pack filtering (defaults and grants)
 
 Pack filtering needs no toggle of its own: the gate runs on the allowed pack
-set (defaults ∪ per-player grants). With **no packs configured at all**, the
-whole live marketplace is gated off — players get **0 live marketplace pieces**
-(themed and tagless alike, live classic skin packs included); the always-served
-staticdata still shows: the built-in "Minecraft Default Skins" pack (Steve/Alex
-and friends), the client's vanilla Standard pack scaffolding, Bold Rabbit Feet,
-the Apace capes, the custom cosmetics, the layout and StoreConfig. With **at
-least one pack configured**, the live marketplace serves those packs' pieces
-plus the tagless base pieces without a theme tag. The per-category limit above
-applies in both cases — it caps whatever serves, it is not a nothing-selected
-fallback. The pack list comes from the synced catalog index: thematic packs are
-the pieces' marketplace theme tags, classic skin packs are selected by their
-pack uuid. The summary line under the pickers reads "N accessory bundles
-found".
+set (defaults ∪ per-player grants). **Accessories serve only from the selected
+packs** — a piece needs one of its marketplace theme tags in the set, so
+tagless accessories never serve. With **no packs configured at all**, 0
+accessories serve (skins still do); the always-served staticdata still shows:
+the built-in "Minecraft Default Skins" pack (Steve/Alex and friends), the
+client's vanilla Standard pack scaffolding, Bold Rabbit Feet, the Apace capes,
+the custom cosmetics, the layout and StoreConfig. **Skins are exempt**:
+`persona_skin` pieces and the classic skin packs serve regardless of the
+selection. The per-category limit above applies in all cases — it caps
+whatever serves, it is not a nothing-selected fallback. The pack list comes
+from the synced catalog index: thematic packs are the pieces' marketplace
+theme tags (picker rows count accessories), classic skin packs are selected
+by their pack uuid. The summary line under the pickers reads "N accessory
+bundles found".
 
 ## Per-player grants (extra packs beyond the defaults)
 

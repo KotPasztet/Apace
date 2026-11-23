@@ -195,12 +195,13 @@ internal sealed class ObjectController : ApaceControllerBase
     //    DROPPED when packs.json onlySupported is on (default true); unknown
     //    verdicts serve; staticdata-resolved pieces have no live compat metadata
     //    and always serve;
-    //  - entries resolving to a themed live Minecraft piece none of whose packs
-    //    are in the caller's allowed set are DROPPED while pack gating is active
-    //    (defaults ∪ grants — the same rule the search offer enforces); with an
-    //    EMPTY allowed set every live Minecraft piece is dropped, themed or
-    //    tagless (tagless base pieces only serve when at least one pack is
-    //    configured); non-Minecraft creators and staticdata always serve;
+    //  - entries resolving to a live Minecraft-creator ACCESSORY (any piece
+    //    type except persona_skin) outside the caller's allowed set are DROPPED
+    //    while pack gating is active (defaults ∪ grants — the same rule the
+    //    search offer enforces): the allowed set must be non-empty AND one of
+    //    the piece's theme tags must be in it, so tagless accessories drop too;
+    //    persona_skin pieces are exempt and always keep; non-Minecraft creators
+    //    and staticdata always serve;
     //  - a piece occupies at most one slot per (category group, side slot): the
     //    first entry per group+slot in array order wins — left/right variants
     //    are separate slots (one piece can be worn on both hands), so adding a
@@ -260,9 +261,8 @@ internal sealed class ObjectController : ApaceControllerBase
 
                 if (piece.LiveItemId is not null
                     && piece.CreatorName is "Minecraft"
-                    && (piece.ThemeTags.Length > 0
-                        ? !piece.ThemeTags.Any(allowedPacks.Contains)
-                        : allowedPacks.Count == 0))
+                    && piece.PieceType is not "persona_skin"
+                    && (allowedPacks.Count == 0 || !piece.ThemeTags.Any(allowedPacks.Contains)))
                 {
                     dropped.Add(i);
                     packBlocked++;
