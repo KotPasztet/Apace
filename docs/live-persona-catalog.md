@@ -93,7 +93,8 @@ API), so the real binary URL is discovered per item on the first client request:
 `Catalog/GetItem` → HEAD (fallback 1-byte GET) on the returned URL → on 404 the
 same GUID re-hosted on the new PlayFab content CDN
 (`content1/content2.prod.catalog.playfab.com/pf-namespace-b63a0803d3653643/<guid>/primary.zip`)
-→ else the item is marked **dead** and drops out of the offer until it revives
+→ else the item is marked **dead** and drops out of the offer and the catalog
+searches immediately until it revives
 (a dead verdict older than 24 h past the last sync re-probes on the next
 request). Everything is client-driven; there are **no bulk probe loops** — all
 remote calls funnel through a shared ≤2 req/s pacer with 3-attempt
@@ -158,9 +159,10 @@ values, ~55% of pieces carry one). So:
 
 - one pack = one theme tag; enabling it serves every **accessory** carrying the
   tag, across all piece categories (a pack spans head + tops + footwear + …);
-- **accessories serve only from the selected packs**: a Minecraft-creator
-  accessory needs the allowed set non-empty AND one of its theme tags in it —
-  accessories **without** a theme tag never serve;
+- **accessories serve only from the selected packs**: every live accessory
+  (any creator, not just Minecraft-creator pieces) needs the allowed set
+  non-empty AND one of its theme tags in it — accessories **without** a theme
+  tag never serve;
 - **skins are exempt from pack selection**: `persona_skin` pieces and the
   classic-skin packs (MarketplaceDurableCatalog bundles) serve regardless;
 - with **nothing configured** (defaults ∪ per-player grants empty) **0

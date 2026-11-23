@@ -18,9 +18,10 @@ namespace Apace.ApiServer.Services;
 // keeps only its own fields); old files may
 // still carry the deprecated "gating" flag — it is ignored (the deserializer
 // drops unknown members). Gating is implicit AUTO-GATING from the allowed set
-// (defaults ∪ per-player grants): Minecraft-creator ACCESSORIES serve only from
-// the selected packs — the set must be non-empty AND one of the piece's theme
-// tags must be in it, so tagless accessories never serve; persona_skin pieces
+// (defaults ∪ per-player grants): ALL live accessories serve only from the
+// selected packs, whatever their marketplace creator — the set must be
+// non-empty AND one of the piece's theme tags must be in it, so tagless
+// accessories never serve; persona_skin pieces
 // and the classic-skin packs are exempt and serve regardless. Players keep the
 // staticdata defaults (the built-in Default Skins pack, Bold Rabbit Feet, the
 // customs, layout/StoreConfig) — see CatalogController.LiveOfferItemsFor.
@@ -185,8 +186,8 @@ public static class PersonaPackGate
 
     /// <summary>
     /// The allowed pack uuid set for the caller (theme tags for persona
-    /// accessories): defaults ∪ per-player grants. Minecraft-creator
-    /// accessories serve only from these packs — the set must be non-empty AND
+    /// accessories): defaults ∪ per-player grants. Live accessories serve only
+    /// from these packs, whatever their creator — the set must be non-empty AND
     /// one of the piece's theme tags must be in it (tagless accessories never
     /// serve); persona_skin pieces and the classic-skin packs are exempt.
     /// The Default Skins pack and the custom cosmetics are never gated; the
@@ -210,6 +211,24 @@ public static class PersonaPackGate
         }
 
         return allowed;
+    }
+
+    /// <summary>
+    /// The gate's allowed-set composition for the diagnostic logs: the configured
+    /// default pack ids and the player's grant count — the same loads as
+    /// <see cref="AllowedPackUuidsAsync"/> (config mtime check + the 30 s grant
+    /// cache), so calling it after the gate adds no extra database scan.
+    /// </summary>
+    public static async Task<(IReadOnlyCollection<string> Defaults, int Grants)> AllowedCompositionAsync(string? playerId, CancellationToken cancellationToken)
+    {
+        LoadConfig();
+        IReadOnlyCollection<string> grants = [];
+        if (!string.IsNullOrWhiteSpace(playerId))
+        {
+            grants = await PlayerGrantsAsync(playerId, cancellationToken);
+        }
+
+        return (_defaults, grants.Count);
     }
 
     private static async Task<IReadOnlyCollection<string>> PlayerGrantsAsync(string playerId, CancellationToken cancellationToken)

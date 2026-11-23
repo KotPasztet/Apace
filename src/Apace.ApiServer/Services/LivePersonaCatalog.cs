@@ -255,7 +255,7 @@ public static class LivePersonaCatalog
     /// carries exactly one packIdentity, the piece itself (probe:
     /// scripts/probe_persona_tags.py) — so the pack gate runs on the pieces'
     /// marketplace theme tags (tag.*): a pack spans every piece category the tag
-    /// appears on, Minecraft accessories need one of their tags in the allowed
+    /// appears on, accessories need one of their tags in the allowed
     /// set (tagless accessories never serve; skins are exempt), and the
     /// filtering itself happens per request in the controllers.
     /// </summary>
@@ -558,7 +558,10 @@ public static class LivePersonaCatalog
     private static bool IsStaleDead(ProbeEntry entry)
         => entry.State == "dead" && entry.CheckedAt < (LastSyncAt ?? DateTimeOffset.UtcNow.AddDays(-1)) - TimeSpan.FromHours(24);
 
-    /// <summary>Item ids the offer must hide (probed dead, verdict still fresh).
+    /// <summary>Item ids the offer and the catalog searches must hide (probed
+    /// dead, verdict still fresh — the offer drops them at build time and the
+    /// controllers skip them per request, so a freshly probed piece does not
+    /// keep listing until the next index re-sync).
     /// A dead verdict never hides a piece whose binary exists in the mojang-assets
     /// primary dir (<see cref="GetLocalPersonaBinaries"/>) — a locally mirrored file
     /// overrides the verdict, whatever an earlier upstream probe concluded.</summary>
@@ -571,7 +574,7 @@ public static class LivePersonaCatalog
             return ProbeStates
                 .Where(kv => kv.Value.State == "dead" && !IsStaleDead(kv.Value) && !local.ContainsKey(kv.Key))
                 .Select(kv => kv.Key)
-                .ToHashSet();
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
     }
 
@@ -1010,8 +1013,8 @@ public static class LivePersonaCatalog
     /// The client asked for a live piece binary: serve from the mojang-assets
     /// mirror dir or the volume cache, else run the lazy pipeline — resolve the
     /// URL (GetItem), probe it (404 → alternate CDN shapes → dead), download to
-    /// the volume cache. Minecraft-creator accessories outside the selected
-    /// packs are refused on the lazy path (skins exempt — see PersonaPackGate).
+    /// the volume cache. Live accessories outside the selected packs are refused
+    /// on the lazy path regardless of creator (skins exempt — see PersonaPackGate).
     /// Returns false when the item is dead (the controller answers 404 and the
     /// item leaves the offer).
     /// </summary>
@@ -1050,12 +1053,12 @@ public static class LivePersonaCatalog
 
             // pack gate for live accessories (PersonaCdnController has already served
             // the mirror/staticdata dirs — pre-existing files and customs are never
-            // gated): a Minecraft-creator piece that is not a skin downloads only
-            // when its theme tags intersect the allowed set (defaults ∪ every
-            // player's grants) — an empty set or no matching tag refuses, tagless
-            // accessories included. Skins (persona_skin) are exempt.
+            // gated): a live piece that is not a skin downloads only when its theme
+            // tags intersect the allowed set (defaults ∪ every player's grants) —
+            // an empty set or no matching tag refuses, tagless accessories included
+            // and creatorless entries gated like any other accessory. Skins
+            // (persona_skin) are exempt.
             if (GetIndexEntry(itemId) is { } entry
-                && entry.CreatorName is null or "Minecraft"
                 && entry.PieceType is not "persona_skin")
             {
                 IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(cancellationToken);

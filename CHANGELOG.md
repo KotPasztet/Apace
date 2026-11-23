@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased (dev) — the pack gate covers every live accessory: partner-creator pieces no longer bypass it and probe-dead pieces leave the searches at once
+
+> With NOTHING selected the dressing room still served ~30 live accessories per category: the pack gate applied only to pieces whose marketplace `creatorName` is "Minecraft", so partner-creator accessories (the sync stores the creator verbatim and the 20ca2 catalog carries partner items) bypassed it entirely. The gate now runs on all live accessories (any creator, skins exempt) at the offer, published-item and binary paths — customs keep serving untouched. Probe-dead pieces also vanish from the catalog searches immediately (they used to keep listing until the next index re-sync, so the client rendered broken "unsupported" tiles whose binaries 404).
+
+### 🧍 Persona items (dressing room / skins)
+
+- **Catalog offer** (`CatalogController.LiveOfferItemsFor`): the `CreatorName is "Minecraft"` condition is gone — every live accessory (any creator) needs the allowed set non-empty AND a matching theme tag (tagless accessories never serve; `persona_skin` exempt); pieces in `LivePersonaCatalog.GetDeadItemIds()` skip the offer per request.
+- **Equip resolve** (`CatalogController.GetPublishedItem`): the same de-creator-fication on the live path — a gated accessory or a probe-dead piece resolves NotFound like an unknown id instead of advertising a broken tile.
+- **Binary lazy path** (`LivePersonaCatalog.TryEnsureBinaryAsync`): the allowed-set check no longer requires `CreatorName is null or "Minecraft"` — partner- and creatorless accessories refuse at binary time too (skins exempt; customs and mirror files never gated).
+- **Diagnostics**: per-search Debug line with the allowed-set composition (`PersonaPackGate.AllowedCompositionAsync` — defaults ids + grants, reusing the existing loads) plus offer/passed/dropped/dead/limit counts, and a verdict line on the published-item live path.
+- **Panel**: the Marketplace Management and per-player packs pages gained a hint stating when changes reach players (server immediate vs. next dressing-room load — game restart).
+
 ## Unreleased (dev) — iOS patcher fixed: the IPA is written intact, the PlayFab URL builders are redirected and the title API routes exist
 
 > iOS clients died at sign-in with ZERO requests reaching the server: the vendored patcher corrupted the output IPA (`ZipArchiveMode.Update` rewrote the entry headers in front of the first removed entry while the data stayed put — every entry after it was garbage) and three PlayFab URL-builder sites that build `"https://" + titleId + ".playfabapi.com"` were never redirected, so the iOS title API calls went to `:///<titleId>.playfabapi.com/`. Ported from the community PR Earth-Restored/Minecraft_Earth_Patcher#4.

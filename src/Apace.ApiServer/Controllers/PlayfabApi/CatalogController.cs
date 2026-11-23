@@ -119,8 +119,9 @@ internal sealed class CatalogController : ApaceControllerBase
     // resolve against.
     // Custom cosmetics (panel-defined, hot-reloaded from the volume) mapped to
     // offer items, cached per store stamp like the live offer per index stamp.
-    // Creator is never "Minecraft", so the pack gate exempts them (auto-gating);
-    // the onlySupported compat gate still applies via PersonaPieceTypes.
+    // They never enter the pack-gated live offer (own source), so the pack gate
+    // never sees them; the onlySupported compat gate still applies via
+    // PersonaPieceTypes.
     private static long? _customOfferStamp;
     private static Item[]? _customOfferItems;
 
@@ -236,14 +237,17 @@ internal sealed class CatalogController : ApaceControllerBase
     // The live persona offer for one player, after the two per-player levers:
     //
     //  - the pack gate (AUTO-GATING — no flag, defaults ∪ per-player grants):
-    //    Minecraft-creator ACCESSORIES serve only from the selected packs — the
-    //    allowed set must be non-empty AND one of the piece's theme tags must be
-    //    in it, so tagless accessories never serve; persona_skin pieces are
-    //    exempt and serve regardless. Non-Minecraft creators (the Apace customs
-    //    etc.) are exempt either way.
+    //    ALL live ACCESSORIES serve only from the selected packs, whatever their
+    //    marketplace creator — the allowed set must be non-empty AND one of the
+    //    piece's theme tags must be in it, so tagless accessories never serve;
+    //    persona_skin pieces are exempt and serve regardless (customs never
+    //    enter this live offer at all).
     //  - the supported-only gate (packs.json "onlySupported", default true):
     //    pieces whose compat verdict is risky drop out (see
     //    PersonaPieceTypes.IsSupportedCosmetic).
+    //  - probe-dead pieces skip the offer per request — their binaries 404, so
+    //    they must not wait for the next index re-sync to vanish from searches
+    //    (see LivePersonaCatalog.GetDeadItemIds).
     //
     // The per-category size limit is applied by the caller over the whole
     // composed offer (staticdata pieces count too — see ApplyGroupedCategoryLimit),
@@ -262,20 +266,29 @@ internal sealed class CatalogController : ApaceControllerBase
         bool onlySupported = PersonaPackGate.OnlySupported;
 
         string[][] themes = live.ThemeTags;
+        HashSet<string> dead = LivePersonaCatalog.GetDeadItemIds();
         var filtered = new List<Item>(live.Items.Length);
+        int passed = 0, dropped = 0, deadSkipped = 0;
         for (int i = 0; i < live.Items.Length; i++)
         {
             Item item = live.Items[i];
-            if (item.DisplayProperties?.CreatorName is "Minecraft"
-                && item.DisplayProperties?.PieceType is not "persona_skin")
+            if (dead.Contains(item.Id.ToString()))
+            {
+                deadSkipped++;
+                continue; // probed dead — the binary 404s, so hide it from searches now instead of at the next index re-sync
+            }
+
+            if (item.DisplayProperties?.PieceType is not "persona_skin")
             {
                 string[] tags = themes[i];
                 if (allowed.Count == 0 || !tags.Any(allowed.Contains))
                 {
+                    dropped++;
                     continue; // accessories serve ONLY from the selected packs: an empty allowed set (nothing selected) or no matching theme tag drops them — tagless accessories included; persona_skin pieces are exempt
                 }
             }
 
+            passed++;
             if (onlySupported)
             {
                 string itemId = item.Id.ToString();
@@ -289,6 +302,10 @@ internal sealed class CatalogController : ApaceControllerBase
 
             filtered.Add(item);
         }
+
+        (IReadOnlyCollection<string> defaultPacks, int grants) = await PersonaPackGate.AllowedCompositionAsync(playerId, cancellationToken);
+        Log.Debug("Live offer: caller={Caller} defaults={Defaults} [{Ids}] grants={Grants} offer={Offer} passed={Passed} dropped={Dropped} dead={Dead} limit={Limit}",
+            playerId ?? "-", defaultPacks.Count, string.Join(",", defaultPacks), grants, live.Items.Length, passed, dropped, deadSkipped, PersonaPackGate.CategoryLimit);
 
         return filtered;
     }
@@ -388,7 +405,7 @@ internal sealed class CatalogController : ApaceControllerBase
                 // content — never pack-gated, like staticdata) and, when the live
                 // persona marketplace is on, the unlock-all live items — one OData
                 // filter over all of it. The pack gate decides which theme-tag packs
-                // are on by default and per player: Minecraft accessories serve only
+                // are on by default and per player: live accessories serve only
                 // when one of their theme tags is in the allowed set (nothing
                 // selected = 0 accessories); skins and skin packs are exempt. The
                 // grouped per-category limit caps every dressing-room tab over the
@@ -524,10 +541,10 @@ internal sealed class CatalogController : ApaceControllerBase
         // selection — every indexed pack resolves); staticdata stays for
         // everything else (layout, store config, skin packs, buildplates, Apace
         // pieces). A live piece resolves like an unknown id too when the pack gate
-        // hides it from this caller — Minecraft-creator accessories need the
-        // allowed set non-empty AND one of their theme tags in it (tagless
-        // accessories never resolve; persona_skin pieces are exempt) — or its
-        // compat verdict is risky (onlySupported).
+        // hides it from this caller — accessories (any creator) need the allowed
+        // set non-empty AND one of their theme tags in it (tagless accessories
+        // never resolve; persona_skin pieces are exempt) — or its compat verdict
+        // is risky (onlySupported) or it probed dead (the binary would 404).
         string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
         IReadOnlyList<Item> livePacks = LiveSkinPackItemsFor();
         HashSet<Guid> servedPackIds = [.. livePacks.Select(pack => pack.Id)];
@@ -537,23 +554,40 @@ internal sealed class CatalogController : ApaceControllerBase
 
         if (live is not null && live.ById.TryGetValue(itemId, out var liveItem))
         {
-            if (liveItem.DisplayProperties?.CreatorName is "Minecraft"
-                && liveItem.DisplayProperties?.PieceType is not "persona_skin"
+            string verdict = "served";
+            PersonaPieceTypes.CosmeticGateVerdict? compat = null;
+            if (LivePersonaCatalog.GetDeadItemIds().Contains(itemId.ToString()))
+            {
+                verdict = "dead"; // probed dead — the binary 404s, resolve NotFound instead of advertising a broken piece
+            }
+            else if (liveItem.DisplayProperties?.PieceType is not "persona_skin"
                 && (allowed.Count == 0
                     || !live.ThemeTagsById.TryGetValue(itemId, out string[]? themeTags)
                     || !themeTags.Any(allowed.Contains)))
             {
-                return TypedResults.NotFound(); // accessories serve only from the selected packs — tagless accessories never resolve; persona_skin pieces are exempt
+                verdict = "gate-refused"; // accessories serve only from the selected packs — tagless accessories never resolve; persona_skin pieces are exempt
             }
-
-            if (PersonaPackGate.OnlySupported)
+            else if (PersonaPackGate.OnlySupported)
             {
-                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString());
+                compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString());
                 if (!compat.Supported)
                 {
-                    PersonaPieceTypes.LogCompatVerdictOnce("published item", itemId.ToString(), compat.Reason);
-                    return TypedResults.NotFound();
+                    verdict = "unsupported";
                 }
+            }
+
+            (IReadOnlyCollection<string> defaultPacks, int grants) = await PersonaPackGate.AllowedCompositionAsync(callerId, cancellationToken);
+            Log.Debug("Published live item: caller={Caller} defaults={Defaults} grants={Grants} verdict={Verdict}",
+                callerId ?? "-", defaultPacks.Count, grants, verdict);
+
+            if (verdict is not "served")
+            {
+                if (compat is { } bad && !bad.Supported)
+                {
+                    PersonaPieceTypes.LogCompatVerdictOnce("published item", itemId.ToString(), bad.Reason);
+                }
+
+                return TypedResults.NotFound();
             }
 
             return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(

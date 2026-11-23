@@ -38,7 +38,8 @@ no restart needed.
 
 Pack filtering needs no toggle of its own: the gate runs on the allowed pack
 set (defaults ∪ per-player grants). **Accessories serve only from the selected
-packs** — a piece needs one of its marketplace theme tags in the set, so
+packs** — every live accessory is gated (any creator, not just Minecraft-creator
+pieces); a piece needs one of its marketplace theme tags in the set, so
 tagless accessories never serve. With **no packs configured at all**, 0
 accessories serve (skins still do); the non-accessory staticdata still shows:
 the built-in "Minecraft Default Skins" pack (Steve/Alex and friends), the
