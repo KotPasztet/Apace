@@ -2,6 +2,7 @@
 @using System.Security.Claims
 @using Apace.LauncherUI.Utils
 @inject AuthenticationStateProvider AuthStateProvider
+@inject UpdateCheckService UpdateCheck
 
 <PageTitle>Home - Apace</PageTitle>
 
@@ -104,9 +105,20 @@
     </NotAuthorized>
 </AuthorizeView>
 
+<p class="text-center text-muted mt-4" style="font-size: 0.72rem;">
+    @VersionNote
+</p>
+
 @code {
     private bool HasPermission(ClaimsPrincipal user, string permission)
     {
         return user.HasPermission(permission);
     }
+
+    /// <summary>Small-print build identity under the home cards: the channel
+    /// this Apace serves (release/dev/main) and, for commit builds, the commit
+    /// SHA — the same facts the About page shows in detail.</summary>
+    private string VersionNote => UpdateCheck.CurrentSha is { } sha
+        ? $"Apace {UpdateCheck.Channel} · commit {UpdateCheckService.ShortSha(sha)}"
+        : $"Apace {UpdateCheck.Channel}";
 }
