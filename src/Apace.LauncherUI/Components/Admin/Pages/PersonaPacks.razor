@@ -10,16 +10,15 @@
 @rendermode InteractiveServer
 @implements IDisposable
 
-<PageTitle>Skin Packs - Apace</PageTitle>
+<PageTitle>Marketplace Management - Apace</PageTitle>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
         <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
-            <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Skin Packs
+            <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Marketplace Management
         </div>
-        <p class="text-muted small mb-0 mt-1">Choose which thematic packs players can see — the marketplace has no accessory
-            pack entities, so packs are its own theme tags: each spans every piece category it appears on (head, tops,
-            footwear…). Base pieces without a theme tag always serve; classic-skin packs follow the same gate by uuid.</p>
+        <p class="text-muted small mb-0 mt-1">Control how much of the live marketplace players see: a per-category size
+            limit, the default packs and per-player grants. Base pieces without a theme tag always serve.</p>
     </div>
     <div class="text-end">
         <button class="btn btn-sm btn-outline-primary" @onclick="SyncNowAsync" disabled="@_syncing">
@@ -39,13 +38,21 @@
 }
 
 <div class="card mb-4">
-    <div class="card-header">Default packs (every player)</div>
+    <div class="card-header">Availability (every player)</div>
     <div class="card-body">
+        <div class="row g-3 align-items-end mb-3">
+            <div class="col-12 col-md-4">
+                <label class="form-label small text-muted mb-1" for="category-limit">Max pieces per category</label>
+                <input type="number" min="0" step="1" class="form-control form-control-sm" id="category-limit" @bind="_categoryLimit" />
+                <div class="form-text small">One shared limit for every category (tops, capes, beards…). 0 = no limit, default 30.</div>
+            </div>
+        </div>
+
         <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" id="pack-gating" @bind="_gating" />
             <label class="form-check-label" for="pack-gating">
                 <strong>Filter the live marketplace by packs</strong>
-                <span class="text-muted small">— off = the whole catalog is served to everyone (the old behavior)</span>
+                <span class="text-muted small">— off = everything up to the per-category limit</span>
             </label>
         </div>
 
@@ -55,16 +62,15 @@
         }
         <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
                     SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
-                    EmptyHint="Nothing selected — with gating on, only base pieces (no theme tag) show. The classic-skin packs follow the same gate." />
+                    EmptyHint="Nothing selected — with gating on, only base pieces (no theme tag) show." />
 
-        <button class="btn btn-sm btn-outline-primary me-2 mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
+        <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
             @if (_savingDefaults)
             {
                 <span class="spinner-border spinner-border-sm"></span>
             }
-            Save defaults
+            Save
         </button>
-        <span class="text-muted small">Gating off = the whole live catalog is served to everyone (the pre-gating behavior).</span>
     </div>
 </div>
 
@@ -108,13 +114,14 @@
 </div>
 
 @code {
-    private sealed record PacksConfig(bool Gating, List<string> DefaultPacks);
+    private sealed record PacksConfig(bool Gating, List<string> DefaultPacks, int CategoryLimit);
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
 
     private List<PersonaPackIndex.ThemePackRow> _packs = [];
     private string? _packSummary;
     private bool _gating;
+    private int _categoryLimit = 30;
     private HashSet<string> _defaults = [];
     private HashSet<string> _grants = [];
     private string? _selectedPlayerId;
@@ -130,6 +137,7 @@
     protected override async Task OnInitializedAsync()
     {
         _gating = Settings.Instance.PersonaPackGating ?? false;
+        _categoryLimit = Math.Max(0, Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit);
         _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
         (_packs, _packSummary) = PersonaPackIndex.ReadThemePacks();
         await LoadPlayersAsync();
@@ -203,6 +211,7 @@
         try
         {
             Settings.Instance.PersonaPackGating = _gating;
+            Settings.Instance.PersonaCategoryLimit = _categoryLimit;
             Settings.Instance.PersonaDefaultPacks = [.. _defaults];
             Settings.Instance.Save(Settings.DefaultPath);
 
@@ -210,10 +219,10 @@
             // catalog index) — same pattern as the index itself
             string path = Path.Combine(MojangAssetGate.MojangAssetsDir, "persona-catalog", "packs.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_gating, [.. _defaults]), _jsonOptions));
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_gating, [.. _defaults], _categoryLimit), _jsonOptions));
             _message = _gating
-                ? $"Saved — {_defaults.Count} default pack(s), gating on. The ApiServer picks this up immediately."
-                : "Saved — gating is OFF, every player sees the whole live catalog.";
+                ? $"Saved — {_defaults.Count} default pack(s), gating on, max {_categoryLimit} piece(s) per category. The ApiServer picks this up immediately."
+                : $"Saved — gating is OFF, max {_categoryLimit} piece(s) per category. The ApiServer picks this up immediately.";
         }
         catch (Exception ex)
         {

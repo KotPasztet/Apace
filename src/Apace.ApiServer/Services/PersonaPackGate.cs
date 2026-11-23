@@ -18,7 +18,9 @@ namespace Apace.ApiServer.Services;
 // hitting SQLite on every search.
 public static class PersonaPackGate
 {
-    private sealed record PackConfig(bool? Gating, List<string>? DefaultPacks);
+    public const int DefaultCategoryLimit = 30;
+
+    private sealed record PackConfig(bool? Gating, List<string>? DefaultPacks, int? CategoryLimit);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly ConcurrentDictionary<string, (DateTimeOffset Expires, IReadOnlyCollection<string> Packs)> GrantCache = new();
@@ -28,7 +30,29 @@ public static class PersonaPackGate
 
     private static bool _gating;
     private static IReadOnlySet<string> _defaults = new HashSet<string>();
+    private static int _categoryLimit = DefaultCategoryLimit;
     private static long _configStamp;
+
+    /// <summary>
+    /// Max live pieces served per piece type (one shared knob for every dressing
+    /// room category — tops, capes, beards, …). The marketplace has no
+    /// per-category size control of its own and the frozen client chokes on huge
+    /// category lists; the panel's Marketplace Management page configures this
+    /// and the gate hot-reloads it from packs.json. 0 = no limit.
+    /// </summary>
+    public static int CategoryLimit => _categoryLimit;
+
+    /// <summary>
+    /// The gating flag only (no DB access) — for pages that just show the state.
+    /// </summary>
+    public static (bool Gating, int CategoryLimit) ConfigSnapshot
+    {
+        get
+        {
+            LoadConfig();
+            return (_gating, _categoryLimit);
+        }
+    }
 
     private static void LoadConfig()
     {
@@ -41,6 +65,7 @@ public static class PersonaPackGate
                     _configStamp = 0;
                     _gating = false;
                     _defaults = new HashSet<string>();
+                    _categoryLimit = DefaultCategoryLimit;
                     Log.Information("Persona pack config gone from {Path} — gating off", ConfigPath);
                 }
 
@@ -56,9 +81,11 @@ public static class PersonaPackGate
             var loaded = JsonSerializer.Deserialize<PackConfig>(File.ReadAllText(ConfigPath), JsonOptions);
             _gating = loaded?.Gating ?? false;
             _defaults = (loaded?.DefaultPacks ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            _categoryLimit = Math.Max(0, loaded?.CategoryLimit ?? DefaultCategoryLimit);
             _configStamp = stamp;
-            Log.Information("Persona pack config loaded from {Path} — gating: {Gating}, default packs: {Packs}",
-                ConfigPath, _gating, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults));
+            Log.Information("Persona pack config loaded from {Path} — gating: {Gating}, default packs: {Packs}, category limit: {Limit}",
+                ConfigPath, _gating, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
+                _categoryLimit == 0 ? "none" : _categoryLimit.ToString());
         }
         catch (Exception ex)
         {

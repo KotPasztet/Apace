@@ -85,18 +85,28 @@ public sealed class Settings
 
     /// <summary>
     /// Skin pack gating: when true, the ApiServer filters the live marketplace's
-    /// thematic skin packs down to PersonaDefaultPacks (plus per-player grants
-    /// from the Skin Packs page) instead of serving them all. Persona pieces —
-    /// every dressing room category, accessories included — always serve.
+    /// thematic packs down to PersonaDefaultPacks (plus per-player grants from
+    /// the Marketplace Management page) instead of serving them all. Pieces
+    /// without a theme tag — the base content — always serve.
     /// Default false — everything, the pre-gating behavior.
     /// </summary>
     public bool? PersonaPackGating { get; set; }
 
     /// <summary>
-    /// Thematic skin pack uuids enabled for every player when PersonaPackGating
-    /// is on. Persona pieces are not gated. Only meaningful with gating on.
+    /// Thematic packs enabled for every player when PersonaPackGating is on
+    /// (theme tags; legacy skin-pack uuids keep working too). Only meaningful
+    /// with gating on.
     /// </summary>
     public List<string>? PersonaDefaultPacks { get; set; }
+
+    /// <summary>
+    /// Max live marketplace pieces per dressing-room category — one shared limit
+    /// for every piece type (tops, capes, beards, …), always applied, 0 = no
+    /// limit. The marketplace has no per-category size control of its own and
+    /// the frozen client chokes on huge category lists. Default 30; the ApiServer
+    /// reads it from packs.json (hot-reloaded).
+    /// </summary>
+    public int? PersonaCategoryLimit { get; set; }
 
     public enum TileDataSourceE
     {

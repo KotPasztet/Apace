@@ -141,9 +141,14 @@ internal sealed class CatalogController : ApaceControllerBase
     private static Dictionary<Guid, Item>? _liveOfferById;
     private static string[][]? _liveItemThemeTags;
 
-    // The live persona offer for one player: pieces without a marketplace theme
-    // tag (the base content) always serve; themed pieces need one of their theme
-    // packs enabled (panel defaults ∪ per-player grants). Gating off = serve all.
+    // The live persona offer for one player. Two independent levers compose:
+    // the pack gate (pieces without a marketplace theme tag — the base content —
+    // always serve; themed pieces need one of their theme packs enabled from the
+    // panel defaults ∪ per-player grants; gating off = serve all) and the
+    // per-category size limit (one shared knob, always on, 0 = off) that keeps
+    // every piece type at a count the frozen client can render. The first N
+    // pieces per type in offer order win — stable per index stamp, so players
+    // don't see the catalog reshuffle between requests.
     private static async Task<IReadOnlyList<Item>> LiveOfferItemsFor(string? playerId, CancellationToken cancellationToken)
     {
         if (!LivePersonaCatalog.IsAvailable)
@@ -154,19 +159,39 @@ internal sealed class CatalogController : ApaceControllerBase
         IReadOnlyList<Item> all = LiveOfferItems;
         IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPackUuidsAsync(playerId, cancellationToken);
         string[][]? themes = _liveItemThemeTags;
-        if (allowed is null || themes is null || themes.Length != all.Count)
+        int limit = PersonaPackGate.CategoryLimit;
+        bool packFilter = allowed is not null && themes is not null && themes.Length == all.Count;
+        if (!packFilter && limit <= 0)
         {
             return all;
         }
 
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var filtered = new List<Item>(all.Count);
         for (int i = 0; i < all.Count; i++)
         {
-            string[] tags = themes[i];
-            if (tags.Length == 0 || tags.Any(allowed.Contains))
+            if (packFilter)
             {
-                filtered.Add(all[i]);
+                string[] tags = themes![i];
+                if (tags.Length > 0 && !tags.Any(allowed!.Contains))
+                {
+                    continue;
+                }
             }
+
+            string pieceType = all[i].DisplayProperties?.PieceType ?? "";
+            if (limit > 0 && pieceType.Length > 0)
+            {
+                int count = counts.TryGetValue(pieceType, out int seen) ? seen : 0;
+                if (count >= limit)
+                {
+                    continue;
+                }
+
+                counts[pieceType] = count + 1;
+            }
+
+            filtered.Add(all[i]);
         }
 
         return filtered;

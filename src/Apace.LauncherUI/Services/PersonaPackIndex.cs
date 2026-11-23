@@ -16,6 +16,10 @@ namespace Apace.LauncherUI.Services;
 // the base content that always serves.
 public static class PersonaPackIndex
 {
+    // Shared with the ApiServer's PersonaPackGate.DefaultCategoryLimit (separate
+    // processes share the volume, not the code) — keep both in sync.
+    public const int DefaultCategoryLimit = 30;
+
     // One thematic pack: a marketplace theme tag (tag.*) and the persona pieces
     // carrying it. A pack spans every piece category it appears on (head, tops,
     // footwear…); enabling it serves all of them — no per-category toggles.
