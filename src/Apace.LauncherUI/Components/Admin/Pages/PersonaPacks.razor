@@ -1,5 +1,6 @@
 @page "/Admin/PersonaPacks"
 @using Microsoft.AspNetCore.Authorization
+@using Serilog
 @using System.Text.Json
 @using Apace.DB
 @using Apace.DB.Models.Player
@@ -16,8 +17,19 @@
         <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
             <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Skin Packs
         </div>
-        <p class="text-muted small mb-0 mt-1">Choose which thematic skin packs players can see — the live marketplace
-            pieces (all categories, accessories included) always serve; packs are the lever for enabling new content</p>
+        <p class="text-muted small mb-0 mt-1">Choose which thematic packs players can see — the marketplace has no accessory
+            pack entities, so packs are its own theme tags: each spans every piece category it appears on (head, tops,
+            footwear…). Base pieces without a theme tag always serve; classic-skin packs follow the same gate by uuid.</p>
+    </div>
+    <div class="text-end">
+        <button class="btn btn-sm btn-outline-primary" @onclick="SyncNowAsync" disabled="@_syncing">
+            <i class="bi bi-arrow-repeat me-1"></i>@(_syncing ? "Syncing..." : "Sync now")
+        </button>
+        <div class="text-muted small mt-1">full walk ≈ several minutes — last sync: @LastSyncText</div>
+        @if (_syncError is not null)
+        {
+            <div class="text-danger small mt-1">@_syncError</div>
+        }
     </div>
 </div>
 
@@ -43,7 +55,7 @@
         }
         <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
                     SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
-                    EmptyHint="Nothing selected — with gating on, no thematic packs show in the dressing room. The basic persona pieces (tops, bottoms, hats, accessories…) always show." />
+                    EmptyHint="Nothing selected — with gating on, only base pieces (no theme tag) show. The classic-skin packs follow the same gate." />
 
         <button class="btn btn-sm btn-outline-primary me-2 mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
             @if (_savingDefaults)
@@ -100,7 +112,7 @@
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
 
-    private List<PersonaPackIndex.SkinPackRow> _packs = [];
+    private List<PersonaPackIndex.ThemePackRow> _packs = [];
     private string? _packSummary;
     private bool _gating;
     private HashSet<string> _defaults = [];
@@ -109,15 +121,41 @@
     private List<(string Id, string? Username)> _players = [];
     private string? _message;
     private bool _savingDefaults, _savingGrants;
+    private bool _syncing;
+    private string? _syncError;
     private EarthDB? _earthDB;
+
+    private string LastSyncText => LivePersonaCatalogSync.GetLastVolumeSync()?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "never";
 
     protected override async Task OnInitializedAsync()
     {
         _gating = Settings.Instance.PersonaPackGating ?? false;
         _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
-        (_packs, _packSummary) = PersonaPackIndex.ReadSkinPacks();
+        (_packs, _packSummary) = PersonaPackIndex.ReadThemePacks();
         await LoadPlayersAsync();
         await SelectPlayerAsync(null);
+    }
+
+    private async Task SyncNowAsync()
+    {
+        if (LivePersonaCatalogSync.IsSyncing)
+        {
+            return;
+        }
+
+        _syncing = true;
+        _syncError = null;
+        try
+        {
+            bool ok = await LivePersonaCatalogSync.SyncNowAsync(Log.Logger, CancellationToken.None);
+            _syncError = ok ? null : (LivePersonaCatalogSync.LastError ?? "sync failed");
+        }
+        finally
+        {
+            _syncing = false;
+            (_packs, _packSummary) = PersonaPackIndex.ReadThemePacks();
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task LoadPlayersAsync()

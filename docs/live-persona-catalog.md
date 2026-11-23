@@ -130,6 +130,40 @@ re-sync). Evidence from this repo:
 So the frozen MCE client has no UI path that would browse or play emote pieces;
 offering them would be dead weight in the dressing-room queries.
 
+## Pack gating (theme tags, not pack bundles)
+
+The panel's Skin Packs page gates the live catalog by **thematic packs**. There
+are no accessory pack entities in the marketplace to gate by — verified
+23.11 with `scripts/probe_persona_tags.py` (1200 PersonaDurable entries across
+both ends of the creationDate range + the full 1600-entry bundle catalog):
+
+- every persona piece carries **exactly one `packIdentity`** — the
+  `persona_piece` itself; no piece references a bundle;
+- the bundles' `packIdentity` types are only `skinpack` (1151, the Classic
+  Skins row), `worldtemplate` (684) and `resourcepack` (54);
+- the committed dressing-room layout (`PersonaQueryManifest_V1.0`) groups
+  accessories purely by piece type (`pieceTypeFilters`), with no themed
+  collections.
+
+The marketplace's own thematic grouping of accessories is its **theme-tag
+metadata** (`tag.*` — Cool, Dark, Cute, Halloween, Fantasy, …; ~284 distinct
+values, ~55% of pieces carry one). So:
+
+- one pack = one theme tag; enabling it serves every piece carrying the tag,
+  across all piece categories (a pack spans head + tops + footwear + …);
+- pieces **without** a theme tag are the base content and always serve;
+- type-ish tags (the piece's own category restated as a tag, e.g. `tag.hair` on
+  hair pieces) never form packs — excluded by the same piece-type-suffix rule
+  on both sides (panel `PersonaPackIndex.ReadThemePacks`, ApiServer
+  `LivePersonaCatalog.GetOffer` — separate processes share the volume, not the
+  code);
+- the classic-skin packs keep following the same allowed set by their pack
+  uuid (legacy saved selections keep working; entries that never match — e.g.
+  piece-type names from the first gating iteration — are ignored);
+- gating config (`packs.json`, defaults ∪ per-player grants, ~30 s grant
+  cache) and the staticdata exemption are unchanged; `Catalog/GetPublishedItem`
+  is not re-filtered (the client only asks for ids it saw in a gated search).
+
 ## Rate limits (polite by design)
 
 | Operation | Limit |

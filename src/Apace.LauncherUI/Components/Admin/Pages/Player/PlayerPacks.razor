@@ -35,7 +35,7 @@
 }
 
 <div class="card mb-4">
-    <div class="card-header">Granted packs (extra thematic skin packs beyond the panel defaults)</div>
+    <div class="card-header">Granted packs (extra thematic packs beyond the panel defaults)</div>
     <div class="card-body">
         <p class="text-muted small mb-3">@EffectiveSummary
             Global defaults are managed on the <a href="/Admin/PersonaPacks">Skin Packs</a> page.</p>
@@ -63,7 +63,7 @@
     public string PlayerId { get; set; } = string.Empty;
 
     private string? _username;
-    private List<PersonaPackIndex.SkinPackRow> _packs = [];
+    private List<PersonaPackIndex.ThemePackRow> _packs = [];
     private string? _packSummary;
     private HashSet<string> _grants = [];
     private string? _message;
@@ -82,13 +82,13 @@
             var defaults = Settings.Instance.PersonaDefaultPacks ?? [];
             int granted = _grants.Count(pack => !defaults.Contains(pack, StringComparer.OrdinalIgnoreCase));
             return $"This player sees the panel defaults ({defaults.Count} thematic pack(s)) plus {granted} extra pack(s); "
-                + "all persona piece categories serve regardless of gating.";
+                + "base pieces without a theme tag serve regardless of gating.";
         }
     }
 
     protected override async Task OnInitializedAsync()
     {
-        (_packs, _packSummary) = PersonaPackIndex.ReadSkinPacks();
+        (_packs, _packSummary) = PersonaPackIndex.ReadThemePacks();
         try
         {
             using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);

@@ -115,6 +115,8 @@ internal sealed class CatalogController : ApaceControllerBase
 
     // Mapped live offer items, cached per index version (the dressing room fires
     // many searches; mapping ~10k items per request would dominate the request).
+    // Theme tags ride along per item (aligned by index) so the pack gate filters
+    // without re-reading the volume.
     private static IReadOnlyList<Item> LiveOfferItems
     {
         get
@@ -122,8 +124,9 @@ internal sealed class CatalogController : ApaceControllerBase
             long stamp = LivePersonaCatalog.IndexStamp;
             if (_liveOfferStamp != stamp)
             {
-                var source = LivePersonaCatalog.GetOfferItems();
-                _liveOfferItems = source.Select(CIItemToItem).ToArray();
+                var offer = LivePersonaCatalog.GetOffer();
+                _liveOfferItems = offer.Items.Select(CIItemToItem).ToArray();
+                _liveItemThemeTags = [.. offer.ThemeTags.Select(tags => tags.ToArray())];
                 _liveOfferById = _liveOfferItems.ToDictionary(item => item.Id);
                 _liveOfferStamp = stamp;
                 Log.Information("Live persona offer rebuilt: {Count} item(s) (index stamp {Stamp})", _liveOfferItems.Length, stamp);
@@ -136,13 +139,37 @@ internal sealed class CatalogController : ApaceControllerBase
     private static long? _liveOfferStamp;
     private static Item[]? _liveOfferItems;
     private static Dictionary<Guid, Item>? _liveOfferById;
+    private static string[][]? _liveItemThemeTags;
 
-    // The live persona offer, deliberately ungated: every piece category (tops,
-    // hair, eyes, outerwear, accessories…) serves to everyone — the skin pack
-    // gate only filters thematic packs.
-    private static IReadOnlyList<Item> LiveOfferItemsFor()
+    // The live persona offer for one player: pieces without a marketplace theme
+    // tag (the base content) always serve; themed pieces need one of their theme
+    // packs enabled (panel defaults ∪ per-player grants). Gating off = serve all.
+    private static async Task<IReadOnlyList<Item>> LiveOfferItemsFor(string? playerId, CancellationToken cancellationToken)
     {
-        return LivePersonaCatalog.IsAvailable ? LiveOfferItems : [];
+        if (!LivePersonaCatalog.IsAvailable)
+        {
+            return [];
+        }
+
+        IReadOnlyList<Item> all = LiveOfferItems;
+        IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPackUuidsAsync(playerId, cancellationToken);
+        string[][]? themes = _liveItemThemeTags;
+        if (allowed is null || themes is null || themes.Length != all.Count)
+        {
+            return all;
+        }
+
+        var filtered = new List<Item>(all.Count);
+        for (int i = 0; i < all.Count; i++)
+        {
+            string[] tags = themes[i];
+            if (tags.Length == 0 || tags.Any(allowed.Contains))
+            {
+                filtered.Add(all[i]);
+            }
+        }
+
+        return filtered;
     }
 
     // Thematic skin packs (MarketplaceDurableCatalog_V1.2 bundles) mapped from the
@@ -236,13 +263,13 @@ internal sealed class CatalogController : ApaceControllerBase
                 .Replace("platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth')", "platforms/any(tp: tp eq 'android.googleplay') and platforms/any(tp: tp eq 'title.earth')");
 
                 // base offer (staticdata) plus, when the live persona marketplace is on,
-                // the unlock-all live items — one OData filter over both. Persona pieces
-                // serve unfiltered (all categories, accessories included); the skin pack
-                // gate decides which thematic packs are on by default and per player.
+                // the unlock-all live items — one OData filter over both. The pack gate
+                // decides which theme-tag packs are on by default and per player; base
+                // pieces (no theme tag) always serve, and staticdata is never gated.
                 string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
                 IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
                 IEnumerable<Item> source = BaseOfferItems
-                    .Concat(LiveOfferItemsFor())
+                    .Concat(await LiveOfferItemsFor(callerId, cancellationToken))
                     .Concat(livePacks);
 
             var oDataQuery = source.AsQueryable().OData(settings =>

@@ -6,13 +6,16 @@ using Serilog;
 
 namespace Apace.ApiServer.Services;
 
-// Skin pack gating for the live persona marketplace: all persona pieces (every
-// dressing room category — tops, hair, eyes, outerwear, accessories…) always
-// serve; the gate only decides which thematic skin packs are available. The
-// panel writes packs.json next to the catalog index (hot-reloaded like the
-// index itself); per-player grants live in earth.db (objects type
-// "personaPacks") and are cached here briefly so panel edits apply within ~30s
-// without hitting SQLite on every search.
+// Skin pack gating for the live persona marketplace. The marketplace has no
+// accessory pack entities — pieces carry exactly one packIdentity (themselves;
+// probe: scripts/probe_persona_tags.py) — so packs are the pieces' marketplace
+// theme tags (tag.*): enabling a pack serves every themed piece across all
+// categories, pieces without a theme tag (the base content) always serve, and
+// the classic-skin packs keep following the gate by their pack uuid. The panel
+// writes packs.json next to the catalog index (hot-reloaded like the index
+// itself); per-player grants live in earth.db (objects type "personaPacks")
+// and are cached here briefly so panel edits apply within ~30s without
+// hitting SQLite on every search.
 public static class PersonaPackGate
 {
     private sealed record PackConfig(bool? Gating, List<string>? DefaultPacks);
@@ -64,12 +67,13 @@ public static class PersonaPackGate
     }
 
     /// <summary>
-    /// The thematic skin packs this player may see, or null when gating is off
-    /// (serve everything — the pre-gating behavior). Defaults always apply;
-    /// grants add per-player extras. Persona pieces are never gated — entries
-    /// predating the category gate (piece type names instead of pack uuids)
-    /// simply never match a pack uuid and are ignored. Staticdata offers (the
-    /// committed legacy catalog and the Default Skins pack) are never gated.
+    /// The thematic packs this player may see (theme tags for persona pieces,
+    /// pack uuids for classic-skin packs), or null when gating is off (serve
+    /// everything — the pre-gating behavior). Defaults always apply; grants add
+    /// per-player extras. Entries predating the theme model (piece type names or
+    /// orphaned skin-pack uuids) simply never match a theme tag and are ignored.
+    /// Staticdata offers (the committed legacy catalog and the Default Skins
+    /// pack) are never gated.
     /// </summary>
     public static async Task<IReadOnlySet<string>?> AllowedPackUuidsAsync(string? playerId, CancellationToken cancellationToken)
     {

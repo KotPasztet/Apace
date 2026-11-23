@@ -209,23 +209,54 @@ public static class LivePersonaCatalog
     // The offer (unlock-all strip applied here, never to the raw cache)
     // ---------------------------------------------------------------------------
 
-    /// <summary>
-    /// The cached metadata as catalog items ready for the client: one item per
+    /// <summary>The cached metadata as catalog items ready for the client: one item per
     /// persona piece (deduped by the sync, defensively here too), emotes skipped
     /// (see docs/live-persona-catalog.md — the MCE dressing room layout has no
     /// emote category), achievement/lock fields neutralized, Contents pointing at
-    /// the local persona proxy. Items probed dead drop out until they revive.
+    /// the local persona proxy. Items probed dead drop out until they revive.</summary>
+    public static IReadOnlyList<CItem> GetOfferItems() => GetOffer().Items;
+
+    public sealed record LiveOffer(IReadOnlyList<CItem> Items, IReadOnlyList<IReadOnlyList<string>> ThemeTags);
+
+    // The theme-tag suffixes that merely restate the piece's own category
+    // (tag.hair on hair pieces, tag.eyes on eye pieces…) — descriptions, not
+    // themes, so they must never form a gating pack. Derived from the index's
+    // piece types; PersonaPackIndex (panel) applies the same rule when it lists
+    // the packs (separate processes share the volume, not the code).
+    private static HashSet<string> TypeTagSuffixes(LiveIndex index)
+        => index.Items
+            .Where(item => !item.IsEmote && item.PieceType.StartsWith("persona_", StringComparison.Ordinal))
+            .Select(item => item.PieceType["persona_".Length..])
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    // A piece's gating themes: its marketplace theme tags minus the type-ish ones.
+    private static List<string> ThemeTagsOf(LiveIndexItem entry, IReadOnlySet<string> typeSuffixes)
+        => [.. entry.Tags
+            .Where(tag => tag.StartsWith("tag.", StringComparison.OrdinalIgnoreCase)
+                && !typeSuffixes.Contains(tag["tag.".Length..]))
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
+
+    /// <summary>
+    /// The offer plus each item's gating theme tags, aligned with Items. The
+    /// marketplace has no accessory pack entities — every PersonaDurable entry
+    /// carries exactly one packIdentity, the piece itself (probe:
+    /// scripts/probe_persona_tags.py) — so the pack gate runs on the pieces'
+    /// marketplace theme tags (tag.*): a pack spans every piece category the tag
+    /// appears on, pieces without a theme tag are the base content that always
+    /// serves, and the filtering itself happens per request in the controllers.
     /// </summary>
-    public static IReadOnlyList<CItem> GetOfferItems()
+    public static LiveOffer GetOffer()
     {
         var index = Index;
         if (index is null)
         {
-            return [];
+            return new LiveOffer([], []);
         }
 
         var dead = GetDeadItemIds();
+        var typeSuffixes = TypeTagSuffixes(index);
         var items = new List<CItem>(index.Items.Count);
+        var themeTags = new List<IReadOnlyList<string>>(index.Items.Count);
         var seenPieces = new HashSet<Guid>();
         foreach (var entry in index.Items)
         {
@@ -240,9 +271,10 @@ public static class LivePersonaCatalog
             }
 
             items.Add(BuildOfferItem(entry));
+            themeTags.Add(ThemeTagsOf(entry, typeSuffixes));
         }
 
-        return items;
+        return new LiveOffer(items, themeTags);
     }
 
     public static CItem? GetOfferItem(string itemId)
