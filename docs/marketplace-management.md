@@ -17,16 +17,22 @@ no restart needed.
 - **Allow only supported cosmetics** hides pieces the frozen Minecraft Earth
   client cannot render. Every piece carries a compat profile from the metadata
   pipeline; the **Compat** badge on each item shows the verdict:
-  - *supported* — the piece files parse, geometry `format_version`
-    1.12.0–1.20.x, no animations / render controllers / flipbook / particles
-    and no face bones.
-  - *risky* — geometry 1.21.0+ (UV rotation, transform pivots) or below 1.12.0
-    (legacy), any animation/effect signal, or face bones (rig 1.19.50/1.20.10,
-    MCPE-165232). Those render broken: floating parts, missing meshes. Risky
-    pieces are hidden from the marketplace and refused on equip.
+  - *supported* — the piece files parse, every geometry variant
+    `format_version` 1.12.0 up to (excluding) the configured max (default
+    1.16.0), no animations / render controllers / flipbook / particles and no
+    face bones. The worst variant wins — one broken body-size variant marks
+    the whole piece.
+  - *risky* — geometry at or past the max (UV rotation, transform pivots) or
+    below 1.12.0 (legacy), any animation/effect signal, or face bones (rig
+    1.19.50/1.20.10, MCPE-165232). Those render broken: floating parts,
+    missing meshes. Risky pieces are hidden from the marketplace and refused
+    on equip.
   - *unknown* — no scan yet; unknown pieces keep serving (the filter only ever
     hides pieces with positive evidence of breakage). Turn the switch off to
     serve everything.
+
+  The max is `packs.json`'s `maxGeometryFormatVersion` (default `1.16.0`,
+  hot-reloaded, hand-edit only — the panel's Save does not write the key).
 
 ## Pack filtering (defaults and grants)
 

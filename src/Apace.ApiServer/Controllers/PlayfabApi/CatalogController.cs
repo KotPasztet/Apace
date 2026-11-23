@@ -280,9 +280,15 @@ internal sealed class CatalogController : ApaceControllerBase
                 }
             }
 
-            if (onlySupported && !PersonaPieceTypes.IsSupportedCosmetic(item.Id.ToString()))
+            if (onlySupported)
             {
-                continue;
+                string itemId = item.Id.ToString();
+                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId);
+                if (!compat.Supported)
+                {
+                    PersonaPieceTypes.LogCompatVerdictOnce("catalog offer", itemId, compat.Reason);
+                    continue;
+                }
             }
 
             filtered.Add(item);
@@ -583,9 +589,14 @@ internal sealed class CatalogController : ApaceControllerBase
                 return TypedResults.NotFound();
             }
 
-            if (PersonaPackGate.OnlySupported && !PersonaPieceTypes.IsSupportedCosmetic(itemId.ToString()))
+            if (PersonaPackGate.OnlySupported)
             {
-                return TypedResults.NotFound();
+                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString());
+                if (!compat.Supported)
+                {
+                    PersonaPieceTypes.LogCompatVerdictOnce("published item", itemId.ToString(), compat.Reason);
+                    return TypedResults.NotFound();
+                }
             }
 
             return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
@@ -613,9 +624,14 @@ internal sealed class CatalogController : ApaceControllerBase
         Item? customItem = CustomOfferItems.FirstOrDefault(candidate => candidate.Id == itemId);
         if (customItem is not null)
         {
-            if (PersonaPackGate.OnlySupported && !PersonaPieceTypes.IsSupportedCosmetic(itemId.ToString()))
+            if (PersonaPackGate.OnlySupported)
             {
-                return TypedResults.NotFound();
+                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString());
+                if (!compat.Supported)
+                {
+                    PersonaPieceTypes.LogCompatVerdictOnce("published item", itemId.ToString(), compat.Reason);
+                    return TypedResults.NotFound();
+                }
             }
 
             return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(

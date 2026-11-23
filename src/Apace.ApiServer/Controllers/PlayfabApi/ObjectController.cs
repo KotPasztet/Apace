@@ -246,11 +246,16 @@ internal sealed class ObjectController : ApaceControllerBase
                     continue;
                 }
 
-                if (onlySupported && piece.LiveItemId is not null && !PersonaPieceTypes.IsSupportedCosmetic(piece.LiveItemId))
+                if (onlySupported && piece.LiveItemId is not null)
                 {
-                    dropped.Add(i);
-                    unsupported++;
-                    continue;
+                    PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(piece.LiveItemId);
+                    if (!compat.Supported)
+                    {
+                        dropped.Add(i);
+                        unsupported++;
+                        PersonaPieceTypes.LogCompatVerdictOnce("equipped profile", piece.LiveItemId, compat.Reason);
+                        continue;
+                    }
                 }
 
                 if (piece.LiveItemId is not null

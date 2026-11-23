@@ -1,4 +1,5 @@
 using Serilog;
+using System.Globalization;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -449,10 +450,13 @@ public static class LivePersonaCatalog
 
     /// <summary>
     /// Geometry compatibility facts for one piece binary, captured by opening the
-    /// zip (see <see cref="InspectGeometryCompat"/>): the geometry format_version
-    /// the frozen MCE client (Jan 2021) can render, plus whether the piece
-    /// animates or references particles. Null fields are unknown — only clear
-    /// signals ever set true/false, and a parse failure leaves everything null.
+    /// zip (see <see cref="InspectGeometryCompat"/>): the WORST case across every
+    /// geometry variant the piece carries — <see cref="FormatVersion"/> is the
+    /// highest parsed format_version, <see cref="LowestFormatVersion"/> the
+    /// lowest (a single out-of-band body-size variant moves one of them), the
+    /// effect flags are OR-ed in from all candidates. Null fields are unknown —
+    /// only clear signals ever set true/false, and a parse failure leaves
+    /// everything null.
     /// </summary>
     public sealed record GeometryCompatInfo(
         string? FormatVersion,
@@ -464,11 +468,19 @@ public static class LivePersonaCatalog
         // once it scans for them, and a file without the keys leaves them
         // null (null = not scanned, not disqualifying on their own).
         bool? HasRenderControllers = null,
-        bool? HasFaceBones = null);
+        bool? HasFaceBones = null,
+        string? LowestFormatVersion = null);
 
     private sealed class ProbeStateFile
     {
         public Dictionary<string, ProbeEntry> Items { get; set; } = [];
+
+        // Inspector schema stamp for the geometry facts: bumped whenever
+        // InspectCompatEntries changes what it records. A file stamped with an
+        // older version is not loaded — every piece re-inspects lazily from its
+        // binary on the first touch, so derived verdicts recompute once after
+        // the upgrade instead of resting on stale/partial facts.
+        public int? GeometrySchemaVersion { get; set; }
 
         // Parallel to Items and persisted in the same file, keyed by item id:
         // compat facts are independent of the probe verdict (a mirror-served piece
@@ -508,9 +520,17 @@ public static class LivePersonaCatalog
 
             if (file?.Geometry is not null)
             {
-                foreach (var (itemId, compat) in file.Geometry)
+                if (file.GeometrySchemaVersion == GeometryCompatSchemaVersion)
                 {
-                    GeometryCompatStates[itemId] = compat;
+                    foreach (var (itemId, compat) in file.Geometry)
+                    {
+                        GeometryCompatStates[itemId] = compat;
+                    }
+                }
+                else
+                {
+                    Log.Information("Persona compat facts in {Path} were recorded by an older inspector (schema {Recorded} != {Current}) — every piece re-inspects from its binary on first touch",
+                        ProbeStatePath, file.GeometrySchemaVersion, GeometryCompatSchemaVersion);
                 }
             }
         }
@@ -592,7 +612,7 @@ public static class LivePersonaCatalog
         {
             Directory.CreateDirectory(CatalogDir);
             string tempPath = ProbeStatePath + ".tmp";
-            File.WriteAllText(tempPath, JsonSerializer.Serialize(new ProbeStateFile { Items = ProbeStates, Geometry = GeometryCompatStates }, JsonOptions));
+            File.WriteAllText(tempPath, JsonSerializer.Serialize(new ProbeStateFile { Items = ProbeStates, GeometrySchemaVersion = GeometryCompatSchemaVersion, Geometry = GeometryCompatStates }, JsonOptions));
             File.Move(tempPath, ProbeStatePath, overwrite: true);
             _probeStateDirty = false;
             _probeStateLastSave = DateTime.UtcNow;
@@ -1241,18 +1261,31 @@ public static class LivePersonaCatalog
     // Whenever a binary is downloaded or first served from disk we open the zip
     // once and record the facts in probe-state.json (GeometryCompatInfo, parallel
     // "geometry" dictionary) — CatalogController consumes them via
-    // TryGetGeometryCompat. Lazy and cheap: a binary is parsed at most once, and
-    // files already on disk are picked up on the first touch of their item.
+    // TryGetGeometryCompat. The inspection is WORST-CASE-WINS: real pieces carry
+    // one geometry per body size (tall/medium/small/smaller) and every candidate
+    // is parsed — a single risky variant marks the piece (the old first-wins scan
+    // let a modern variant hide behind the first one read). Lazy and cheap: a
+    // binary is parsed at most once per schema version, and files already on
+    // disk are picked up on the first touch of their item.
+    //
+    // Schema of the recorded facts — bump whenever InspectCompatEntries changes
+    // what it records so the previous file is discarded (v1: first-wins scan
+    // without render-controller / face-bone capture, and the nested ppack0.zip
+    // content was unreadable after collection — v2: worst-case aggregation
+    // across all geometry candidates + the full effect scans on both zip layers).
+    private const int GeometryCompatSchemaVersion = 2;
+
     private const int MaxCompatEntryBytes = 2 * 1024 * 1024;
 
     /// <summary>
-    /// Geometry compatibility facts for a piece binary — geometry format_version,
-    /// animation and particle presence — captured when the binary is downloaded
-    /// or first served, and lazily for binaries already on disk that no request
-    /// has touched yet. Returns false when nothing is known for the item (never
-    /// seen on disk, or the zip could not be parsed).
+    /// Geometry compatibility facts for a piece binary — worst-case geometry
+    /// format_version (highest/lowest across the piece's variants), animation,
+    /// particle, render-controller and face-bone presence — captured when the
+    /// binary is downloaded or first served, and lazily for binaries already on
+    /// disk that no request has touched yet. Returns false when nothing is known
+    /// for the item (never seen on disk, or the zip could not be parsed).
     /// </summary>
-    public static bool TryGetGeometryCompat(string itemId, out string? formatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones)
+    public static bool TryGetGeometryCompat(string itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones)
     {
         lock (StateLock)
         {
@@ -1260,11 +1293,14 @@ public static class LivePersonaCatalog
             if (GeometryCompatStates.TryGetValue(itemId, out GeometryCompatInfo? known))
             {
                 formatVersion = known.FormatVersion;
+                lowestFormatVersion = known.LowestFormatVersion;
                 hasAnimations = known.HasAnimations;
                 hasParticles = known.HasParticles;
                 hasRenderControllers = known.HasRenderControllers;
                 hasFaceBones = known.HasFaceBones;
-                return formatVersion is not null || known.HasAnimations is not null || known.HasParticles is not null;
+                return formatVersion is not null || lowestFormatVersion is not null
+                    || known.HasAnimations is not null || known.HasParticles is not null
+                    || known.HasRenderControllers is not null || known.HasFaceBones is not null;
             }
         }
 
@@ -1296,16 +1332,20 @@ public static class LivePersonaCatalog
                 if (GeometryCompatStates.TryGetValue(itemId, out GeometryCompatInfo? captured))
                 {
                     formatVersion = captured.FormatVersion;
+                    lowestFormatVersion = captured.LowestFormatVersion;
                     hasAnimations = captured.HasAnimations;
                     hasParticles = captured.HasParticles;
                     hasRenderControllers = captured.HasRenderControllers;
                     hasFaceBones = captured.HasFaceBones;
-                    return formatVersion is not null || captured.HasAnimations is not null || captured.HasParticles is not null;
+                    return formatVersion is not null || lowestFormatVersion is not null
+                        || captured.HasAnimations is not null || captured.HasParticles is not null
+                        || captured.HasRenderControllers is not null || captured.HasFaceBones is not null;
                 }
             }
         }
 
         formatVersion = null;
+        lowestFormatVersion = null;
         hasAnimations = null;
         hasParticles = null;
         hasRenderControllers = null;
@@ -1344,11 +1384,14 @@ public static class LivePersonaCatalog
         }
 
         logger.Debug(
-            "Geometry compat captured for {Item}: formatVersion {FormatVersion}, animations {Animations}, particles {Particles} ({Path})",
+            "Geometry compat captured for {Item}: formatVersion {FormatVersion} (lowest {LowestVersion}), animations {Animations}, particles {Particles}, render controllers {RenderControllers}, face bones {FaceBones} ({Path})",
             itemId,
             info.FormatVersion ?? "unknown",
+            info.LowestFormatVersion ?? "unknown",
             info.HasAnimations?.ToString() ?? "unknown",
             info.HasParticles?.ToString() ?? "unknown",
+            info.HasRenderControllers?.ToString() ?? "unknown",
+            info.HasFaceBones?.ToString() ?? "unknown",
             path);
     }
 
@@ -1356,26 +1399,39 @@ public static class LivePersonaCatalog
     /// Opens a piece binary zip and reads the geometry compatibility facts. Real
     /// pieces are an outer zip holding one nested ppack0.zip (flat custom zips are
     /// accepted too) — both layers are searched. Only clear signals set a value:
-    /// the geometry json's format_version, a non-empty top-level animations object
-    /// or *.animation.json entries, and particle/flipbook references in meta or
-    /// manifest json. Returns null when the zip cannot be opened at all.
+    /// the highest/lowest parsed geometry format_version across ALL candidates
+    /// (one per body size), a non-empty top-level animations object or
+    /// *.animation.json entries, particle/flipbook and render-controller
+    /// references in geometry/meta/manifest json, and face bones in the geometry
+    /// bone lists. Returns null when the zip cannot be opened at all.
     /// </summary>
     private static GeometryCompatInfo? InspectGeometryCompat(string zipPath)
     {
+        // every opened archive stays alive until the inspection finished — the
+        // collected entries belong to their archive and their content cannot be
+        // read once the archive is disposed
+        var archives = new List<ZipArchive>();
         try
         {
-            using ZipArchive zip = ZipFile.OpenRead(zipPath);
+            archives.Add(ZipFile.OpenRead(zipPath));
             var entries = new List<ZipArchiveEntry>();
-            CollectZipEntries(zip, entries);
+            CollectZipEntries(archives[0], entries, archives);
             return InspectCompatEntries(entries);
         }
         catch (Exception)
         {
             return null; // unreadable/partial zip — the fields stay unknown
         }
+        finally
+        {
+            foreach (ZipArchive archive in archives)
+            {
+                archive.Dispose();
+            }
+        }
     }
 
-    private static void CollectZipEntries(ZipArchive archive, List<ZipArchiveEntry> into)
+    private static void CollectZipEntries(ZipArchive archive, List<ZipArchiveEntry> into, List<ZipArchive> archives)
     {
         foreach (ZipArchiveEntry entry in archive.Entries)
         {
@@ -1384,8 +1440,9 @@ public static class LivePersonaCatalog
             {
                 try
                 {
-                    using var nested = new ZipArchive(entry.Open(), ZipArchiveMode.Read, leaveOpen: false);
-                    CollectZipEntries(nested, into);
+                    ZipArchive nested = new(entry.Open(), ZipArchiveMode.Read, leaveOpen: false);
+                    archives.Add(nested);
+                    CollectZipEntries(nested, into, archives);
                 }
                 catch (Exception)
                 {
@@ -1395,11 +1452,28 @@ public static class LivePersonaCatalog
         }
     }
 
+    // The face-attachment bone names the frozen client misplaces (the persona
+    // face-accessory rig of 1.19.50/1.20.10, MCPE-165232 — see the
+    // CosmeticCompatIndex risky rule). Exact bone-name match so "forehead" or
+    // "arrowhead" cannot trigger it.
+    private static readonly HashSet<string> FaceBoneNames = new(StringComparer.OrdinalIgnoreCase) { "face", "hat", "head" };
+
     private static GeometryCompatInfo? InspectCompatEntries(List<ZipArchiveEntry> entries)
     {
-        string? formatVersion = null;
+        // Worst case wins across EVERY geometry candidate of the piece — real
+        // pieces carry one geometry per body size (tall/medium/small/smaller)
+        // and first-wins let a modern variant hide behind the first one read.
+        // The recorded facts are what the gate classifies: highest/lowest parsed
+        // format_version (a single out-of-band variant moves one of them) and
+        // every effect signal OR-ed in from all candidates.
+        Version? highest = null;
+        Version? lowest = null;
+        string? highestText = null;
+        string? lowestText = null;
         bool? hasAnimations = null;
         bool? hasParticles = null;
+        bool? hasRenderControllers = null;
+        bool? hasFaceBones = null;
         bool sawGeometry = false;
         bool sawMetaOrManifest = false;
         var geometryCandidates = new List<ZipArchiveEntry>();
@@ -1412,6 +1486,14 @@ public static class LivePersonaCatalog
                 return;
             }
 
+            // render-controller references anywhere in the geometry json — the
+            // frozen client cannot resolve them (untextured/wrong render pass)
+            if (text.Contains("render_controllers", StringComparison.OrdinalIgnoreCase)
+                || text.Contains("controller.render.", StringComparison.OrdinalIgnoreCase))
+            {
+                hasRenderControllers = true;
+            }
+
             try
             {
                 using var doc = JsonDocument.Parse(text);
@@ -1422,24 +1504,84 @@ public static class LivePersonaCatalog
 
                 sawGeometry = true;
                 JsonElement root = doc.RootElement;
-                if (formatVersion is null && root.TryGetProperty("format_version", out JsonElement version))
+                if (root.TryGetProperty("format_version", out JsonElement version))
                 {
-                    formatVersion = version.ValueKind == JsonValueKind.String ? version.GetString() : version.GetRawText();
+                    string? candidateVersion = version.ValueKind == JsonValueKind.String ? version.GetString() : version.GetRawText();
+                    if (candidateVersion is not null && TryParseFormatVersion(candidateVersion, out Version parsed))
+                    {
+                        if (highest is null || parsed > highest)
+                        {
+                            highest = parsed;
+                            highestText = candidateVersion;
+                        }
+
+                        if (lowest is null || parsed < lowest)
+                        {
+                            lowest = parsed;
+                            lowestText = candidateVersion;
+                        }
+                    }
                 }
 
                 // a top-level, non-empty "animations" object in the geometry json
-                if (hasAnimations is not true
-                    && root.TryGetProperty("animations", out JsonElement animations)
+                if (root.TryGetProperty("animations", out JsonElement animations)
                     && animations.ValueKind == JsonValueKind.Object
                     && animations.EnumerateObject().Any())
                 {
                     hasAnimations = true;
                 }
+
+                // face bones (the persona face-accessory rig, MCPE-165232) — the
+                // frozen client attaches those wrong
+                if (ScanFaceBones(root))
+                {
+                    hasFaceBones = true;
+                }
             }
             catch (JsonException)
             {
-                // malformed geometry json — the fields it could answer stay unknown
+                // malformed geometry json — the raw-text scans above still counted
             }
+        }
+
+        // both geometry shapes carry the bone list: legacy root "bones" and the
+        // 1.12.0+ "minecraft:geometry" array of { description, bones }
+        bool ScanFaceBones(JsonElement root)
+        {
+            if (root.TryGetProperty("minecraft:geometry", out JsonElement geometries) && geometries.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement geometry in geometries.EnumerateArray())
+                {
+                    if (ScanBoneNames(geometry))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return ScanBoneNames(root);
+        }
+
+        bool ScanBoneNames(JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty("bones", out JsonElement bones)
+                && bones.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement bone in bones.EnumerateArray())
+                {
+                    if (bone.ValueKind == JsonValueKind.Object
+                        && bone.TryGetProperty("name", out JsonElement name)
+                        && name.ValueKind == JsonValueKind.String
+                        && name.GetString() is { Length: > 0 } boneName
+                        && FaceBoneNames.Contains(boneName))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         foreach (ZipArchiveEntry entry in entries)
@@ -1466,6 +1608,12 @@ public static class LivePersonaCatalog
                     || text.Contains("flipbook", StringComparison.OrdinalIgnoreCase))
                 {
                     hasParticles = true; // particle/flipbook reference in meta/manifest
+                }
+
+                if (text.Contains("render_controllers", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("controller.render.", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasRenderControllers = true; // render-controller reference in meta/manifest
                 }
 
                 // a meta may point at its geometry files by name (geometry_sources
@@ -1496,7 +1644,7 @@ public static class LivePersonaCatalog
                 }
                 catch (JsonException)
                 {
-                    // meta json is not parseable — the particle scan above still counted
+                    // meta json is not parseable — the raw-text scans above still counted
                 }
             }
         }
@@ -1510,17 +1658,62 @@ public static class LivePersonaCatalog
             }
         }
 
-        if (!sawGeometry && formatVersion is null && !sawMetaOrManifest && hasAnimations is not true && hasParticles is not true)
+        if (!sawGeometry && highest is null && !sawMetaOrManifest && hasAnimations is not true && hasParticles is not true && hasRenderControllers is not true && hasFaceBones is not true)
         {
             return null; // nothing inspectable in the zip — all fields unknown
         }
 
         // conservative negatives: the zip held a geometry file with no animation
-        // signal anywhere, or meta/manifest text without a particle reference
+        // signal anywhere, meta/manifest text without a particle reference, or
+        // no render-controller / face-bone evidence in the files that could
+        // carry them
         hasAnimations ??= sawGeometry ? false : null;
         hasParticles ??= sawMetaOrManifest ? false : null;
+        hasRenderControllers ??= sawGeometry || sawMetaOrManifest ? false : null;
+        hasFaceBones ??= sawGeometry ? false : null;
 
-        return new GeometryCompatInfo(formatVersion, hasAnimations, hasParticles);
+        return new GeometryCompatInfo(highestText, hasAnimations, hasParticles, hasRenderControllers, hasFaceBones, lowestText);
+    }
+
+    // Bedrock format versions are "1.21.0" / "1.16.200" style strings — parse
+    // the leading numeric components and stop at the first non-numeric one
+    // (tolerating pre-release suffixes and garbage); fewer than 4 components
+    // pad with 0. Unparsable input returns false (fail closed). Keep in sync
+    // with PersonaPieceTypes.TryParseFormatVersion.
+    private static bool TryParseFormatVersion(string? formatVersion, out Version version)
+    {
+        version = new Version(0, 0, 0, 0);
+        if (string.IsNullOrWhiteSpace(formatVersion))
+        {
+            return false;
+        }
+
+        int[] components = new int[4];
+        bool any = false;
+        int parsed = 0;
+        foreach (string part in formatVersion.Trim().Split('.'))
+        {
+            if (part.Length == 0
+                || !int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)
+                || value < 0)
+            {
+                break;
+            }
+
+            any = true;
+            if (parsed < components.Length)
+            {
+                components[parsed++] = value;
+            }
+        }
+
+        if (!any)
+        {
+            return false;
+        }
+
+        version = new Version(components[0], components[1], components[2], components[3]);
+        return true;
     }
 
     private static string? TryReadEntryText(ZipArchiveEntry entry)

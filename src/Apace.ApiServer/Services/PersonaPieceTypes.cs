@@ -26,9 +26,10 @@ namespace Apace.ApiServer.Services;
 //  - IsSupportedCosmetic: the client-compatibility gate behind packs.json
 //    "onlySupported" (default true) — applies the metadata pipeline's per-item
 //    compat verdict (panel-side twin: CosmeticCompatIndex): only RISKY pieces
-//    (geometry format_version outside the 1.12.0–1.20.x band, or an
-//    animation/particle signal) are blocked; UNKNOWN pieces (no compat facts,
-//    unparsable version) keep serving.
+//    (geometry format_version outside the [1.12.0, maxGeometryFormatVersion)
+//    band — max configurable via packs.json, default 1.16.0 — or an
+//    animation/particle/render-controller/face-bone signal) are blocked;
+//    UNKNOWN pieces (no compat facts, unparsable version) keep serving.
 public static class PersonaPieceTypes
 {
     // The committed dressing-room layout (PersonaQueryManifest_V1.0): its
@@ -41,12 +42,13 @@ public static class PersonaPieceTypes
     // left/right variants "<pieceId>/l/d" and "<pieceId>/r/d". Longest first.
     private static readonly string[] PieceIdSuffixes = ["/l/d", "/r/d", "/d"];
 
-    // The supported geometry band, EXCLUSIVE at the top ([1.12.0, 1.21.0)):
-    // 1.21.0+ carries UV rotation and transform pivots the frozen client cannot
-    // render, below 1.12.0 is legacy geometry. Mirrors CosmeticCompatIndex on
-    // the panel side — keep the two in sync.
+    // The supported geometry band, EXCLUSIVE at the top ([1.12.0, max)): the
+    // max is PersonaPackGate.MaxGeometryFormatVersion (packs.json
+    // "maxGeometryFormatVersion", default 1.16.0 — the frozen client renders
+    // geometry format_version >= 1.16.0 broken, see the research note in
+    // LivePersonaCatalog), below 1.12.0 is legacy geometry. Mirrors
+    // CosmeticCompatIndex on the panel side — keep the two in sync.
     private static readonly Version MinSupportedFormatVersion = new(1, 12, 0, 0);
-    private static readonly Version MaxSupportedFormatVersion = new(1, 21, 0, 0);
 
     // piece type → dressing-room group key ("dr.categories.bottom", …), parsed
     // once; empty when the layout could not be read (per-piece-type fallback)
@@ -137,43 +139,110 @@ public static class PersonaPieceTypes
     ///     (persona-catalog/compat-verdicts.json — CosmeticCompatVerdicts):
     ///     "risky" blocks, "supported"/"unknown" serve;
     ///  2. the geometry facts recorded in probe-state.json
-    ///     (LivePersonaCatalog.TryGetGeometryCompat): supported = parsed
-    ///     format_version inside [1.12.0, 1.21.0) and no effect signal
-    ///     (animations, particles, render controllers, face bones); risky =
-    ///     outside the band or any effect signal;
+    ///     (LivePersonaCatalog.TryGetGeometryCompat): supported = every parsed
+    ///     geometry variant inside [1.12.0, maxGeometryFormatVersion) and no
+    ///     effect signal (animations, particles, render controllers, face
+    ///     bones) — the recorded facts are the worst case across the piece's
+    ///     geometry variants, so one risky variant marks the piece;
     ///  3. unknown (no compat metadata, unparsable version) serves — the
     ///     filter only ever hides pieces with positive evidence of
     ///     incompatibility, so with the gate on the rule is verdict != "risky".
     /// </summary>
-    public static bool IsSupportedCosmetic(string itemId)
+    public static bool IsSupportedCosmetic(string itemId) => EvaluateCosmetic(itemId).Supported;
+
+    /// <summary>One compat-gate verdict: whether the piece serves, plus the
+    /// reason string for the deduplicated diagnostics (always set — supported
+    /// verdicts carry the band/evidence summary too).</summary>
+    public sealed record CosmeticGateVerdict(bool Supported, string Reason);
+
+    /// <summary>
+    /// The full compat verdict behind <see cref="IsSupportedCosmetic"/> — same
+    /// precedence, plus the reason the enforcement points log (once per item
+    /// per run, see <see cref="LogCompatVerdictOnce"/>).
+    /// </summary>
+    public static CosmeticGateVerdict EvaluateCosmetic(string itemId)
     {
         // 1. explicit verdict from the compat store, when the lane wrote one
         string? verdict = CosmeticCompatVerdicts.Lookup(itemId);
         if (verdict is not null)
         {
-            return !verdict.Equals("risky", StringComparison.OrdinalIgnoreCase);
+            return new CosmeticGateVerdict(
+                !verdict.Equals("risky", StringComparison.OrdinalIgnoreCase),
+                $"explicit compat-verdicts.json override: \"{verdict}\"");
         }
 
-        // 2. the metadata pipeline's recorded geometry facts
-        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out string? formatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones))
+        // 2. the metadata pipeline's recorded geometry facts (worst case
+        // across the piece's geometry variants)
+        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones))
         {
-            return true; // unknown — no compat metadata, nothing proves breakage
+            return new CosmeticGateVerdict(true, "unknown — no compat metadata, nothing proves breakage");
         }
 
         // A version that cannot be parsed proves nothing about compatibility —
         // unknown, not risky. Null effect flags mean "not scanned" and do not
         // disqualify.
-        if (!TryParseFormatVersion(formatVersion, out Version version))
+        Version maxGeometry = PersonaPackGate.MaxGeometryFormatVersion;
+        bool highestParsed = TryParseFormatVersion(formatVersion, out Version highest);
+        bool lowestParsed = TryParseFormatVersion(lowestFormatVersion, out Version lowest);
+        if (!highestParsed && !lowestParsed)
         {
-            return true;
+            return new CosmeticGateVerdict(true, "unknown — the recorded geometry format_version does not parse");
         }
 
-        return version >= MinSupportedFormatVersion
-            && version < MaxSupportedFormatVersion
-            && hasAnimations != true
-            && hasParticles != true
-            && hasRenderControllers != true
-            && hasFaceBones != true;
+        if (lowestParsed && lowest < MinSupportedFormatVersion)
+        {
+            return new CosmeticGateVerdict(false, $"legacy geometry format_version {lowestFormatVersion} — below 1.12.0 (worst of the piece's geometry variants)");
+        }
+
+        if (highestParsed && highest >= maxGeometry)
+        {
+            return new CosmeticGateVerdict(false, $"geometry format_version {formatVersion} — at or past the {maxGeometry} cap (worst of the piece's geometry variants)");
+        }
+
+        if (hasAnimations == true)
+        {
+            return new CosmeticGateVerdict(false, "animations in the piece files");
+        }
+
+        if (hasParticles == true)
+        {
+            return new CosmeticGateVerdict(false, "particles/flipbook in the piece files");
+        }
+
+        if (hasRenderControllers == true)
+        {
+            return new CosmeticGateVerdict(false, "render controllers in the piece files");
+        }
+
+        if (hasFaceBones == true)
+        {
+            return new CosmeticGateVerdict(false, "face bones in the piece geometry (MCPE-165232)");
+        }
+
+        return new CosmeticGateVerdict(true, $"geometry format_version {formatVersion}, in the supported band with no effect signals");
+    }
+
+    // Deduplicated gate diagnostics: the gate runs per request over the whole
+    // live offer (~9k pieces) and per-request logging would spam — one line
+    // per item id per server run, shared by every enforcement point.
+    private static readonly HashSet<string> CompatVerdictsLogged = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Logs why a piece was hidden from the catalog or refused on
+    /// equip — ONCE per item id per server run (static guard; the gate runs
+    /// per request). <paramref name="source"/> names the enforcement point
+    /// (catalog offer / published item / equipped profile).</summary>
+    public static void LogCompatVerdictOnce(string source, string itemId, string reason)
+    {
+        lock (CompatVerdictsLogged)
+        {
+            if (!CompatVerdictsLogged.Add(itemId))
+            {
+                return;
+            }
+        }
+
+        Log.Information("Compat gate ({Source}) hides {Item}: {Reason} — max geometry format_version {MaxGeometry} (packs.json maxGeometryFormatVersion)",
+            source, itemId, reason, PersonaPackGate.MaxGeometryFormatVersion);
     }
 
     // Per-request counter for the grouped category limit (limit ≤ 0 disables

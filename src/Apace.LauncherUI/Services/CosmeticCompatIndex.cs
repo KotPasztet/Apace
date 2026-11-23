@@ -15,11 +15,12 @@ namespace Apace.LauncherUI.Services;
 //
 // Classification (keep in sync with the ApiServer's PersonaPieceTypes
 // .IsSupportedCosmetic — separate processes share the volume, not the code):
-//   supported  the piece files parse, geometry format_version 1.12.0–1.20.x,
-//              no animations / render controllers / flipbook / particles and
-//              no face bones;
-//   risky      geometry ≥ 1.21.0 (UV rotation, transform pivots the frozen
-//              client cannot render) or < 1.12.0 (legacy), or ANY
+//   supported  the piece files parse, every geometry variant format_version
+//              1.12.0 up to (excluding) the maxGeometryFormatVersion cap
+//              (packs.json, default 1.16.0), no animations / render controllers
+//              / flipbook / particles and no face bones;
+//   risky      geometry at or past the cap (UV rotation, transform pivots the
+//              frozen client cannot render) or below 1.12.0 (legacy), or ANY
 //              animation/effect signal, or face bones (rig 1.19.50/1.20.10,
 //              MCPE-165232) — these render broken: floating parts, missing
 //              meshes;
@@ -48,14 +49,58 @@ public static class CosmeticCompatIndex
     public static readonly CosmeticCompatInfo Unknown =
         new(CosmeticCompatKind.Unknown, "no compat profile yet — the metadata pipeline has not scanned this piece");
 
-    // The supported geometry band: format_version 1.12.0–1.20.x renders on the
-    // frozen Minecraft Earth client; anything older is legacy, anything from
-    // 1.21.0 on carries UV rotation / transform pivots it cannot handle.
+    // The supported geometry band: format_version 1.12.0 up to (excluding) the
+    // max renders on the frozen Minecraft Earth client (the research note puts
+    // the breakage at 1.16.0 — UV rotation / transform pivots); anything older
+    // is legacy. The max is the same knob the ApiServer's PersonaPackGate
+    // hot-reloads from packs.json ("maxGeometryFormatVersion") — mirrored here
+    // so the badges show what the gate actually enforces.
     // MaxSupported is EXCLUSIVE (the band is [Min, Max)).
     private static readonly Version MinSupportedFormatVersion = new(1, 12, 0, 0);
-    private static readonly Version MaxSupportedFormatVersion = new(1, 21, 0, 0);
+    public static readonly Version DefaultMaxSupportedFormatVersion = new(1, 16, 0, 0);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    // The "maxGeometryFormatVersion" half of packs.json (the panel writes the
+    // file without it — the knob is a hand-edit) — stamp-cached like the
+    // ApiServer's PersonaPackGate load, missing/unparsable falls back to the
+    // default band.
+    private sealed class PacksKnobs
+    {
+        public string? MaxGeometryFormatVersion { get; set; }
+    }
+
+    public static string PacksPath
+        => Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "packs.json");
+
+    private static (long Mtime, long Length) _packsStamp;
+    private static Version _maxGeometryFormatVersion = DefaultMaxSupportedFormatVersion;
+
+    private static Version MaxGeometryFormatVersion
+    {
+        get
+        {
+            try
+            {
+                var info = new FileInfo(PacksPath);
+                (long Mtime, long Length) stamp = info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (0, 0);
+                if (stamp != _packsStamp)
+                {
+                    _packsStamp = stamp;
+                    var file = info.Exists ? JsonSerializer.Deserialize<PacksKnobs>(File.ReadAllText(PacksPath), JsonOptions) : null;
+                    _maxGeometryFormatVersion = file?.MaxGeometryFormatVersion is { } knob && TryParseFormatVersion(knob, out Version parsed)
+                        ? parsed
+                        : DefaultMaxSupportedFormatVersion;
+                }
+            }
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+            {
+                // a corrupt file must never break the display — keep the last value
+            }
+
+            return _maxGeometryFormatVersion;
+        }
+    }
 
     /// <summary>The pipeline's compat file — same path the ApiServer reads
     /// (LivePersonaCatalog.ProbeStatePath); missing or corrupt is tolerated.</summary>
@@ -79,6 +124,12 @@ public static class CosmeticCompatIndex
         public bool? HasParticles { get; set; }
         public bool? HasRenderControllers { get; set; }
         public bool? HasFaceBones { get; set; }
+
+        // The worst-case aggregation across the piece's geometry variants (one
+        // per body size): FormatVersion is the HIGHEST parsed version, this the
+        // LOWEST — a single legacy variant moves it below the band minimum.
+        // Missing (older file) just skips the legacy-mix check.
+        public string? LowestFormatVersion { get; set; }
     }
 
     /// <summary>
@@ -104,9 +155,10 @@ public static class CosmeticCompatIndex
             }
 
             var map = new Dictionary<string, CosmeticCompatInfo>(geometry.Count, StringComparer.OrdinalIgnoreCase);
+            Version maxGeometry = MaxGeometryFormatVersion;
             foreach (var (itemId, facts) in geometry)
             {
-                map[itemId] = Classify(facts);
+                map[itemId] = Classify(facts, maxGeometry);
             }
 
             return map;
@@ -122,7 +174,7 @@ public static class CosmeticCompatIndex
     public static CosmeticCompatInfo Lookup(Dictionary<string, CosmeticCompatInfo> map, string itemId)
         => map.TryGetValue(itemId, out CosmeticCompatInfo? info) ? info : Unknown;
 
-    private static CosmeticCompatInfo Classify(GeometryFacts? facts)
+    private static CosmeticCompatInfo Classify(GeometryFacts? facts, Version maxGeometry)
     {
         if (facts is null)
         {
@@ -137,18 +189,18 @@ public static class CosmeticCompatIndex
                 "compat profile present but the geometry format_version is missing or unparsable — the piece files do not parse");
         }
 
-        if (version < MinSupportedFormatVersion)
+        if (TryParseFormatVersion(facts.LowestFormatVersion, out Version lowest) && lowest < MinSupportedFormatVersion)
         {
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.Risky,
-                $"legacy geometry format_version {facts.FormatVersion} — below 1.12.0");
+                $"legacy geometry format_version {facts.LowestFormatVersion} — below 1.12.0 (worst of the piece's geometry variants)");
         }
 
-        if (version >= MaxSupportedFormatVersion)
+        if (version >= maxGeometry)
         {
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.Risky,
-                $"geometry format_version {facts.FormatVersion} — 1.21.0+ (UV rotation, transform pivots the frozen client cannot render)");
+                $"geometry format_version {facts.FormatVersion} — at or past the {maxGeometry} cap (UV rotation, transform pivots the frozen client cannot render)");
         }
 
         List<string> effects = [];

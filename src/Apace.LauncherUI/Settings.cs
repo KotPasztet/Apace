@@ -115,7 +115,8 @@ public sealed class Settings
     /// Management page, "Allow only supported cosmetics"): when true, the
     /// ApiServer hides every piece whose compat profile carries positive
     /// evidence the frozen Minecraft Earth client cannot render it — geometry
-    /// format_version ≥ 1.21.0 (UV rotation, transform pivots) or &lt; 1.12.0
+    /// format_version at or past the packs.json "maxGeometryFormatVersion" cap
+    /// (default 1.16.0 — UV rotation, transform pivots) or &lt; 1.12.0
     /// (legacy), any animation/effect signal, or face bones per rig
     /// 1.19.50/1.20.10 (MCPE-165232). Unknown pieces (no compat profile yet)
     /// keep serving — the filter only ever hides risky pieces, never unknown

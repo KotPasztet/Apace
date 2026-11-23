@@ -13,7 +13,9 @@ namespace Apace.ApiServer.Services;
 // categories, and the classic-skin packs follow the gate by their pack uuid.
 //
 // packs.json (written by the panel next to the catalog index, hot-reloaded by
-// mtime) holds { defaultPacks, categoryLimit, onlySupported }; old files may
+// mtime) holds { defaultPacks, categoryLimit, onlySupported } plus the compat
+// knob "maxGeometryFormatVersion" (optional — hand-edit only, the panel's Save
+// keeps only its own fields); old files may
 // still carry the deprecated "gating" flag — it is ignored (the deserializer
 // drops unknown members). Gating is implicit AUTO-GATING from the allowed set
 // (defaults ∪ per-player grants): an EMPTY set gates the whole live marketplace
@@ -32,14 +34,16 @@ public static class PersonaPackGate
     public const int DefaultCategoryLimit = 30;
 
     private sealed record PackConfig(List<string>? DefaultPacks, int? CategoryLimit, bool? OnlySupported,
-        string? MaxGeometryFormatVersion, string? MaxAnimationFormatVersion);
+        string? MaxGeometryFormatVersion);
 
-    // Documented default compat thresholds (see PersonaPieceTypes.IsSupportedCosmetic):
-    // geometry / animation format_version at or past the max breaks on the frozen
-    // client; legacy versions and ordinary bone animations are fine. Configurable
-    // via packs.json "maxGeometryFormatVersion" / "maxAnimationFormatVersion".
-    public static readonly Version DefaultMaxGeometryFormatVersion = new(1, 21, 0, 0);
-    public static readonly Version DefaultMaxAnimationFormatVersion = new(1, 21, 0, 0);
+    // Documented default compat threshold (see PersonaPieceTypes.IsSupportedCosmetic):
+    // geometry format_version at or past the max breaks on the frozen client
+    // (UV rotation, transform pivots) — the research note in LivePersonaCatalog
+    // puts the render breakage at 1.16.0. Configurable via packs.json
+    // "maxGeometryFormatVersion". There is deliberately no animation-version
+    // knob: animated pieces are risky regardless of their animation
+    // format_version, so a threshold for them had nothing to act on.
+    public static readonly Version DefaultMaxGeometryFormatVersion = new(1, 16, 0, 0);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly ConcurrentDictionary<string, (DateTimeOffset Expires, IReadOnlyCollection<string> Packs)> GrantCache = new();
@@ -50,18 +54,21 @@ public static class PersonaPackGate
     private static int _categoryLimit = DefaultCategoryLimit;
     private static bool _onlySupported = true;
     private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
-    private static Version _maxAnimationFormatVersion = DefaultMaxAnimationFormatVersion;
     private static long _configStamp;
 
     /// <summary>Max geometry format_version the frozen client renders (packs.json
-    /// "maxGeometryFormatVersion", default "1.21.0") — at or past it, UV rotation /
-    /// per-face UV / transform pivots break. See PersonaPieceTypes.IsSupportedCosmetic.</summary>
-    public static Version MaxGeometryFormatVersion => _maxGeometryFormatVersion;
-
-    /// <summary>Max animation format_version the frozen client renders (packs.json
-    /// "maxAnimationFormatVersion", default "1.21.0") — ordinary bone animations below
-    /// it serve; at or past it the piece is risky.</summary>
-    public static Version MaxAnimationFormatVersion => _maxAnimationFormatVersion;
+    /// "maxGeometryFormatVersion", default "1.16.0") — at or past it, UV rotation /
+    /// per-face UV / transform pivots break. Consumed by the actual gate math in
+    /// PersonaPieceTypes.IsSupportedCosmetic and mirrored by the panel's
+    /// CosmeticCompatIndex.</summary>
+    public static Version MaxGeometryFormatVersion
+    {
+        get
+        {
+            LoadConfig();
+            return _maxGeometryFormatVersion;
+        }
+    }
 
     /// <summary>
     /// Max pieces served per dressing-room category GROUP (the client renders
@@ -115,7 +122,6 @@ public static class PersonaPackGate
                     _categoryLimit = DefaultCategoryLimit;
                     _onlySupported = true;
                     _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
-                    _maxAnimationFormatVersion = DefaultMaxAnimationFormatVersion;
                     Log.Information("Persona pack config gone from {Path} — no packs configured, the live marketplace serves nothing until packs are selected", ConfigPath);
                 }
 
@@ -133,14 +139,12 @@ public static class PersonaPackGate
             _categoryLimit = Math.Max(0, loaded?.CategoryLimit ?? DefaultCategoryLimit);
             _onlySupported = loaded?.OnlySupported ?? true;
             _maxGeometryFormatVersion = ParseVersion(loaded?.MaxGeometryFormatVersion, DefaultMaxGeometryFormatVersion);
-            _maxAnimationFormatVersion = ParseVersion(loaded?.MaxAnimationFormatVersion, DefaultMaxAnimationFormatVersion);
             _configStamp = stamp;
-            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, max geometry version: {GeometryVersion}, max animation version: {AnimationVersion}",
+            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, max geometry version: {GeometryVersion}",
                 ConfigPath, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
                 _categoryLimit == 0 ? "none" : _categoryLimit.ToString(),
                 _onlySupported,
-                MaxGeometryFormatVersion.ToString(),
-                MaxAnimationFormatVersion.ToString());
+                _maxGeometryFormatVersion.ToString());
         }
         catch (Exception ex)
         {
