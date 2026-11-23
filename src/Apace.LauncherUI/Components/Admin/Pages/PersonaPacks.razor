@@ -17,9 +17,7 @@
         <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
             <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Marketplace Management
         </div>
-        <p class="text-muted small mb-0 mt-1">Control how much of the live marketplace players see: a per-category size
-            limit, the default packs, per-player grants, a client-compatibility filter and your own custom pieces.
-            Base pieces without a theme tag always serve.</p>
+        <p class="text-muted small mb-0 mt-1">Manage the dressing-room marketplace: availability, packs and custom cosmetics.</p>
     </div>
     <div class="text-end">
         <button class="btn btn-sm btn-outline-primary" @onclick="SyncNowAsync" disabled="@_syncing">
@@ -45,9 +43,7 @@
             <div class="col-12 col-lg-6">
                 <label class="form-label small text-muted mb-1" for="category-limit">Max pieces per category</label>
                 <input type="number" min="0" step="1" class="form-control form-control-sm" id="category-limit" @bind="_categoryLimit" />
-                <div class="form-text small">Per dressing-room category group — hoodies + outerwear count together,
-                    tops + capes + beards each count on their own where the client groups them. Enforced on equips
-                    too, even when pack filtering is on. 0 = no limit, default 30.</div>
+                <div class="form-text small">Per dressing-room category group. 0 = no limit, default 30.</div>
             </div>
         </div>
 
@@ -55,23 +51,9 @@
             <input class="form-check-input" type="checkbox" id="only-supported" @bind="_onlySupported" />
             <label class="form-check-label" for="only-supported">
                 <strong>Allow only supported cosmetics</strong>
-                <span class="text-muted small">— when on, only pieces the frozen Minecraft Earth client can render
-                    serve. Each piece carries a compat profile from the metadata pipeline: <em>supported</em> means the
-                    piece files parse, geometry format_version 1.12.0–1.20.x, no animations / render controllers /
-                    flipbook / particles and no face bones; <em>risky</em> means geometry 1.21.0+ (UV rotation,
-                    transform pivots) or below 1.12.0 (legacy), any animation/effect signal, or face bones
-                    (rig 1.19.50/1.20.10, MCPE-165232) — those render broken: floating parts, missing meshes;
-                    <em>unknown</em> means no profile yet — unknown pieces keep serving while the switch is on (the
-                    filter only ever hides pieces with positive evidence of breakage). Risky pieces are hidden from
-                    the marketplace and refused on equip; turn the switch off to serve everything.</span>
+                <span class="text-muted small">— risky pieces are hidden from players.</span>
             </label>
         </div>
-
-        <p class="text-muted small mb-3">
-            Pack filtering needs no toggle: once at least one default pack or per-player grant is configured below,
-            the live marketplace serves only those packs' pieces (plus the base pieces without a theme tag). With no
-            packs configured at all, everything is served — up to the per-category group limit above.
-        </p>
 
         @if (_packSummary is not null)
         {
@@ -92,22 +74,52 @@
 </div>
 
 <div class="card mb-4">
+    <div class="card-header">Per-player grants (extra packs beyond the defaults)</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-12 col-md-5">
+                <label class="form-label small text-muted" for="pack-player">Player</label>
+                <select class="form-select" id="pack-player" value="@(_selectedPlayerId ?? "")"
+                        @onchange="@(async e => await SelectPlayerAsync((string?)e.Value))">
+                    <option value="" selected>choose a player…</option>
+                    @foreach (var player in _players)
+                    {
+                        <option value="@player.Id">@PlayerLabel(player.Id)</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @if (_selectedPlayerId is not null)
+        {
+            <div class="mt-3">
+                <PackPicker PickerId="grant" Packs="@_packs" Selected="@_grants"
+                            SelectedChanged="@(v => { _grants = v; StateHasChanged(); })"
+                            EmptyHint="Nothing granted beyond the defaults." />
+            </div>
+            <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveGrantsAsync" disabled="@_savingGrants">
+                @if (_savingGrants)
+                {
+                    <span class="spinner-border spinner-border-sm"></span>
+                }
+                Save grants for @PlayerLabel(_selectedPlayerId)
+            </button>
+        }
+        <p class="text-muted small mb-0 mt-3">
+            Saved grants apply when the player's dressing room reloads (the ApiServer caches grants for ~30 seconds).
+        </p>
+    </div>
+</div>
+
+<div class="card mb-4">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <span>Custom cosmetics (own pieces, served from the mojang-assets volume)</span>
         <span class="text-muted small fw-normal">Served immediately — no restart needed</span>
     </div>
     <div class="card-body">
         <p class="text-muted small mb-3">
-            Piece zips you upload become marketplace items: the ApiServer builds the catalog offers and the
-            entitlement receipt (pack uuid + content key) from <code>persona-catalog/custom-cosmetics.json</code>,
-            the zip downloads at <code>/playfab/persona/&lt;id&gt;.zip</code> and the thumbnail at
-            <code>/playfab/images/&lt;thumbnailId&gt;.png</code>.
-        </p>
-        <p class="text-muted small mb-3">
-            Each custom cosmetic also shows its compat verdict (the <strong>Compat</strong> badge): the metadata
-            pipeline scans the uploaded piece and records the geometry format_version plus animation/effect signals —
-            until that scan lands the badge reads <em>unknown</em>. With "Allow only supported cosmetics" on above,
-            only <em>risky</em> pieces are hidden from players; <em>unknown</em> pieces keep serving.
+            Piece zips you upload become marketplace items; the <strong>Compat</strong> badge shows each piece's scan
+            verdict (supported / risky / unknown). More in <code>docs/custom-persona-items.md</code>.
         </p>
 
         @if (_customLoadError is not null)
@@ -223,6 +235,11 @@
                 <div class="form-text small">Optional — the persona piece the client applies on equip. Leave empty to
                     @( _editingCustomId is null ? "generate a new GUID for a self-built piece." : "keep the existing piece id.")</div>
             </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label small text-muted mb-1" for="custom-creator">Creator</label>
+                <input type="text" class="form-control form-control-sm" id="custom-creator" @bind="_customCreator" />
+                <div class="form-text small">Shown as the item's creator.</div>
+            </div>
             <div class="col-12 col-md-3">
                 <label class="form-label small text-muted mb-1" for="custom-zip">Piece zip @(_editingCustomId is null ? "(required)" : "(optional replacement)")</label>
                 <InputFile OnChange="OnCustomZipSelectedAsync" accept=".zip" class="form-control form-control-sm" disabled="@_customBusy" />
@@ -235,11 +252,8 @@
             </div>
         </div>
         <div class="form-text small mb-2">
-            Creator is always <code>KotPasztet</code>; the <code>custom</code> tag, the pack uuid and the 64-hex
-            content key are generated when the item is created. The piece zip must be a complete piece binary — the
-            outer zip with the nested <code>ppack0.zip</code> container holding the manifest, the
-            <code>.geo.json</code> geometry and the texture (see <code>docs/custom-persona-items.md</code> and
-            <code>scripts/build_apace_piece.py</code>); a bare <code>.geo.json</code> cannot be served to the client.
+            The piece zip must be a complete piece binary — a bare <code>.geo.json</code> cannot be served (see
+            <code>docs/custom-persona-items.md</code> and <code>scripts/build_apace_piece.py</code>).
         </div>
         <button class="btn btn-sm btn-outline-primary" @onclick="SaveCustomAsync" disabled="@_customBusy">
             @if (_customBusy)
@@ -254,45 +268,6 @@
                 Cancel edit
             </button>
         }
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header">Per-player grants (extra packs beyond the defaults)</div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-12 col-md-5">
-                <label class="form-label small text-muted" for="pack-player">Player</label>
-                <select class="form-select" id="pack-player" value="@(_selectedPlayerId ?? "")"
-                        @onchange="@(async e => await SelectPlayerAsync((string?)e.Value))">
-                    <option value="" selected>choose a player…</option>
-                    @foreach (var player in _players)
-                    {
-                        <option value="@player.Id">@PlayerLabel(player.Id)</option>
-                    }
-                </select>
-            </div>
-        </div>
-
-        @if (_selectedPlayerId is not null)
-        {
-            <div class="mt-3">
-                <PackPicker PickerId="grant" Packs="@_packs" Selected="@_grants"
-                            SelectedChanged="@(v => { _grants = v; StateHasChanged(); })"
-                            EmptyHint="Nothing granted beyond the defaults." />
-            </div>
-            <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveGrantsAsync" disabled="@_savingGrants">
-                @if (_savingGrants)
-                {
-                    <span class="spinner-border spinner-border-sm"></span>
-                }
-                Save grants for @PlayerLabel(_selectedPlayerId)
-            </button>
-        }
-        <p class="text-muted small mb-0 mt-3">
-            The ApiServer reads grants from the game database and caches them for ~30 seconds — saved grants apply
-            when the player's dressing room reloads.
-        </p>
     </div>
 </div>
 
@@ -331,6 +306,7 @@
     // Lowercase, like every live-catalog persona item (docs/custom-persona-items.md).
     private static readonly string[] CustomRarities = ["common", "uncommon", "rare", "epic", "legendary"];
 
+    // Default creator of custom cosmetics — editable per item in the panel form.
     private const string CustomCreator = "KotPasztet";
 
     private List<PersonaPackIndex.ThemePackRow> _packs = [];
@@ -358,6 +334,7 @@
     private string _formRarity = "common";
     private int _formPrice;
     private string _formPieceId = "";
+    private string _customCreator = CustomCreator;
     private IBrowserFile? _formZipFile;
     private IBrowserFile? _formThumbFile;
 
@@ -454,7 +431,7 @@
             // catalog index) — same pattern as the index itself. No `gating`
             // key: the server gates per player as soon as the allowed pack set
             // (defaults ∪ grants) is non-empty.
-            string path = Path.Combine(MojangAssetGate.MojangAssetsDir, "persona-catalog", "packs.json");
+            string path = Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "packs.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit), _jsonOptions));
             _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
@@ -548,6 +525,7 @@
         _formRarity = CustomRarities.Contains(item.Rarity) ? item.Rarity : "common";
         _formPrice = item.Price;
         _formPieceId = item.PieceId;
+        _customCreator = item.Creator;
         _formZipFile = null;
         _formThumbFile = null;
         _message = null;
@@ -562,6 +540,7 @@
         _formRarity = "common";
         _formPrice = 0;
         _formPieceId = "";
+        _customCreator = CustomCreator;
         _formZipFile = null;
         _formThumbFile = null;
     }
@@ -612,7 +591,7 @@
                 items.Add(new CustomCosmeticsStore.CustomCosmeticItem(
                     id, title, _formDescription.Trim(), _formPieceType,
                     pieceIdGiven ? parsedPieceId.ToString() : Guid.NewGuid().ToString(),
-                    CustomCreator, _formRarity, Math.Max(0, _formPrice), ["custom"],
+                    _customCreator.Trim(), _formRarity, Math.Max(0, _formPrice), ["custom"],
                     Guid.NewGuid().ToString(), CustomCosmeticsStore.NewContentKey(), thumbnailId));
                 await CustomCosmeticsStore.SaveItemsAsync(items);
                 _message = $"Added \"{title}\" — served immediately, no restart needed.";
@@ -655,6 +634,7 @@
                     PieceType = _formPieceType,
                     Rarity = _formRarity,
                     Price = Math.Max(0, _formPrice),
+                    Creator = _customCreator.Trim(),
                     PieceId = trimmedPieceId.Length > 0 && pieceIdGiven ? parsedPieceId.ToString() : existing.PieceId,
                     ThumbnailId = thumbnailId,
                 };

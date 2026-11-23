@@ -60,13 +60,13 @@ public static class PersonaPackIndex
             string path = LivePersonaCatalogSync.IndexPath;
             if (!File.Exists(path))
             {
-                return ([], "No synced persona catalog index yet — run a sync first (System Configuration → \"Sync now\", or wait for the scheduled sync).");
+                return ([], "Marketplace catalog not indexed yet — run a sync first.");
             }
 
             var index = JsonSerializer.Deserialize<IndexFile>(File.ReadAllText(path), JsonWebOptions);
             if (index?.Items is not { Count: > 0 })
             {
-                return ([], "The synced index holds no items yet — run a sync first.");
+                return ([], "Marketplace catalog index holds no items — run a sync first.");
             }
 
             var typeSuffixes = index.Items
@@ -78,7 +78,6 @@ public static class PersonaPackIndex
                    && !typeSuffixes.Contains(tag["tag.".Length..]);
 
             var byTag = new Dictionary<string, (int Count, Dictionary<string, int> Types)>(StringComparer.OrdinalIgnoreCase);
-            int themed = 0, baseCount = 0;
             foreach (var item in index.Items)
             {
                 if (item.IsEmote)
@@ -89,11 +88,9 @@ public static class PersonaPackIndex
                 List<string> themes = [.. (item.Tags ?? []).Where(IsThemeTag).Distinct(StringComparer.OrdinalIgnoreCase)];
                 if (themes.Count == 0)
                 {
-                    baseCount++;
-                    continue;
+                    continue; // base pieces without a theme tag always serve
                 }
 
-                themed++;
                 foreach (string tag in themes)
                 {
                     (int Count, Dictionary<string, int> Types) entry = byTag.TryGetValue(tag, out var existing)
@@ -121,9 +118,8 @@ public static class PersonaPackIndex
                 .ThenBy(row => row.Title, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             string summary = packs.Count == 0
-                ? "No packs in the synced index yet — run a full sync first (thematic packs come from the pieces' own marketplace metadata, classic skin packs from the skin-pack bundles)."
-                : $"{skinPackRows.Count} classic skin pack(s) plus {packs.Count - skinPackRows.Count} thematic pack(s) from the marketplace's own theme tags — "
-                + $"{themed} of {themed + baseCount} piece(s) are themed, {baseCount} base piece(s) without a theme tag always serve.";
+                ? "No accessory bundles found."
+                : $"{packs.Count} accessory bundles found.";
             return (packs, summary);
         }
         catch (Exception ex)

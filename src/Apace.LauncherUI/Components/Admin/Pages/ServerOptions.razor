@@ -192,20 +192,11 @@ else
                 </div>
 
                 <div class="mb-3 form-check form-switch">
-                    <InputCheckbox @bind-Value="SettingsModel.RequireMojangAssets" class="form-check-input"
-                                   id="requireMojangAssets" />
-                    <label class="form-check-label" for="requireMojangAssets">Require additional Mojang assets</label>
-                    <div class="form-text text-white">
-                        Require additional Mojang assets before the server can start. Disable only if you understand the implications.
-                    </div>
-                </div>
-
-                <div class="mb-3 form-check form-switch">
                     <InputCheckbox @bind-Value="SettingsModel.LivePersonaCatalog" class="form-check-input"
                                    id="livePersonaCatalog" />
                     <label class="form-check-label" for="livePersonaCatalog">Live persona marketplace</label>
                     <div class="form-text text-white">
-                        Sync the full dressing-room catalog from the still-live Minecraft marketplace into the data volume and serve every item unlocked (no locks, no prices). Requires the Mojang assets consent above; the catalog is fetched at runtime and never stored in the installation directory. The legacy bundled pieces are replaced by their live twins.
+                        Sync with live Bedrock marketplace.
                     </div>
                 </div>
 
@@ -465,7 +456,6 @@ else
         SettingsModel.TileDatabaseConnectionString = source.TileDatabaseConnectionString;
         SettingsModel.GeneratePreviewOnImport = source.GeneratePreviewOnImport ?? false;
         SettingsModel.SkipFileChecks = source.SkipFileChecks ?? false;
-        SettingsModel.RequireMojangAssets = source.RequireMojangAssets ?? Settings.Default.RequireMojangAssets ?? true;
         SettingsModel.LivePersonaCatalog = source.LivePersonaCatalog ?? Settings.Default.LivePersonaCatalog ?? true;
         SettingsModel.PersonaCatalogSyncIntervalHours = source.PersonaCatalogSyncIntervalHours ?? Settings.Default.PersonaCatalogSyncIntervalHours ?? 24;
         SettingsModel.StaticDataPath = source.StaticDataPath;
@@ -491,7 +481,6 @@ else
             TileDatabaseConnectionString = SettingsModel.TileDatabaseConnectionString,
             GeneratePreviewOnImport = SettingsModel.GeneratePreviewOnImport,
             SkipFileChecks = SettingsModel.SkipFileChecks,
-            RequireMojangAssets = SettingsModel.RequireMojangAssets,
             LivePersonaCatalog = SettingsModel.LivePersonaCatalog,
             PersonaCatalogSyncIntervalHours = SettingsModel.PersonaCatalogSyncIntervalHours,
             StaticDataPath = SettingsModel.StaticDataPath,
@@ -558,8 +547,6 @@ else
 
         public bool GeneratePreviewOnImport { get; set; }
         public bool SkipFileChecks { get; set; }
-
-        public bool RequireMojangAssets { get; set; }
 
         public bool LivePersonaCatalog { get; set; }
 
