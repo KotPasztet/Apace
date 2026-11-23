@@ -124,7 +124,6 @@ internal sealed class CatalogController : ApaceControllerBase
             {
                 var source = LivePersonaCatalog.GetOfferItems();
                 _liveOfferItems = source.Select(CIItemToItem).ToArray();
-                _liveOfferPieceTypes = [.. source.Select(item => item.Data is CItem.PersonaData piece ? piece.PieceType : "")];
                 _liveOfferById = _liveOfferItems.ToDictionary(item => item.Id);
                 _liveOfferStamp = stamp;
                 Log.Information("Live persona offer rebuilt: {Count} item(s) (index stamp {Stamp})", _liveOfferItems.Length, stamp);
@@ -137,40 +136,13 @@ internal sealed class CatalogController : ApaceControllerBase
     private static long? _liveOfferStamp;
     private static Item[]? _liveOfferItems;
     private static Dictionary<Guid, Item>? _liveOfferById;
-    // piece types aligned with _liveOfferItems by index (the response Item model
-    // carries its category only inside the displayProperties JSON — keeping the
-    // source-side type here makes the gate filter a plain array lookup)
-    private static string[]? _liveOfferPieceTypes;
 
-    // The live offer filtered through the skin pack gate for one player. The
-    // full mapped list is cached per index stamp; the gate applies a cheap
-    // piece-type filter on top. Anonymous searches resolve no grants — default
-    // packs only.
-    private static async Task<IReadOnlyList<Item>> LiveOfferItemsFor(string? playerId, CancellationToken cancellationToken)
+    // The live persona offer, deliberately ungated: every piece category (tops,
+    // hair, eyes, outerwear, accessories…) serves to everyone — the skin pack
+    // gate only filters thematic packs.
+    private static IReadOnlyList<Item> LiveOfferItemsFor()
     {
-        if (!LivePersonaCatalog.IsAvailable)
-        {
-            return [];
-        }
-
-        IReadOnlyList<Item> all = LiveOfferItems;
-        IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPieceTypesAsync(playerId, cancellationToken);
-        string[]? types = _liveOfferPieceTypes;
-        if (allowed is null || types is null || types.Length != all.Count)
-        {
-            return all;
-        }
-
-        var filtered = new List<Item>(all.Count);
-        for (int i = 0; i < all.Count; i++)
-        {
-            if (allowed.Contains(types[i]))
-            {
-                filtered.Add(all[i]);
-            }
-        }
-
-        return filtered;
+        return LivePersonaCatalog.IsAvailable ? LiveOfferItems : [];
     }
 
     // Thematic skin packs (MarketplaceDurableCatalog_V1.2 bundles) mapped from the
@@ -200,8 +172,8 @@ internal sealed class CatalogController : ApaceControllerBase
         }
     }
 
-    // The live skin packs one player may see, filtered through the same gate as
-    // the persona pieces (the allowed set mixes piece types and pack uuids).
+    // The live skin packs one player may see, filtered through the pack gate
+    // (the allowed set holds thematic pack uuids).
     private static async Task<IReadOnlyList<Item>> LiveSkinPackItemsFor(string? playerId, CancellationToken cancellationToken)
     {
         if (!LivePersonaCatalog.IsAvailable)
@@ -210,7 +182,7 @@ internal sealed class CatalogController : ApaceControllerBase
         }
 
         IReadOnlyList<Item> all = LiveSkinPackItems;
-        IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPieceTypesAsync(playerId, cancellationToken);
+        IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPackUuidsAsync(playerId, cancellationToken);
         string[]? uuids = _liveSkinPackPackUuids;
         if (allowed is null || uuids is null || uuids.Length != all.Count)
         {
@@ -264,15 +236,13 @@ internal sealed class CatalogController : ApaceControllerBase
                 .Replace("platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth')", "platforms/any(tp: tp eq 'android.googleplay') and platforms/any(tp: tp eq 'title.earth')");
 
                 // base offer (staticdata) plus, when the live persona marketplace is on,
-                // the unlock-all live items — one OData filter over both. The live half
-                // goes through the skin pack gate: the panel decides which categories
-                // (piece types) and which thematic skin packs are on by default and per
-                // player — streaming the whole multi-thousand-piece marketplace at once
-                // made the dressing room choke.
+                // the unlock-all live items — one OData filter over both. Persona pieces
+                // serve unfiltered (all categories, accessories included); the skin pack
+                // gate decides which thematic packs are on by default and per player.
                 string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
                 IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
                 IEnumerable<Item> source = BaseOfferItems
-                    .Concat(await LiveOfferItemsFor(callerId, cancellationToken))
+                    .Concat(LiveOfferItemsFor())
                     .Concat(livePacks);
 
             var oDataQuery = source.AsQueryable().OData(settings =>

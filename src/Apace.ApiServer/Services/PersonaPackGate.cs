@@ -6,12 +6,13 @@ using Serilog;
 
 namespace Apace.ApiServer.Services;
 
-// Skin pack gating for the live persona marketplace: the panel decides which
-// dressing room categories (persona piece types) are available — a default set
-// for every player plus per-player grants. The panel writes packs.json next to
-// the catalog index (hot-reloaded like the index itself); per-player grants
-// live in earth.db (objects type "personaPacks") and are cached here briefly
-// so panel edits apply within ~30s without hitting SQLite on every search.
+// Skin pack gating for the live persona marketplace: all persona pieces (every
+// dressing room category — tops, hair, eyes, outerwear, accessories…) always
+// serve; the gate only decides which thematic skin packs are available. The
+// panel writes packs.json next to the catalog index (hot-reloaded like the
+// index itself); per-player grants live in earth.db (objects type
+// "personaPacks") and are cached here briefly so panel edits apply within ~30s
+// without hitting SQLite on every search.
 public static class PersonaPackGate
 {
     private sealed record PackConfig(bool? Gating, List<string>? DefaultPacks);
@@ -63,12 +64,14 @@ public static class PersonaPackGate
     }
 
     /// <summary>
-    /// The piece types this player may see in the live marketplace, or null when
-    /// gating is off (serve everything — the pre-gates behavior). Default packs
-    /// always apply; grants add per-player extras. Staticdata offers (the
+    /// The thematic skin packs this player may see, or null when gating is off
+    /// (serve everything — the pre-gating behavior). Defaults always apply;
+    /// grants add per-player extras. Persona pieces are never gated — entries
+    /// predating the category gate (piece type names instead of pack uuids)
+    /// simply never match a pack uuid and are ignored. Staticdata offers (the
     /// committed legacy catalog and the Default Skins pack) are never gated.
     /// </summary>
-    public static async Task<IReadOnlySet<string>?> AllowedPieceTypesAsync(string? playerId, CancellationToken cancellationToken)
+    public static async Task<IReadOnlySet<string>?> AllowedPackUuidsAsync(string? playerId, CancellationToken cancellationToken)
     {
         LoadConfig();
         if (!_gating)

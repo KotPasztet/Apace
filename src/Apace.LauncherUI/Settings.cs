@@ -84,17 +84,17 @@ public sealed class Settings
     public int? PersonaCatalogSyncIntervalHours { get; set; }
 
     /// <summary>
-    /// Skin pack gating: when true, the ApiServer serves live marketplace items
-    /// only for the piece types listed in PersonaDefaultPacks (plus per-player
-    /// grants from the Skin Packs page) instead of the whole catalog. Default
-    /// false — everything, the pre-gating behavior.
+    /// Skin pack gating: when true, the ApiServer filters the live marketplace's
+    /// thematic skin packs down to PersonaDefaultPacks (plus per-player grants
+    /// from the Skin Packs page) instead of serving them all. Persona pieces —
+    /// every dressing room category, accessories included — always serve.
+    /// Default false — everything, the pre-gating behavior.
     /// </summary>
     public bool? PersonaPackGating { get; set; }
 
     /// <summary>
-    /// Persona piece types (dressing room categories, e.g. "persona_top") enabled
-    /// for every player when PersonaPackGating is on. Empty = no live items by
-    /// default; per-player grants add extras. Only meaningful with gating on.
+    /// Thematic skin pack uuids enabled for every player when PersonaPackGating
+    /// is on. Persona pieces are not gated. Only meaningful with gating on.
     /// </summary>
     public List<string>? PersonaDefaultPacks { get; set; }
 

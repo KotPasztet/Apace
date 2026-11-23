@@ -16,8 +16,8 @@
         <div class="section-title mb-0" style="border-bottom: none; padding-bottom: 0;">
             <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Skin Packs
         </div>
-        <p class="text-muted small mb-0 mt-1">Choose which live marketplace packs (dressing room categories and thematic
-            skin packs) players can see — streaming the whole catalog at once made the dressing room choke on load</p>
+        <p class="text-muted small mb-0 mt-1">Choose which thematic skin packs players can see — the live marketplace
+            pieces (all categories, accessories included) always serve; packs are the lever for enabling new content</p>
     </div>
 </div>
 
@@ -29,10 +29,6 @@
 <div class="card mb-4">
     <div class="card-header">Default packs (every player)</div>
     <div class="card-body">
-        @if (_indexSummary is not null)
-        {
-            <p class="text-muted small">@_indexSummary</p>
-        }
         <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" id="pack-gating" @bind="_gating" />
             <label class="form-check-label" for="pack-gating">
@@ -47,37 +43,7 @@
         }
         <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
                     SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
-                    EmptyHint="Nothing selected — with gating on, no thematic packs show in the dressing room." />
-
-        <details class="mt-4">
-            <summary class="text-muted">Advanced — dressing room categories (persona piece types)</summary>
-            <p class="text-muted small mt-2 mb-2">
-                Thematic packs are whole classic skins — they do not contain piece categories (tops, hats…).
-                This list controls the live persona pieces streamed per category: an empty list means no live
-                pieces at all (staticdata pieces and the packs above still show). Leave a few on — streaming
-                every category at once made the dressing room choke.
-            </p>
-            @if (_defaultRows.Count == 0)
-            {
-                <p class="text-muted small mb-2">No categories available yet — run the live persona catalog sync first
-                    (System Configuration → "Sync now", or wait for the scheduled sync).</p>
-            }
-            <div class="row">
-                @foreach (var (pieceType, count) in _defaultRows)
-                {
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="def-@pieceType"
-                                   checked="@_defaults.Contains(pieceType)"
-                                   @onchange="@(e => Toggle(_defaults, pieceType, e.Value is bool v && v))" />
-                            <label class="form-check-label" for="def-@pieceType">
-                                @pieceType <span class="text-muted small">(@count item@(count == 1 ? "" : "s"))</span>
-                            </label>
-                        </div>
-                    </div>
-                }
-            </div>
-        </details>
+                    EmptyHint="Nothing selected — with gating on, no thematic packs show in the dressing room. The basic persona pieces (tops, bottoms, hats, accessories…) always show." />
 
         <button class="btn btn-sm btn-outline-primary me-2 mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
             @if (_savingDefaults)
@@ -112,25 +78,8 @@
             <div class="mt-3">
                 <PackPicker PickerId="grant" Packs="@_packs" Selected="@_grants"
                             SelectedChanged="@(v => { _grants = v; StateHasChanged(); })"
-                            EmptyHint="Nothing granted beyond the panel defaults." />
+                            EmptyHint="Nothing granted beyond the defaults." />
             </div>
-
-            <details class="mt-3">
-                <summary class="text-muted">Advanced — dressing room categories (persona piece types)</summary>
-                <div class="row mt-2">
-                    @foreach (var pieceType in _grantRows)
-                    {
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="grant-@pieceType"
-                                       checked="@_grants.Contains(pieceType)"
-                                       @onchange="@(e => Toggle(_grants, pieceType, e.Value is bool v && v))" />
-                                <label class="form-check-label" for="grant-@pieceType">@pieceType</label>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </details>
             <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveGrantsAsync" disabled="@_savingGrants">
                 @if (_savingGrants)
                 {
@@ -151,9 +100,6 @@
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
 
-    private List<PersonaPackIndex.PackCategory> _categories = [];
-    private List<PersonaPackIndex.PackCategory> _defaultRows = [];
-    private List<string> _grantRows = [];
     private List<PersonaPackIndex.SkinPackRow> _packs = [];
     private string? _packSummary;
     private bool _gating;
@@ -161,7 +107,6 @@
     private HashSet<string> _grants = [];
     private string? _selectedPlayerId;
     private List<(string Id, string? Username)> _players = [];
-    private string? _indexSummary;
     private string? _message;
     private bool _savingDefaults, _savingGrants;
     private EarthDB? _earthDB;
@@ -170,31 +115,9 @@
     {
         _gating = Settings.Instance.PersonaPackGating ?? false;
         _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
-        LoadCategories();
         (_packs, _packSummary) = PersonaPackIndex.ReadSkinPacks();
         await LoadPlayersAsync();
         await SelectPlayerAsync(null);
-    }
-
-    private void LoadCategories()
-    {
-        (_categories, _indexSummary) = PersonaPackIndex.ReadCategories();
-        RebuildRows();
-    }
-
-    private void RebuildRows()
-    {
-        // defaults/grants may reference piece types the current index no longer
-        // has (re-sync dropped them) — keep them listed so they can be unchecked;
-        // stale pack uuids stay listed in the pack pickers as warning chips
-        var known = _categories.Select(row => row.PieceType).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        _defaultRows = [.. _categories, .. _defaults
-            .Where(pack => !known.Contains(pack) && !Guid.TryParse(pack, out _))
-            .Select(pack => new PersonaPackIndex.PackCategory(pack, 0))
-            .OrderBy(row => row.PieceType)];
-        _grantRows = [.. known, .. _grants
-            .Where(pack => !known.Contains(pack) && !Guid.TryParse(pack, out _))
-            .OrderBy(pack => pack)];
     }
 
     private async Task LoadPlayersAsync()
@@ -216,7 +139,6 @@
     {
         _selectedPlayerId = playerId;
         _grants = [];
-        _grantRows = [.. _categories.Select(row => row.PieceType)];
         if (playerId is null || _earthDB is null)
         {
             return;
@@ -229,23 +151,10 @@
                 .ExecuteAsync(_earthDB, default);
             var stored = results.Get<PersonaPackGrants>("personaPacks")?.Packs ?? [];
             _grants = [.. stored];
-            RebuildRows();
         }
         catch (Exception ex)
         {
             _message = $"Reading the grants for {PlayerLabel(playerId)} failed: {ex.Message}";
-        }
-    }
-
-    private void Toggle(HashSet<string> set, string pack, bool on)
-    {
-        if (on)
-        {
-            set.Add(pack);
-        }
-        else
-        {
-            set.Remove(pack);
         }
     }
 
