@@ -6,54 +6,45 @@ namespace Apace.LauncherUI.Services;
 // only need the pack list to render the pack pickers; the full index model
 // lives on the ApiServer side.
 //
-// Two pack kinds. The marketplace has no accessory pack entities: every
-// PersonaDurable entry carries exactly one packIdentity — the persona_piece
-// itself (probe: scripts/probe_persona_tags.py, 1200 entries, zero multi-entry /
-// non-piece identities) — so the marketplace's own thematic grouping of
-// accessories is its tag.* metadata, and those tags are the thematic packs;
-// Minecraft accessories serve only when one of their tags is selected (tagless
+// The marketplace has no accessory pack entities: every PersonaDurable entry
+// carries exactly one packIdentity — the persona_piece itself (probe:
+// scripts/probe_persona_tags.py, 1200 entries, zero multi-entry / non-piece
+// identities) — so the marketplace's own thematic grouping of accessories is
+// its tag.* metadata, and those tags are the selectable packs; Minecraft
+// accessories serve only when one of their tags is selected (tagless
 // accessories never serve; see PersonaPackGate.AllowedPackUuidsAsync on the
-// ApiServer). The MarketplaceDurableCatalog bundles (the index's skinPacks
-// array, written by the sync) are the classic skin packs — skins are exempt
-// from pack selection and serve regardless; their selectable value is the uuid
-// string itself.
+// ApiServer). Skins serve regardless of selection (persona_skin pieces and the
+// MarketplaceDurableCatalog bundles are exempt from the gate), so a bundle
+// holding only skins would be unselectable noise — the index's skinPacks array
+// is not listed.
 public static class PersonaPackIndex
 {
     // Shared with the ApiServer's PersonaPackGate.DefaultCategoryLimit (separate
     // processes share the volume, not the code) — keep both in sync.
     public const int DefaultCategoryLimit = 45;
 
-    // One selectable pack row. A thematic pack (IsSkinPack = false) is a
-    // marketplace theme tag (tag.*) and the persona ACCESSORIES carrying it —
-    // Tag holds the tag, and the pack spans every piece category it appears on
-    // (head, tops, footwear…); enabling it serves all of them — no
-    // per-category toggles. A classic skin pack (IsSkinPack = true) is a
-    // MarketplaceDurableCatalog bundle — Tag holds the pack uuid verbatim.
-    // PieceCount is the accessory count for thematic packs and the skin count
-    // for classic packs.
-    public sealed record ThemePackRow(string Tag, string Title, int PieceCount, string Types, bool IsSkinPack = false);
+    // One selectable pack row: a marketplace theme tag (tag.*) and the persona
+    // ACCESSORIES carrying it — Tag holds the tag, and the pack spans every
+    // piece category it appears on (head, tops, footwear…); enabling it serves
+    // all of them — no per-category toggles. PieceCount is the accessory count.
+    public sealed record ThemePackRow(string Tag, string Title, int PieceCount, string Types);
 
-    private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items, List<IndexSkinPack>? SkinPacks);
+    private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items);
     private sealed record IndexItem(string Id, string Title, string PieceType, List<string>? Tags, bool IsEmote);
-
-    // Subset of the sync's SyncSkinPack record (separate processes share the
-    // volume, not the code) — the panel only needs title, pack uuid and skin
-    // count; JSON binds case-insensitively (JsonSerializerDefaults.Web).
-    private sealed record IndexSkinPack(string Id, string Title, string PackUuid, int SkinCount);
 
     public static readonly JsonSerializerOptions JsonWebOptions = new(JsonSerializerDefaults.Web);
 
     /// <summary>
-    /// The packs in the synced index, largest first, plus a one-line summary for
-    /// the page header or null when the index is unusable: the pieces' marketplace
-    /// theme tags grouped into thematic packs (counting ACCESSORIES only —
-    /// persona_skin pieces belong to the classic bundles), plus the classic skin
-    /// packs from the index's skinPacks array (selectable by pack uuid). Type-ish
-    /// tags (the piece type restated as a tag, e.g. tag.hair on hair pieces) don't
+    /// The accessory-bearing theme-tag packs in the synced index, largest first,
+    /// plus a one-line summary for the page header or null when the index is
+    /// unusable. Only tags carried by at least one ACCESSORY form packs — a tag
+    /// whose pieces are all persona_skin/emotes would serve nothing selectable
+    /// (skins are exempt from pack selection), so it is hidden. Type-ish tags
+    /// (the piece type restated as a tag, e.g. tag.hair on hair pieces) don't
     /// form packs — they are excluded here AND on the ApiServer gate
     /// (LivePersonaCatalog.GetOffer — separate processes share the volume, not
     /// the code), or pieces tagged only with their own type would vanish when
-    /// gating is on. Tolerates indexes from before the skinPacks array existed.
+    /// gating is on.
     /// </summary>
     public static (List<ThemePackRow> Packs, string? Summary) ReadThemePacks()
     {
@@ -86,7 +77,7 @@ public static class PersonaPackIndex
                     || item.PieceType.Equals("persona_skin", StringComparison.OrdinalIgnoreCase)
                     || item.PieceType.Equals("persona_emote", StringComparison.OrdinalIgnoreCase))
                 {
-                    continue; // the picker counts ACCESSORIES per bundle — skins are the classic packs' content, emotes are never offered
+                    continue; // the picker lists ACCESSORY bundles only — a tag whose pieces are all skins/emotes gets no row (skins serve ungated, emotes are never offered)
                 }
 
                 List<string> themes = [.. (item.Tags ?? []).Where(IsThemeTag).Distinct(StringComparer.OrdinalIgnoreCase)];
@@ -106,18 +97,9 @@ public static class PersonaPackIndex
                 }
             }
 
-            // Classic skin packs ride along: the sync already deduped them per pack
-            // uuid, but stay defensive (first wins). Only uuid-parseable packs are
-            // selectable — the gate matches the uuid, and Tag carries it verbatim.
-            var skinPackRows = (index.SkinPacks ?? [])
-                .Where(pack => Guid.TryParse(pack.PackUuid, out _))
-                .GroupBy(pack => pack.PackUuid, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .Select(pack => new ThemePackRow(pack.PackUuid, pack.Title, pack.SkinCount, "classic skins", IsSkinPack: true))
-                .ToList();
-
-            var packs = skinPackRows
-                .Concat(byTag.Select(kv => new ThemePackRow(kv.Key, ThemeTitle(kv.Key), kv.Value.Count, TypesSummary(kv.Value.Types))))
+            var packs = byTag
+                .Where(kv => kv.Value.Count > 0) // stay defensive: a bundle with 0 accessories would be unselectable noise
+                .Select(kv => new ThemePackRow(kv.Key, ThemeTitle(kv.Key), kv.Value.Count, TypesSummary(kv.Value.Types)))
                 .OrderByDescending(row => row.PieceCount)
                 .ThenBy(row => row.Title, StringComparer.OrdinalIgnoreCase)
                 .ToList();

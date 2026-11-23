@@ -46,11 +46,12 @@ client's vanilla Standard pack scaffolding, Bold Rabbit Feet, the Apace capes,
 the custom cosmetics, the layout and StoreConfig. **Skins are exempt**:
 `persona_skin` pieces and the classic skin packs serve regardless of the
 selection. The per-category limit above applies in all cases — it caps
-whatever serves, it is not a nothing-selected fallback. The pack list comes
-from the synced catalog index: thematic packs are the pieces' marketplace
-theme tags (picker rows count accessories), classic skin packs are selected
-by their pack uuid. The summary line under the pickers reads "N accessory
-bundles found".
+whatever serves, it is not a nothing-selected fallback. The picker lists the
+synced catalog index's thematic packs — the pieces' marketplace theme tags —
+so every row yields accessories; skin-only bundles are not listed (skins
+serve regardless of selection, so selecting them would do nothing). The
+summary line under the pickers reads "N accessory bundles found" (N counts
+the accessory-bearing bundles only).
 
 ## Per-player grants (extra packs beyond the defaults)
 

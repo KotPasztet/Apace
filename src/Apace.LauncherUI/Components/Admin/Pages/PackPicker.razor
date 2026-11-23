@@ -1,8 +1,9 @@
 @namespace Apace.LauncherUI.Components.Admin.Pages
 @using Apace.LauncherUI.Services
 
-@* Searchable picker for packs — the marketplace's thematic packs (theme tags)
-   plus the classic skin packs (selected by pack uuid). A candidate list under a
+@* Searchable picker for packs — the marketplace's thematic packs (theme tags),
+   the bundles that yield accessories (skin-only bundles are hidden — skins
+   serve regardless of selection). A candidate list under a
    search box plus removable chips for the selection. Far more usable than
    hundreds of stacked checkboxes (the marketplace carries ~280 distinct theme
    tags). The candidate list is virtualized: the full sorted index (~8K rows) is
@@ -36,10 +37,6 @@
                         @onclick="@(async () => await ToggleAsync(pack.Tag))">
                     <span>
                         @pack.Title
-                        @if (pack.IsSkinPack)
-                        {
-                            <span class="badge text-bg-info fw-normal ms-1">classic</span>
-                        }
                         <span class="text-muted small ms-1">@pack.Types</span>
                     </span>
                     <span class="small @(selected ? "" : "text-muted")">
@@ -122,13 +119,9 @@
             ? $"{match.Title} ({match.PieceCount} {CountNoun(match)})"
             : $"{tag} (no longer in the index)";
 
-    // "accessory"/"accessories" for thematic packs (their count is accessories
-    // only — skins are the classic bundles' content), "skin(s)" for classic
-    // skin packs.
+    // Every row is a thematic bundle, so the count is always accessories.
     private static string CountNoun(PersonaPackIndex.ThemePackRow row)
-        => row.IsSkinPack
-            ? $"skin{(row.PieceCount == 1 ? "" : "s")}"
-            : row.PieceCount == 1 ? "accessory" : "accessories";
+        => row.PieceCount == 1 ? "accessory" : "accessories";
 
     private async Task ToggleAsync(string tag)
     {
