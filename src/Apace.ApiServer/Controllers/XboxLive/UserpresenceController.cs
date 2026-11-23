@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Apace.ApiServer.Utils;
 using System.Text.RegularExpressions;
 
 namespace Apace.ApiServer.Controllers.XboxLive;
@@ -28,7 +29,7 @@ internal sealed partial class UserpresenceController : ApaceControllerBase
             return TypedResults.BadRequest();
         }
 
-        if (xuid != token.UserId)
+        if (!XuidUtils.Matches(xuid, token.UserId))
         {
             return TypedResults.Unauthorized();
         }

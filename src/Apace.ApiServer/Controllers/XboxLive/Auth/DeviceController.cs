@@ -19,8 +19,8 @@ internal sealed class DeviceController : ApaceControllerBase
     {
         internal sealed record PropertiesR(
             string AuthMethod,
-            string RpsTicket,
-            string SiteName
+            string? RpsTicket,
+            string? SiteName
         );
     }
 

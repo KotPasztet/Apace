@@ -99,6 +99,13 @@ public static class IpaProcessor
             Log.Debug("Done");
         }
 
+        if (options.AddXalEntitlements)
+        {
+            Log.Information("Writing XAL keychain entitlements");
+            WriteXalEntitlements(appDir);
+            Log.Debug("Done");
+        }
+
         if (options.ChangeAppName && !string.IsNullOrWhiteSpace(options.AppName))
         {
             Log.Information($"Changing app name to '{options.AppName}'");
@@ -724,6 +731,28 @@ public static class IpaProcessor
         }
     }
 
+    // stripping the code signature also strips its entitlements; XAL sign-in needs its
+    // keychain access groups back, so leave a plist for the re-signing step to use
+    private static void WriteXalEntitlements(string appDir)
+    {
+        string entitlements =
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>keychain-access-groups</key>
+                <array>
+                    <string>$(AppIdentifierPrefix)com.microsoft.xal</string>
+                    <string>$(AppIdentifierPrefix)com.microsoft.adalcache</string>
+                </array>
+            </dict>
+            </plist>
+            """;
+
+        WritePlist(Path.Combine(appDir, "Entitlements.plist"), entitlements);
+    }
+
     private static bool IsDirectChildEntry(string fullName, string prefix, string child)
     {
         if (fullName.Length <= prefix.Length || !fullName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
@@ -766,6 +795,7 @@ public static class IpaProcessor
         public bool ChangeIcon { get; set; } = false;
         public string IconPath { get; set; } = "";
         public bool RemoveDrm { get; set; } = true;
+        public bool AddXalEntitlements { get; set; } = true;
     }
 #pragma warning restore CS8618
 }

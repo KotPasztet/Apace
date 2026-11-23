@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased (dev) — iOS sign-in works: the XAL sisu flow is served
+
+> iOS clients died at "something went wrong during sign in" right after device auth: XAL signs in through the `sisu.xboxlive.com` web-view flow (not the Android device/title/user/XSTS requests) and the server had no sisu endpoints at all. Ported from Solace PR #50 (commit 7c53f66, tested by its author to the map on a patched 0.33.0 iOS build), adapted to Apace's hex account ids and config-based secrets.
+
+### 🔐 Account login
+
+- **SisuController** (new, `Controllers/XboxLive/Auth/SisuController.cs`): `sisu.xboxlive.com/authenticate` + `/authorize` return the full device/title/user/XSTS token set, `/client` and logout hand XAL back to the app; sisu responses use relaxed JSON escaping (iOS XAL chokes on `\uXXXX`).
+- **`oauth20_token.srf`** (`LoginController.cs`): auth-code and refresh-token exchange; `oauth20_logout.srf` redirect added.
+- **login.html**: `completeSignIn` passes the Live user token back through the OAuth redirect.
+- **XUID as uint64** (new `Utils/XuidUtils.cs`, wired into Profile/Presence/Privacy): iOS expects a numeric XUID — derived stably from the account id, both formats accepted everywhere.
+- **Title id 1712756451** (`TitleMgtController.cs`): `current` and the iOS title id now serve like the Android endpoint (iOS reads it from xboxservices.config).
+- **Device/Title auth loosened**: `RpsTicket`/`SiteName` are optional (iOS omits them); XSTS relying parties normalize server-prefixed values. Android behavior unchanged.
+- **Patcher** (`Minecraft_Earth_Patcher/IpaProcessor.cs`): patched IPAs now carry `Entitlements.plist` with the `com.microsoft.xal` + `com.microsoft.adalcache` keychain access groups (signature stripping had destroyed them — XAL failed before sending anything). The ATS exceptions and `*.playfabapi.com` redirects the PR also needs were already in the patcher.
+
 ## Unreleased (dev) — Minecraft Default Skins restored: the skin textures fetch and the pack zip rebuilds automatically again
 
 > Since the Mojang asset gate removal nothing downloaded the nine default skin textures — `MojangSkinPackBuilder` bailed on the empty `skins/` dir, the pack zip never existed and the dressing room's "Minecraft Default Skins" rows went empty (the offer served, its `skinbinary` 404ing). A new `MojangSkinTextureFetcher` post-processor step (registered before the builder) now fetches the verified `skin-texture` entries from `mojang-assets.manifest.json` (sha256/size-verified, atomic `.part` → move, files already present are skipped, failures logged and never fatal) into `<data>/mojang-assets/skins/` at every panel start, so the zip builds and serves again. The pack version bumps 1.0.1 → 1.0.2 (builder constant + the offer's `packIdentity[0].version`) because the client caches imports per (uuid, version) — installs that once imported the pack empty keep it cached forever otherwise. `SkinPackCdnController` now names a known staticdata skin-pack offer (offer id + expected path + the texture-fetch hint) in its 404 warning instead of a generic line.
@@ -9,6 +23,15 @@
 - **Skin texture fetcher** (`MojangSkinTextureFetcher.cs`, panel): resolves the manifest the same way the old asset gate did (assets-dir override, deployment `staticdata/`, dev-checkout `staticdata-extras/` walk-ups, the configured staticdata dir — CWD and `AppContext.BaseDirectory` anchors), downloads the verified `skin-texture` entries whose target is one of the pack builder's skins (`MojangSkinPackBuilder.DefaultSkinNames`) with the gate's HTTP idioms (primary URL → fallback mirrors, 3 attempts, sha256 + size check, `.part` file moved into place), logs a fetched/skipped/failed summary and, on any failure, that the pack cannot be built until the fetch succeeds. Best-effort and idempotent per the `MojangAssetPostProcessor` contract.
 - **Pack version 1.0.2** (`MojangSkinPackBuilder.PackVersion` + `staticdata-extras/playfab/items/90860f69-….json`): forces clients that cached the empty import to re-import; the builder's "pack not built" warning now says the dressing room rows stay empty until the texture fetch succeeds (naming the `skins/` dir).
 - **Diagnostics** (`SkinPackCdnController.Get`): a missing zip that belongs to a staticdata skin-pack offer (the `CatalogController.SkinPackOfferIds` set) logs the offer id, the expected `<mojang-assets>/playfab/skinpacks/` path and the default-skins texture-fetch hint, so operators see exactly why the rows are empty.
+
+## Unreleased (dev) — the pack picker lists accessory-bearing bundles only
+
+> Selecting a skin-only bundle did nothing: since skins serve ungated, the picker's classic skin-pack rows were pure noise.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **Skin-only bundles hidden** (`PersonaPackIndex.ReadThemePacks` + `PackPicker.razor`): the picker lists only theme-tag bundles carrying at least one ACCESSORY — tags whose pieces are all persona_skin/emotes get no row, and the classic skin-pack rows are gone entirely (with their `IsSkinPack` flag, "classic" badge and skin-count noun); the summary's N counts accessory-bearing bundles only.
+- Saved defaults/grants referencing skin-pack uuids stay harmless leftovers (skins serve ungated): they render as warning chips under their raw id, as the picker already did for stale entries.
 
 ## Unreleased (dev) — strict accessory enforcement: the dressing room serves accessories ONLY from the selected packs; skins un-gated
 

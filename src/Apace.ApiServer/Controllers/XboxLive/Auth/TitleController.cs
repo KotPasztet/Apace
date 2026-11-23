@@ -20,8 +20,8 @@ internal sealed class TitleController : ApaceControllerBase
         internal sealed record PropertiesR(
             string AuthMethod,
             string DeviceToken,
-            string RpsTicket,
-            string SiteName
+            string? RpsTicket,
+            string? SiteName
         );
     }
 

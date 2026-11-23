@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using Apace.ApiServer.Models;
 using Apace.ApiServer.Utils;
 
@@ -49,7 +50,10 @@ internal sealed class XstsController : ApaceControllerBase
             return TypedResults.Unauthorized();
         }
 
-        switch (request.RelyingParty)
+        string relyingParty = NormalizeRelyingParty(request.RelyingParty);
+        bool numericXid = relyingParty != request.RelyingParty;
+
+        switch (relyingParty)
         {
             case "http://xboxlive.com":
                 {
@@ -65,7 +69,7 @@ internal sealed class XstsController : ApaceControllerBase
                             ["xui"] = [
                                 new()
                                 {
-                                    ["xid"] = userToken.Xid,
+                                    ["xid"] = numericXid ? XuidUtils.ToNumericString(userToken.Xid) : userToken.Xid,
                                     ["uhs"] = userToken.Uhs,
 
                                     ["gtg"] = userToken.Username,
@@ -122,7 +126,31 @@ internal sealed class XstsController : ApaceControllerBase
                 }
 
             default:
+                Log.Warning($"Unknown XSTS relying party: {request.RelyingParty}");
                 return TypedResults.BadRequest();
         }
+    }
+
+    // The patched iOS client prefixes redirected relying parties with the server address,
+    // e.g. http://server:8080/xboxlive.com instead of http://xboxlive.com
+    private static string NormalizeRelyingParty(string relyingParty)
+    {
+        int schemeEnd = relyingParty.IndexOf("://", StringComparison.Ordinal);
+        if (schemeEnd < 0)
+        {
+            return relyingParty;
+        }
+
+        string rest = relyingParty[(schemeEnd + 3)..];
+        int slash = rest.IndexOf('/', StringComparison.Ordinal);
+        if (slash < 0 || slash == rest.Length - 1)
+        {
+            return relyingParty;
+        }
+
+        string redirected = rest[(slash + 1)..];
+        return redirected.EndsWith("xboxlive.com", StringComparison.Ordinal)
+            ? $"http://{redirected}"
+            : relyingParty;
     }
 }

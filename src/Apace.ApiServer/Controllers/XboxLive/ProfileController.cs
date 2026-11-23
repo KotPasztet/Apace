@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Apace.ApiServer.Utils;
 using System.Text.RegularExpressions;
 using Apace.ApiServer.Models;
 using Apace.Common.Utils;
@@ -56,7 +57,7 @@ internal sealed partial class ProfileController : ApaceControllerBase
 
         foreach (string userId in request.UserIds)
         {
-            if (userId != token.UserId)
+            if (!XuidUtils.Matches(userId, token.UserId))
             {
                 return TypedResults.Unauthorized();
             }
@@ -95,21 +96,35 @@ internal sealed partial class ProfileController : ApaceControllerBase
 
         var token = authUnion.A;
 
-        string? gt;
-        if (gtParam == "me")
+        // Echo the id in the form the client used: hex user id (Android) or numeric xuid (iOS)
+        string profileId = token.UserId;
+        Match xuidMatch = GetXuidRegex().Match(gtParam);
+        if (xuidMatch.Success)
         {
-            gt = token.Username;
+            profileId = xuidMatch.Groups[1].Value;
+            if (!XuidUtils.Matches(profileId, token.UserId))
+            {
+                return TypedResults.Unauthorized();
+            }
         }
         else
         {
-            Match gtMatch = GetGtRegex().Match(gtParam);
+            string? gt;
+            if (gtParam == "me")
+            {
+                gt = token.Username;
+            }
+            else
+            {
+                Match gtMatch = GetGtRegex().Match(gtParam);
 
-            gt = gtMatch.Success ? gtMatch.Groups[1].Value : null;
-        }
+                gt = gtMatch.Success ? gtMatch.Groups[1].Value : null;
+            }
 
-        if (gt != token.Username)
-        {
-            return TypedResults.Unauthorized();
+            if (gt != token.Username)
+            {
+                return TypedResults.Unauthorized();
+            }
         }
 
         if (!Request.Query.TryGetValue("settings", out var settings))
@@ -127,8 +142,8 @@ internal sealed partial class ProfileController : ApaceControllerBase
 
         return JsonCamelCase(new ProfileSettingsResponse([
             new ProfileUser(
-                token.UserId,
-                token.UserId,
+                profileId,
+                profileId,
                 GetProfileFields(account, settings[0]?.Split(',') ?? []),
                 false
             ),
@@ -160,6 +175,9 @@ internal sealed partial class ProfileController : ApaceControllerBase
 
     [GeneratedRegex(@"^gt\((.*)\)$")]
     private static partial Regex GetGtRegex();
+
+    [GeneratedRegex(@"^xuid\((.*)\)$")]
+    private static partial Regex GetXuidRegex();
 
     private sealed record ProfileSetting(
         string Id,
