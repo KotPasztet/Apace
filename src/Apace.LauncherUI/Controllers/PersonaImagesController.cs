@@ -1,12 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 
 namespace Apace.LauncherUI.Controllers;
 
 // Persona (skin) item thumbnails are PNGs in the ApiServer's wwwroot, served to
 // game clients at /playfab/images/<id>.png. The panel is a separate process, so
-// it re-serves the same files through this controller.
+// it re-serves the same files through this controller — plus a lazy resolve of
+// its own: when no local copy exists, LivePersonaCatalogSync downloads the
+// thumbnail from the URL recorded at sync time (else from the Bedrock-Persona
+// mirror) into the volume cache, so the skins tab works without waiting for a
+// game client to warm the ApiServer's cache first.
 [ApiController]
 [Authorize(Policy = Permissions.ManagePlayers)]
 [Route("api/persona-images")]
@@ -29,7 +34,7 @@ internal sealed class PersonaImagesController : ControllerBase
 
     [HttpGet("{id}.png")]
     [HttpHead("{id}.png")]
-    public static Results<PhysicalFileHttpResult, NotFound> GetThumbnail(string id)
+    public static async Task<Results<PhysicalFileHttpResult, NotFound>> GetThumbnail(string id, CancellationToken cancellationToken)
     {
         // Thumbnail file names are GUIDs; refuse anything else so the path can't be abused for traversal.
         if (!Guid.TryParse(id, out _))
@@ -45,6 +50,13 @@ internal sealed class PersonaImagesController : ControllerBase
             {
                 return TypedResults.PhysicalFile(path);
             }
+        }
+
+        // Miss: resolve lazily — the sync-time URL from the index, then the mirror.
+        string? resolved = await Services.LivePersonaCatalogSync.TryEnsureThumbnailAsync(id, Log.Logger, cancellationToken);
+        if (resolved is not null && System.IO.File.Exists(resolved))
+        {
+            return TypedResults.PhysicalFile(resolved);
         }
 
         return TypedResults.NotFound();

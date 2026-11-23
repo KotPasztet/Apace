@@ -109,8 +109,13 @@ without any code change (the alternate-URL shape is already probed).
 
 Binaries are cached in the volume after the first download; thumbnails resolve
 the same way (first the thumbnail URL recorded at sync time, then the
-Bedrock-Persona mirror `raw.githubusercontent.com/Daniel-Ric/Bedrock-Persona`
-— a runtime URL fact only, nothing from it is stored in the repo).
+Bedrock-Persona mirror
+`raw.githubusercontent.com/Daniel-Ric/Bedrock-Persona/main/assets/images/persona_piece/<thumbnailId>.png`
+— flat path keyed by thumbnail id, verified live 23.11; an earlier
+`{pieceType}/{id}` spelling 404'd on every lookup and broke the mirror
+fallback — a runtime URL fact only, nothing from it is stored in the repo).
+The panel's `api/persona-images` endpoint runs the same resolve itself, so
+skins-tab thumbnails no longer wait for a game client to warm the cache.
 
 ### Emotes
 

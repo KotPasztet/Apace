@@ -884,4 +884,143 @@ public static class LivePersonaCatalogSync
             lastModified
         );
     }
+
+    // ---------------------------------------------------------------------------
+    // Lazy thumbnail ensure (PersonaImagesController miss path — the panel-side
+    // mirror of the ApiServer's LivePersonaCatalog.TryEnsureThumbnailAsync)
+    // ---------------------------------------------------------------------------
+
+    // Runtime thumbnail mirror: raw.githubusercontent.com serves the mirrored
+    // Bedrock persona images, flat assets/images/persona_piece/<thumbnailId>.png
+    // (research/bedrock-persona-report.md: keyed by thumbnail id, same scope as
+    // the 20ca2 Catalog/Search — verified live 23.11). URL fact only, nothing
+    // committed (same fallback the ApiServer uses).
+    private const string ThumbnailMirrorBase = "https://raw.githubusercontent.com/Daniel-Ric/Bedrock-Persona/main/assets/images/persona_piece";
+
+    private static readonly HttpClient ThumbnailHttpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private static readonly SemaphoreSlim ThumbnailGate = new(1, 1);
+    private static DateTimeOffset _nextThumbnailFetch = DateTimeOffset.MinValue;
+
+    private sealed record ThumbIndexItem(string? ThumbnailId, string? ThumbnailUrl);
+    private sealed record ThumbIndex(List<ThumbIndexItem> Items);
+
+    // thumbnailId → recorded URL, cached per index file stamp — the synced index
+    // is the only source of live thumbnail URLs on the panel side.
+    private static (long Stamp, Dictionary<string, string?> Map)? _thumbnailMapCache;
+
+    private static Dictionary<string, string?>? ThumbnailMap()
+    {
+        try
+        {
+            if (!File.Exists(IndexPath))
+            {
+                return null;
+            }
+
+            long stamp = File.GetLastWriteTimeUtc(IndexPath).Ticks;
+            if (_thumbnailMapCache?.Stamp == stamp)
+            {
+                return _thumbnailMapCache.Value.Map;
+            }
+
+            var index = JsonSerializer.Deserialize<ThumbIndex>(File.ReadAllText(IndexPath), JsonOptions);
+            var map = (index?.Items ?? [])
+                .Where(item => !string.IsNullOrEmpty(item.ThumbnailId))
+                .GroupBy(item => item.ThumbnailId!, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First().ThumbnailUrl, StringComparer.OrdinalIgnoreCase);
+            _thumbnailMapCache = (stamp, map);
+            return map;
+        }
+        catch
+        {
+            return _thumbnailMapCache?.Map;
+        }
+    }
+
+    // One thumbnail fetch per ~0.7 s — the same politeness as the sync pages.
+    private static async Task PaceThumbnailAsync(CancellationToken cancellationToken)
+    {
+        DateTimeOffset waitUntil = _nextThumbnailFetch;
+        if (waitUntil > DateTimeOffset.UtcNow)
+        {
+            await Task.Delay(waitUntil - DateTimeOffset.UtcNow, cancellationToken);
+        }
+
+        _nextThumbnailFetch = DateTimeOffset.UtcNow.AddMilliseconds(700);
+    }
+
+    /// <summary>
+    /// The skins tab asked for a thumbnail that is not in any local dir: download
+    /// it from the thumbnail URL recorded at sync time, else from the
+    /// Bedrock-Persona mirror. Returns the cached file path or null. Mirror of
+    /// the ApiServer's resolver, so the panel serves thumbnails without waiting
+    /// for a game client to warm the cache first.
+    /// </summary>
+    public static async Task<string?> TryEnsureThumbnailAsync(string imageId, ILogger logger, CancellationToken cancellationToken)
+    {
+        var map = ThumbnailMap();
+        string? recordedUrl = map is not null && map.TryGetValue(imageId, out var url) ? url : null;
+        if (recordedUrl is null && map is null)
+        {
+            return null; // no synced index — the mirror would only cover search-scope ids blind
+        }
+
+        string path = Path.Combine(CatalogDir, "thumbnails", imageId + ".png");
+        await ThumbnailGate.WaitAsync(cancellationToken);
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            if (File.Exists(path) && new FileInfo(path).Length > 0)
+            {
+                return path;
+            }
+
+            string mirrorUrl = $"{ThumbnailMirrorBase}/{imageId}.png";
+            foreach (string candidate in new[] { recordedUrl, mirrorUrl }.Where(u => !string.IsNullOrWhiteSpace(u)).Distinct())
+            {
+                try
+                {
+                    await PaceThumbnailAsync(cancellationToken);
+                    using var response = await ThumbnailHttpClient.GetAsync(candidate, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        continue;
+                    }
+
+                    string partPath = path + ".part";
+                    await using (var content = await response.Content.ReadAsStreamAsync(cancellationToken))
+                    await using (var fileStream = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                    {
+                        await content.CopyToAsync(fileStream, cancellationToken);
+                    }
+
+                    // the mirror has a handful of zero-byte PNGs — don't cache them,
+                    // the next request retries
+                    if (new FileInfo(partPath).Length == 0)
+                    {
+                        File.Delete(partPath);
+                        continue;
+                    }
+
+                    File.Move(partPath, path, overwrite: true);
+                    logger.Information("Persona thumbnail {Id} fetched into the volume cache (panel lazy resolve)", imageId);
+                    return path;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    logger.Warning(ex, "Persona thumbnail {Id} fetch failed from {Url}", imageId, candidate);
+                }
+            }
+
+            return null;
+        }
+        finally
+        {
+            ThumbnailGate.Release();
+        }
+    }
 }

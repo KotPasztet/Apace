@@ -66,8 +66,11 @@ public static class LivePersonaCatalog
     ];
 
     // Runtime thumbnail mirror: raw.githubusercontent.com serves the mirrored
-    // Bedrock persona images (URL fact only — nothing is committed to the repo).
-    public const string ThumbnailMirrorBase = "https://raw.githubusercontent.com/Daniel-Ric/Bedrock-Persona/main/images";
+    // Bedrock persona images, flat assets/images/persona_piece/<thumbnailId>.png
+    // (research/bedrock-persona-report.md: the repo mirrors exactly the 20ca2
+    // Catalog/Search scope, keyed by thumbnail id — verified 23.11, live URL).
+    // Nothing from it is stored in the repo.
+    public const string ThumbnailMirrorBase = "https://raw.githubusercontent.com/Daniel-Ric/Bedrock-Persona/main/assets/images/persona_piece";
 
     // unlock-all: tags the client reads as achievement locks (the MCE client shows
     // those items as locked behind achievements and refuses to acquire them —
@@ -986,7 +989,9 @@ public static class LivePersonaCatalog
                 return path;
             }
 
-            string mirrorUrl = $"{ThumbnailMirrorBase}/{entry.PieceType}/{imageId}.png";
+            // the mirror is flat (no piece type in the path) and the repo has a
+            // handful of zero-byte PNGs — retrying on the next miss self-heals
+            string mirrorUrl = $"{ThumbnailMirrorBase}/{imageId}.png";
             foreach (string candidate in new[] { entry.ThumbnailUrl, mirrorUrl }.Where(u => !string.IsNullOrWhiteSpace(u)).Distinct())
             {
                 try
