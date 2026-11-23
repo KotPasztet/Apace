@@ -1,0 +1,102 @@
+@namespace Apace.LauncherUI.Components.Admin.Pages
+@using Apace.LauncherUI.Services
+
+@* Searchable picker for thematic skin packs — a candidate list under a search
+   box plus removable chips for the selection. Far more usable than hundreds of
+   stacked checkboxes (the marketplace has ~900 packs). Stale uuids (dropped by
+   a re-sync) stay listed as warning chips under their raw uuid so they can
+   still be removed. *@
+
+<div class="pack-picker">
+    <input class="form-control form-control-sm" type="search" placeholder="@Placeholder"
+           value="@_query" @oninput="@(e => _query = (string?)e.Value ?? "")" />
+    <div class="list-group mt-1 border rounded overflow-auto" style="max-height: 240px;">
+        @if (Packs.Count == 0)
+        {
+            <div class="list-group-item py-1 small text-muted">No thematic packs indexed yet — run the live persona catalog sync first.</div>
+        }
+        else if (!Matches.Any())
+        {
+            <div class="list-group-item py-1 small text-muted">No packs match "@_query".</div>
+        }
+        @foreach (var pack in Matches)
+        {
+            bool selected = Selected.Contains(pack.PackUuid);
+            <button type="button" class="list-group-item list-group-item-action py-1 small d-flex justify-content-between align-items-center @(selected ? "active" : "")"
+                    @onclick="@(async () => await ToggleAsync(pack.PackUuid))">
+                <span>@pack.Title</span>
+                <span class="small @(selected ? "" : "text-muted")">
+                    @(selected ? "✓ selected" : $"+ add ({pack.SkinCount} skin{(pack.SkinCount == 1 ? "" : "s")})")
+                </span>
+            </button>
+        }
+    </div>
+    <div class="mt-2">
+        @if (!Selected.Any())
+        {
+            <span class="text-muted small">@EmptyHint</span>
+        }
+        @foreach (string uuid in Selected.OrderBy(Label, StringComparer.OrdinalIgnoreCase))
+        {
+            <span class="badge @(Known(uuid) ? "text-bg-secondary" : "text-bg-warning") me-1 mb-1 fw-normal">
+                @Label(uuid)
+                <a href="#" class="ms-1 text-decoration-none" @onclick="@(async () => await ToggleAsync(uuid))" @onclick:preventDefault="true">×</a>
+            </span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string PickerId { get; set; } = "packs";
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Search packs by name…";
+
+    [Parameter]
+    public string EmptyHint { get; set; } = "Nothing selected.";
+
+    [Parameter]
+    public HashSet<string> Selected { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<HashSet<string>> SelectedChanged { get; set; }
+
+    [Parameter]
+    public List<PersonaPackIndex.SkinPackRow> Packs { get; set; } = [];
+
+    private const int MatchCap = 10;
+
+    private string _query = string.Empty;
+
+    private IEnumerable<PersonaPackIndex.SkinPackRow> Matches
+    {
+        get
+        {
+            string filter = _query.Trim();
+            var rows = filter.Length == 0
+                ? Packs
+                : Packs.Where(row => row.Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                    || row.PackUuid.Contains(filter, StringComparison.OrdinalIgnoreCase));
+            return rows.OrderBy(row => row.Title, StringComparer.OrdinalIgnoreCase).Take(MatchCap);
+        }
+    }
+
+    private bool Known(string uuid)
+        => Packs.Any(row => row.PackUuid.Equals(uuid, StringComparison.OrdinalIgnoreCase));
+
+    private string Label(string uuid)
+        => Packs.FirstOrDefault(row => row.PackUuid.Equals(uuid, StringComparison.OrdinalIgnoreCase)) is { } match
+            ? $"{match.Title} ({match.SkinCount} skin{(match.SkinCount == 1 ? "" : "s")})"
+            : $"{uuid} (no longer in the index)";
+
+    private async Task ToggleAsync(string uuid)
+    {
+        if (!Selected.Remove(uuid))
+        {
+            Selected.Add(uuid);
+        }
+
+        await SelectedChanged.InvokeAsync(Selected);
+    }
+}

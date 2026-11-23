@@ -41,57 +41,43 @@
             </label>
         </div>
 
-        @if (_defaultRows.Count == 0)
-        {
-            <p class="text-muted small mb-2">No packs available yet — run the live persona catalog sync first
-                (System Configuration → "Sync now", or wait for the scheduled sync).</p>
-        }
-        <div class="row">
-            @foreach (var (pieceType, count) in _defaultRows)
-            {
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="def-@pieceType"
-                               checked="@_defaults.Contains(pieceType)"
-                               @onchange="@(e => Toggle(_defaults, pieceType, e.Value is bool v && v))" />
-                        <label class="form-check-label" for="def-@pieceType">
-                            @pieceType <span class="text-muted small">(@count item@(count == 1 ? "" : "s"))</span>
-                        </label>
-                    </div>
-                </div>
-            }
-        </div>
-
-        <div class="d-flex align-items-baseline justify-content-between mt-4 mb-2">
-            <strong>Thematic skin packs</strong>
-            <span class="text-muted small">the offers behind the dressing room's "Classic Skins" row</span>
-        </div>
         @if (_packSummary is not null)
         {
             <p class="text-muted small">@_packSummary</p>
         }
-        <input class="form-control form-control-sm mb-2" type="search" placeholder="Filter packs by name…"
-               value="@_packFilter" @oninput="@(e => _packFilter = (string?)e.Value ?? "")" />
-        <div class="row">
-            @foreach (var pack in FilteredPackRows.Take(PackRenderCap))
+        <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
+                    SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
+                    EmptyHint="Nothing selected — with gating on, no thematic packs show in the dressing room." />
+
+        <details class="mt-4">
+            <summary class="text-muted">Advanced — dressing room categories (persona piece types)</summary>
+            <p class="text-muted small mt-2 mb-2">
+                Thematic packs are whole classic skins — they do not contain piece categories (tops, hats…).
+                This list controls the live persona pieces streamed per category: an empty list means no live
+                pieces at all (staticdata pieces and the packs above still show). Leave a few on — streaming
+                every category at once made the dressing room choke.
+            </p>
+            @if (_defaultRows.Count == 0)
             {
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="def-pack-@pack.PackUuid"
-                               checked="@_defaults.Contains(pack.PackUuid)"
-                               @onchange="@(e => Toggle(_defaults, pack.PackUuid, e.Value is bool v && v))" />
-                        <label class="form-check-label" for="def-pack-@pack.PackUuid">
-                            @pack.Title@(string.IsNullOrEmpty(pack.ItemId) ? " (no longer in the index)" : "")
-                            <span class="text-muted small">(@pack.SkinCount skin@(pack.SkinCount == 1 ? "" : "s"))</span>
-                        </label>
-                    </div>
-                </div>
+                <p class="text-muted small mb-2">No categories available yet — run the live persona catalog sync first
+                    (System Configuration → "Sync now", or wait for the scheduled sync).</p>
             }
-        </div>
-        @if (FilteredPackRows.Count() > PackRenderCap)
-        {
-            <p class="text-muted small mb-0">Showing the first @PackRenderCap of @FilteredPackRows.Count() packs — narrow the filter to see the rest.</p>
-        }
+            <div class="row">
+                @foreach (var (pieceType, count) in _defaultRows)
+                {
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="def-@pieceType"
+                                   checked="@_defaults.Contains(pieceType)"
+                                   @onchange="@(e => Toggle(_defaults, pieceType, e.Value is bool v && v))" />
+                            <label class="form-check-label" for="def-@pieceType">
+                                @pieceType <span class="text-muted small">(@count item@(count == 1 ? "" : "s"))</span>
+                            </label>
+                        </div>
+                    </div>
+                }
+            </div>
+        </details>
 
         <button class="btn btn-sm btn-outline-primary me-2 mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
             @if (_savingDefaults)
@@ -123,19 +109,28 @@
 
         @if (_selectedPlayerId is not null)
         {
-            <div class="row mt-3">
-                @foreach (var pieceType in _grantRows)
-                {
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="grant-@pieceType"
-                                   checked="@_grants.Contains(pieceType)"
-                                   @onchange="@(e => Toggle(_grants, pieceType, e.Value is bool v && v))" />
-                            <label class="form-check-label" for="grant-@pieceType">@GrantLabel(pieceType)</label>
-                        </div>
-                    </div>
-                }
+            <div class="mt-3">
+                <PackPicker PickerId="grant" Packs="@_packs" Selected="@_grants"
+                            SelectedChanged="@(v => { _grants = v; StateHasChanged(); })"
+                            EmptyHint="Nothing granted beyond the panel defaults." />
             </div>
+
+            <details class="mt-3">
+                <summary class="text-muted">Advanced — dressing room categories (persona piece types)</summary>
+                <div class="row mt-2">
+                    @foreach (var pieceType in _grantRows)
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="grant-@pieceType"
+                                       checked="@_grants.Contains(pieceType)"
+                                       @onchange="@(e => Toggle(_grants, pieceType, e.Value is bool v && v))" />
+                                <label class="form-check-label" for="grant-@pieceType">@pieceType</label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </details>
             <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveGrantsAsync" disabled="@_savingGrants">
                 @if (_savingGrants)
                 {
@@ -160,7 +155,6 @@
     private List<PersonaPackIndex.PackCategory> _defaultRows = [];
     private List<string> _grantRows = [];
     private List<PersonaPackIndex.SkinPackRow> _packs = [];
-    private string _packFilter = string.Empty;
     private string? _packSummary;
     private bool _gating;
     private HashSet<string> _defaults = [];
@@ -191,41 +185,17 @@
     private void RebuildRows()
     {
         // defaults/grants may reference piece types the current index no longer
-        // has (re-sync dropped them) — keep them listed so they can be unchecked
+        // has (re-sync dropped them) — keep them listed so they can be unchecked;
+        // stale pack uuids stay listed in the pack pickers as warning chips
         var known = _categories.Select(row => row.PieceType).ToHashSet(StringComparer.OrdinalIgnoreCase);
         _defaultRows = [.. _categories, .. _defaults
             .Where(pack => !known.Contains(pack) && !Guid.TryParse(pack, out _))
             .Select(pack => new PersonaPackIndex.PackCategory(pack, 0))
             .OrderBy(row => row.PieceType)];
-        _grantRows = [.. known, .. _grants.Where(pack => !known.Contains(pack)), ];
+        _grantRows = [.. known, .. _grants
+            .Where(pack => !known.Contains(pack) && !Guid.TryParse(pack, out _))
+            .OrderBy(pack => pack)];
     }
-
-    // stale pack defaults (uuids the current index no longer has) stay listed
-    // under their raw uuid so they can still be unchecked
-    private const int PackRenderCap = 300;
-
-    private IEnumerable<PersonaPackIndex.SkinPackRow> FilteredPackRows
-    {
-        get
-        {
-            var knownUuids = _packs.Select(row => row.PackUuid).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            string filter = _packFilter.Trim();
-            IEnumerable<PersonaPackIndex.SkinPackRow> known = filter.Length == 0
-                ? _packs
-                : _packs.Where(row => row.Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                    || row.PackUuid.Contains(filter, StringComparison.OrdinalIgnoreCase));
-            var stale = _defaults
-                .Where(pack => Guid.TryParse(pack, out _) && !knownUuids.Contains(pack))
-                .Select(pack => new PersonaPackIndex.SkinPackRow("", pack, pack, 0));
-            return known.Concat(stale).OrderBy(row => row.Title, StringComparer.OrdinalIgnoreCase);
-        }
-    }
-
-    // grants may reference thematic packs — resolve their pack title for the label
-    private string GrantLabel(string pack)
-        => Guid.TryParse(pack, out _)
-            ? _packs.FirstOrDefault(row => row.PackUuid.Equals(pack, StringComparison.OrdinalIgnoreCase)) is { } match ? $"{match.Title} (skin pack)" : pack
-            : pack;
 
     private async Task LoadPlayersAsync()
     {
