@@ -30,13 +30,20 @@ no restart needed.
 
 ## Pack filtering (defaults and grants)
 
-Pack filtering needs no toggle of its own: once at least one default pack or
-per-player grant is configured, the live marketplace serves only those packs'
-pieces plus the base pieces without a theme tag. With no packs configured at
-all, everything is served — up to the per-category limit above. The pack list
-comes from the synced catalog index: thematic packs are the pieces' marketplace
-theme tags, classic skin packs are selected by their pack uuid. The summary
-line under the pickers reads "N accessory bundles found".
+Pack filtering needs no toggle of its own: the gate runs on the allowed pack
+set (defaults ∪ per-player grants). With **no packs configured at all**, the
+whole live marketplace is gated off — players get **0 live marketplace pieces**
+(themed and tagless alike, live classic skin packs included); the always-served
+staticdata still shows: the built-in "Minecraft Default Skins" pack (Steve/Alex
+and friends), the client's vanilla Standard pack scaffolding, Bold Rabbit Feet,
+the Apace capes, the custom cosmetics, the layout and StoreConfig. With **at
+least one pack configured**, the live marketplace serves those packs' pieces
+plus the tagless base pieces without a theme tag. The per-category limit above
+applies in both cases — it caps whatever serves, it is not a nothing-selected
+fallback. The pack list comes from the synced catalog index: thematic packs are
+the pieces' marketplace theme tags, classic skin packs are selected by their
+pack uuid. The summary line under the pickers reads "N accessory bundles
+found".
 
 ## Per-player grants (extra packs beyond the defaults)
 

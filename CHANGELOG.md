@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased (dev) — pack gate: nothing selected now gates the whole live marketplace off; virtualized pack picker
+
+> The "empty allowlist serves everything" fallback is gone: with no packs selected (defaults ∪ per-player grants empty) the ApiServer serves **0 live marketplace cosmetics** — themed pieces and tagless "base" pieces alike, live classic skin packs included. Players keep the always-served staticdata (the built-in "Minecraft Default Skins" pack, the client's vanilla Standard pack scaffolding, Bold Rabbit Feet, the Apace capes, layout/StoreConfig) and the custom cosmetics. With at least one pack configured the behavior is unchanged: themed pieces filtered by the allowed tags, tagless base pieces keep serving, non-empty live classic skin packs filtered by uuid. Per-player grants follow the same rule — a player with no defaults and no grants gets nothing live. The per-category limit no longer doubles as the nothing-selected fallback; it still caps whatever serves. The panel's PackPicker is now a virtualized scrollable list showing all ~8K bundles.
+
+### 🧍 Persona items (dressing room / skins)
+
+- **Empty allowed set = 0 live pieces** (`PersonaPackGate.AllowedPackUuidsAsync`): the null sentinel ("nothing configured → serve everything") is removed — the gate returns the possibly-empty allowed set and every enforcement point handles it: `CatalogController.LiveOfferItemsFor` drops every live Minecraft-creator piece (tagless included) from the search offer, `LiveSkinPackItemsFor` serves no live classic skin packs, `Catalog/GetPublishedItem` refuses themed and tagless live Minecraft pieces at equip resolve (404 like an unknown id; non-Minecraft creators still resolve), and `ObjectController.SanitizePersonaObjects` drops themed and tagless live pieces from saved persona profiles. Staticdata and the custom cosmetics are never gated.
+- **PackPicker virtualized** (`PackPicker.razor`): the panel's pack pickers render as a virtualized scrollable list — all ~8K bundles stay browsable instead of rendering the whole list at once.
+
 ## Unreleased (dev) — live persona catalog: the dressing room backed by the still-live marketplace, everything unlocked
 
 > The legacy 231 bundled persona pieces are all dead binaries (xforge CDN dark, mirror release parked by user decision 22.11). The panel now syncs the **still-live** PlayFab marketplace (title `20ca2` — ~39.8k PersonaDurable entries, ~12.4k unique pieces incl. ~2.2k emotes) into the data volume at runtime, and the ApiServer serves it **unlock-all**: no achievement locks, no prices, no lock badges. Metadata are cached facts in the volume (`persona-catalog/`), binaries download lazily on the first client request — zero catalog content in the repo.

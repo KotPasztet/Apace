@@ -15,12 +15,14 @@ namespace Apace.ApiServer.Services;
 // packs.json (written by the panel next to the catalog index, hot-reloaded by
 // mtime) holds { defaultPacks, categoryLimit, onlySupported }; old files may
 // still carry the deprecated "gating" flag — it is ignored (the deserializer
-// drops unknown members). Gating is now implicit AUTO-GATING: a NON-EMPTY
-// allowed set (defaults ∪ per-player grants) enforces filtering, an empty set
-// serves everything — "configured packs = enforced filtering". With packs
-// configured the gate is STRICT for pieces: only pieces carrying an allowed
-// theme tag serve (see CatalogController.LiveOfferItemsFor), and the
-// classic-skin packs keep following the allowed set by their pack uuid.
+// drops unknown members). Gating is implicit AUTO-GATING from the allowed set
+// (defaults ∪ per-player grants): an EMPTY set gates the whole live marketplace
+// off — zero live pieces serve, themed or tagless (players keep the staticdata
+// defaults: the built-in Default Skins pack, Bold Rabbit Feet, the customs,
+// layout/StoreConfig); a NON-EMPTY set enforces filtering — only pieces
+// carrying an allowed theme tag serve while the tagless base pieces keep
+// serving (see CatalogController.LiveOfferItemsFor), and the classic-skin
+// packs follow the allowed set by their pack uuid.
 //
 // Per-player grants live in earth.db (objects type "personaPacks") and are
 // cached here briefly so panel edits apply within ~30s without hitting SQLite
@@ -85,9 +87,11 @@ public static class PersonaPackGate
 
     /// <summary>
     /// The auto-gating state (no DB access) — for pages that just show the
-    /// state: gating is active for a player when at least one pack is
-    /// configured for them (defaults ∪ grants); without a player, the
-    /// configured defaults.
+    /// state: gating filters the live marketplace for a player when at least
+    /// one pack is configured for them (defaults ∪ grants); with no defaults
+    /// configured (Gating false) the live marketplace is gated off entirely
+    /// unless the player has grants — without a player, the configured
+    /// defaults.
     /// </summary>
     public static (bool Gating, int CategoryLimit) ConfigSnapshot
     {
@@ -112,7 +116,7 @@ public static class PersonaPackGate
                     _onlySupported = true;
                     _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
                     _maxAnimationFormatVersion = DefaultMaxAnimationFormatVersion;
-                    Log.Information("Persona pack config gone from {Path} — no packs configured, everything serves", ConfigPath);
+                    Log.Information("Persona pack config gone from {Path} — no packs configured, the live marketplace serves nothing until packs are selected", ConfigPath);
                 }
 
                 return;
@@ -176,17 +180,18 @@ public static class PersonaPackGate
     }
 
     /// <summary>
-    /// The thematic packs this player may see (theme tags for persona pieces,
-    /// pack uuids for classic-skin packs), or null when nothing is configured
-    /// for the caller (defaults ∪ grants empty) — serve everything, the
-    /// pre-gating behavior. Any non-empty set enforces filtering regardless of
-    /// the legacy "gating" flag packs.json may still carry (AUTO-GATING:
-    /// configured packs = enforced filtering). Entries predating the theme
-    /// model (piece type names or orphaned skin-pack uuids) simply never match
-    /// a theme tag and are ignored. Staticdata offers (the committed legacy
-    /// catalog and the Default Skins pack) are never gated.
+    /// The allowed pack uuid set for the caller (theme tags for persona
+    /// pieces, pack uuids for classic-skin packs): defaults ∪ per-player
+    /// grants. An EMPTY set gates the whole live marketplace off — zero live
+    /// pieces serve, themed or tagless; staticdata offers (the committed
+    /// legacy catalog and the Default Skins pack) and the custom cosmetics
+    /// are never gated. A non-empty set enforces filtering: themed pieces
+    /// need one of the allowed theme tags while the tagless base pieces keep
+    /// serving, and the classic-skin packs follow the set by their pack
+    /// uuid. Entries predating the theme model (piece type names or orphaned
+    /// skin-pack uuids) simply never match a theme tag and are ignored.
     /// </summary>
-    public static async Task<IReadOnlySet<string>?> AllowedPackUuidsAsync(string? playerId, CancellationToken cancellationToken)
+    public static async Task<IReadOnlySet<string>> AllowedPackUuidsAsync(string? playerId, CancellationToken cancellationToken)
     {
         LoadConfig();
 
@@ -199,7 +204,7 @@ public static class PersonaPackGate
             }
         }
 
-        return allowed.Count == 0 ? null : allowed;
+        return allowed;
     }
 
     private static async Task<IReadOnlyCollection<string>> PlayerGrantsAsync(string playerId, CancellationToken cancellationToken)

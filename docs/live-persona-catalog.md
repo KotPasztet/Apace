@@ -154,18 +154,30 @@ values, ~55% of pieces carry one). So:
 
 - one pack = one theme tag; enabling it serves every piece carrying the tag,
   across all piece categories (a pack spans head + tops + footwear + …);
-- pieces **without** a theme tag are the base content and always serve;
+- pieces **without** a theme tag are the base content and keep serving while
+  any pack is configured;
+- with **nothing configured** (defaults ∪ per-player grants empty) the whole
+  live marketplace is gated off — **0 live pieces serve**, themed or tagless,
+  live classic skin packs included. What still shows is the always-served
+  staticdata (the built-in "Minecraft Default Skins" pack, the client's
+  vanilla Standard pack scaffolding, Bold Rabbit Feet, the Apace capes,
+  layout/StoreConfig) and the custom cosmetics (non-Minecraft creators are
+  exempt from the gate);
 - type-ish tags (the piece's own category restated as a tag, e.g. `tag.hair` on
   hair pieces) never form packs — excluded by the same piece-type-suffix rule
   on both sides (panel `PersonaPackIndex.ReadThemePacks`, ApiServer
   `LivePersonaCatalog.GetOffer` — separate processes share the volume, not the
   code);
 - the classic-skin packs keep following the same allowed set by their pack
-  uuid (legacy saved selections keep working; entries that never match — e.g.
-  piece-type names from the first gating iteration — are ignored);
+  uuid (with packs configured; legacy saved selections keep working; entries
+  that never match — e.g. piece-type names from the first gating iteration —
+  are ignored);
 - gating config (`packs.json`, defaults ∪ per-player grants, ~30 s grant
   cache) and the staticdata exemption are unchanged; `Catalog/GetPublishedItem`
-  is not re-filtered (the client only asks for ids it saw in a gated search).
+  re-checks the same gate at equip resolve (a themed live Minecraft piece
+  outside the allowed set — and, with nothing configured, every live Minecraft
+  piece — 404s like an unknown id, while non-Minecraft creators and staticdata
+  resolve; a live skin pack only resolves when the gated search served it).
 
 ## Rate limits (polite by design)
 

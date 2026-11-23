@@ -11,7 +11,9 @@ namespace Apace.LauncherUI.Services;
 // itself (probe: scripts/probe_persona_tags.py, 1200 entries, zero multi-entry /
 // non-piece identities) — so the marketplace's own thematic grouping of
 // accessories is its tag.* metadata, and those tags are the thematic packs;
-// pieces without a theme tag are the base content that always serves. The
+// pieces without a theme tag are the base content — they serve while any pack
+// is configured (with nothing selected the whole live marketplace is gated
+// off; see PersonaPackGate.AllowedPackUuidsAsync on the ApiServer). The
 // MarketplaceDurableCatalog bundles (the index's skinPacks array, written by
 // the sync) are the classic skin packs: they gate by their pack uuid
 // (PersonaPackGate.AllowedPackUuidsAsync + CatalogController.LiveSkinPackItemsFor
@@ -88,7 +90,7 @@ public static class PersonaPackIndex
                 List<string> themes = [.. (item.Tags ?? []).Where(IsThemeTag).Distinct(StringComparer.OrdinalIgnoreCase)];
                 if (themes.Count == 0)
                 {
-                    continue; // base pieces without a theme tag always serve
+                    continue; // base pieces without a theme tag form no selectable pack (they serve while any pack is configured)
                 }
 
                 foreach (string tag in themes)

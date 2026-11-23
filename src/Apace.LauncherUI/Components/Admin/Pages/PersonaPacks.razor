@@ -61,7 +61,7 @@
         }
         <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
                     SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
-                    EmptyHint="Nothing selected — with no packs configured the whole marketplace serves (up to the limit above)." />
+                    EmptyHint="Nothing selected — players get 0 marketplace cosmetics (the built-in Steve/Alex default skins still serve)." />
 
         <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
             @if (_savingDefaults)
@@ -273,9 +273,11 @@
 
 @code {
     // Written to <mojang-assets>/persona-catalog/packs.json (hot-reloaded by the
-    // ApiServer). No `gating` flag anymore: the server auto-gates per player as
-    // soon as the allowed pack set (default packs ∪ player grants) is non-empty
-    // and serves everything when that set is empty.
+    // ApiServer). No `gating` flag anymore: the server gates per player from the
+    // allowed pack set (default packs ∪ player grants) — an empty set gates the
+    // whole live marketplace off (only staticdata and the custom cosmetics
+    // serve), a non-empty set enforces tag filtering with the tagless base
+    // pieces still serving.
     private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit);
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
@@ -429,14 +431,19 @@
 
             // the ApiServer hot-reloads packs.json from the volume (next to the
             // catalog index) — same pattern as the index itself. No `gating`
-            // key: the server gates per player as soon as the allowed pack set
-            // (defaults ∪ grants) is non-empty.
+            // key: the server gates per player from the allowed pack set
+            // (defaults ∪ grants) — nothing selected gates the whole live
+            // marketplace off (the built-in default skins still serve), a
+            // non-empty set enforces tag filtering.
             string path = Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "packs.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit), _jsonOptions));
             _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
                 + (_onlySupported ? "only client-supported cosmetics." : "client-compatibility filter off.")
-                + " The ApiServer picks this up immediately.";
+                + " The ApiServer picks this up immediately."
+                + (_defaults.Count == 0
+                    ? " No packs selected — players get 0 marketplace cosmetics; the built-in default skins still serve."
+                    : "");
         }
         catch (Exception ex)
         {

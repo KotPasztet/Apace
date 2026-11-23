@@ -246,8 +246,10 @@ public static class LivePersonaCatalog
     /// carries exactly one packIdentity, the piece itself (probe:
     /// scripts/probe_persona_tags.py) — so the pack gate runs on the pieces'
     /// marketplace theme tags (tag.*): a pack spans every piece category the tag
-    /// appears on, pieces without a theme tag are the base content that always
-    /// serves, and the filtering itself happens per request in the controllers.
+    /// appears on, pieces without a theme tag are the base content that keeps
+    /// serving while any pack is configured (with nothing selected the whole
+    /// live marketplace is gated off — see PersonaPackGate), and the filtering
+    /// itself happens per request in the controllers.
     /// </summary>
     public static LiveOffer GetOffer()
     {

@@ -85,9 +85,10 @@
     private string LastSyncText => LivePersonaCatalogSync.GetLastVolumeSync()?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "never";
 
     // Matches the ApiServer's auto-gating (PersonaPackGate.AllowedPackUuidsAsync):
-    // the allowed set is the panel defaults ∪ this player's grants, and a
-    // non-empty set enforces filtering — an empty one serves everything. The
-    // legacy "pack gating" toggle is gone; no flag is read anymore.
+    // the allowed set is the panel defaults ∪ this player's grants — an empty
+    // set gates the whole live marketplace off (0 marketplace cosmetics, the
+    // built-in default skins still serve), a non-empty set enforces filtering.
+    // The legacy "pack gating" toggle is gone; no flag is read anymore.
     private string EffectiveSummary
     {
         get
@@ -97,10 +98,11 @@
             int granted = _grants.Count(pack => !defaults.Contains(pack, StringComparer.OrdinalIgnoreCase));
             if (defaults.Count == 0 && _grants.Count == 0)
             {
-                return $"Nothing configured — auto-gating serves this player the whole live marketplace (configured packs = enforced filtering: "
-                    + "with at least one pack selected below, the server serves only those packs). The category-group limit still applies: "
-                    + $"up to {limit} piece(s) per dressing-room category group (e.g. hoodies and outerwear count together) — "
-                    + "the server enforces it again when profiles are saved.";
+                return $"Nothing configured — this player gets 0 marketplace cosmetics; the built-in default skins still serve. "
+                    + "Grant packs below to unlock more: with at least one pack selected, the server serves those packs "
+                    + "(thematic packs by their marketplace tag, classic skin packs by their pack uuid) plus the tagless base pieces. "
+                    + $"The category-group limit still applies: up to {limit} piece(s) per dressing-room category group "
+                    + "(e.g. hoodies and outerwear count together) — the server enforces it again when profiles are saved.";
             }
 
             return $"Auto-gating: this player sees the panel defaults ({defaults.Count} pack(s)) plus {granted} extra pack(s) — thematic packs "

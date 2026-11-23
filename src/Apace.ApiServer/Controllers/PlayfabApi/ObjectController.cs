@@ -148,9 +148,10 @@ internal sealed class ObjectController : ApaceControllerBase
         try
         {
             PersonaProfiles profiles = await GetStoredProfilesAsync(playerId);
-            // the pack-gate allowed set (defaults ∪ grants; null = nothing
-            // configured, no gating) — read once per request, cached ~30s
-            IReadOnlySet<string>? allowedPacks = await PersonaPackGate.AllowedPackUuidsAsync(playerId, Request.HttpContext.RequestAborted);
+            // the pack-gate allowed set (defaults ∪ grants; empty = nothing
+            // selected, the whole live marketplace gated off) — read once per
+            // request, cached ~30s
+            IReadOnlySet<string> allowedPacks = await PersonaPackGate.AllowedPackUuidsAsync(playerId, Request.HttpContext.RequestAborted);
 
             foreach (SetObjectsRequest.SetObjectR obj in request.Objects)
             {
@@ -196,8 +197,10 @@ internal sealed class ObjectController : ApaceControllerBase
     //    and always serve;
     //  - entries resolving to a themed live Minecraft piece none of whose packs
     //    are in the caller's allowed set are DROPPED while pack gating is active
-    //    (defaults ∪ grants — the same rule the search offer enforces; base
-    //    pieces without theme tags, non-Minecraft creators and staticdata serve);
+    //    (defaults ∪ grants — the same rule the search offer enforces); with an
+    //    EMPTY allowed set every live Minecraft piece is dropped, themed or
+    //    tagless (tagless base pieces only serve when at least one pack is
+    //    configured); non-Minecraft creators and staticdata always serve;
     //  - a piece occupies at most one slot per (category group, side slot): the
     //    first entry per group+slot in array order wins — left/right variants
     //    are separate slots (one piece can be worn on both hands), so adding a
@@ -211,7 +214,7 @@ internal sealed class ObjectController : ApaceControllerBase
     // When nothing was dropped the original DataObject is stored unchanged (the
     // common case keeps its exact stored shape); other object names pass
     // through untouched. Rate limiting happens in the caller.
-    private static JsonElement SanitizePersonaObjects(string playerId, string objectName, JsonElement dataObject, IReadOnlySet<string>? allowedPacks)
+    private static JsonElement SanitizePersonaObjects(string playerId, string objectName, JsonElement dataObject, IReadOnlySet<string> allowedPacks)
     {
         try
         {
@@ -250,11 +253,11 @@ internal sealed class ObjectController : ApaceControllerBase
                     continue;
                 }
 
-                if (allowedPacks is not null
-                    && piece.LiveItemId is not null
+                if (piece.LiveItemId is not null
                     && piece.CreatorName is "Minecraft"
-                    && piece.ThemeTags.Length > 0
-                    && !piece.ThemeTags.Any(allowedPacks.Contains))
+                    && (piece.ThemeTags.Length > 0
+                        ? !piece.ThemeTags.Any(allowedPacks.Contains)
+                        : allowedPacks.Count == 0))
                 {
                     dropped.Add(i);
                     packBlocked++;

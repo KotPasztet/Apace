@@ -78,21 +78,25 @@ public sealed class Settings
 
     /// <summary>
     /// Deprecated legacy flag — do not use. Pack filtering is now AUTO-GATING:
-    /// packs.json carries no "gating" key and the ApiServer enforces filtering
-    /// whenever the allowed pack set (PersonaDefaultPacks ∪ per-player grants)
-    /// is non-empty, serving everything when that set is empty. Kept only so
-    /// older config.json files still load and re-save without surprises; the
-    /// panel no longer writes a value here (the Marketplace Management page
-    /// explains the auto-gating rule in prose instead of a checkbox).
+    /// packs.json carries no "gating" key and the ApiServer gates from the
+    /// allowed pack set (PersonaDefaultPacks ∪ per-player grants) — an empty
+    /// set gates the whole live marketplace off (only staticdata and the
+    /// custom cosmetics serve), a non-empty set enforces tag filtering. Kept
+    /// only so older config.json files still load and re-save without
+    /// surprises; the panel no longer writes a value here (the Marketplace
+    /// Management page explains the auto-gating rule in prose instead of a
+    /// checkbox).
     /// </summary>
     public bool? PersonaPackGating { get; set; }
 
     /// <summary>
     /// Packs enabled for every player (marketplace theme tags for persona
     /// pieces, pack uuids for classic skin packs — both selectable in the
-    /// Marketplace Management pack picker). Auto-gating: a non-empty set —
-    /// together with the per-player grants — turns marketplace filtering on;
-    /// an empty set serves the whole marketplace.
+    /// Marketplace Management pack picker). Auto-gating: an empty set — even
+    /// with per-player grants absent too — gates the whole live marketplace
+    /// off (0 marketplace cosmetics; the built-in default skins still serve);
+    /// a non-empty set, together with the per-player grants, enforces
+    /// marketplace filtering.
     /// </summary>
     public List<string>? PersonaDefaultPacks { get; set; }
 
