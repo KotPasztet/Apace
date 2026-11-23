@@ -12,7 +12,7 @@
 Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
 
 > [!NOTE]
-> **Actively developed.** The server is functional — maps, buildplates, **shared buildplate multiplayer**, challenges, daily rewards, adventures, crafting, and more are working.
+> **Actively developed.** The server is functional — maps, buildplates, **shared buildplate multiplayer**, challenges, daily rewards, adventures, crafting, the dressing room with marketplace pieces, and more are working.
 
 > [!TIP]
 > ### ✨ Unreleased on `dev`: Shared Buildplate Multiplayer
@@ -26,17 +26,14 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 > See the *Unreleased* section in [CHANGELOG.md](CHANGELOG.md) for details and known limitations.
 
 > [!TIP]
-> ### ✨ What's new in v0.1.3
+> ### ✨ New on `dev`: iOS sign-in & marketplace management
 >
-> - **Apace** — the project is now called Apace everywhere (namespaces, panel, branding), with upstream [Solace](https://github.com/Earth-Restored/Solace) attribution preserved.
-> - **No more forced logouts** — expired login tokens are handled with a proper reauthenticate flow, login secrets are randomized per install, and `api_config.json` survives container updates.
-> - **One-click self-update** from the panel (Docker and bare metal), with **versioned release images** (`ghcr.io/kotpasztet/apace:vX.Y.Z`) and a self-updating `update.sh` with backup and rollback.
-> - **File browser in the panel** — browse the Java server, server data and panel files, and safely edit `config.json`, `server.properties` and more, with automatic `.bak` backups.
-> - **Steadier buildplates** — ObjectStore concurrency raised to 256, cached map tiles with `304` responses, user `server.properties` preserved, and persistent Fabric data kept on the volume.
-> - **Runs on your phone** — Termux quick install without Docker, plus a **one-command migration from Solace** that carries accounts, progress and buildplates over.
-> - **Solace v0.0.7 features ported** — daily sign-in challenges, buildplate export, linked accounts, log level filters, configurable bridge port and local-login-only.
+> - **iOS sign-in is served** — the XAL sisu flow (device/title/user/XSTS auth, sisu authenticate/authorize/client/logout) is implemented server-side. The built-in patcher writes the IPA intact (fixes the corrupt-archive bug), redirects the iOS PlayFab title API and embeds the XAL keychain entitlements — the output IPA still needs signing.
+> - **Marketplace management** — the panel picks which bundles players see (panel defaults + per-player grants). Nothing selected = **zero** accessories beyond default skins, capes and custom cosmetics — enforced on the catalog, published items, saved profiles and the piece binaries.
+> - **The frozen 2021 staticdata catalog no longer leaks** when the live index is missing, and probe-dead marketplace pieces leave the searches immediately instead of rendering as broken tiles.
+> - **Per-search diagnostics** — one Debug line per catalog search shows the allowed set and served/dropped counts (`Live offer: caller=… defaults=N grants=M passed=… dropped=…`).
 >
-> Full list: [CHANGELOG.md](CHANGELOG.md). The v0.1 **persistent-server architecture** (one Fabric server hosting every buildplate as an on-demand dimension, single shared Bedrock port `19132/udp`, client patcher built into the panel) is unchanged — see the table below and the v0.1.0 notes in [CHANGELOG.md](CHANGELOG.md).
+> Full list: [CHANGELOG.md](CHANGELOG.md) · dressing room details: [docs/live-persona-catalog.md](docs/live-persona-catalog.md) · panel guide: [docs/marketplace-management.md](docs/marketplace-management.md).
 
 ## Disclaimer
 
@@ -50,41 +47,47 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 
 ## Features
 
-| Feature       | Status             | Notes                                                                                    |
-|---------------|--------------------|------------------------------------------------------------------------------------------|
-| Map           | :white_check_mark: |                                                                                          |
-| Profile       | :construction:     | Loads, can view activity log/settings, cannot change skin, statistics not implemented    |
-| Journal       | :white_check_mark: |                                                                                          |
-| Activity Log  | :white_check_mark: |                                                                                          |
-| Inventory     | :white_check_mark: |                                                                                          |
-| Crafting      | :white_check_mark: |                                                                                          |
-| Smelting      | :white_check_mark: |                                                                                          |
-| Boosts        | :white_check_mark: |                                                                                          |
-| Boost Minis   | :white_check_mark: | NFC minifig activation with Mattel tag decoding                                          |
-| Tappables     | :white_check_mark: |                                                                                          |
-| Buildplates   | :white_check_mark: |                                                                                          |
+| Feature        | Status             | Notes                                                                                     |
+|----------------|--------------------|-------------------------------------------------------------------------------------------|
+| Map            | :white_check_mark: |                                                                                           |
+| Profile        | :construction:     | Activity log/settings load; statistics not implemented                                    |
+| Dressing Room  | :white_check_mark: | Pack-gated marketplace pieces, skin packs, custom cosmetics — [docs/marketplace-management.md](docs/marketplace-management.md) |
+| Journal        | :white_check_mark: |                                                                                           |
+| Activity Log   | :white_check_mark: |                                                                                           |
+| Inventory      | :white_check_mark: |                                                                                           |
+| Crafting       | :white_check_mark: |                                                                                           |
+| Smelting       | :white_check_mark: |                                                                                           |
+| Boosts         | :white_check_mark: |                                                                                           |
+| Boost Minis    | :white_check_mark: | NFC minifig activation with Mattel tag decoding                                           |
+| Tappables      | :white_check_mark: |                                                                                           |
+| Buildplates    | :white_check_mark: |                                                                                           |
 | Multiplayer    | :white_check_mark: | Shared buildplates via QR join codes (dev); AR nametags — see CHANGELOG known limitations |
-| Store         | :white_check_mark: | Tab titles do not load                                                                   |
-| Challenges    | :construction: | Daily challenge system (3 per player, deterministic rotation, progress tracking)         |
-| Seasons       | :white_check_mark: | Seasonal content support                                                                 |
-| Adventures    | :white_check_mark: | Join responses, port reuse, instance lifecycle                                           |
-| Daily Rewards | :white_check_mark: | Daily login rewards with streak tracking                                                 |
-| Tokens        | :white_check_mark: | Token claim/redeem system                                                                |
-| Tutorial      | :x:                |                                                                                          |
+| Store          | :white_check_mark: | Tab titles do not load                                                                    |
+| iOS Sign-in    | :construction:     | XAL sisu flow served, patcher fixes pushed — awaiting on-device confirmation              |
+| Challenges     | :construction:     | Daily challenge system (3 per player, deterministic rotation, progress tracking)          |
+| Seasons        | :white_check_mark: | Seasonal content support                                                                  |
+| Adventures     | :white_check_mark: | Join responses, port reuse, instance lifecycle                                            |
+| Daily Rewards  | :white_check_mark: | Daily login rewards with streak tracking                                                  |
+| Tokens         | :white_check_mark: | Token claim/redeem system                                                                 |
+| Tutorial       | :x:                |                                                                                           |
 
 :white_check_mark: - Complete
 :construction: - Under Development
 :x: - Not Working
 
+Remaining work lives in [TODO.md](TODO.md).
+
 ## Apace v0.1 vs Solace
 
-|                                       | Solace / previous architecture                  | Apace v0.1                                                          |
-|---------------------------------------|-------------------------------------------------|---------------------------------------------------------------------|
-| Buildplate instance creation          | Boots a whole new server (JVM pair) per buildplate | Dynamically registered dimension, created in **~1 s**               |
-| Buildplate load                       | Wait for a full server boot                     | **3471% faster** — wait time reduced by **97.2%**                    |
-| RAM                                   | **1.6 GB per buildplate** (a full JVM each)     | **~1.5 GB total + ~30 MB** per additional concurrent buildplate      |
-| 15 concurrent buildplates             | **24 GB**                                       | **~1.9 GB** (≈92% less)                                              |
-| Boot worldgen ("Preparing spawn area")| Minutes                                         | **Seconds** (air overworld, no Nether/End)                           |
+The v0.1 **persistent-server architecture**: one Fabric server hosts every buildplate as an on-demand dimension on a single shared Bedrock port, with the client patcher built into the panel.
+
+|                                        | Solace / previous architecture                     | Apace v0.1                                                       |
+|----------------------------------------|----------------------------------------------------|------------------------------------------------------------------|
+| Buildplate instance creation           | Boots a whole new server (JVM pair) per buildplate | Dynamically registered dimension, created in **~1 s**            |
+| Buildplate load                        | Wait for a full server boot                        | **3471% faster** — wait time reduced by **97.2%**                |
+| RAM                                    | **1.6 GB per buildplate** (a full JVM each)        | **~1.5 GB total + ~30 MB** per additional concurrent buildplate  |
+| 15 concurrent buildplates              | **24 GB**                                          | **~1.9 GB** (≈92% less)                                          |
+| Boot worldgen ("Preparing spawn area") | Minutes                                            | **Seconds** (air overworld, no Nether/End)                       |
 
 *Measured against v0.0.3 (the previous, Solace-derived architecture) — see [CHANGELOG.md](CHANGELOG.md).*
 
@@ -118,7 +121,6 @@ To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Window
   ```
 
   Windows (PowerShell): `irm https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1 | iex`.
-
   Flags, backup rotation and rollback details: [QUICKINSTALL.md → Updating](QUICKINSTALL.md#updating).
 * **Migrating from Solace** — one command detects your old Solace install, installs Apace if it is missing, stops both servers and carries your accounts (username + password), player progress, inventory and buildplates over; only active login sessions are lost. A dry-run plan is always shown first, and the Solace directory is never modified:
 
