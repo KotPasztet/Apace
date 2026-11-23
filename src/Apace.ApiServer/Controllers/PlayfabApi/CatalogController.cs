@@ -173,6 +173,62 @@ internal sealed class CatalogController : ApaceControllerBase
         return filtered;
     }
 
+    // Thematic skin packs (MarketplaceDurableCatalog_V1.2 bundles) mapped from the
+    // index, cached per index stamp like the persona pieces. The packIdentity uuid
+    // stays aligned with the item list so the gate filter is a plain array lookup.
+    private static long? _liveSkinPackStamp;
+    private static Item[]? _liveSkinPackItems;
+    private static Dictionary<Guid, Item>? _liveSkinPackById;
+    private static string[]? _liveSkinPackPackUuids;
+
+    private static IReadOnlyList<Item> LiveSkinPackItems
+    {
+        get
+        {
+            long stamp = LivePersonaCatalog.IndexStamp;
+            if (_liveSkinPackStamp != stamp)
+            {
+                var source = LivePersonaCatalog.GetSkinPacks();
+                _liveSkinPackItems = source.Select(LivePersonaCatalog.BuildSkinPackOfferItem).Select(CIItemToItem).ToArray();
+                _liveSkinPackPackUuids = [.. source.Select(pack => pack.PackUuid)];
+                _liveSkinPackById = _liveSkinPackItems.ToDictionary(item => item.Id);
+                _liveSkinPackStamp = stamp;
+                Log.Information("Live skin pack offer rebuilt: {Count} pack(s) (index stamp {Stamp})", _liveSkinPackItems.Length, stamp);
+            }
+
+            return _liveSkinPackItems ?? [];
+        }
+    }
+
+    // The live skin packs one player may see, filtered through the same gate as
+    // the persona pieces (the allowed set mixes piece types and pack uuids).
+    private static async Task<IReadOnlyList<Item>> LiveSkinPackItemsFor(string? playerId, CancellationToken cancellationToken)
+    {
+        if (!LivePersonaCatalog.IsAvailable)
+        {
+            return [];
+        }
+
+        IReadOnlyList<Item> all = LiveSkinPackItems;
+        IReadOnlySet<string>? allowed = await PersonaPackGate.AllowedPieceTypesAsync(playerId, cancellationToken);
+        string[]? uuids = _liveSkinPackPackUuids;
+        if (allowed is null || uuids is null || uuids.Length != all.Count)
+        {
+            return all;
+        }
+
+        var filtered = new List<Item>(all.Count);
+        for (int i = 0; i < all.Count; i++)
+        {
+            if (allowed.Contains(uuids[i]))
+            {
+                filtered.Add(all[i]);
+            }
+        }
+
+        return filtered;
+    }
+
     private sealed record CatalogSearchRequest(
         bool Count,
         string Filter,
@@ -210,10 +266,14 @@ internal sealed class CatalogController : ApaceControllerBase
                 // base offer (staticdata) plus, when the live persona marketplace is on,
                 // the unlock-all live items — one OData filter over both. The live half
                 // goes through the skin pack gate: the panel decides which categories
-                // (piece types) are on by default and per player — streaming the whole
-                // multi-thousand-piece marketplace at once made the dressing room choke.
+                // (piece types) and which thematic skin packs are on by default and per
+                // player — streaming the whole multi-thousand-piece marketplace at once
+                // made the dressing room choke.
                 string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
-                IEnumerable<Item> source = BaseOfferItems.Concat(await LiveOfferItemsFor(callerId, cancellationToken));
+                IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
+                IEnumerable<Item> source = BaseOfferItems
+                    .Concat(await LiveOfferItemsFor(callerId, cancellationToken))
+                    .Concat(livePacks);
 
             var oDataQuery = source.AsQueryable().OData(settings =>
                 {
@@ -241,7 +301,7 @@ internal sealed class CatalogController : ApaceControllerBase
 
             items = query
                 .ToArray()
-                .Select(item => ToResponse(item, Request));
+                .Select(item => WithSkinPackRow(ToResponse(item, Request), livePacks));
         }
         catch (Exception ex)
         {
@@ -326,8 +386,14 @@ internal sealed class CatalogController : ApaceControllerBase
         }
 
         // live persona offer resolves first (the legacy 1P persona items are replaced
-        // by their live twins when the live marketplace is on); staticdata stays for
-        // everything else (layout, store config, skin packs, buildplates, Apace pieces)
+        // by their live twins when the live marketplace is on); live skin packs come
+        // next (gated — a pack outside defaults ∪ grants resolves like any unknown
+        // id); staticdata stays for everything else (layout, store config, skin
+        // packs, buildplates, Apace pieces)
+        string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
+        IReadOnlyList<Item> livePacks = await LiveSkinPackItemsFor(callerId, cancellationToken);
+        HashSet<Guid> servedPackIds = [.. livePacks.Select(pack => pack.Id)];
+
         if (LivePersonaCatalog.IsAvailable && _liveOfferById is null)
         {
             _ = LiveOfferItems; // force the lazy build so the id map is populated
@@ -344,6 +410,17 @@ internal sealed class CatalogController : ApaceControllerBase
             ), jsonOptions), "application/json");
         }
 
+        if (LivePersonaCatalog.IsAvailable && _liveSkinPackById is not null && servedPackIds.Contains(itemId) && _liveSkinPackById.TryGetValue(itemId, out var livePack))
+        {
+            return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
+                200,
+                "OK",
+                new GetPublishedItemResponse(
+                    WithSkinPackRow(ToResponse(livePack, Request), livePacks)
+                )
+            ), jsonOptions), "application/json");
+        }
+
         if (!StaticData.Playfab.Items.TryGetValue(itemId, out var cItem))
         {
             // TODO: fake not found
@@ -356,7 +433,7 @@ internal sealed class CatalogController : ApaceControllerBase
             200,
             "OK",
             new GetPublishedItemResponse(
-                ToResponse(item, Request)
+                WithSkinPackRow(ToResponse(item, Request), livePacks)
             )
         ), jsonOptions), "application/json");
     }
@@ -417,6 +494,52 @@ internal sealed class CatalogController : ApaceControllerBase
         }
 
         return JsonSerializer.SerializeToElement(node, jsonOptions);
+    }
+
+    // The response-time half of the featured-query merge: the staticdata ids were
+    // already appended when the cache was mapped (CIItemToItem); this pass appends
+    // the LIVE skin pack ids the current caller may see — all of them with gating
+    // off, defaults ∪ grants with gating on. Runs per response, never per cache
+    // build, because the list is per-player.
+    private static Item WithSkinPackRow(Item item, IReadOnlyList<Item> livePacks)
+    {
+        if (livePacks.Count == 0
+            || item.ExtensionData is not { } extension
+            || !extension.TryGetValue("DisplayProperties", out var display)
+            || display.ValueKind != JsonValueKind.Object)
+        {
+            return item;
+        }
+
+        JsonNode? node;
+        try
+        {
+            node = JsonNode.Parse(display.GetRawText());
+        }
+        catch (JsonException)
+        {
+            return item;
+        }
+
+        if (node?["dressingRoomLayout"]?["skinPackFeaturedQuery"]?["productIds"] is not JsonArray productIds)
+        {
+            return item;
+        }
+
+        var present = new HashSet<string>(
+            productIds.Where(entry => entry is not null).Select(entry => entry!.GetValue<string>()),
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var pack in livePacks)
+        {
+            string packId = pack.Id.ToString();
+            if (present.Add(packId))
+            {
+                productIds.Add(packId);
+            }
+        }
+
+        extension["DisplayProperties"] = JsonSerializer.SerializeToElement(node, jsonOptions);
+        return item;
     }
 
     private static Item CIItemToItem(CItem item)

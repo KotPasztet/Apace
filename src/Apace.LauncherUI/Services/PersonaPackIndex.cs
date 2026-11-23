@@ -9,8 +9,11 @@ public static class PersonaPackIndex
 {
     public sealed record PackCategory(string PieceType, int Count);
 
-    private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items);
+    public sealed record SkinPackRow(string ItemId, string Title, string PackUuid, int SkinCount);
+
+    private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items, List<IndexSkinPack>? SkinPacks);
     private sealed record IndexItem(string Id, string Title, string PieceType, string? ThumbnailUrl, bool IsEmote);
+    private sealed record IndexSkinPack(string Id, string Title, string PackUuid, int SkinCount);
 
     public static readonly JsonSerializerOptions JsonWebOptions = new(JsonSerializerDefaults.Web);
 
@@ -48,6 +51,40 @@ public static class PersonaPackIndex
         catch (Exception ex)
         {
             return ([], $"Reading the persona catalog index failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// The thematic skin packs in the synced index (MarketplaceDurableCatalog_V1.2
+    /// skinpack bundles — the dressing room's "Classic Skins" row), title-ordered.
+    /// </summary>
+    public static (List<SkinPackRow> Packs, string? Summary) ReadSkinPacks()
+    {
+        try
+        {
+            string path = LivePersonaCatalogSync.IndexPath;
+            if (!File.Exists(path))
+            {
+                return ([], null);
+            }
+
+            var index = JsonSerializer.Deserialize<IndexFile>(File.ReadAllText(path), JsonWebOptions);
+            if (index?.SkinPacks is not { Count: > 0 })
+            {
+                return ([], "No thematic skin packs in the synced index yet — run a sync first "
+                    + "(System Configuration → \"Sync now\", or wait for the scheduled sync).");
+            }
+
+            var packs = index.SkinPacks
+                .Select(row => new SkinPackRow(row.Id, row.Title, row.PackUuid, row.SkinCount))
+                .OrderBy(row => row.Title, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return (packs, $"{packs.Count} thematic skin pack(s) indexed, {packs.Sum(row => row.SkinCount)} skin(s) total — "
+                + "the offers behind the dressing room's \"Classic Skins\" row.");
+        }
+        catch (Exception ex)
+        {
+            return ([], $"Reading the skin packs from the index failed: {ex.Message}");
         }
     }
 }

@@ -137,7 +137,23 @@ public static class LivePersonaCatalog
 
     public sealed record LiveItemReference(Guid Id, int Amount);
 
-    public sealed record LiveIndex(DateTimeOffset? SyncedAt, int RawItemCount, int EmoteCount, List<LiveIndexItem> Items);
+    // One thematic skin pack (MarketplaceDurableCatalog_V1.2 bundle) — mirrors
+    // LivePersonaCatalogSync.SyncSkinPack (separate processes share the volume).
+    public sealed record LiveSkinPack(
+        string Id,
+        string Title,
+        string PackUuid,
+        string PackVersion,
+        string? CreatorName,
+        int SkinCount,
+        string? ThumbnailId,
+        string? ThumbnailUrl,
+        List<string> Tags,
+        List<LiveItemReference> ItemReferences,
+        DateTime CreationDate,
+        DateTime LastModifiedDate);
+
+    public sealed record LiveIndex(DateTimeOffset? SyncedAt, int RawItemCount, int EmoteCount, List<LiveIndexItem> Items, List<LiveSkinPack> SkinPacks);
 
     private static LiveIndex? _index;
 
@@ -160,7 +176,8 @@ public static class LivePersonaCatalog
                         var loaded = JsonSerializer.Deserialize<LiveIndex>(File.ReadAllText(IndexPath), JsonOptions);
                         if (loaded?.Items is { Count: > 0 })
                         {
-                            _index = loaded;
+                            // indexes written before the skin pack walk carry no skinPacks array
+                            _index = loaded with { SkinPacks = loaded.SkinPacks ?? [] };
                             IndexStamp = stamp;
                             Log.Information(
                                 "Live persona catalog index loaded from {Path} — {Unique} unique piece(s) from {Raw} raw item(s), emotes: {Emotes}, synced {Synced}",
@@ -287,6 +304,71 @@ public static class LivePersonaCatalog
                 ),
             ],
             entry.ItemReferences.Select(reference => new CItem.ItemReference(reference.Id, reference.Amount)).ToList(),
+            new Dictionary<string, string>(),
+            new Dictionary<string, string>()
+        );
+    }
+
+    /// <summary>The indexed thematic skin packs (MarketplaceDurableCatalog_V1.2 bundles).</summary>
+    public static IReadOnlyList<LiveSkinPack> GetSkinPacks() => Index?.SkinPacks ?? [];
+
+    /// <summary>
+    /// The offer item for one thematic skin pack: a ClientConfig bundle entry the
+    /// client parses itself (same shape as the committed "Standard" pack) —
+    /// unlock-all pricing, tags kept verbatim (store searches filter on them).
+    /// The client resolves the pack files from its skin_packs repository via the
+    /// packIdentity uuid, so the offer carries no Contents entries.
+    /// </summary>
+    public static CItem BuildSkinPackOfferItem(LiveSkinPack pack)
+    {
+        var tags = pack.Tags.Where(tag => !LockTags.Contains(tag, StringComparer.OrdinalIgnoreCase)).ToList();
+        // the store and the featured-row queries filter on these two
+        if (!tags.Contains("skinpack", StringComparer.OrdinalIgnoreCase))
+        {
+            tags.Add("skinpack");
+        }
+
+        if (!tags.Contains("has_skinpack", StringComparer.OrdinalIgnoreCase))
+        {
+            tags.Add("has_skinpack");
+        }
+
+        Guid id = Guid.Parse(pack.Id);
+        var displayProperties = JsonSerializer.SerializeToElement(new
+        {
+            creatorName = pack.CreatorName ?? "Minecraft",
+            offerId = pack.Id,
+            price = 0,
+            purchasable = true,
+            packIdentity = new[] { new { type = "skinpack", uuid = pack.PackUuid, version = pack.PackVersion } },
+            skinPack = new { count = pack.SkinCount },
+        });
+
+        return new CItem(
+            true, // Purchasable — unlock-all: every offer is claimable
+            new CItem.ClientConfigData(
+                "MarketplaceDurableCatalog_V1.2",
+                "bundle",
+                "1.0.0",
+                "65535.65535.65535",
+                false, // IsStackable — like the committed skin pack offers
+                0, // Price — 0 = free
+                displayProperties
+            ),
+            pack.Title,
+            "§",
+            pack.ThumbnailId,
+            pack.CreationDate,
+            pack.LastModifiedDate,
+            pack.CreationDate,
+            id,
+            id,
+            "B63A0803D3653643",
+            "301F442C3B63DC20",
+            tags,
+            new Dictionary<string, CItem.KeywordValues>(),
+            [],
+            pack.ItemReferences.Select(reference => new CItem.ItemReference(reference.Id, reference.Amount)).ToList(),
             new Dictionary<string, string>(),
             new Dictionary<string, string>()
         );

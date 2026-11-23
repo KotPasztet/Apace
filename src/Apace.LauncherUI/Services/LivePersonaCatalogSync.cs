@@ -69,7 +69,24 @@ public static class LivePersonaCatalogSync
         DateTime? StartDate,
         bool IsEmote);
 
-    public sealed record SyncIndex(DateTimeOffset? SyncedAt, int RawItemCount, int EmoteCount, List<SyncIndexItem> Items);
+    public sealed record SyncIndex(DateTimeOffset? SyncedAt, int RawItemCount, int EmoteCount, List<SyncIndexItem> Items, List<SyncSkinPack> SkinPacks);
+
+    // One thematic skin pack (MarketplaceDurableCatalog_V1.2 bundle) — the offers
+    // behind the dressing room's "Classic Skins" row, which the client builds
+    // from the layout manifest's skinPackFeaturedQuery.productIds.
+    public sealed record SyncSkinPack(
+        string Id,
+        string Title,
+        string PackUuid,
+        string PackVersion,
+        string? CreatorName,
+        int SkinCount,
+        string? ThumbnailId,
+        string? ThumbnailUrl,
+        List<string> Tags,
+        List<SyncItemReference> ItemReferences,
+        DateTime CreationDate,
+        DateTime LastModifiedDate);
 
     // ---------------------------------------------------------------------------
     // Status (panel UI)
@@ -331,7 +348,7 @@ public static class LivePersonaCatalogSync
                     // the walk as due until a completed run stamps the final index.
                     if (byPiece.Count > 0)
                     {
-                        SyncIndex checkpoint = new(null, RawItemsFetched, emotes, [.. byPiece.Values.OrderBy(item => item.PieceType).ThenBy(item => item.Title)]);
+                        SyncIndex checkpoint = new(null, RawItemsFetched, emotes, [.. byPiece.Values.OrderBy(item => item.PieceType).ThenBy(item => item.Title)], []);
                         try
                         {
                             await WriteIndexAsync(checkpoint, cancellationToken);
@@ -405,8 +422,48 @@ public static class LivePersonaCatalogSync
                 return false;
             }
 
-            // 3. write the deduped index (atomic replace; the ApiServer hot-reloads it)
-            var index = new SyncIndex(DateTimeOffset.UtcNow, RawItemsFetched, emotes, [.. byPiece.Values.OrderBy(item => item.PieceType).ThenBy(item => item.Title)]);
+            // 3. walk the thematic skin packs — MarketplaceDurableCatalog_V1.2 bundles
+            // ("Classic Skins" row of the dressing room). A small catalog (~1.4k
+            // entries), so a plain paged walk stays far below the PlayFab skip cap.
+            var skinPacksByUuid = new Dictionary<string, SyncSkinPack>();
+            const string packFilter = "(contentType eq 'MarketplaceDurableCatalog_V1.2')";
+            for (int skip = 0; skip < SkipCap; skip += PageSize)
+            {
+                JsonElement data = await PostCatalogSearchAsync(masterToken, packFilter, "creationDate asc", skip, PageSize, cancellationToken);
+                int onPage = 0;
+                if (data.TryGetProperty("Items", out var packs) && packs.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var raw in packs.EnumerateArray())
+                    {
+                        onPage++;
+                        if (BuildSkinPackRecord(raw) is not { } packRecord)
+                        {
+                            continue;
+                        }
+
+                        // newest republication wins, same rule as pieces
+                        if (skinPacksByUuid.TryGetValue(packRecord.PackUuid, out var existingPack) && existingPack.CreationDate >= packRecord.CreationDate)
+                        {
+                            continue;
+                        }
+
+                        skinPacksByUuid[packRecord.PackUuid] = packRecord;
+                    }
+                }
+
+                PagesFetched++;
+                if (onPage < PageSize)
+                {
+                    break;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(700), cancellationToken);
+            }
+
+            logger.Information("Live persona catalog sync: {Count} thematic skin pack(s) indexed", skinPacksByUuid.Count);
+
+            // 4. write the deduped index (atomic replace; the ApiServer hot-reloads it)
+            var index = new SyncIndex(DateTimeOffset.UtcNow, RawItemsFetched, emotes, [.. byPiece.Values.OrderBy(item => item.PieceType).ThenBy(item => item.Title)], [.. skinPacksByUuid.Values.OrderBy(item => item.Title)]);
             await WriteIndexAsync(index, cancellationToken);
 
             LastSyncFinished = DateTimeOffset.UtcNow;
@@ -728,5 +785,103 @@ public static class LivePersonaCatalogSync
         }
 
         return "§";
+    }
+
+    /// <summary>
+    /// Turns a raw MarketplaceDurableCatalog_V1.2 bundle into the skin pack index
+    /// record. Null for anything that is not a dressing-room skin pack: only
+    /// packIdentity type "skinpack" entries feed the Classic Skins row
+    /// (worldtemplate/resourcepack/behaviorpack bundles are store-only), and
+    /// hidden_offer entries never appeared in the store (same rule as pieces).
+    /// </summary>
+    private static SyncSkinPack? BuildSkinPackRecord(JsonElement raw)
+    {
+        string id = raw.GetProperty("Id").GetString() ?? "";
+        var display = raw.TryGetProperty("DisplayProperties", out var dp) && dp.ValueKind == JsonValueKind.Object ? dp : default;
+
+        JsonElement firstPack = display.ValueKind != JsonValueKind.Undefined
+            && display.TryGetProperty("packIdentity", out var packs) && packs.ValueKind == JsonValueKind.Array && packs.GetArrayLength() > 0
+                ? packs[0]
+                : default;
+        string? packType = firstPack.ValueKind != JsonValueKind.Undefined && firstPack.TryGetProperty("type", out var packTypeProp) ? packTypeProp.GetString() : null;
+        string? packUuid = firstPack.ValueKind != JsonValueKind.Undefined && firstPack.TryGetProperty("uuid", out var packUuidProp) ? packUuidProp.GetString() : null;
+        string packVersion = firstPack.ValueKind != JsonValueKind.Undefined && firstPack.TryGetProperty("version", out var packVersionProp) && packVersionProp.ValueKind == JsonValueKind.String
+            ? packVersionProp.GetString() ?? "1.0.0"
+            : "1.0.0";
+
+        if (packType != "skinpack" || packUuid is null || !Guid.TryParse(packUuid, out _))
+        {
+            return null;
+        }
+
+        var tags = new List<string>();
+        if (raw.TryGetProperty("Tags", out var tagsProp) && tagsProp.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var tag in tagsProp.EnumerateArray())
+            {
+                if (tag.ValueKind == JsonValueKind.String && tag.GetString() is { } tagValue)
+                {
+                    tags.Add(tagValue);
+                }
+            }
+        }
+
+        if (tags.Contains("hidden_offer", StringComparer.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        int skinCount = display.ValueKind != JsonValueKind.Undefined
+            && display.TryGetProperty("skinPack", out var skinPackProp) && skinPackProp.TryGetProperty("count", out var countProp) && countProp.ValueKind == JsonValueKind.Number
+                ? countProp.GetInt32()
+                : 0;
+
+        string? thumbnailId = null, thumbnailUrl = null;
+        if (raw.TryGetProperty("Images", out var images) && images.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var image in images.EnumerateArray())
+            {
+                string? imageType = image.TryGetProperty("Type", out var typeProp) ? typeProp.GetString() : null;
+                if (imageType == "Thumbnail" || thumbnailId is null)
+                {
+                    thumbnailId = image.TryGetProperty("Id", out var imageIdProp) ? imageIdProp.GetString() : thumbnailId;
+                    thumbnailUrl = image.TryGetProperty("Url", out var urlProp) ? urlProp.GetString() : thumbnailUrl;
+                    if (imageType == "Thumbnail")
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        var references = new List<SyncItemReference>();
+        if (raw.TryGetProperty("ItemReferences", out var refsProp) && refsProp.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var reference in refsProp.EnumerateArray())
+            {
+                if (reference.TryGetProperty("Id", out var refId) && refId.ValueKind == JsonValueKind.String && Guid.TryParse(refId.GetString(), out Guid refGuid))
+                {
+                    references.Add(new SyncItemReference(refGuid, reference.TryGetProperty("Amount", out var amountProp) && amountProp.ValueKind == JsonValueKind.Number ? amountProp.GetInt32() : 1));
+                }
+            }
+        }
+
+        DateTime creationDate = raw.TryGetProperty("CreationDate", out var createdProp) && DateTime.TryParse(createdProp.GetString(), out var created) ? created.ToUniversalTime() : DateTime.UtcNow;
+        DateTime lastModified = raw.TryGetProperty("LastModifiedDate", out var modifiedProp) && DateTime.TryParse(modifiedProp.GetString(), out var modified) ? modified.ToUniversalTime() : creationDate;
+
+        return new SyncSkinPack(
+            id,
+            raw.TryGetProperty("Title", out var titleProp) ? FirstTranslation(titleProp) : id,
+            packUuid,
+            packVersion,
+            display.ValueKind != JsonValueKind.Undefined && display.TryGetProperty("creatorName", out var creatorProp) && creatorProp.ValueKind == JsonValueKind.String ? creatorProp.GetString() : "Minecraft",
+            skinCount,
+            thumbnailId,
+            thumbnailUrl,
+            tags,
+            references,
+            creationDate,
+            lastModified
+        );
     }
 }
