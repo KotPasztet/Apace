@@ -327,8 +327,15 @@ public static class MojangAssetGate
 
     /// <summary>
     /// Assets missing from the assets dir. By default only VERIFIED entries are
-    /// reported (and only those block startup); pass includeUnverified to also
-    /// list the entries whose source was offline at manifest generation time.
+    /// reported (and only those block startup), with one exception: persona piece
+    /// binaries that carry mirror URLs (<see cref="MojangAssetManifestItem.FallbackUrls"/>) are
+    /// treated as missing-and-downloadable even when unverified — their xforge
+    /// primaries are dark for good (22.11 probe: 0/231 alive) while the mirrors in
+    /// the mojang-persona-mirror release still serve byte-identical payloads, and
+    /// every download is still checked against the recorded sha256/size. Thumbnails
+    /// and skin textures keep the strict verified-only behaviour. Pass
+    /// includeUnverified to additionally list the entries whose source was offline
+    /// at manifest generation time.
     /// </summary>
     public static List<MojangAssetManifestItem> GetMissingFiles(bool includeUnverified = false)
     {
@@ -346,7 +353,7 @@ public static class MojangAssetGate
                 continue;
             }
 
-            if (!item.Verified && !includeUnverified)
+            if (!item.Verified && !includeUnverified && !IsMirrorBackedPersonaBinary(item))
             {
                 continue;
             }
@@ -360,9 +367,26 @@ public static class MojangAssetGate
         return missing;
     }
 
-    /// <summary>Assets with no reachable source at manifest generation time (informational, never blocking).</summary>
+    /// <summary>
+    /// True for unverified persona piece binaries that still have at least one
+    /// mirror URL to download from — the one exception to the verified-only rule
+    /// (see <see cref="GetMissingFiles"/>). The mirror payload is verified against
+    /// the recorded sha256/size like any other source, so "unverified" here only
+    /// means the PRIMARY xforge URL was offline at manifest generation time.
+    /// </summary>
+    private static bool IsMirrorBackedPersonaBinary(MojangAssetManifestItem item)
+        => item.Kind == "persona"
+            && item.File.StartsWith("playfab/persona/", StringComparison.Ordinal)
+            && item.FallbackUrls is { Count: > 0 }
+            && item.FallbackUrls.Any(url => !string.IsNullOrWhiteSpace(url));
+
+    /// <summary>
+    /// Assets with no reachable source at manifest generation time (informational,
+    /// never blocking). Mirror-backed persona binaries are excluded — they have a
+    /// reachable mirror source even though their primary URL is offline.
+    /// </summary>
     public static List<MojangAssetManifestItem> GetUnavailableFiles()
-        => [.. GetMissingFiles(includeUnverified: true).Where(item => !item.Verified)];
+        => [.. GetMissingFiles(includeUnverified: true).Where(item => !item.Verified && !IsMirrorBackedPersonaBinary(item))];
 
     /// <summary>True when nothing verified is missing (or the manifest could not be loaded — the gate cannot judge).</summary>
     public static bool AreAssetsComplete()

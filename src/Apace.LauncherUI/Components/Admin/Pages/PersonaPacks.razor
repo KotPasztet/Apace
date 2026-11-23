@@ -18,7 +18,8 @@
             <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Marketplace Management
         </div>
         <p class="text-muted small mb-0 mt-1">Control how much of the live marketplace players see: a per-category size
-            limit, the default packs and per-player grants. Base pieces without a theme tag always serve.</p>
+            limit, the default packs, per-player grants, a client-compatibility filter and your own custom pieces.
+            Base pieces without a theme tag always serve.</p>
     </div>
     <div class="text-end">
         <button class="btn btn-sm btn-outline-primary" @onclick="SyncNowAsync" disabled="@_syncing">
@@ -41,20 +42,36 @@
     <div class="card-header">Availability (every player)</div>
     <div class="card-body">
         <div class="row g-3 align-items-end mb-3">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-lg-6">
                 <label class="form-label small text-muted mb-1" for="category-limit">Max pieces per category</label>
                 <input type="number" min="0" step="1" class="form-control form-control-sm" id="category-limit" @bind="_categoryLimit" />
-                <div class="form-text small">One shared limit for every category (tops, capes, beards…). 0 = no limit, default 30.</div>
+                <div class="form-text small">Per dressing-room category group — hoodies + outerwear count together,
+                    tops + capes + beards each count on their own where the client groups them. Enforced on equips
+                    too, even when pack filtering is on. 0 = no limit, default 30.</div>
             </div>
         </div>
 
         <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="pack-gating" @bind="_gating" />
-            <label class="form-check-label" for="pack-gating">
-                <strong>Filter the live marketplace by packs</strong>
-                <span class="text-muted small">— off = everything up to the per-category limit</span>
+            <input class="form-check-input" type="checkbox" id="only-supported" @bind="_onlySupported" />
+            <label class="form-check-label" for="only-supported">
+                <strong>Allow only supported cosmetics</strong>
+                <span class="text-muted small">— when on, only pieces the frozen Minecraft Earth client can render
+                    serve. Each piece carries a compat profile from the metadata pipeline: <em>supported</em> means the
+                    piece files parse, geometry format_version 1.12.0–1.20.x, no animations / render controllers /
+                    flipbook / particles and no face bones; <em>risky</em> means geometry 1.21.0+ (UV rotation,
+                    transform pivots) or below 1.12.0 (legacy), any animation/effect signal, or face bones
+                    (rig 1.19.50/1.20.10, MCPE-165232) — those render broken: floating parts, missing meshes;
+                    <em>unknown</em> means no profile yet — unknown pieces keep serving while the switch is on (the
+                    filter only ever hides pieces with positive evidence of breakage). Risky pieces are hidden from
+                    the marketplace and refused on equip; turn the switch off to serve everything.</span>
             </label>
         </div>
+
+        <p class="text-muted small mb-3">
+            Pack filtering needs no toggle: once at least one default pack or per-player grant is configured below,
+            the live marketplace serves only those packs' pieces (plus the base pieces without a theme tag). With no
+            packs configured at all, everything is served — up to the per-category group limit above.
+        </p>
 
         @if (_packSummary is not null)
         {
@@ -62,7 +79,7 @@
         }
         <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
                     SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
-                    EmptyHint="Nothing selected — with gating on, only base pieces (no theme tag) show." />
+                    EmptyHint="Nothing selected — with no packs configured the whole marketplace serves (up to the limit above)." />
 
         <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
             @if (_savingDefaults)
@@ -71,6 +88,172 @@
             }
             Save
         </button>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span>Custom cosmetics (own pieces, served from the mojang-assets volume)</span>
+        <span class="text-muted small fw-normal">Served immediately — no restart needed</span>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Piece zips you upload become marketplace items: the ApiServer builds the catalog offers and the
+            entitlement receipt (pack uuid + content key) from <code>persona-catalog/custom-cosmetics.json</code>,
+            the zip downloads at <code>/playfab/persona/&lt;id&gt;.zip</code> and the thumbnail at
+            <code>/playfab/images/&lt;thumbnailId&gt;.png</code>.
+        </p>
+        <p class="text-muted small mb-3">
+            Each custom cosmetic also shows its compat verdict (the <strong>Compat</strong> badge): the metadata
+            pipeline scans the uploaded piece and records the geometry format_version plus animation/effect signals —
+            until that scan lands the badge reads <em>unknown</em>. With "Allow only supported cosmetics" on above,
+            only <em>risky</em> pieces are hidden from players; <em>unknown</em> pieces keep serving.
+        </p>
+
+        @if (_customLoadError is not null)
+        {
+            <div class="alert alert-warning py-2 px-3">@_customLoadError</div>
+        }
+
+        @if (_customItems.Count == 0)
+        {
+            <p class="text-muted small mb-2">No custom cosmetics yet — add the first one below.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-3">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Id</th>
+                            <th>Type</th>
+                            <th>Creator</th>
+                            <th>Rarity</th>
+                            <th>Price</th>
+                            <th>Assets</th>
+                            <th>Compat</th>
+                            <th>Availability</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _customItems)
+                        {
+                            bool zipOk = CustomCosmeticsStore.ZipExists(item.Id);
+                            bool thumbOk = item.ThumbnailId is not null && CustomCosmeticsStore.ThumbnailExists(item.ThumbnailId);
+                            var compat = CosmeticCompatIndex.Lookup(_compatMap, item.Id);
+                            <tr @key="item.Id">
+                                <td class="fw-bold">@item.Title</td>
+                                <td><code style="font-size: 0.7rem;">@item.Id</code></td>
+                                <td>@item.PieceType</td>
+                                <td>@item.Creator</td>
+                                <td>@item.Rarity</td>
+                                <td>@(item.Price > 0 ? $"{item.Price} 💎" : "Free")</td>
+                                <td>
+                                    <span class="badge @(zipOk ? "text-bg-success" : "text-bg-danger") fw-normal">zip @(zipOk ? "ok" : "missing")</span>
+                                    @if (item.ThumbnailId is not null)
+                                    {
+                                        <span class="badge @(thumbOk ? "text-bg-success" : "text-bg-warning") fw-normal">thumb @(thumbOk ? "ok" : "missing")</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge @CompatBadgeClass(compat.Kind) fw-normal" title="@compat.Detail">@CompatBadgeLabel(compat.Kind)</span>
+                                </td>
+                                <td>
+                                    <span class="badge @(item.Enabled ? "text-bg-success" : "text-bg-secondary") fw-normal">@(item.Enabled ? "served" : "hidden")</span>
+                                    <button type="button" class="btn btn-outline btn-sm ms-1"
+                                            title="@(item.Enabled ? "Hide this piece from players (its offer and entitlement are withdrawn immediately)" : "Serve this piece to players again")"
+                                            @onclick="() => ToggleCustomEnabledAsync(item)" disabled="@_customBusy">
+                                        @(item.Enabled ? "Hide" : "Show")
+                                    </button>
+                                </td>
+                                <td style="text-align: right;">
+                                    <button class="btn btn-outline btn-sm" @onclick="() => BeginEditCustom(item)" disabled="@_customBusy">
+                                        Edit
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveCustomAsync(item)" disabled="@_customBusy">
+                                        Remove
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <hr />
+        <h6 class="mb-3">@(_editingCustomId is null ? "Add a custom cosmetic" : $"Edit \"{_formTitle}\"")</h6>
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <label class="form-label small text-muted mb-1" for="custom-title">Title (required)</label>
+                <input type="text" class="form-control form-control-sm" id="custom-title" @bind="_formTitle" />
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label small text-muted mb-1" for="custom-type">Piece type</label>
+                <select class="form-select form-select-sm" id="custom-type" @bind="_formPieceType">
+                    <option value="" selected>choose a piece type…</option>
+                    @foreach (var type in CustomPieceTypes)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small text-muted mb-1" for="custom-rarity">Rarity</label>
+                <select class="form-select form-select-sm" id="custom-rarity" @bind="_formRarity">
+                    @foreach (var rarity in CustomRarities)
+                    {
+                        <option value="@rarity">@rarity</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small text-muted mb-1" for="custom-price">Price (rubies)</label>
+                <input type="number" min="0" step="1" class="form-control form-control-sm" id="custom-price" @bind="_formPrice" />
+            </div>
+            <div class="col-12">
+                <label class="form-label small text-muted mb-1" for="custom-description">Description</label>
+                <textarea class="form-control form-control-sm" rows="2" id="custom-description" @bind="_formDescription"></textarea>
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label small text-muted mb-1" for="custom-piece-id">Piece ID override (GUID)</label>
+                <input type="text" class="form-control form-control-sm" id="custom-piece-id" placeholder="@(_editingCustomId is null ? "auto-generated new GUID" : "leave empty to keep the current one")" @bind="_formPieceId" />
+                <div class="form-text small">Optional — the persona piece the client applies on equip. Leave empty to
+                    @( _editingCustomId is null ? "generate a new GUID for a self-built piece." : "keep the existing piece id.")</div>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted mb-1" for="custom-zip">Piece zip @(_editingCustomId is null ? "(required)" : "(optional replacement)")</label>
+                <InputFile OnChange="OnCustomZipSelectedAsync" accept=".zip" class="form-control form-control-sm" disabled="@_customBusy" />
+                <div class="form-text small">@(_formZipFile?.Name ?? "no zip chosen")</div>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-muted mb-1" for="custom-thumb">Thumbnail PNG (optional)</label>
+                <InputFile OnChange="OnCustomThumbnailSelectedAsync" accept=".png" class="form-control form-control-sm" disabled="@_customBusy" />
+                <div class="form-text small">@(_formThumbFile?.Name ?? "no thumbnail chosen")</div>
+            </div>
+        </div>
+        <div class="form-text small mb-2">
+            Creator is always <code>KotPasztet</code>; the <code>custom</code> tag, the pack uuid and the 64-hex
+            content key are generated when the item is created. The piece zip must be a complete piece binary — the
+            outer zip with the nested <code>ppack0.zip</code> container holding the manifest, the
+            <code>.geo.json</code> geometry and the texture (see <code>docs/custom-persona-items.md</code> and
+            <code>scripts/build_apace_piece.py</code>); a bare <code>.geo.json</code> cannot be served to the client.
+        </div>
+        <button class="btn btn-sm btn-outline-primary" @onclick="SaveCustomAsync" disabled="@_customBusy">
+            @if (_customBusy)
+            {
+                <span class="spinner-border spinner-border-sm"></span>
+            }
+            @(_editingCustomId is null ? "Add custom cosmetic" : "Save changes")
+        </button>
+        @if (_editingCustomId is not null)
+        {
+            <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ResetCustomForm" disabled="@_customBusy">
+                Cancel edit
+            </button>
+        }
     </div>
 </div>
 
@@ -114,13 +297,45 @@
 </div>
 
 @code {
-    private sealed record PacksConfig(bool Gating, List<string> DefaultPacks, int CategoryLimit);
+    // Written to <mojang-assets>/persona-catalog/packs.json (hot-reloaded by the
+    // ApiServer). No `gating` flag anymore: the server auto-gates per player as
+    // soon as the allowed pack set (default packs ∪ player grants) is non-empty
+    // and serves everything when that set is empty.
+    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit);
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
 
+    // The dressing-room categories the client asks for (docs/custom-persona-items.md
+    // — Bedrock character creator piece types, the same list the live catalog
+    // carries). persona_emote is excluded: the dressing room has no emote
+    // category, a custom emote would never show (same rule as the catalog sync).
+    private static readonly string[] CustomPieceTypes =
+    [
+        "persona_skin",
+        "persona_hair",
+        "persona_eyes",
+        "persona_mouth",
+        "persona_face_accessory",
+        "persona_head",
+        "persona_hood",
+        "persona_top",
+        "persona_bottom",
+        "persona_outerwear",
+        "persona_hand",
+        "persona_arms",
+        "persona_legs",
+        "persona_feet",
+        "persona_back",
+    ];
+
+    // Lowercase, like every live-catalog persona item (docs/custom-persona-items.md).
+    private static readonly string[] CustomRarities = ["common", "uncommon", "rare", "epic", "legendary"];
+
+    private const string CustomCreator = "KotPasztet";
+
     private List<PersonaPackIndex.ThemePackRow> _packs = [];
     private string? _packSummary;
-    private bool _gating;
+    private bool _onlySupported = true;
     private int _categoryLimit = 30;
     private HashSet<string> _defaults = [];
     private HashSet<string> _grants = [];
@@ -132,14 +347,34 @@
     private string? _syncError;
     private EarthDB? _earthDB;
 
+    // Custom cosmetics state
+    private List<CustomCosmeticsStore.CustomCosmeticItem> _customItems = [];
+    private string? _customLoadError;
+    private bool _customBusy;
+    private string? _editingCustomId;
+    private string _formTitle = "";
+    private string _formDescription = "";
+    private string _formPieceType = "";
+    private string _formRarity = "common";
+    private int _formPrice;
+    private string _formPieceId = "";
+    private IBrowserFile? _formZipFile;
+    private IBrowserFile? _formThumbFile;
+
+    // Compat verdicts per item id (from the metadata pipeline's probe-state
+    // file) — re-read with the custom items, never per rendered row.
+    private Dictionary<string, CosmeticCompatIndex.CosmeticCompatInfo> _compatMap = [];
+
     private string LastSyncText => LivePersonaCatalogSync.GetLastVolumeSync()?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "never";
 
     protected override async Task OnInitializedAsync()
     {
-        _gating = Settings.Instance.PersonaPackGating ?? false;
+        _onlySupported = Settings.Instance.PersonaOnlySupportedCosmetics ?? true;
         _categoryLimit = Math.Max(0, Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit);
         _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
         (_packs, _packSummary) = PersonaPackIndex.ReadThemePacks();
+        (_customItems, _customLoadError) = CustomCosmeticsStore.ReadAll();
+        _compatMap = CosmeticCompatIndex.ReadAll();
         await LoadPlayersAsync();
         await SelectPlayerAsync(null);
     }
@@ -210,19 +445,21 @@
         _message = null;
         try
         {
-            Settings.Instance.PersonaPackGating = _gating;
             Settings.Instance.PersonaCategoryLimit = _categoryLimit;
+            Settings.Instance.PersonaOnlySupportedCosmetics = _onlySupported;
             Settings.Instance.PersonaDefaultPacks = [.. _defaults];
             Settings.Instance.Save(Settings.DefaultPath);
 
             // the ApiServer hot-reloads packs.json from the volume (next to the
-            // catalog index) — same pattern as the index itself
+            // catalog index) — same pattern as the index itself. No `gating`
+            // key: the server gates per player as soon as the allowed pack set
+            // (defaults ∪ grants) is non-empty.
             string path = Path.Combine(MojangAssetGate.MojangAssetsDir, "persona-catalog", "packs.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_gating, [.. _defaults], _categoryLimit), _jsonOptions));
-            _message = _gating
-                ? $"Saved — {_defaults.Count} default pack(s), gating on, max {_categoryLimit} piece(s) per category. The ApiServer picks this up immediately."
-                : $"Saved — gating is OFF, max {_categoryLimit} piece(s) per category. The ApiServer picks this up immediately.";
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit), _jsonOptions));
+            _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
+                + (_onlySupported ? "only client-supported cosmetics." : "client-compatibility filter off.")
+                + " The ApiServer picks this up immediately.";
         }
         catch (Exception ex)
         {
@@ -258,6 +495,292 @@
         {
             _savingGrants = false;
         }
+    }
+
+    // --- custom cosmetics -----------------------------------------------------
+
+    private Task OnCustomZipSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _formZipFile = null;
+        IBrowserFile? file = e.File;
+        if (file is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (!file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            _message = $"\"{file.Name}\" is not a .zip — pick a piece zip.";
+            return Task.CompletedTask;
+        }
+
+        _formZipFile = file;
+        _message = null;
+        return Task.CompletedTask;
+    }
+
+    private Task OnCustomThumbnailSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _formThumbFile = null;
+        IBrowserFile? file = e.File;
+        if (file is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (!file.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+        {
+            _message = $"\"{file.Name}\" is not a .png — pick a thumbnail image.";
+            return Task.CompletedTask;
+        }
+
+        _formThumbFile = file;
+        _message = null;
+        return Task.CompletedTask;
+    }
+
+    private void BeginEditCustom(CustomCosmeticsStore.CustomCosmeticItem item)
+    {
+        _editingCustomId = item.Id;
+        _formTitle = item.Title;
+        _formDescription = item.Description;
+        _formPieceType = CustomPieceTypes.Contains(item.PieceType) ? item.PieceType : "";
+        _formRarity = CustomRarities.Contains(item.Rarity) ? item.Rarity : "common";
+        _formPrice = item.Price;
+        _formPieceId = item.PieceId;
+        _formZipFile = null;
+        _formThumbFile = null;
+        _message = null;
+    }
+
+    private void ResetCustomForm()
+    {
+        _editingCustomId = null;
+        _formTitle = "";
+        _formDescription = "";
+        _formPieceType = "";
+        _formRarity = "common";
+        _formPrice = 0;
+        _formPieceId = "";
+        _formZipFile = null;
+        _formThumbFile = null;
+    }
+
+    private async Task SaveCustomAsync()
+    {
+        string title = _formTitle.Trim();
+        string trimmedPieceId = _formPieceId.Trim();
+        bool pieceIdGiven = Guid.TryParse(trimmedPieceId, out Guid parsedPieceId);
+        string? validationError =
+            title.Length == 0 ? "Custom cosmetic: the title is required."
+            : _formPieceType.Length == 0 ? "Custom cosmetic: pick a piece type."
+            : !CustomPieceTypes.Contains(_formPieceType) ? $"Custom cosmetic: \"{_formPieceType}\" is not a known piece type."
+            : !CustomRarities.Contains(_formRarity) ? $"Custom cosmetic: \"{_formRarity}\" is not a known rarity."
+            : _formPrice < 0 ? "Custom cosmetic: the price cannot be negative."
+            : trimmedPieceId.Length > 0 && !pieceIdGiven ? "Custom cosmetic: the piece ID override is not a GUID."
+            : _formZipFile is not null && _formZipFile.Size > CustomCosmeticsStore.MaxZipBytes ? "Custom cosmetic: the piece zip is larger than 25 MB."
+            : _formThumbFile is not null && _formThumbFile.Size > CustomCosmeticsStore.MaxThumbnailBytes ? "Custom cosmetic: the thumbnail is larger than 5 MB."
+            : _editingCustomId is null && _formZipFile is null ? "Custom cosmetic: a piece zip is required when adding an item."
+            : null;
+        if (validationError is not null)
+        {
+            _message = validationError;
+            return;
+        }
+
+        _customBusy = true;
+        _message = null;
+        try
+        {
+            List<CustomCosmeticsStore.CustomCosmeticItem> items = [.. _customItems];
+            if (_editingCustomId is null)
+            {
+                // Add: a fresh catalog item with a fresh pack identity and content
+                // key. The pack uuid is what the client's entitlement receipt keys
+                // off; the content key decrypts the piece's contents.json. The
+                // required zip is stored first, so a failure leaves no optional
+                // thumbnail orphaned behind it; the JSON entry lands last.
+                string id = Guid.NewGuid().ToString();
+                await WriteCustomZipAsync(id);
+                string? thumbnailId = null;
+                if (_formThumbFile is not null)
+                {
+                    thumbnailId = Guid.NewGuid().ToString();
+                    await WriteCustomThumbnailAsync(thumbnailId);
+                }
+
+                items.Add(new CustomCosmeticsStore.CustomCosmeticItem(
+                    id, title, _formDescription.Trim(), _formPieceType,
+                    pieceIdGiven ? parsedPieceId.ToString() : Guid.NewGuid().ToString(),
+                    CustomCreator, _formRarity, Math.Max(0, _formPrice), ["custom"],
+                    Guid.NewGuid().ToString(), CustomCosmeticsStore.NewContentKey(), thumbnailId));
+                await CustomCosmeticsStore.SaveItemsAsync(items);
+                _message = $"Added \"{title}\" — served immediately, no restart needed.";
+            }
+            else
+            {
+                int index = items.FindIndex(i => i.Id == _editingCustomId);
+                if (index < 0)
+                {
+                    _message = "The edited item is gone — it was removed elsewhere. Reload the page.";
+                    return;
+                }
+
+                var existing = items[index];
+                string? thumbnailId = existing.ThumbnailId;
+                string staleThumbnailNote = "";
+                if (_formThumbFile is not null)
+                {
+                    // a replacement thumbnail gets a fresh id (client-side caches
+                    // key off the id); only the old thumbnail files go away —
+                    // the piece zip must survive
+                    thumbnailId = Guid.NewGuid().ToString();
+                    await WriteCustomThumbnailAsync(thumbnailId);
+                    List<string> staleThumbErrors = CustomCosmeticsStore.DeleteThumbnails(existing.ThumbnailId);
+                    if (staleThumbErrors.Count > 0)
+                    {
+                        staleThumbnailNote = $" The old thumbnail files could not be removed: {string.Join("; ", staleThumbErrors)}";
+                    }
+                }
+
+                if (_formZipFile is not null)
+                {
+                    await WriteCustomZipAsync(existing.Id);
+                }
+
+                items[index] = existing with
+                {
+                    Title = title,
+                    Description = _formDescription.Trim(),
+                    PieceType = _formPieceType,
+                    Rarity = _formRarity,
+                    Price = Math.Max(0, _formPrice),
+                    PieceId = trimmedPieceId.Length > 0 && pieceIdGiven ? parsedPieceId.ToString() : existing.PieceId,
+                    ThumbnailId = thumbnailId,
+                };
+                await CustomCosmeticsStore.SaveItemsAsync(items);
+                _message = $"Saved \"{title}\" — served immediately, no restart needed.{staleThumbnailNote}";
+            }
+
+            (_customItems, _customLoadError) = CustomCosmeticsStore.ReadAll();
+            _compatMap = CosmeticCompatIndex.ReadAll();
+            ResetCustomForm();
+        }
+        catch (Exception ex)
+        {
+            _message = $"Saving the custom cosmetic failed: {ex.Message}";
+        }
+        finally
+        {
+            _customBusy = false;
+        }
+    }
+
+    private async Task RemoveCustomAsync(CustomCosmeticsStore.CustomCosmeticItem item)
+    {
+        _customBusy = true;
+        _message = null;
+        try
+        {
+            // the JSON first: the server stops offering the piece even when the
+            // file cleanup below fails (leftover bytes, never a dangling offer)
+            var items = _customItems.Where(i => i.Id != item.Id).ToList();
+            await CustomCosmeticsStore.SaveItemsAsync(items);
+            List<string> cleanupErrors = CustomCosmeticsStore.DeleteAssets(item.Id, item.ThumbnailId);
+            (_customItems, _customLoadError) = CustomCosmeticsStore.ReadAll();
+            _compatMap = CosmeticCompatIndex.ReadAll();
+            _message = cleanupErrors.Count == 0
+                ? $"Removed \"{item.Title}\" — served immediately, no restart needed."
+                : $"Removed \"{item.Title}\" from the catalog, but cleaning up the asset files failed: {string.Join("; ", cleanupErrors)}";
+            if (_editingCustomId == item.Id)
+            {
+                ResetCustomForm();
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = $"Removing the custom cosmetic failed: {ex.Message}";
+        }
+        finally
+        {
+            _customBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Availability toggle for one custom cosmetic (the table's Hide/Show
+    /// button): flips <see cref="CustomCosmeticsStore.CustomCosmeticItem.Enabled"/>
+    /// and writes the JSON — the hot-reloading server withdraws (or restores)
+    /// both the offer and the entitlement immediately. Same JSON-first rule as
+    /// <see cref="RemoveCustomAsync"/>: the entry lands before anything else,
+    /// and the asset files are never touched, so toggling back is lossless.
+    /// </summary>
+    private async Task ToggleCustomEnabledAsync(CustomCosmeticsStore.CustomCosmeticItem item)
+    {
+        _customBusy = true;
+        _message = null;
+        try
+        {
+            List<CustomCosmeticsStore.CustomCosmeticItem> items = [.. _customItems];
+            int index = items.FindIndex(i => i.Id == item.Id);
+            if (index < 0)
+            {
+                _message = "The item is gone — it was removed elsewhere. Reload the page.";
+                return;
+            }
+
+            bool enabled = !items[index].Enabled;
+            items[index] = items[index] with { Enabled = enabled };
+            await CustomCosmeticsStore.SaveItemsAsync(items);
+            _customItems = items;
+            _message = enabled
+                ? $"\"{item.Title}\" is served to players again — applies immediately, no restart needed."
+                : $"\"{item.Title}\" is hidden from players — applies immediately, no restart needed.";
+        }
+        catch (Exception ex)
+        {
+            _message = $"Changing the availability failed: {ex.Message}";
+        }
+        finally
+        {
+            _customBusy = false;
+        }
+    }
+
+    private string CompatBadgeClass(CosmeticCompatIndex.CosmeticCompatKind kind) => kind switch
+    {
+        CosmeticCompatIndex.CosmeticCompatKind.Supported => "text-bg-success",
+        CosmeticCompatIndex.CosmeticCompatKind.Risky => "text-bg-danger",
+        _ => "text-bg-secondary",
+    };
+
+    private string CompatBadgeLabel(CosmeticCompatIndex.CosmeticCompatKind kind) => kind switch
+    {
+        CosmeticCompatIndex.CosmeticCompatKind.Supported => "supported",
+        CosmeticCompatIndex.CosmeticCompatKind.Risky => "risky",
+        _ => "unknown",
+    };
+
+    private async Task WriteCustomZipAsync(string itemId)
+    {
+        if (_formZipFile is null)
+        {
+            return;
+        }
+
+        await using var source = await _formZipFile.OpenReadStream(CustomCosmeticsStore.MaxZipBytes);
+        await CustomCosmeticsStore.SaveZipAsync(itemId, source);
+    }
+
+    private async Task WriteCustomThumbnailAsync(string thumbnailId)
+    {
+        if (_formThumbFile is null)
+        {
+            return;
+        }
+
+        await using var source = await _formThumbFile.OpenReadStream(CustomCosmeticsStore.MaxThumbnailBytes);
+        await CustomCosmeticsStore.SaveThumbnailAsync(thumbnailId, source);
     }
 
     private string PlayerLabel(string playerId)

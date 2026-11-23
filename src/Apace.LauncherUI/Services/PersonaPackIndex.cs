@@ -3,41 +3,55 @@ using System.Text.Json;
 namespace Apace.LauncherUI.Services;
 
 // Light-weight reader for the synced persona catalog index — the panel pages
-// only need the thematic pack list to render the pack pickers; the full index
-// model lives on the ApiServer side.
+// only need the pack list to render the pack pickers; the full index model
+// lives on the ApiServer side.
 //
-// Why theme tags and not pack bundles: the marketplace has no accessory pack
-// entities. Every PersonaDurable entry carries exactly one packIdentity — the
-// persona_piece itself (probe: scripts/probe_persona_tags.py, 1200 entries,
-// zero multi-entry / non-piece identities) — and the MarketplaceDurableCatalog
-// bundles are only skinpacks (classic skins), resourcepacks and worldtemplates.
-// The marketplace's own thematic grouping of accessories is its tag.*
-// metadata, so those tags are the gating packs; pieces without a theme tag are
-// the base content that always serves.
+// Two pack kinds. The marketplace has no accessory pack entities: every
+// PersonaDurable entry carries exactly one packIdentity — the persona_piece
+// itself (probe: scripts/probe_persona_tags.py, 1200 entries, zero multi-entry /
+// non-piece identities) — so the marketplace's own thematic grouping of
+// accessories is its tag.* metadata, and those tags are the thematic packs;
+// pieces without a theme tag are the base content that always serves. The
+// MarketplaceDurableCatalog bundles (the index's skinPacks array, written by
+// the sync) are the classic skin packs: they gate by their pack uuid
+// (PersonaPackGate.AllowedPackUuidsAsync + CatalogController.LiveSkinPackItemsFor
+// on the ApiServer), so their selectable value is the uuid string itself.
 public static class PersonaPackIndex
 {
     // Shared with the ApiServer's PersonaPackGate.DefaultCategoryLimit (separate
     // processes share the volume, not the code) — keep both in sync.
     public const int DefaultCategoryLimit = 30;
 
-    // One thematic pack: a marketplace theme tag (tag.*) and the persona pieces
-    // carrying it. A pack spans every piece category it appears on (head, tops,
-    // footwear…); enabling it serves all of them — no per-category toggles.
-    public sealed record ThemePackRow(string Tag, string Title, int PieceCount, string Types);
+    // One selectable pack row. A thematic pack (IsSkinPack = false) is a
+    // marketplace theme tag (tag.*) and the persona pieces carrying it — Tag
+    // holds the tag, and the pack spans every piece category it appears on
+    // (head, tops, footwear…); enabling it serves all of them — no
+    // per-category toggles. A classic skin pack (IsSkinPack = true) is a
+    // MarketplaceDurableCatalog bundle — Tag holds the pack uuid verbatim,
+    // which is what the panel defaults and per-player grants must contain for
+    // the ApiServer's pack gate to serve the pack.
+    public sealed record ThemePackRow(string Tag, string Title, int PieceCount, string Types, bool IsSkinPack = false);
 
-    private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items);
+    private sealed record IndexFile(int RawItemCount, int EmoteCount, List<IndexItem> Items, List<IndexSkinPack>? SkinPacks);
     private sealed record IndexItem(string Id, string Title, string PieceType, List<string>? Tags, bool IsEmote);
+
+    // Subset of the sync's SyncSkinPack record (separate processes share the
+    // volume, not the code) — the panel only needs title, pack uuid and skin
+    // count; JSON binds case-insensitively (JsonSerializerDefaults.Web).
+    private sealed record IndexSkinPack(string Id, string Title, string PackUuid, int SkinCount);
 
     public static readonly JsonSerializerOptions JsonWebOptions = new(JsonSerializerDefaults.Web);
 
     /// <summary>
-    /// The thematic packs in the synced index (the pieces' marketplace theme
-    /// tags, grouped), largest first, plus a one-line summary for the page
-    /// header or null when the index is unusable. Type-ish tags (the piece type
-    /// restated as a tag, e.g. tag.hair on hair pieces) don't form packs — they
-    /// are excluded here AND on the ApiServer gate (LivePersonaCatalog.GetOffer
-    /// — separate processes share the volume, not the code), or pieces tagged
-    /// only with their own type would vanish when gating is on.
+    /// The packs in the synced index, largest first, plus a one-line summary for
+    /// the page header or null when the index is unusable: the pieces' marketplace
+    /// theme tags grouped into thematic packs, plus the classic skin packs from
+    /// the index's skinPacks array (selectable by pack uuid). Type-ish tags (the
+    /// piece type restated as a tag, e.g. tag.hair on hair pieces) don't form
+    /// packs — they are excluded here AND on the ApiServer gate
+    /// (LivePersonaCatalog.GetOffer — separate processes share the volume, not
+    /// the code), or pieces tagged only with their own type would vanish when
+    /// gating is on. Tolerates indexes from before the skinPacks array existed.
     /// </summary>
     public static (List<ThemePackRow> Packs, string? Summary) ReadThemePacks()
     {
@@ -91,15 +105,25 @@ public static class PersonaPackIndex
                 }
             }
 
-            var packs = byTag
-                .Select(kv => new ThemePackRow(kv.Key, ThemeTitle(kv.Key), kv.Value.Count, TypesSummary(kv.Value.Types)))
+            // Classic skin packs ride along: the sync already deduped them per pack
+            // uuid, but stay defensive (first wins). Only uuid-parseable packs are
+            // selectable — the gate matches the uuid, and Tag carries it verbatim.
+            var skinPackRows = (index.SkinPacks ?? [])
+                .Where(pack => Guid.TryParse(pack.PackUuid, out _))
+                .GroupBy(pack => pack.PackUuid, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .Select(pack => new ThemePackRow(pack.PackUuid, pack.Title, pack.SkinCount, "classic skins", IsSkinPack: true))
+                .ToList();
+
+            var packs = skinPackRows
+                .Concat(byTag.Select(kv => new ThemePackRow(kv.Key, ThemeTitle(kv.Key), kv.Value.Count, TypesSummary(kv.Value.Types))))
                 .OrderByDescending(row => row.PieceCount)
                 .ThenBy(row => row.Title, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             string summary = packs.Count == 0
-                ? "No theme tags in the synced index yet — run a full sync first (packs come from the pieces' own marketplace metadata)."
-                : $"{packs.Count} thematic pack(s) from the marketplace's own theme tags — {themed} of {themed + baseCount} piece(s) are themed, "
-                + $"{baseCount} base piece(s) without a theme tag always serve.";
+                ? "No packs in the synced index yet — run a full sync first (thematic packs come from the pieces' own marketplace metadata, classic skin packs from the skin-pack bundles)."
+                : $"{skinPackRows.Count} classic skin pack(s) plus {packs.Count - skinPackRows.Count} thematic pack(s) from the marketplace's own theme tags — "
+                + $"{themed} of {themed + baseCount} piece(s) are themed, {baseCount} base piece(s) without a theme tag always serve.";
             return (packs, summary);
         }
         catch (Exception ex)

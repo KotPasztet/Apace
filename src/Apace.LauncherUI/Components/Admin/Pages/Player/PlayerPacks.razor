@@ -20,6 +20,16 @@
             <img class="nav-icon" src="/images/shop_icon.png" alt="" /> Skin Packs
         </div>
     </div>
+    <div class="text-end">
+        <button class="btn btn-sm btn-outline-primary" @onclick="SyncNowAsync" disabled="@_syncing">
+            <i class="bi bi-arrow-repeat me-1"></i>@(_syncing ? "Syncing..." : "Sync now")
+        </button>
+        <div class="text-muted small mt-1">full walk ≈ several minutes — last sync: @LastSyncText</div>
+        @if (_syncError is not null)
+        {
+            <div class="text-danger small mt-1">@_syncError</div>
+        }
+    </div>
 </div>
 <div class="d-flex align-items-baseline gap-2 mb-3">
     <h2 class="mb-0" style="font-size: 1.25rem;">
@@ -35,7 +45,7 @@
 }
 
 <div class="card mb-4">
-    <div class="card-header">Granted packs (extra thematic packs beyond the panel defaults)</div>
+    <div class="card-header">Granted packs (extra packs beyond the panel defaults)</div>
     <div class="card-body">
         <p class="text-muted small mb-3">@EffectiveSummary
             Global defaults are managed on the <a href="/Admin/PersonaPacks">Marketplace Management</a> page.</p>
@@ -68,21 +78,36 @@
     private HashSet<string> _grants = [];
     private string? _message;
     private bool _saving;
+    private bool _syncing;
+    private string? _syncError;
     private EarthDB? _earthDB;
 
+    private string LastSyncText => LivePersonaCatalogSync.GetLastVolumeSync()?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "never";
+
+    // Matches the ApiServer's auto-gating (PersonaPackGate.AllowedPackUuidsAsync):
+    // the allowed set is the panel defaults ∪ this player's grants, and a
+    // non-empty set enforces filtering — an empty one serves everything. The
+    // legacy "pack gating" toggle is gone; no flag is read anymore.
     private string EffectiveSummary
     {
         get
         {
-            if (!(Settings.Instance.PersonaPackGating ?? false))
-            {
-                return $"Pack gating is OFF — this player currently sees the whole live marketplace, up to {Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit} piece(s) per category.";
-            }
-
+            int limit = Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit;
             var defaults = Settings.Instance.PersonaDefaultPacks ?? [];
             int granted = _grants.Count(pack => !defaults.Contains(pack, StringComparer.OrdinalIgnoreCase));
-            return $"This player sees the panel defaults ({defaults.Count} thematic pack(s)) plus {granted} extra pack(s); "
-                + "base pieces without a theme tag serve regardless of gating.";
+            if (defaults.Count == 0 && _grants.Count == 0)
+            {
+                return $"Nothing configured — auto-gating serves this player the whole live marketplace (configured packs = enforced filtering: "
+                    + "with at least one pack selected below, the server serves only those packs). The category-group limit still applies: "
+                    + $"up to {limit} piece(s) per dressing-room category group (e.g. hoodies and outerwear count together) — "
+                    + "the server enforces it again when profiles are saved.";
+            }
+
+            return $"Auto-gating: this player sees the panel defaults ({defaults.Count} pack(s)) plus {granted} extra pack(s) — thematic packs "
+                + "by their marketplace tag, classic skin packs (\"Minecraft adult skins\" and friends) by their pack uuid; base pieces without "
+                + "a theme tag serve regardless. The category-group limit applies even with pack filtering on: "
+                + $"up to {limit} piece(s) per dressing-room category group (e.g. hoodies and outerwear count together) — "
+                + "the server enforces it again when profiles are saved.";
         }
     }
 
@@ -107,6 +132,32 @@
         {
             Log.Error(ex, "Failed to load persona pack grants for player '{PlayerId}'", PlayerId);
             _message = $"Loading the grants failed: {ex.Message}";
+        }
+    }
+
+    // Same pattern as the Marketplace Management page's "Sync now": run the live
+    // catalog sync inline, then re-read the pack index so the picker shows the
+    // fresh packs. The walk takes several minutes; the button stays disabled
+    // (and a concurrent sync elsewhere is a no-op) until it finishes.
+    private async Task SyncNowAsync()
+    {
+        if (LivePersonaCatalogSync.IsSyncing)
+        {
+            return;
+        }
+
+        _syncing = true;
+        _syncError = null;
+        try
+        {
+            bool ok = await LivePersonaCatalogSync.SyncNowAsync(Log.Logger, CancellationToken.None);
+            _syncError = ok ? null : (LivePersonaCatalogSync.LastError ?? "sync failed");
+        }
+        finally
+        {
+            _syncing = false;
+            (_packs, _packSummary) = PersonaPackIndex.ReadThemePacks();
+            await InvokeAsync(StateHasChanged);
         }
     }
 

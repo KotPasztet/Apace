@@ -256,7 +256,12 @@ else
                     <div style="max-height: 55vh; overflow-y: auto;">
                         @foreach (var item in PickerItems)
                         {
-                            bool blocked = _pickerMode == PickerMode.Add && IsAlreadyEquipped(_pickerProfile!, item);
+                            // Add refuses a category equipped anywhere; replace refuses a
+                            // category equipped in another slot — except an item of the
+                            // replaced slot's own category, because a swap within the
+                            // category (a limb for another limb, one shirt for another
+                            // top) is what replace is for.
+                            bool blocked = PickerItemBlocked(item);
                             <div class="d-flex align-items-center gap-3 p-2 border-bottom"
                                  style="@(blocked ? "opacity: 0.45;" : "cursor: pointer;") @(_pickerSelected?.Id == item.Id ? "background-color: rgba(90, 160, 90, 0.25);" : "")"
                                  @onclick="() => PickItem(item, blocked)" @key="item.Id">
@@ -264,7 +269,12 @@ else
                                      style="width: 40px; height: 40px; object-fit: contain;"
                                      onerror="this.onerror=null; this.src='@(MissingTextureDataUri)';" loading="lazy" />
                                 <div class="flex-grow-1">
-                                    <div class="fw-bold">@item.Title</div>
+                                    <div class="fw-bold">@item.Title
+                                        @if (item.Tags.Contains(CustomCosmeticTag))
+                                        {
+                                            <span class="badge text-bg-info fw-normal ms-1">custom</span>
+                                        }
+                                    </div>
                                     <code style="font-size: 0.65rem; color: #9a9ab0;">@item.Id</code>
                                 </div>
                                 @if (blocked)
@@ -345,12 +355,24 @@ else
 
     // Position fallback for placeholder uuids not in the table above: category
     // by index in the profile's piece list, against the canonical default
-    // profile order from the ApiServer's ObjectController defaults. Both
-    // default layouts (wide/slim) agree on the trailing eye/hair/mouth slots;
-    // the leading slots have no firmly identifiable category.
+    // profile order from the ApiServer's ObjectController defaults. Positions
+    // 0-5 are the base-body block: the classic skin / base body piece first
+    // (personaProfile2 carries the classic skin at position 0, the other
+    // default profiles its base-body piece), then the shirt and pants slots
+    // (the wide layouts carry two shirt+pants pairs). The mapping is
+    // deliberately coarse because the three default layouts shift pieces
+    // inside that block; pieces resolvable another way (catalog entry, classic
+    // name, DefaultPieceCategories, the entry's own slotname) classify before
+    // this fallback applies. Both default layouts (wide/slim) agree on the
+    // trailing eye/hair/mouth slots.
     private static readonly string?[] CanonicalPieceCategories =
     [
-        null, null, null, null, null, null,
+        "persona_skin",
+        "persona_top",
+        "persona_top",
+        "persona_bottom",
+        "persona_bottom",
+        "persona_bottom",
         "persona_eyes",
         "persona_hair",
         "persona_mouth",
@@ -495,6 +517,9 @@ else
                 .Where(i => i.Data is PlayfabItem.PersonaData)
                 .OrderBy(i => i.Title)];
 
+            // Custom cosmetics from the volume join the picker alongside staticdata.
+            LoadCustomCosmetics(_catalogItems);
+
             _pieceTypes = [.. _catalogItems
                 .Select(i => Persona(i)?.PieceType ?? "")
                 .Where(t => t.Length > 0)
@@ -513,6 +538,129 @@ else
             _catalogError = "Could not load the persona catalog from staticdata - replace and add are unavailable.";
         }
     }
+
+    // Custom cosmetics from the volume: <MojangAssetsDir>/persona-catalog/custom-cosmetics.json,
+    // {"items":[{"id","title","description","pieceType","pieceId","creator","rarity","price",
+    // "tags":[],"packUuid","contentKey","thumbnailId"}]} — ids/pieceId/packUuid GUID strings,
+    // fields optional. Written outside the live catalog sync (local content tooling); a
+    // missing or corrupt file simply contributes no items. Entries are synthesized into
+    // picker items shaped like the staticdata PersonaData ones (thumbnail served from the
+    // id via /playfab/images/<thumbnailId>.png once cached — same routes the slot table
+    // and picker already use) and tagged CustomCosmeticTag so the picker can badge them.
+    // Entries already present by item id — in staticdata, or earlier in the file — are
+    // skipped, so local overrides keep working.
+    private const string CustomCosmeticTag = "apace_custom";
+    private const string CustomCosmeticsFileName = "custom-cosmetics.json";
+
+    private static string CustomCosmeticsPath
+        => Path.Combine(Services.MojangAssetGate.MojangAssetsDir, "persona-catalog", CustomCosmeticsFileName);
+
+    private void LoadCustomCosmetics(List<PlayfabItem> items)
+    {
+        List<PlayfabItem> custom = [];
+        try
+        {
+            if (!File.Exists(CustomCosmeticsPath))
+            {
+                return;
+            }
+
+            using var doc = JsonDocument.Parse(File.ReadAllText(CustomCosmeticsPath));
+            if (!doc.RootElement.TryGetProperty("items", out var entries) || entries.ValueKind != JsonValueKind.Array)
+            {
+                return;
+            }
+
+            var knownIds = new HashSet<Guid>(items.Select(i => i.Id));
+            foreach (var entry in entries.EnumerateArray())
+            {
+                if (CustomCosmeticToItem(entry) is not { } item)
+                {
+                    continue; // unusable entry (bad GUIDs / missing piece fields)
+                }
+
+                if (!knownIds.Add(item.Id))
+                {
+                    continue; // already present by id — staticdata or an earlier entry wins
+                }
+
+                custom.Add(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            // custom cosmetics are optional content — a broken file must not break the picker
+            Log.Warning(ex, "Could not read the custom cosmetics from {Path}", CustomCosmeticsPath);
+            return;
+        }
+
+        items.AddRange(custom);
+    }
+
+    private static PlayfabItem? CustomCosmeticToItem(JsonElement entry)
+    {
+        if (entry.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        string? id = EntryString(entry, "id");
+        string? pieceType = EntryString(entry, "pieceType");
+        string? pieceId = EntryString(entry, "pieceId");
+        if (!Guid.TryParse(id, out Guid itemId) || string.IsNullOrWhiteSpace(pieceType) || !Guid.TryParse(pieceId, out Guid pieceGuid))
+        {
+            return null;
+        }
+
+        List<string> tags = [];
+        if (entry.TryGetProperty("tags", out var tagsProp) && tagsProp.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var tag in tagsProp.EnumerateArray())
+            {
+                if (tag.ValueKind == JsonValueKind.String && tag.GetString() is { } tagValue && tagValue.Length > 0)
+                {
+                    tags.Add(tagValue);
+                }
+            }
+        }
+
+        tags.Add(CustomCosmeticTag); // badge marker for the picker UI
+
+        int price = entry.TryGetProperty("price", out var priceProp) && priceProp.ValueKind == JsonValueKind.Number && priceProp.TryGetInt32(out int parsed) ? Math.Max(0, parsed) : 0;
+        string rarity = EntryString(entry, "rarity") ?? "common";
+        string creator = EntryString(entry, "creator") ?? "Minecraft";
+
+        return new PlayfabItem(
+            Purchasable: true,
+            Data: new PlayfabItem.PersonaData(
+                PieceType: pieceType,
+                PieceId: pieceGuid,
+                OfferId: Guid.Empty,       // no marketplace offer behind a custom cosmetic
+                Version: "1.0.0",
+                Rarity: rarity,
+                Price: price,
+                CreatorName: creator,
+                AssetFileName: null),      // binaries come from the pack content, not staticdata
+            Title: EntryString(entry, "title") ?? itemId.ToString(),
+            Description: EntryString(entry, "description") ?? "",
+            ThumbnailImageId: EntryString(entry, "thumbnailId"),
+            CreationDate: DateTime.UtcNow,
+            LastModifiedDate: DateTime.UtcNow,
+            StartDate: DateTime.MinValue,
+            Id: itemId,
+            FriendlyId: null,
+            SourceEntityId: "",
+            CreatorEntityId: "",
+            Tags: tags,
+            Keywords: new Dictionary<string, PlayfabItem.KeywordValues>(),
+            Contents: [],
+            ItemReferences: [],
+            TitleTranslations: new Dictionary<string, string>(),
+            DescriptionTranslations: new Dictionary<string, string>());
+    }
+
+    private static string? EntryString(JsonElement obj, string name)
+        => obj.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String ? prop.GetString() : null;
 
     // Re-derives the slot list from the (possibly edited) blob. The blob is only
     // ever touched through RemoveSlot/ReplaceSlot/AddPiece, so every field this
@@ -572,24 +720,11 @@ else
             }
 
             // Piece ids carry a side/default suffix: "/d" on whole pieces (equipped
-            // and placeholder alike), "/l" + "/r" pairs on left/right limb slots.
-            // Strip it before matching the catalog.
-            string pieceId = id;
-            string? limbSide = null;
-            if (id.EndsWith("/d", StringComparison.Ordinal))
-            {
-                pieceId = id[..^2];
-            }
-            else if (id.EndsWith("/l", StringComparison.Ordinal))
-            {
-                pieceId = id[..^2];
-                limbSide = "left";
-            }
-            else if (id.EndsWith("/r", StringComparison.Ordinal))
-            {
-                pieceId = id[..^2];
-                limbSide = "right";
-            }
+            // and placeholder alike), "/l" + "/r" pairs on left/right limb slots —
+            // spelled "X/l" / "X/r" in live profiles and "X/l/d" / "X/r/d" in the
+            // server-generated defaults (the same spellings ReplaceSlot writes
+            // back). Strip it before matching the catalog.
+            (string pieceId, string? limbSide) = SplitPieceId(id);
 
             // The classic-skin default pieces (base Steve/Alex shirt+pants and the
             // classic skin itself) have no catalog entry; give them their names.
@@ -631,6 +766,52 @@ else
         }
     }
 
+    // Splits an equipped/placeholder id into its base piece id and limb side:
+    // "/l" or "/l/d" → left, "/r" or "/r/d" → right, "/d" or bare → whole
+    // piece. The 4-character suffixes are tested before the 2-character ones
+    // ("/l/d" also ends with "/d"); RefreshSlots (catalog matching, the limb
+    // label) and ReplaceSlot (the pair rewrite) both go through this, so the
+    // reader and the writer share one spelling model.
+    private static (string PieceId, string? LimbSide) SplitPieceId(string id)
+    {
+        if (id.EndsWith("/l/d", StringComparison.Ordinal))
+        {
+            return (id[..^4], "left");
+        }
+
+        if (id.EndsWith("/r/d", StringComparison.Ordinal))
+        {
+            return (id[..^4], "right");
+        }
+
+        if (id.EndsWith("/d", StringComparison.Ordinal))
+        {
+            return (id[..^2], null);
+        }
+
+        if (id.EndsWith("/l", StringComparison.Ordinal))
+        {
+            return (id[..^2], "left");
+        }
+
+        if (id.EndsWith("/r", StringComparison.Ordinal))
+        {
+            return (id[..^2], "right");
+        }
+
+        return (id, null);
+    }
+
+    // The equipped-id spelling for a slot: the suffix its raw id already
+    // carries (so a limb slot stays a limb slot after a replace), or plain
+    // "/d" for ids with no recognizable suffix (the classic-skin ".Custom…"
+    // spelling) — the spelling AddPiece writes.
+    private static string EquippedSuffix(string rawId)
+    {
+        string stripped = rawId[SplitPieceId(rawId).PieceId.Length..];
+        return stripped.Length == 0 ? "/d" : stripped;
+    }
+
     private static JsonArray GetOrCreateAppsArray(JsonObject blob)
     {
         if (blob["personaCollection"] is not JsonObject collection)
@@ -667,9 +848,28 @@ else
             return;
         }
 
-        // Equipped ids carry the "/d" suffix; other fields (e.g. the per-piece "col"
+        // Equipped ids carry the "/d" suffix ("/l" + "/d" on left limb slots,
+        // "/r" + "/d" on right limb slots). Preserve the old slot entry's
+        // spelling and substitute only the piece-id part, so a limb slot stays
+        // a limb slot after a replace; other fields (e.g. the per-piece "col"
         // colors) are kept so nothing the client expects is dropped.
-        slot.Entry["id"] = $"{persona.PieceId}/d";
+        slot.Entry["id"] = $"{persona.PieceId}{EquippedSuffix(slot.RawId)}";
+
+        // A limb piece is equipped as a /l + /r pair spelling ONE piece — swap
+        // the other half too, so replacing a limb does not leave half of the
+        // old piece on the other side of the body.
+        foreach (SlotView sibling in profile.Slots)
+        {
+            if (sibling.Index != slot.Index
+                && sibling.Kind == SlotKind.Piece
+                && sibling.Entry is not null
+                && sibling.PieceId.Length > 0
+                && string.Equals(sibling.PieceId, slot.PieceId, StringComparison.OrdinalIgnoreCase))
+            {
+                sibling.Entry["id"] = $"{persona.PieceId}{EquippedSuffix(sibling.RawId)}";
+            }
+        }
+
         profile.IsDirty = true;
         RefreshSlots(profile);
     }
@@ -753,7 +953,9 @@ else
     {
         if (blocked)
         {
-            _pickerMessage = $"{item.Title}: this category already has a piece equipped — remove it first.";
+            _pickerMessage = _pickerMode == PickerMode.Replace
+                ? $"{item.Title}: this category already has a piece equipped in another slot — remove that one first."
+                : $"{item.Title}: this category already has a piece equipped — remove it first.";
             return;
         }
 
@@ -768,18 +970,23 @@ else
             return;
         }
 
+        // The same gate the picker rows rendered (the type select stays
+        // user-changeable, so the confirm re-checks what the badges showed at
+        // render time).
+        if (PickerItemBlocked(_pickerSelected))
+        {
+            _pickerMessage = _pickerMode == PickerMode.Replace
+                ? $"{_pickerSelected.Title}: this category already has a piece equipped in another slot — remove that one first."
+                : $"{_pickerSelected.Title}: this category already has a piece equipped — remove it first.";
+            return;
+        }
+
         if (_pickerMode == PickerMode.Replace && _pickerSlot is not null)
         {
             ReplaceSlot(_pickerProfile, _pickerSlot, _pickerSelected);
         }
         else if (_pickerMode == PickerMode.Add)
         {
-            if (IsAlreadyEquipped(_pickerProfile, _pickerSelected))
-            {
-                _pickerMessage = $"{_pickerSelected.Title}: this category already has a piece equipped — remove it first.";
-                return;
-            }
-
             AddPiece(_pickerProfile, _pickerSelected);
         }
 
@@ -787,18 +994,60 @@ else
     }
 
     /// <summary>
-    /// Adding (not replacing) a piece of a category the profile already has
-    /// equipped would produce two competing pieces — the dressing room applies
-    /// an arbitrary one of them. No exceptions: every category is single-slot,
-    /// limbs included (a left+right pair of the same piece is the client's own
-    /// /l+/r spelling of one piece, not two picks). The "+ Add piece" picker
-    /// shows such items greyed out with an "already equipped" badge and the
-    /// confirm refuses them.
+    /// The picker's per-row gate, shared by the row badges and the confirm.
+    /// Add refuses a category equipped anywhere. Replace refuses a category
+    /// equipped in ANOTHER slot — the slot being replaced does not count
+    /// against itself — with one deliberate exception: an item of the replaced
+    /// slot's own category is never blocked, because a swap within the
+    /// category (a limb for another limb, one shirt for another top when the
+    /// default profiles carry two shirt slots) is what replace is for; the
+    /// "one thing per category" rule only forbids ADDING a second piece of an
+    /// already-equipped category. Blocked rows are greyed out with an "already
+    /// equipped" badge and the confirm refuses them.
     /// </summary>
-    private bool IsAlreadyEquipped(ProfileView profile, PlayfabItem item)
+    private bool PickerItemBlocked(PlayfabItem item)
     {
         string? type = Persona(item)?.PieceType;
-        return type is not null && EquippedPieceTypes(profile).Contains(type);
+        if (type is null)
+        {
+            return false;
+        }
+
+        if (_pickerMode == PickerMode.Replace
+            && string.Equals(SlotPieceType(_pickerSlot), type, StringComparison.OrdinalIgnoreCase))
+        {
+            return false; // same-category swap — the point of replace
+        }
+
+        return EquippedPieceTypes(_pickerProfile!, _pickerMode == PickerMode.Replace ? _pickerSlot : null).Contains(type);
+    }
+
+    // The category of one slot, resolved exactly like EquippedPieceTypes does
+    // for it: the catalog piece's type, then the classic default clothing
+    // mapping, then the RefreshSlots-derived Category (the entry's slotname,
+    // the default-piece table or the canonical per-position fallback) when it
+    // is a persona_* category. Null when unresolvable — the gate then falls
+    // back to the plain equipped check.
+    private static string? SlotPieceType(SlotView? slot)
+    {
+        if (slot is null)
+        {
+            return null;
+        }
+
+        if (slot.CatalogItem is not null)
+        {
+            return Persona(slot.CatalogItem)?.PieceType;
+        }
+
+        if (slot.ClassicName is not null && ClassicPieceTypes.TryGetValue(slot.ClassicName, out string? classic))
+        {
+            return classic;
+        }
+
+        return slot.Category is not null && slot.Category.StartsWith("persona_", StringComparison.OrdinalIgnoreCase)
+            ? slot.Category
+            : null;
     }
 
     private static readonly Dictionary<string, string> ClassicPieceTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -812,13 +1061,16 @@ else
 
     // Piece types already equipped in the profile: catalog pieces, the classic
     // default clothing/skin pieces (no catalog entry) and equipped-but-unmatched
-    // pieces whose slotname carries a piece type.
-    private static HashSet<string> EquippedPieceTypes(ProfileView profile)
+    // pieces — via the slot's own Category, which RefreshSlots derives exactly
+    // once for both the "Unequipped" label and this gate (slotname, then the
+    // default-piece table, then the canonical per-position fallback covering
+    // the base-body slots at positions 0-5 too), so the gate and the UI agree.
+    private static HashSet<string> EquippedPieceTypes(ProfileView profile, SlotView? excludedSlot = null)
     {
         var types = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (SlotView slot in profile.Slots)
         {
-            if (slot.Kind != SlotKind.Piece)
+            if (slot.Kind != SlotKind.Piece || ReferenceEquals(slot, excludedSlot))
             {
                 continue;
             }

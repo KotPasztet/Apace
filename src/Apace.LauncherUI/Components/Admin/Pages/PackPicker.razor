@@ -1,12 +1,15 @@
 @namespace Apace.LauncherUI.Components.Admin.Pages
 @using Apace.LauncherUI.Services
 
-@* Searchable picker for thematic packs (marketplace theme tags) — a candidate
-   list under a search box plus removable chips for the selection. Far more
-   usable than hundreds of stacked checkboxes (the marketplace carries ~280
-   distinct theme tags). Stale entries (dropped by a re-sync, or legacy
-   skin-pack uuids from before the theme model) stay listed as warning chips
-   under their raw id so they can still be removed. *@
+@* Searchable picker for packs — the marketplace's thematic packs (theme tags)
+   plus the classic skin packs (selected by pack uuid). A candidate list under a
+   search box plus removable chips for the selection. Far more usable than
+   hundreds of stacked checkboxes (the marketplace carries ~280 distinct theme
+   tags). Stale entries (dropped by a re-sync, or legacy skin-pack uuids that
+   are no longer in the index) stay listed as warning chips under their raw id
+   so they can still be removed. The chip remove control is a real button, not
+   an anchor: a href="#" click resolves against the base href and navigates to
+   the panel home before the circuit's preventDefault applies. *@
 
 <div class="pack-picker">
     <input class="form-control form-control-sm" type="search" placeholder="@Placeholder"
@@ -14,7 +17,7 @@
     <div class="list-group mt-1 border rounded overflow-auto" style="max-height: 240px;">
         @if (Packs.Count == 0)
         {
-            <div class="list-group-item py-1 small text-muted">No thematic packs indexed yet — run the live persona catalog sync first.</div>
+            <div class="list-group-item py-1 small text-muted">No packs indexed yet — run the live persona catalog sync first.</div>
         }
         else if (!Matches.Any())
         {
@@ -25,9 +28,16 @@
             bool selected = Selected.Contains(pack.Tag);
             <button type="button" class="list-group-item list-group-item-action py-1 small d-flex justify-content-between align-items-center @(selected ? "active" : "")"
                     @onclick="@(async () => await ToggleAsync(pack.Tag))">
-                <span>@pack.Title <span class="text-muted small ms-1">@pack.Types</span></span>
+                <span>
+                    @pack.Title
+                    @if (pack.IsSkinPack)
+                    {
+                        <span class="badge text-bg-info fw-normal ms-1">classic</span>
+                    }
+                    <span class="text-muted small ms-1">@pack.Types</span>
+                </span>
                 <span class="small @(selected ? "" : "text-muted")">
-                    @(selected ? "✓ selected" : $"+ add ({pack.PieceCount} piece{(pack.PieceCount == 1 ? "" : "s")})")
+                    @(selected ? "✓ selected" : $"+ add ({pack.PieceCount} {CountNoun(pack)})")
                 </span>
             </button>
         }
@@ -41,7 +51,9 @@
         {
             <span class="badge @(Known(tag) ? "text-bg-secondary" : "text-bg-warning") me-1 mb-1 fw-normal">
                 @Label(tag)
-                <a href="#" class="ms-1 text-decoration-none" @onclick="@(async () => await ToggleAsync(tag))" @onclick:preventDefault="true">×</a>
+                <button type="button" class="border-0 bg-transparent p-0 ms-1"
+                        style="font: inherit; line-height: 1; color: inherit; cursor: pointer;"
+                        @onclick="@(() => ToggleAsync(tag))" aria-label="Remove">×</button>
             </span>
         }
     </div>
@@ -88,8 +100,12 @@
 
     private string Label(string tag)
         => Packs.FirstOrDefault(row => row.Tag.Equals(tag, StringComparison.OrdinalIgnoreCase)) is { } match
-            ? $"{match.Title} ({match.PieceCount} piece{(match.PieceCount == 1 ? "" : "s")})"
+            ? $"{match.Title} ({match.PieceCount} {CountNoun(match)})"
             : $"{tag} (no longer in the index)";
+
+    // "piece(s)" for thematic packs, "skin(s)" for classic skin packs.
+    private static string CountNoun(PersonaPackIndex.ThemePackRow row)
+        => row.IsSkinPack ? $"skin{(row.PieceCount == 1 ? "" : "s")}" : $"piece{(row.PieceCount == 1 ? "" : "s")}";
 
     private async Task ToggleAsync(string tag)
     {

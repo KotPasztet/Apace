@@ -84,29 +84,48 @@ public sealed class Settings
     public int? PersonaCatalogSyncIntervalHours { get; set; }
 
     /// <summary>
-    /// Skin pack gating: when true, the ApiServer filters the live marketplace's
-    /// thematic packs down to PersonaDefaultPacks (plus per-player grants from
-    /// the Marketplace Management page) instead of serving them all. Pieces
-    /// without a theme tag — the base content — always serve.
-    /// Default false — everything, the pre-gating behavior.
+    /// Deprecated legacy flag — do not use. Pack filtering is now AUTO-GATING:
+    /// packs.json carries no "gating" key and the ApiServer enforces filtering
+    /// whenever the allowed pack set (PersonaDefaultPacks ∪ per-player grants)
+    /// is non-empty, serving everything when that set is empty. Kept only so
+    /// older config.json files still load and re-save without surprises; the
+    /// panel no longer writes a value here (the Marketplace Management page
+    /// explains the auto-gating rule in prose instead of a checkbox).
     /// </summary>
     public bool? PersonaPackGating { get; set; }
 
     /// <summary>
-    /// Thematic packs enabled for every player when PersonaPackGating is on
-    /// (theme tags; legacy skin-pack uuids keep working too). Only meaningful
-    /// with gating on.
+    /// Packs enabled for every player (marketplace theme tags for persona
+    /// pieces, pack uuids for classic skin packs — both selectable in the
+    /// Marketplace Management pack picker). Auto-gating: a non-empty set —
+    /// together with the per-player grants — turns marketplace filtering on;
+    /// an empty set serves the whole marketplace.
     /// </summary>
     public List<string>? PersonaDefaultPacks { get; set; }
 
     /// <summary>
-    /// Max live marketplace pieces per dressing-room category — one shared limit
-    /// for every piece type (tops, capes, beards, …), always applied, 0 = no
-    /// limit. The marketplace has no per-category size control of its own and
-    /// the frozen client chokes on huge category lists. Default 30; the ApiServer
-    /// reads it from packs.json (hot-reloaded).
+    /// Max live marketplace pieces per dressing-room category GROUP — the
+    /// client renders one tab per group (hoodies + outerwear count together;
+    /// tops, capes and beards each count on their own where the client groups
+    /// them), always applied, 0 = no limit. The marketplace has no per-category
+    /// size control of its own and the frozen client chokes on huge category
+    /// lists. Default 30; the ApiServer reads it from packs.json (hot-reloaded).
     /// </summary>
     public int? PersonaCategoryLimit { get; set; }
+
+    /// <summary>
+    /// Client-compatibility gate for the live marketplace (Marketplace
+    /// Management page, "Allow only supported cosmetics"): when true, the
+    /// ApiServer hides every piece whose compat profile carries positive
+    /// evidence the frozen Minecraft Earth client cannot render it — geometry
+    /// format_version ≥ 1.21.0 (UV rotation, transform pivots) or &lt; 1.12.0
+    /// (legacy), any animation/effect signal, or face bones per rig
+    /// 1.19.50/1.20.10 (MCPE-165232). Unknown pieces (no compat profile yet)
+    /// keep serving — the filter only ever hides risky pieces, never unknown
+    /// ones. Default true — treat null as true; the ApiServer reads it from
+    /// packs.json ("onlySupported", hot-reloaded).
+    /// </summary>
+    public bool? PersonaOnlySupportedCosmetics { get; set; }
 
     public enum TileDataSourceE
     {
