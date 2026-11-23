@@ -256,9 +256,10 @@ else
                     <div style="max-height: 55vh; overflow-y: auto;">
                         @foreach (var item in PickerItems)
                         {
+                            bool blocked = _pickerMode == PickerMode.Add && IsAlreadyEquipped(_pickerProfile!, item);
                             <div class="d-flex align-items-center gap-3 p-2 border-bottom"
-                                 style="cursor: pointer; @(_pickerSelected?.Id == item.Id ? "background-color: rgba(90, 160, 90, 0.25);" : "")"
-                                 @onclick="() => _pickerSelected = item" @key="item.Id">
+                                 style="@(blocked ? "opacity: 0.45;" : "cursor: pointer;") @(_pickerSelected?.Id == item.Id ? "background-color: rgba(90, 160, 90, 0.25);" : "")"
+                                 @onclick="() => PickItem(item, blocked)" @key="item.Id">
                                 <img src="/api/persona-images/@(item.ThumbnailImageId).png" alt=""
                                      style="width: 40px; height: 40px; object-fit: contain;"
                                      onerror="this.onerror=null; this.src='@(MissingTextureDataUri)';" loading="lazy" />
@@ -266,6 +267,10 @@ else
                                     <div class="fw-bold">@item.Title</div>
                                     <code style="font-size: 0.65rem; color: #9a9ab0;">@item.Id</code>
                                 </div>
+                                @if (blocked)
+                                {
+                                    <span class="badge text-bg-warning fw-normal">already equipped</span>
+                                }
                                 <span style="font-weight: bold; color: @GetPersonaRarityColor(Persona(item)?.Rarity)">@(Persona(item)?.Rarity)</span>
                                 <span class="text-muted small" style="width: 80px; text-align: right;">@FormatPrice(Persona(item)?.Price)</span>
                             </div>
@@ -277,6 +282,10 @@ else
                     </div>
                 </div>
                 <div class="modal-footer">
+                    @if (_pickerMessage is not null)
+                    {
+                        <span class="text-danger small me-auto">⚠ @_pickerMessage</span>
+                    }
                     <button type="button" class="btn btn-secondary" @onclick="ClosePicker">Cancel</button>
                     <button type="button" class="btn btn-success" @onclick="ConfirmPicker" disabled="@(_pickerSelected is null)">
                         @(_pickerMode == PickerMode.Replace ? "Replace" : "Add")
@@ -383,19 +392,20 @@ else
     private ProfileView? _pickerProfile;
     private SlotView? _pickerSlot;
     private PlayfabItem? _pickerSelected;
+    private string? _pickerMessage;
 
     private string _pickerPieceType = "";
     private string PickerPieceType
     {
         get => _pickerPieceType;
-        set { _pickerPieceType = value; _pickerSelected = null; }
+        set { _pickerPieceType = value; _pickerSelected = null; _pickerMessage = null; }
     }
 
     private string _pickerSearch = "";
     private string PickerSearch
     {
         get => _pickerSearch;
-        set { _pickerSearch = value; _pickerSelected = null; }
+        set { _pickerSearch = value; _pickerSelected = null; _pickerMessage = null; }
     }
 
     private IEnumerable<PlayfabItem> PickerItems => _catalogItems
@@ -720,6 +730,7 @@ else
         _pickerPieceType = slot.CatalogItem is not null ? Persona(slot.CatalogItem)?.PieceType ?? "" : "";
         _pickerSearch = "";
         _pickerSelected = null;
+        _pickerMessage = null;
         _pickerOpen = true;
     }
 
@@ -731,11 +742,24 @@ else
         _pickerPieceType = "";
         _pickerSearch = "";
         _pickerSelected = null;
+        _pickerMessage = null;
         _pickerOpen = true;
     }
 
     private void ClosePicker()
         => _pickerOpen = false;
+
+    private void PickItem(PlayfabItem item, bool blocked)
+    {
+        if (blocked)
+        {
+            _pickerMessage = $"{item.Title}: this category already has a piece equipped — remove it first.";
+            return;
+        }
+
+        _pickerSelected = item;
+        _pickerMessage = null;
+    }
 
     private void ConfirmPicker()
     {
@@ -750,10 +774,77 @@ else
         }
         else if (_pickerMode == PickerMode.Add)
         {
+            if (IsAlreadyEquipped(_pickerProfile, _pickerSelected))
+            {
+                _pickerMessage = $"{_pickerSelected.Title}: this category already has a piece equipped — remove it first.";
+                return;
+            }
+
             AddPiece(_pickerProfile, _pickerSelected);
         }
 
         ClosePicker();
+    }
+
+    // Limb pieces (arms/legs) legitimately occupy a left + right pair of slots,
+    // so an equipped limb piece never blocks adding another one.
+    private static readonly HashSet<string> MultiSlotPieceTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "persona_arms",
+        "persona_legs",
+    };
+
+    /// <summary>
+    /// Adding (not replacing) a piece of a category the profile already has
+    /// equipped would produce two competing pieces — the dressing room applies
+    /// an arbitrary one of them. Blocked for every single-slot category, e.g.
+    /// bottoms: the "+ Add piece" picker shows such items greyed out with an
+    /// "already equipped" badge and the confirm refuses them.
+    /// </summary>
+    private bool IsAlreadyEquipped(ProfileView profile, PlayfabItem item)
+    {
+        string? type = Persona(item)?.PieceType;
+        return type is not null
+            && !MultiSlotPieceTypes.Contains(type)
+            && EquippedPieceTypes(profile).Contains(type);
+    }
+
+    private static readonly Dictionary<string, string> ClassicPieceTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Steve's shirt"] = "persona_top",
+        ["Alex's shirt"] = "persona_top",
+        ["Steve's pants"] = "persona_bottom",
+        ["Alex's pants"] = "persona_bottom",
+        ["Classic skin"] = "persona_skin",
+    };
+
+    // Piece types already equipped in the profile: catalog pieces, the classic
+    // default clothing/skin pieces (no catalog entry) and equipped-but-unmatched
+    // pieces whose slotname carries a piece type.
+    private static HashSet<string> EquippedPieceTypes(ProfileView profile)
+    {
+        var types = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (SlotView slot in profile.Slots)
+        {
+            if (slot.Kind != SlotKind.Piece)
+            {
+                continue;
+            }
+
+            string? type = slot.CatalogItem is not null
+                ? Persona(slot.CatalogItem)?.PieceType
+                : slot.ClassicName is not null && ClassicPieceTypes.TryGetValue(slot.ClassicName, out string? classic)
+                    ? classic
+                    : slot.Category is not null && slot.Category.StartsWith("persona_", StringComparison.OrdinalIgnoreCase)
+                        ? slot.Category
+                        : null;
+            if (!string.IsNullOrEmpty(type))
+            {
+                types.Add(type);
+            }
+        }
+
+        return types;
     }
 
     private async Task ExportSkinAsync()
