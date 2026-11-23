@@ -1,7 +1,9 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Apace.ApiServer.Models.Playfab;
+using Apace.ApiServer.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -17,28 +19,58 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 // aud == "https://playfab.com/B63A0803D3653643/" (the MCE title id hash), and registers
 // every Receipt.Entitlements[] entry as a pack decryption key:
 //   FriendlyId  -> ContentIdentity of the piece pack (the uuid in contents.json @0x11)
-//   ContentKey  -> AES-256-CBC key string (key[0:32] = key, key[0:16] = IV) the client
-//                  uses to decrypt that pack's contents.json body
-// Without a key for a pack's ContentIdentity the client cannot decrypt contents.json
-// and rejects the pack; the encrypted-container Apace pieces below therefore pair with
-// the entitlements served here. The key constant mirrors APACE_CONTENT_KEY in
-// scripts/build_apace_piece.py - keep them in sync.
+//   ContentKey  -> key string (key[0:32] = AES key, key[0:16] = IV) the client derives
+//                  for that pack's contents.json body
+// The client, however, decrypts PERSONA packs with its own BUILT-IN key (below) —
+// "used to decrypt/encrypt every Skin Pack and Persona on the Minecraft Marketplace...
+// the same key is used every single time" (AES-256-CFB8, silica.codes key disclosure,
+// MerelyMiserable/MerelyCapes ships the same pair against the live persona pipeline).
+// The entitlements below therefore mirror that built-in key per ContentIdentity (the
+// derivation matches), so key providers that consult receipts resolve the same bytes;
+// they must never deliver a DIFFERENT key for a persona pack uuid or decryption breaks.
+// The key constant mirrors SKIN_PERSONA_KEY in scripts/build_apace_piece.py — keep in sync.
 [Route("inventory")]
 [Route("20CA2.playfabapi.com/inventory")]
 internal sealed class InventoryController : ApaceControllerBase
 {
-    private const string ApaceContentKey = "9f2c7a51e8b04d63a7c15f8e2d94b6a0c3e8517d0fa94b62c8d7e1365a04bf19";
+    private const string ApaceContentKey = "s5s5ejuDru4uchuF2drUFuthaspAbepE";
 
-    // (piece pack ContentIdentity = manifest uuid, fixed arbitrary InstanceId) per Apace cape
+    // (piece pack ContentIdentity = the piece uuid, fixed arbitrary InstanceId) per Apace cape.
+    // The pack ContentIdentity IS the piece uuid now (the rebuilt containers use one uuid:
+    // manifest.header.uuid == contents.json header uuid == meta piece_id == catalog PieceId —
+    // the old separate pack uuids never matched the real-piece shape and the cape never applied).
     private static readonly (string FriendlyId, string InstanceId)[] ApaceEntitlements =
     [
-        ("068257f6-e709-4a7d-ae48-af8b9455bbd5", "7c1d2e4a-93b5-4f60-8a21-5c4d6e7f8a01"), // Apace Cape 128
-        ("7c00868e-1dd7-488e-a6e3-1aa580f67146", "8d2e3f5b-a4c6-4071-9b32-6d5e7f8a9b02"), // Apace Cape 256
-        ("01a0a816-4da1-4540-bd57-bf4cda590b62", "9e3f4a6c-b5d7-4182-ac43-7e6f8a9bac03"), // Apace Cape 512
+        ("3199377b-130a-4189-9b90-484ae751c54f", "7c1d2e4a-93b5-4f60-8a21-5c4d6e7f8a01"), // Apace Cape 128
+        ("a76970a2-33fe-48f6-b8fc-dd54679f5cdb", "8d2e3f5b-a4c6-4071-9b32-6d5e7f8a9b02"), // Apace Cape 256
+        ("5cae9ae7-bf1b-4ee2-8edd-9615743ea02c", "9e3f4a6c-b5d7-4182-ac43-7e6f8a9bac03"), // Apace Cape 512
     ];
 
-    private static string BuildReceiptToken()
+    private static string BuildReceiptToken(out int entitlementCount, out int customCount)
     {
+        // custom cosmetics first, then the built-in Apace capes — the merge dedupes
+        // by FriendlyId (pack uuid) with the panel's custom entries taking
+        // precedence over a same-named built-in pack
+        var entitlements = new Dictionary<string, (string ContentKey, string InstanceId)>(StringComparer.OrdinalIgnoreCase);
+        foreach (var custom in CustomCosmetics.Entitlements)
+        {
+            entitlements[custom.PackUuid] = (custom.ContentKey, StableInstanceId(custom.PackUuid));
+        }
+
+        customCount = entitlements.Count;
+        foreach (var e in ApaceEntitlements)
+        {
+            if (!entitlements.ContainsKey(e.FriendlyId))
+            {
+                entitlements[e.FriendlyId] = (ApaceContentKey, e.InstanceId);
+            }
+        }
+
+        if (customCount > 0)
+        {
+            Log.Debug("inventory GetInventoryItems adding {Count} custom cosmetic entitlement(s) from custom-cosmetics.json", customCount);
+        }
+
         var payload = JsonSerializer.Serialize(new Dictionary<string, object>()
         {
             ["iss"] = "https://playfab.com",
@@ -46,18 +78,28 @@ internal sealed class InventoryController : ApaceControllerBase
             ["Receipt"] = new Dictionary<string, object>()
             {
                 ["EntityId"] = "Apace",
-                ["Entitlements"] = ApaceEntitlements.Select(e => new Dictionary<string, object>()
+                ["Entitlements"] = entitlements.Select(e => new Dictionary<string, object>()
                 {
-                    ["FriendlyId"] = e.FriendlyId,
-                    ["ContentKey"] = ApaceContentKey,
+                    ["FriendlyId"] = e.Key,
+                    ["ContentKey"] = e.Value.ContentKey,
                     ["CreatorId"] = "Minecraft",
                     ["Quantity"] = 1,
-                    ["InstanceId"] = e.InstanceId,
+                    ["InstanceId"] = e.Value.InstanceId,
                 }).ToArray(),
             },
         });
         // JWT shape header.payload.signature; alg=none, empty signature
+        entitlementCount = entitlements.Count;
         return $"{Base64Url("""{"alg":"none","typ":"JWT"}""")}.{Base64Url(payload)}.";
+    }
+
+    // Custom cosmetics need a receipt InstanceId (same field shape as the built-in
+    // capes) whose only requirement is stability across requests — derive it
+    // deterministically from the pack uuid instead of storing one per item.
+    private static string StableInstanceId(string packUuid)
+    {
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes("apace-custom-entitlement:" + packUuid));
+        return new Guid(hash.AsSpan(0, 16)).ToString();
     }
 
     private static string Base64Url(string s)
@@ -122,8 +164,8 @@ internal sealed class InventoryController : ApaceControllerBase
     public async Task<ContentHttpResult> GetInventoryItems()
     {
         await ReadBodyAsync();
-        var receipt = BuildReceiptToken();
-        Log.Information("inventory GetInventoryItems serving {Count} Apace content-key entitlements", ApaceEntitlements.Length);
+        var receipt = BuildReceiptToken(out int entitlementCount, out int customCount);
+        Log.Information("inventory GetInventoryItems serving {Count} content-key entitlements ({Custom} custom cosmetic(s))", entitlementCount, customCount);
         return JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",
