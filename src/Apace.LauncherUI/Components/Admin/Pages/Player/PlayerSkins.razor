@@ -786,27 +786,19 @@ else
         ClosePicker();
     }
 
-    // Limb pieces (arms/legs) legitimately occupy a left + right pair of slots,
-    // so an equipped limb piece never blocks adding another one.
-    private static readonly HashSet<string> MultiSlotPieceTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "persona_arms",
-        "persona_legs",
-    };
-
     /// <summary>
     /// Adding (not replacing) a piece of a category the profile already has
     /// equipped would produce two competing pieces — the dressing room applies
-    /// an arbitrary one of them. Blocked for every single-slot category, e.g.
-    /// bottoms: the "+ Add piece" picker shows such items greyed out with an
-    /// "already equipped" badge and the confirm refuses them.
+    /// an arbitrary one of them. No exceptions: every category is single-slot,
+    /// limbs included (a left+right pair of the same piece is the client's own
+    /// /l+/r spelling of one piece, not two picks). The "+ Add piece" picker
+    /// shows such items greyed out with an "already equipped" badge and the
+    /// confirm refuses them.
     /// </summary>
     private bool IsAlreadyEquipped(ProfileView profile, PlayfabItem item)
     {
         string? type = Persona(item)?.PieceType;
-        return type is not null
-            && !MultiSlotPieceTypes.Contains(type)
-            && EquippedPieceTypes(profile).Contains(type);
+        return type is not null && EquippedPieceTypes(profile).Contains(type);
     }
 
     private static readonly Dictionary<string, string> ClassicPieceTypes = new(StringComparer.OrdinalIgnoreCase)
