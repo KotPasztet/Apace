@@ -32,7 +32,6 @@ public sealed class Settings
         PlayableScale = 4,
         OnlyAllowLocalLogin = false,
         BridgePort = 19132,
-        RequireMojangAssets = true,
         LivePersonaCatalog = true,
         PersonaCatalogSyncIntervalHours = 24,
     };
@@ -67,16 +66,10 @@ public sealed class Settings
     public ushort? BridgePort { get; set; }
 
     /// <summary>
-    /// Mojang asset gate: the server refuses to start while the additional
-    /// Mojang assets are missing from the persistent data dir. Default true.
-    /// </summary>
-    public bool? RequireMojangAssets { get; set; }
-
-    /// <summary>
     /// Live persona marketplace: the panel syncs the full PersonaDurable catalog
     /// from the still-live PlayFab marketplace (title 20ca2) into the data volume
     /// and the ApiServer serves it unlock-all instead of the dead legacy items.
-    /// Still behind the Mojang assets consent gate. Default true.
+    /// Default true.
     /// </summary>
     public bool? LivePersonaCatalog { get; set; }
 
@@ -275,12 +268,6 @@ public sealed class Settings
         {
             Log.Warning($"Bridge port is invalid, using default: '{Default.BridgePort}'");
             settings.BridgePort = Default.BridgePort;
-        }
-
-        if (settings.RequireMojangAssets is null)
-        {
-            Log.Warning($"RequireMojangAssets is invalid, using default: '{Default.RequireMojangAssets}'");
-            settings.RequireMojangAssets = Default.RequireMojangAssets;
         }
 
         if (settings.LivePersonaCatalog is null)

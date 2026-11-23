@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Generate the Mojang asset manifest for the Apace asset gate.
+"""Generate the Mojang asset manifest.
 
 The repo ships ONLY this manifest (facts about the additional Mojang assets the
-server needs) — never the assets themselves. The panel's asset gate
-(see docs/mojang-asset-gate.md) reads the manifest, shows the consent prompt and
-downloads the files into the persistent data volume (<data>/mojang-assets/).
+server can serve) — never the assets themselves. The manifest records source
+URLs and sha256/size facts; the files live in the persistent data volume
+(<data>/mojang-assets/), which the CDN controllers serve from and the live
+persona marketplace sync replaces the legacy pieces of.
 
 Item set (ground truth = the repo itself):
 

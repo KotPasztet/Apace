@@ -384,8 +384,8 @@ else
     private static string[] ThumbnailDirs =>
     [
         Path.Combine(Program.ProgramsDir, "wwwroot", "playfab", "images"),
-        Path.Combine(Services.MojangAssetGate.MojangAssetsDir, "images"),
-        Path.Combine(Services.MojangAssetGate.MojangAssetsDir, "persona-catalog", "thumbnails"),
+        Path.Combine(Services.MojangAssetPaths.MojangAssetsDir, "images"),
+        Path.Combine(Services.MojangAssetPaths.MojangAssetsDir, "persona-catalog", "thumbnails"),
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Apace.ApiServer", "wwwroot", "playfab", "images")),
     ];
 
@@ -553,7 +553,7 @@ else
     private const string CustomCosmeticsFileName = "custom-cosmetics.json";
 
     private static string CustomCosmeticsPath
-        => Path.Combine(Services.MojangAssetGate.MojangAssetsDir, "persona-catalog", CustomCosmeticsFileName);
+        => Path.Combine(Services.MojangAssetPaths.MojangAssetsDir, "persona-catalog", CustomCosmeticsFileName);
 
     private void LoadCustomCosmetics(List<PlayfabItem> items)
     {

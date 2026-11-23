@@ -21,8 +21,8 @@ namespace Apace.LauncherUI.Services;
 // strip; binaries and thumbnails are downloaded lazily, on the first client
 // request, never during the sync.
 //
-// Sync triggers: first panel start after the Mojang assets consent, then every
-// PersonaCatalogSyncIntervalHours (default 24), plus the admin panel's
+// Sync triggers: every panel start when the volume index is missing or older
+// than PersonaCatalogSyncIntervalHours (default 24), plus the admin panel's
 // "Sync now" button. Polite by design: one request per ~0.7 s, skip/top
 // pagination, full catalog ≈ 400 pages (Server count ~40k entries, ~12k unique
 // pieces after dedupe).
@@ -40,7 +40,7 @@ public static class LivePersonaCatalogSync
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly JsonSerializerOptions RawItemJsonOptions = new(JsonSerializerDefaults.General) { WriteIndented = false };
 
-    public static string CatalogDir => Path.Combine(MojangAssetGate.MojangAssetsDir, CatalogDirName);
+    public static string CatalogDir => Path.Combine(MojangAssetPaths.MojangAssetsDir, CatalogDirName);
     public static string IndexPath => Path.Combine(CatalogDir, IndexFileName);
     public static string ItemsDir => Path.Combine(CatalogDir, ItemsDirName);
 
@@ -193,21 +193,15 @@ public static class LivePersonaCatalogSync
     private static int _scheduledRunStarted;
 
     /// <summary>
-    /// Starts the background sync when it is due: the asset gate consent is
-    /// recorded, the toggle is on, and the volume index is missing or older than
-    /// the configured interval. Safe to call from every startup path.
+    /// Starts the background sync when it is due: the toggle is on and the
+    /// volume index is missing or older than the configured interval. Safe to
+    /// call from every startup path.
     /// </summary>
     public static void EnsureScheduledSyncStarted(Settings settings, ILogger logger)
     {
         if (settings.LivePersonaCatalog is false)
         {
             return; // toggle off — the live marketplace is disabled
-        }
-
-        if (!MojangAssetGate.HasConsent)
-        {
-            logger.Debug("Live persona catalog sync not started — the Mojang assets consent has not been recorded yet");
-            return;
         }
 
         if (IsSyncing)

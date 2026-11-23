@@ -5,16 +5,16 @@ using ILogger = Serilog.ILogger;
 
 namespace Apace.ApiServer.Utils;
 
-// Startup validation of the additional Mojang assets for the ApiServer's
-// direct (panel-less) start path.
-//
-// The panel's asset gate downloads the assets described by the committed
-// manifest (mojang-assets.manifest.json) into the persistent data dir; the
-// panel passes the dir with --mojang-assets-dir and the gate requirement with
-// --require-mojang-assets. This helper re-verifies the same completeness
-// rules: every VERIFIED manifest entry must be present (sha256-checked when
-// the manifest records one); entries with no reachable source at manifest
-// generation time ("verified": false) are never required.
+// Manifest completeness check of the additional Mojang assets for the
+// ApiServer's direct (panel-less) start path — informational only: startup
+// never blocks on these assets (their download sources are dead and the live
+// marketplace catalog replaces the legacy pieces). The panel syncs the assets
+// described by the committed manifest (mojang-assets.manifest.json) into the
+// persistent data dir; the panel passes the dir with --mojang-assets-dir. This
+// helper counts the same completeness rules: every VERIFIED manifest entry
+// must be present (sha256-checked when the manifest records one); entries with
+// no reachable source at manifest generation time ("verified": false) are not
+// required.
 public static class MojangAssets
 {
     public const string ManifestFileName = "mojang-assets.manifest.json";
@@ -60,51 +60,6 @@ public static class MojangAssets
 
         logger.Warning("Mojang asset manifest not found — searched: {Candidates}", string.Join(", ", candidates));
         return null;
-    }
-
-    /// <summary>
-    /// Fallback signal for the no-manifest case: the legacy staticdata layout
-    /// still has persona piece binaries (pre-gate installs / dev checkouts with
-    /// staticdata-extras committed), so the CDN controllers can serve them.
-    /// Mirrors the panel gate's missing-manifest policy (docs/mojang-asset-gate.md).
-    /// </summary>
-    public static bool HasLegacyPersonaAssets(string staticDataPath, string assetsDir, ILogger logger)
-    {
-        var candidates = new List<string>();
-        foreach (string manifestCandidate in ManifestPathCandidates)
-        {
-            string? directory = Path.GetDirectoryName(manifestCandidate);
-            if (directory is not null)
-            {
-                candidates.Add(Path.Combine(directory, "persona"));
-            }
-        }
-
-        candidates.Add(Path.Combine(staticDataPath, "playfab", "persona"));
-        candidates.Add(Path.Combine(assetsDir, "playfab", "persona"));
-
-        foreach (string candidate in candidates.Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            try
-            {
-                if (!Directory.Exists(candidate))
-                {
-                    continue;
-                }
-
-                if (Directory.EnumerateFiles(candidate, "*.zip").Any())
-                {
-                    logger.Information("Legacy persona assets found in {Dir} — proceeding without the manifest (completeness cannot be verified)", candidate);
-                    return true;
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                logger.Debug("Could not inspect persona directory {Dir}: {Reason}", candidate, ex.Message);
-            }
-        }
-
-        return false;
     }
 
     /// <summary>

@@ -7,24 +7,22 @@ entries, ~12.4k unique character-creator pieces incl. ~2.2k emotes after
 deduplication). Apace syncs that catalog **at runtime** and serves every item
 **unlocked** — no locks, no achievements, no prices.
 
-The legal frame is the same one `docs/mojang-asset-gate.md` established, kept
-intact here:
+The legal frame is unchanged:
 
 - **Metadata = facts.** Item metadata (titles, piece ids, CDN URLs) is cached as
   JSON in the persistent data volume and never committed to the repo. The repo
   ships code only.
 - **Binaries = content.** Persona piece binaries and thumbnails are downloaded
-  **lazily, on the first client request, behind the Mojang-assets consent** and
-  stored in the volume. Nothing is redistributed ahead of a player actually
-  asking for it, and nothing lands in the installation directory or the repo.
-- The `RequireMojangAssets` gate policy (default ON) and the consent flow are
-  unchanged — the live catalog only runs when the asset consent has been
-  accepted, and the legacy manifest/fallbackUrls machinery is untouched.
+  **lazily, on the first client request** and stored in the volume. Nothing is
+  redistributed ahead of a player actually asking for it, and nothing lands in
+  the installation directory or the repo.
+- There is no asset gate: startup never blocks on the legacy persona assets
+  (their download sources are dead and the live catalog replaces them).
 
 ## Architecture
 
-Two processes share the data volume (`<data>/mojang-assets/persona-catalog/`),
-mirroring the asset-gate split (panel downloads, ApiServer serves):
+Two processes share the data volume (`<data>/mojang-assets/persona-catalog/`)
+(panel syncs, ApiServer serves):
 
 ```
 panel (Apace.LauncherUI)                          ApiServer (Apace.ApiServer)
@@ -181,8 +179,8 @@ values, ~55% of pieces carry one). So:
 
 1. Push the branch, let CI build the image (`dotnet build` is already verified
    here: 0 errors).
-2. Start the panel, accept the Mojang-assets consent (asset gate), keep
-   **Live persona marketplace** ON, press **Sync now** in System Configuration →
+2. Start the panel, keep **Live persona marketplace** ON, press
+   **Sync now** in System Configuration →
    Data Handling — the counters should fill: ~39.8k raw entries → ~12.4k unique
    pieces (~2.2k emotes counted but not offered).
 3. Start the server components; confirm the ApiServer log line
@@ -194,5 +192,5 @@ values, ~55% of pieces carry one). So:
 5. Re-check the panel counters (probed live/dead, binaries cached) and verify a
    dead item (probe 404 on all shapes) disappears from the dressing room.
 6. Release `mojang-persona-mirror` stays parked — deliberately not created
-   (user decision 22.11); the `fallbackUrls` machinery in the manifest remains
-   useful for the legacy asset gate and is untouched.
+   (user decision 22.11); the manifest's `fallbackUrls` records remain as
+   facts, and nothing gates on them.

@@ -65,13 +65,13 @@ public static class CustomCosmeticsStore
 
     // Resolved per use — Program.DataDir is set after static init (same caveat
     // as the ThumbnailDirs lookup in PlayerSkins.razor).
-    public static string CatalogDir => Path.Combine(MojangAssetGate.MojangAssetsDir, "persona-catalog");
+    public static string CatalogDir => Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog");
     public static string StorePath => Path.Combine(CatalogDir, "custom-cosmetics.json");
-    public static string PersonaDir => Path.Combine(MojangAssetGate.MojangAssetsDir, "playfab", "persona");
+    public static string PersonaDir => Path.Combine(MojangAssetPaths.MojangAssetsDir, "playfab", "persona");
     public static string[] ThumbnailDirs =>
     [
-        Path.Combine(MojangAssetGate.MojangAssetsDir, "playfab", "images"),
-        Path.Combine(MojangAssetGate.MojangAssetsDir, "images"),
+        Path.Combine(MojangAssetPaths.MojangAssetsDir, "playfab", "images"),
+        Path.Combine(MojangAssetPaths.MojangAssetsDir, "images"),
     ];
 
     /// <summary>

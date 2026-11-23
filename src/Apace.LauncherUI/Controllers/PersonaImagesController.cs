@@ -20,15 +20,15 @@ internal sealed class PersonaImagesController : ControllerBase
     // Published layout: the ApiServer is published into the components dir next
     // to the panel, thumbnails end up in its wwwroot. When running from the repo
     // (bin/Debug/net10.0), fall back to the ApiServer project directory instead.
-    // The data volume dirs cover the rest: the asset gate downloads the dressing
-    // room thumbnails into mojang-assets/images and the live persona catalog
+    // The data volume dirs cover the rest: the dressing
+    // room thumbnails live in mojang-assets/images and the live persona catalog
     // caches marketplace thumbnails into persona-catalog/thumbnails. Resolved per
     // request (expression-bodied) — Program.DataDir is set after static init.
     private static string[] ImagesDirs =>
     [
         Path.Combine(Program.ProgramsDir, "wwwroot", "playfab", "images"),
-        Path.Combine(Services.MojangAssetGate.MojangAssetsDir, "images"),
-        Path.Combine(Services.MojangAssetGate.MojangAssetsDir, "persona-catalog", "thumbnails"),
+        Path.Combine(Services.MojangAssetPaths.MojangAssetsDir, "images"),
+        Path.Combine(Services.MojangAssetPaths.MojangAssetsDir, "persona-catalog", "thumbnails"),
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Apace.ApiServer", "wwwroot", "playfab", "images")),
     ];
 

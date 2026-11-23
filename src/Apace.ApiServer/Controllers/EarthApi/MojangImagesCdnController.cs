@@ -9,7 +9,7 @@ namespace Apace.ApiServer.Controllers.EarthApi;
 // the persistent Mojang assets dir in the data volume. The wwwroot copies are
 // served earlier by UseStaticFiles when they exist — this controller is the
 // data-volume source for installs where the repo no longer ships the images
-// (the asset gate downloads them to <data>/mojang-assets/images/).
+// (they live in <data>/mojang-assets/images/).
 // Only simple file names are accepted.
 //
 // Live persona marketplace: thumbnails for items the panel synced from the live

@@ -100,51 +100,6 @@
     </div>
 }
 
-@if (_mojangAssetsPending)
-{
-    <div class="alert alert-warning">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div>
-                <strong>Additional Mojang assets required</strong><br />
-                @if (_mojangAssetsSummary is not null)
-                {
-                    <small>@_mojangAssetsSummary.DownloadFileCount file(s) (@FormatBytes(_mojangAssetsSummary.DownloadBytes)) need to be downloaded once to start the server.</small>
-                }
-                @if (_mojangAssetsErrors is { Count: > 0 })
-                {
-                    <br />
-                    <small class="text-danger">Download failed — retry below:</small>
-                    <ul class="text-danger mb-0 ps-3">
-                        @foreach (var error in _mojangAssetsErrors.Take(3))
-                        {
-                            <li><small>@error</small></li>
-                        }
-                    </ul>
-                    @if (_mojangAssetsErrors.Count > 3)
-                    {
-                        <small class="text-danger">(+@(_mojangAssetsErrors.Count - 3) more — see the panel logs)</small>
-                    }
-                }
-            </div>
-            <div>
-                <button class="btn btn-warning btn-sm" @onclick="AcceptMojangAssets" disabled="@(_downloadingMojangAssets || _mojangAssetsSummary is null)">
-                    @(_mojangAssetsErrors is { Count: > 0 } ? "↻ Retry" : "✓ Accept & Download")
-                </button>
-            </div>
-        </div>
-        @if (_downloadingMojangAssets)
-        {
-            <div class="progress mt-2" style="height: 8px;">
-                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                     style="width: @(GetMojangDownloadPercent())%"></div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-1">
-                <small class="text-muted">Downloading additional Mojang assets... @_mojangAssetsDownloaded/@_mojangAssetsTotal@(_mojangAssetsCurrentFile is null ? "" : $" — {_mojangAssetsCurrentFile}")</small>
-            </div>
-        }
-    </div>
-}
-
 <div class="section-title">Components</div>
 <div class="comp-grid mb-4">
     @foreach (var comp in ServerManager.Components)
@@ -301,15 +256,6 @@
     private Timer? _statusRefreshTimer;
     private TimeZoneInfo? _userTimeZone;
 
-    // Mojang asset gate state (polled like the EULA / resource pack alerts)
-    private bool _mojangAssetsPending;
-    private Apace.LauncherUI.Services.MojangAssetGateSummary? _mojangAssetsSummary;
-    private bool _downloadingMojangAssets;
-    private int _mojangAssetsDownloaded;
-    private int _mojangAssetsTotal;
-    private string? _mojangAssetsCurrentFile;
-    private IReadOnlyList<string>? _mojangAssetsErrors;
-
     protected override async Task OnInitializedAsync()
     {
         // Refresh before anything else (and before the auth lookup): the page
@@ -324,7 +270,7 @@
         LogService.OnLogReceived += HandleUpdate;
         ServerManager.OnStatusChanged += HandleUpdate;
 
-        // Poll EULA + resource pack + Mojang asset prompt status every 2 seconds during server startup
+        // Poll EULA + resource pack prompt status every 2 seconds during server startup
         _eulaCheckTimer = new Timer(async _ =>
         {
             var pending = Apace.LauncherUI.FileChecker.EulaPending;
@@ -336,26 +282,10 @@
                 ? _resourcePackPending
                 : Apace.LauncherUI.FileChecker.ResourcePackPending;
 
-            // Mojang asset gate: while our own download runs, keep the local
-            // state (progress is reported through the handler below); otherwise
-            // mirror the gate's pending flag + summary so the alert reacts to
-            // startup attempts made from other pages too.
-            var mojangPending = _downloadingMojangAssets
-                ? _mojangAssetsPending
-                : Apace.LauncherUI.Services.MojangAssetGate.Pending;
-            var mojangSummary = Apace.LauncherUI.Services.MojangAssetGate.GetSummary();
-            var mojangErrors = Apace.LauncherUI.Services.MojangAssetGate.LastErrors;
-
-            if (_eulaPending != pending || _resourcePackPending != resourcePackPending
-                || _mojangAssetsPending != mojangPending
-                || _mojangAssetsSummary?.DownloadFileCount != mojangSummary?.DownloadFileCount
-                || (_mojangAssetsErrors is null) != (mojangErrors is { Count: > 0 }))
+            if (_eulaPending != pending || _resourcePackPending != resourcePackPending)
             {
                 _eulaPending = pending;
                 _resourcePackPending = resourcePackPending;
-                _mojangAssetsPending = mojangPending;
-                _mojangAssetsSummary = mojangSummary;
-                _mojangAssetsErrors = mojangErrors is { Count: > 0 } ? mojangErrors : null;
                 await InvokeAsync(StateHasChanged);
             }
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
@@ -461,63 +391,6 @@
         FileChecker.AcceptEula();
         _eulaPending = false;
     }
-
-    private async Task AcceptMojangAssets()
-    {
-        if (Apace.LauncherUI.Services.MojangAssetGate.IsDownloading)
-        {
-            return;
-        }
-
-        _downloadingMojangAssets = true;
-        _mojangAssetsDownloaded = 0;
-        _mojangAssetsTotal = 0;
-        _mojangAssetsErrors = null;
-
-        try
-        {
-            bool complete = await Apace.LauncherUI.Services.MojangAssetGate.AcceptMojangAssetsAndDownloadAsync(
-                new Progress<Apace.LauncherUI.Services.MojangAssetDownloadProgress>(progress =>
-                {
-                    _mojangAssetsDownloaded = progress.DownloadedFiles;
-                    _mojangAssetsTotal = progress.TotalFiles;
-                    _mojangAssetsCurrentFile = progress.CurrentFile;
-                    InvokeAsync(StateHasChanged);
-                }));
-
-            if (complete)
-            {
-                _mojangAssetsPending = false;
-                _mojangAssetsErrors = null;
-            }
-            else
-            {
-                _mojangAssetsErrors = Apace.LauncherUI.Services.MojangAssetGate.LastErrors;
-            }
-        }
-        catch (Exception ex)
-        {
-            _mojangAssetsErrors = [$"Unexpected error: {ex.Message}"];
-        }
-        finally
-        {
-            _downloadingMojangAssets = false;
-            _mojangAssetsCurrentFile = null;
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-
-    private int GetMojangDownloadPercent()
-        => _mojangAssetsTotal > 0 ? Math.Clamp(_mojangAssetsDownloaded * 100 / _mojangAssetsTotal, 0, 100) : 0;
-
-    private static string FormatBytes(long? bytes)
-        => bytes switch
-        {
-            null or <= 0 => "0 KiB",
-            < 1024 * 1024 => $"{bytes.Value / 1024.0:F0} KiB",
-            < 1024 * 1024 * 1024 => $"{bytes.Value / (1024.0 * 1024.0):F1} MiB",
-            _ => $"{bytes.Value / (1024.0 * 1024.0 * 1024.0):F2} GiB",
-        };
 
     private async Task DownloadResourcePack()
     {

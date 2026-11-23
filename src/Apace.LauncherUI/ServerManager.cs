@@ -497,37 +497,16 @@ public sealed class ServerManager : IDisposable
         var logger = Log.Logger;
         var settings = Settings.Instance;
 
-        // Mojang asset gate: page-level component starts honour the same gate as
-        // the full Start flow — without the assets the API server would fail-fast
-        // on boot anyway, so the components must not be launched. With consent
-        // recorded this silently (re)downloads the missing assets first; without
-        // consent it arms the prompt on the Server Status page and refuses.
-        if (!await MojangAssetGate.EnsureReadyAsync(settings, logger, CancellationToken.None))
-        {
-            logger.Error("Additional Mojang assets missing — component startup blocked by the asset gate (accept the download on the Server Status page)");
-
-            lock (_statusLock)
-            {
-                foreach (var comp in reservedToStart)
-                {
-                    comp.Status = ServerStatus.Offline;
-                }
-
-                if (Status is ServerStatus.Starting)
-                {
-                    Status = ServerStatus.Offline;
-                }
-            }
-
-            OnStatusChanged?.Invoke();
-            return false;
-        }
+        // Derived Mojang assets (e.g. the "Minecraft Default Skins" pack built
+        // from the volume's default skin textures) — best-effort, never blocks.
+        await Services.MojangAssetPostProcessor.RunAllSafe(
+            Services.MojangAssetPaths.MojangAssetsDir, logger);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // Safety timeout
 
-        // Live persona marketplace: with the gate out of the way, kick the scheduled
-        // catalog sync (first start after consent, then every configured interval;
-        // runs in the background, the ApiServer hot-reloads the index when it lands).
+        // Live persona marketplace: kick the scheduled catalog sync (every
+        // configured interval when the volume index is missing or stale; runs
+        // in the background, the ApiServer hot-reloads the index when it lands).
         Services.LivePersonaCatalogSync.EnsureScheduledSyncStarted(settings, logger);
 
         try

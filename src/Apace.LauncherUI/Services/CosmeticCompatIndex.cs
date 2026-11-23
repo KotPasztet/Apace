@@ -60,7 +60,7 @@ public static class CosmeticCompatIndex
     /// <summary>The pipeline's compat file — same path the ApiServer reads
     /// (LivePersonaCatalog.ProbeStatePath); missing or corrupt is tolerated.</summary>
     public static string ProbeStatePath
-        => Path.Combine(MojangAssetGate.MojangAssetsDir, "persona-catalog", "probe-state.json");
+        => Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "probe-state.json");
 
     // Only the "geometry" half of the probe-state file matters here. The extra
     // nullable flags are the forward-compat part of the pipeline contract: the

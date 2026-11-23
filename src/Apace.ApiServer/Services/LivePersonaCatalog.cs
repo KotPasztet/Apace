@@ -97,7 +97,7 @@ public static class LivePersonaCatalog
     public static string BinariesDir => Path.Combine(CatalogDir, BinariesDirName);
     public static string ThumbnailsDir => Path.Combine(CatalogDir, ThumbnailsDirName);
 
-    /// <summary>Panel toggle (--live-persona-catalog); the consent gate stays the asset gate's.</summary>
+    /// <summary>Panel toggle (--live-persona-catalog).</summary>
     public static bool Enabled { get; set; }
 
     /// <summary>True when enabled AND a usable synced index exists in the volume.</summary>
@@ -883,8 +883,8 @@ public static class LivePersonaCatalog
     public static string BinaryPath(string itemId) => Path.Combine(BinariesDir, $"{itemId}.zip");
 
     /// <summary>
-    /// The mojang-assets primary persona path the panel's asset gate fills from the
-    /// committed manifest (mirror-backed legacy binaries land here on consent):
+    /// The mojang-assets primary persona path (mirror-backed legacy binaries land
+    /// here when the volume carries them):
     /// <c>&lt;MojangAssetsDir&gt;/playfab/persona/&lt;itemId&gt;.zip</c>. PersonaCdnController
     /// checks this dir before the lazy pipeline, and a dead probe verdict from
     /// before the mirror landed must not keep such a piece hidden.
@@ -892,9 +892,9 @@ public static class LivePersonaCatalog
     public static string LocalPersonaPath(string itemId) => Path.Combine(Program.MojangAssetsDir, "playfab", "persona", $"{itemId}.zip");
 
     // item id → file path of persona zips present in the mojang-assets primary
-    // dir. Recomputed only when the directory changes (one stat per check): the
-    // asset gate downloads files there lazily (consent flow / mirror restore can
-    // land long after any probe verdict), so this map is the dead→alive bridge.
+    // dir. Recomputed only when the directory changes (one stat per check):
+    // binaries land there lazily (panel file management / mirror restores can
+    // happen long after any probe verdict), so this map is the dead→alive bridge.
     private static long _localPersonaStamp = -1;
     private static readonly Dictionary<string, string> LocalPersonaBinaries = new(StringComparer.OrdinalIgnoreCase);
 
@@ -967,11 +967,11 @@ public static class LivePersonaCatalog
         await gate.WaitAsync(cancellationToken);
         try
         {
-            // mirror-first: the asset gate fills <mojang-assets>/playfab/persona/<itemId>.zip
-            // lazily, possibly long AFTER an upstream probe declared the item dead —
-            // a locally mirrored binary makes the item ALIVE again with no upstream
-            // access, overriding any stale verdict (RecordProbe refreshes it so the
-            // offer and the panel counters follow).
+            // mirror-first: a mirrored binary can appear in
+            // <mojang-assets>/playfab/persona/<itemId>.zip long AFTER an upstream probe
+            // declared the item dead — a locally mirrored binary makes the item ALIVE
+            // again with no upstream access, overriding any stale verdict (RecordProbe
+            // refreshes it so the offer and the panel counters follow).
             string? localMirrorPath = null;
             lock (StateLock)
             {
@@ -1052,7 +1052,7 @@ public static class LivePersonaCatalog
 
             RecordProbe(itemId, "live", resolved, source, logger);
 
-            // 3. download into the volume cache (retry/backoff like the asset gate)
+            // 3. download into the volume cache (retry/backoff pacer shared with the probes)
             await DownloadBinaryAsync(resolved, path, logger, cancellationToken);
             logger.Information("Live persona piece {Item} downloaded from {Source} into the volume cache", itemId, source);
             EnsureGeometryCompatCaptured(itemId, logger, path);
@@ -1266,7 +1266,7 @@ public static class LivePersonaCatalog
             }
         }
 
-        // lazy capture: a binary already on disk (asset-gate mirror copy or cache)
+        // lazy capture: a binary already on disk (mirror copy or cache)
         // that nothing has touched yet — inspect it on the first ask
         string? path = null;
         lock (StateLock)

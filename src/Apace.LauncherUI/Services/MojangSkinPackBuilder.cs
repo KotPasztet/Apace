@@ -8,15 +8,15 @@ using ILogger = Serilog.ILogger;
 namespace Apace.LauncherUI.Services;
 
 // Builds the "Minecraft Default Skins" Bedrock skin pack zip from the default
-// character textures the Mojang asset gate downloads into
-// <mojang-assets>/skins/ (Steve/Alex/Sunny/Kai/Makena/Zuri/Efe/Ari/Noor.png).
+// character textures in <mojang-assets>/skins/
+// (Steve/Alex/Sunny/Kai/Makena/Zuri/Efe/Ari/Noor.png).
 //
 // The zip lands in <mojang-assets>/playfab/skinpacks/<offer id>.zip — the same
 // persistent dir the SkinPackCdnController serves /playfab/skinpacks/ from — so
 // the catalog offer staticdata-extras/playfab/items/<offer id>.json (tags
 // skinpack + has_skinpack, Classic Skins row) resolves its skinbinary Contents
-// entry against a pack that exists only on installs which fetched the gated
-// Mojang assets. The repo never ships the pack or the textures.
+// entry against a pack built from the volume's textures. The repo never ships
+// the pack or the textures.
 //
 // Pack identity: the manifest header uuid is acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806
 // — the uuid the MCE client hardcodes a catalog search for (inherited from the
@@ -31,10 +31,9 @@ namespace Apace.LauncherUI.Services;
 // geometry.humanoid.customSlim, type "free", no cape field) and
 // texts/en_US.lang, with the skin textures at the zip root.
 //
-// Contract (see MojangAssetPostProcessor): called after the gate considers the
-// assets complete and re-run idempotently on every start; a failing step is
-// logged and must never block the gate or the server start — this class catches
-// everything and degrades to "pack not built this run".
+// Contract (see MojangAssetPostProcessor): re-run idempotently on every panel
+// start; a failing step is logged and must never block the server start — this
+// class catches everything and degrades to "pack not built this run".
 public static class MojangSkinPackBuilder
 {
     /// <summary>Catalog offer id (= zip file name stem, served by SkinPackCdnController).</summary>
@@ -115,7 +114,7 @@ public static class MojangSkinPackBuilder
         }
         catch (Exception exception)
         {
-            // Post-processor contract: never throw — the gate logs failures but
+            // Post-processor contract: never throw — startup logs failures but
             // must not be blocked by a derived-asset step.
             Log.Logger.Warning(exception, "Minecraft Default Skins pack build failed (non-fatal)");
         }

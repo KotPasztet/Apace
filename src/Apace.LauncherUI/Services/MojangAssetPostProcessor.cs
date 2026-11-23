@@ -1,18 +1,20 @@
+using Serilog;
+using ILogger = Serilog.ILogger;
+
 namespace Apace.LauncherUI.Services;
 
 // Idempotent post-processing pipeline for the Mojang assets in the persistent
-// data dir. Runs AFTER the asset gate considers the assets complete — both
-// right after a successful download and on every start that finds the assets
-// already complete (so steps must be IDEMPOTENT: re-running them on a fully
+// data dir. Runs on every panel start (both the full Start flow and page-level
+// component starts — so steps must be IDEMPOTENT: re-running them on a fully
 // processed dir must be a no-op).
 //
-// Intended for later pipeline stages (e.g. building a Bedrock skin pack from
-// skins/<Name>.png into playfab/skinpacks/<offerId>.zip, generating geometry
-// jsons, etc.). Steps are registered HERE so every panel start runs the full
-// pipeline before the first gate pass — currently:
+// Intended for pipeline stages that derive servable assets from the volume
+// (e.g. building a Bedrock skin pack from skins/<Name>.png into
+// playfab/skinpacks/<offerId>.zip, generating geometry jsons, etc.). Steps are
+// registered HERE so every panel start runs the full pipeline — currently:
 //
 //     MojangSkinPackBuilder.BuildAsync  ("Minecraft Default Skins" pack from
-//                                       the downloaded default skin textures)
+//                                       the default skin textures)
 //
 // Additional steps can be appended to the Steps initializer below (or extra
 // Register calls added at panel startup, BEFORE the first start):
@@ -22,8 +24,9 @@ namespace Apace.LauncherUI.Services;
 //         // build/patch derived assets under mojangAssetsDir ...
 //     });
 //
-// Steps receive the resolved absolute Mojang assets dir. A failing step is
-// logged by the gate and must not prevent the server from starting.
+// Steps receive the resolved absolute Mojang assets dir. Startup paths call the
+// pipeline through RunAllSafe: a failing step is logged and never blocks the
+// server start.
 public static class MojangAssetPostProcessor
 {
     /// <summary>Signature of a post-processing step: the resolved Mojang assets dir.</summary>
@@ -46,6 +49,23 @@ public static class MojangAssetPostProcessor
         foreach (var step in Steps.ToArray())
         {
             await step(mojangAssetsDir);
+        }
+    }
+
+    /// <summary>
+    /// Runs the pipeline best-effort from the startup paths: never throws — a
+    /// failing step is logged and the start proceeds (the derived assets are
+    /// rebuilt on the next start).
+    /// </summary>
+    public static async Task RunAllSafe(string mojangAssetsDir, ILogger logger)
+    {
+        try
+        {
+            await RunAll(mojangAssetsDir);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Mojang asset post-processing failed (asset files are in place; every step must be idempotent)");
         }
     }
 }

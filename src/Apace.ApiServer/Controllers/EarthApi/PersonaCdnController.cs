@@ -7,8 +7,8 @@ namespace Apace.ApiServer.Controllers.EarthApi;
 
 // Serves persona piece binaries (personabinary downloads referenced by PersonaDurable
 // catalog items) — preferred source is the persistent Mojang assets dir in the data
-// volume (filled by the panel's asset gate), with a fallback to the legacy
-// staticdata/playfab/persona/ for installs that predate the gate. Files can be
+// volume, with a fallback to the legacy
+// staticdata/playfab/persona/ for older installs. Files can be
 // managed through the panel's file browser or dropped in manually; only simple
 // file names are accepted.
 //

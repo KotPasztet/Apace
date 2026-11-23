@@ -45,14 +45,11 @@ internal static class ApiServer
             arguments.Add($"--local-login-only");
         }
 
-        // Mojang asset gate wiring: the ApiServer fail-fasts on a direct start
-        // when the gate is on and the assets are incomplete; the assets dir is
-        // always passed so the CDN controllers can serve from the data volume.
-        arguments.Add($"--mojang-assets-dir={Apace.LauncherUI.Services.MojangAssetGate.MojangAssetsDir}");
-        if (settings.RequireMojangAssets is not false)
-        {
-            arguments.Add("--require-mojang-assets");
-        }
+        // The assets dir is always passed so the CDN controllers can serve the
+        // persona binaries, thumbnails and skin packs from the data volume.
+        // Startup never depends on these assets — their download sources are
+        // dead and the live marketplace sync replaces the legacy pieces.
+        arguments.Add($"--mojang-assets-dir={Apace.LauncherUI.Services.MojangAssetPaths.MojangAssetsDir}");
 
         // Live persona marketplace: serve the panel-synced live catalog (unlock-all
         // offer, lazy binary probe) instead of the dead legacy 1P persona items.
