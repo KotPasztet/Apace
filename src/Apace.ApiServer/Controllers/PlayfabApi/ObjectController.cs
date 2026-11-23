@@ -14,6 +14,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 
 [Route("Object")]
 [Route("20CA2.playfabapi.com/Object")]
+[Route("1712756451.playfabapi.com/Object")]
 internal sealed class ObjectController : ApaceControllerBase
 {
     private sealed record GetObjectsRequest(
@@ -195,13 +196,14 @@ internal sealed class ObjectController : ApaceControllerBase
     //    DROPPED when packs.json onlySupported is on (default true); unknown
     //    verdicts serve; staticdata-resolved pieces have no live compat metadata
     //    and always serve;
-    //  - entries resolving to a live Minecraft-creator ACCESSORY (any piece
-    //    type except persona_skin) outside the caller's allowed set are DROPPED
+    //  - entries resolving to a Minecraft-creator ACCESSORY (any piece type
+    //    except persona_skin) outside the caller's allowed set are DROPPED
     //    while pack gating is active (defaults ∪ grants — the same rule the
     //    search offer enforces): the allowed set must be non-empty AND one of
-    //    the piece's theme tags must be in it, so tagless accessories drop too;
-    //    persona_skin pieces are exempt and always keep; non-Minecraft creators
-    //    and staticdata always serve;
+    //    the piece's theme tags must be in it, so tagless accessories drop too
+    //    — including the staticdata-resolved ones, which carry no theme tags
+    //    at all (their creator surfaces from PersonaData, defaulting to
+    //    "Minecraft"); persona_skin pieces are exempt and always keep;
     //  - a piece occupies at most one slot per (category group, side slot): the
     //    first entry per group+slot in array order wins — left/right variants
     //    are separate slots (one piece can be worn on both hands), so adding a
@@ -259,8 +261,7 @@ internal sealed class ObjectController : ApaceControllerBase
                     }
                 }
 
-                if (piece.LiveItemId is not null
-                    && piece.CreatorName is "Minecraft"
+                if (piece.CreatorName is "Minecraft"
                     && piece.PieceType is not "persona_skin"
                     && (allowedPacks.Count == 0 || !piece.ThemeTags.Any(allowedPacks.Contains)))
                 {

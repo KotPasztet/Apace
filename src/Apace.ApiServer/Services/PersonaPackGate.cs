@@ -189,10 +189,12 @@ public static class PersonaPackGate
     /// accessories serve only from these packs — the set must be non-empty AND
     /// one of the piece's theme tags must be in it (tagless accessories never
     /// serve); persona_skin pieces and the classic-skin packs are exempt.
-    /// staticdata offers (the committed legacy catalog and the Default Skins
-    /// pack) and the custom cosmetics are never gated. Entries predating the
-    /// theme model (piece type names or orphaned skin-pack uuids) simply never
-    /// match a theme tag and are ignored.
+    /// The Default Skins pack and the custom cosmetics are never gated; the
+    /// legacy staticdata offers no longer contribute accessories at all —
+    /// their Minecraft-creator pieces drop unconditionally because staticdata
+    /// carries no pack tags (see CatalogController.BaseOfferItems). Entries
+    /// predating the theme model (piece type names or orphaned skin-pack
+    /// uuids) simply never match a theme tag and are ignored.
     /// </summary>
     public static async Task<IReadOnlySet<string>> AllowedPackUuidsAsync(string? playerId, CancellationToken cancellationToken)
     {

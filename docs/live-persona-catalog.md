@@ -164,11 +164,13 @@ values, ~55% of pieces carry one). So:
 - **skins are exempt from pack selection**: `persona_skin` pieces and the
   classic-skin packs (MarketplaceDurableCatalog bundles) serve regardless;
 - with **nothing configured** (defaults ∪ per-player grants empty) **0
-  accessories serve** — skins still do. What always shows is the always-served
-  staticdata (the built-in "Minecraft Default Skins" pack, the client's
-  vanilla Standard pack scaffolding, Bold Rabbit Feet, the Apace capes,
-  layout/StoreConfig) and the custom cosmetics (non-Minecraft creators are
-  exempt from the gate);
+  accessories serve** — skins still do. What always shows is the
+  non-PersonaDurable staticdata (the built-in "Minecraft Default Skins" pack,
+  the client's vanilla Standard pack scaffolding, layout/StoreConfig) plus
+  Bold Rabbit Feet and the custom cosmetics (non-Minecraft creators — the
+  Apace capes — are exempt from the gate); the legacy Minecraft-creator
+  staticdata accessories now drop at every serve path, live index or not
+  (staticdata carries no pack tags, so the gate can never allow them);
 - type-ish tags (the piece's own category restated as a tag, e.g. `tag.hair` on
   hair pieces) never form packs — excluded by the same piece-type-suffix rule
   on both sides (panel `PersonaPackIndex.ReadThemePacks`, ApiServer
@@ -178,12 +180,14 @@ values, ~55% of pieces carry one). So:
   resolve (a non-selected accessory 404s like an unknown id), the saved persona
   profiles (`ObjectController.SanitizePersonaObjects`) and the binary endpoint —
   `LivePersonaCatalog.TryEnsureBinaryAsync` refuses to download a non-selected
-  accessory's zip (pre-existing mirror/staticdata files and customs always
-  serve; refusals log once per piece per run);
+  accessory's zip (pre-existing mirror files and customs always serve;
+  staticdata-resolving Minecraft-creator accessory zips refuse in
+  `PersonaCdnController` before the mirror/staticdata dirs are consulted;
+  refusals log once per piece per run);
 - the per-category limit caps whatever serves — default **45** per
   dressing-room category group, `packs.json` `categoryLimit` overrides;
 - gating config (`packs.json`, defaults ∪ per-player grants, ~30 s grant
-  cache) and the staticdata exemption are unchanged.
+  cache) and the custom-cosmetics exemption are unchanged.
 
 ## Rate limits (polite by design)
 

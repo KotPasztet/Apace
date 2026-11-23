@@ -31,6 +31,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 // The key constant mirrors SKIN_PERSONA_KEY in scripts/build_apace_piece.py — keep in sync.
 [Route("inventory")]
 [Route("20CA2.playfabapi.com/inventory")]
+[Route("1712756451.playfabapi.com/inventory")]
 internal sealed class InventoryController : ApaceControllerBase
 {
     private const string ApaceContentKey = "s5s5ejuDru4uchuF2drUFuthaspAbepE";

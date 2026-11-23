@@ -27,3 +27,12 @@ If you are using a custom login server, choose the appropriate mode based on you
   * *Use this if:* You do *not* have a domain or DNS mapping.
   * Enter the login server's IP address or hostname, including the port.
   * *Note:* There are no disadvantages to using this method over Multi-Domain Mode.
+
+## iOS
+
+The patcher doesn't sign the IPA. With **Write XAL keychain entitlements** (`AddXalEntitlements`, on by default) it writes an `Entitlements.plist` into the app bundle with the required keychain groups, but the IPA is still unsigned until you sign it — Xbox sign-in won't work unless the signed app has these keychain groups in its entitlements:
+
+* `<TEAMID>.com.microsoft.xal`
+* `<TEAMID>.com.microsoft.adalcache`
+
+Check a signed app with `codesign -d --entitlements - Payload/minecraftearthtf.app`.

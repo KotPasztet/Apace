@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased (dev) — iOS patcher fixed: the IPA is written intact, the PlayFab URL builders are redirected and the title API routes exist
+
+> iOS clients died at sign-in with ZERO requests reaching the server: the vendored patcher corrupted the output IPA (`ZipArchiveMode.Update` rewrote the entry headers in front of the first removed entry while the data stayed put — every entry after it was garbage) and three PlayFab URL-builder sites that build `"https://" + titleId + ".playfabapi.com"` were never redirected, so the iOS title API calls went to `:///<titleId>.playfabapi.com/`. Ported from the community PR Earth-Restored/Minecraft_Earth_Patcher#4.
+
+### 🔐 Account login
+
+- **Corrupt-IPA fix** (`Minecraft_Earth_Patcher/IpaProcessor.cs`): the output IPA is written as a FRESH archive (open the original with `ZipFile.OpenRead`, write a new `ZipArchiveMode.Create` stream) — every original entry is copied with its `ExternalAttributes`/`LastWriteTime`, directory entries and the `_CodeSignature`/`SC_Info`/`Zachary@Cracks` deletion prefixes are skipped, and the patched files (`Info.plist`, the `minecraftearthtf` exe, the `Xal` framework binary, plus the added `Entitlements.plist`) are substituted from the work dir.
+- **PlayFab title-API redirects** (`IpaProcessor.cs` `EndpointSites`): the three URL-builder sites (0x6D66A8, 0xB668A8, 0x259E628 — they patch the `"https://"` prefix of `"https://" + titleId + ".playfabapi.com" + path`) join the playfab group; with an empty Tail the slot writes as `{scheme}://{hostname}/`, so iOS requests land on `<hostname>/<titleId>.playfabapi.com/<path>`.
+- **Unsigned-IPA warning + README**: the patcher warns that the IPA is still unsigned until the user signs it (keychain groups `<TEAMID>.com.microsoft.xal` / `.com.microsoft.adalcache`; the existing `AddXalEntitlements` option already writes `Entitlements.plist` for the re-signing step), and the README gained an iOS section with the `codesign -d --entitlements - Payload/minecraftearthtf.app` check.
+- **Server routes** (`Controllers/PlayfabApi/*`): every PlayfabApi controller gained a second literal route `1712756451.playfabapi.com/<Area>` (Authentication, Object, Client — on both LoginController and ClientController — Catalog, inventory, Event): the patched iOS build hits the real title id prefix instead of Android's `20CA2`; handlers unchanged (they are title-agnostic).
+
+## Unreleased (dev) — staticdata accessories are gone for good: the frozen 2021 catalog no longer leaks when the live index is missing
+
+> With no packs selected the client still got ~45 staticdata accessories per dressing-room category: the frozen 2021 staticdata catalog (`BaseOfferItems`) was only filtered when the live persona index exists, so on installs without `persona-catalog/index.json` every legacy accessory leaked. Staticdata persona items carry NO pack tags, so under the pack gate they can never be allowed — they now drop at every serve path, live index or not. The exemptions keep serving: Bold Rabbit Feet, the Apace capes (creator KotPasztet), the panel's custom cosmetics (never gated) and the Default Skins pack (non-PersonaDurable, untouched).
+
+### 🧍 Persona items (dressing room / skins)
+
+- **Catalog offer** (`CatalogController.BaseOfferItems`): the `LivePersonaCatalog.IsAvailable` branch is gone — the Minecraft-creator `PersonaDurable` drop is unconditional (Bold Rabbit Feet and non-Minecraft creators stay exempt).
+- **Equip resolve** (`CatalogController.GetPublishedItem`): the staticdata path applies the same rule — a staticdata Minecraft-creator accessory 404s like a non-selected live one (capes survive via their creator, skins via their piece type).
+- **Saved profiles** (`ObjectController.SanitizePersonaObjects` + `PersonaPieceTypes`): the pack rule no longer requires a live item — `StaticPieces` now records the `PersonaData` creator (default "Minecraft", matching `CIItemToItem`) and the resolver surfaces it on `ResolvedPiece`, so staticdata Minecraft accessories drop on save too (the staticdata persona_skins and the KotPasztet capes keep).
+- **Binary endpoint** (`EarthApi/PersonaCdnController`): a zip whose id resolves to a staticdata Minecraft-creator accessory refuses before the mirror/staticdata dirs are consulted — gated against the unauthenticated-endpoint allowed set (`PersonaPackGate.AllAllowedPackUuidsAsync`, staticdata carries no tags so no selection covers it); live-mirrored zips stay governed by the lazy-path gate; refusals log once per file per run.
+
 ## Unreleased (dev) — iOS sign-in works: the XAL sisu flow is served
 
 > iOS clients died at "something went wrong during sign in" right after device auth: XAL signs in through the `sisu.xboxlive.com` web-view flow (not the Android device/title/user/XSTS requests) and the server had no sisu endpoints at all. Ported from Solace PR #50 (commit 7c53f66, tested by its author to the map on a patched 0.33.0 iOS build), adapted to Apace's hex account ids and config-based secrets.

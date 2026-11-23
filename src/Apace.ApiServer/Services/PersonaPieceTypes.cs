@@ -55,9 +55,11 @@ public static class PersonaPieceTypes
     private static Dictionary<string, string> _categoryGroups = [];
     private static bool _categoryGroupsLoaded;
 
-    // piece id → piece type, from the committed staticdata persona items (the
-    // legacy catalog is immutable at runtime)
-    private static Dictionary<Guid, string> _staticPieces = [];
+    // piece id → piece type + creator, from the committed staticdata persona
+    // items (the legacy catalog is immutable at runtime); the creator defaults
+    // to "Minecraft" like CIItemToItem, so the pack gate can classify
+    // staticdata-resolved pieces too
+    private static Dictionary<Guid, StaticPieceEntry> _staticPieces = [];
     private static bool _staticPiecesLoaded;
 
     // piece id → live piece facts, rebuilt per (index stamp, custom-cosmetics
@@ -70,6 +72,10 @@ public static class PersonaPieceTypes
     // (unknown = keep).
     private sealed record LivePieceEntry(string PieceType, string LiveItemId, string? CreatorName, string[] ThemeTags);
 
+    // staticdata twin of LivePieceEntry — no live item, no theme tags; the
+    // creator comes from PersonaData (default "Minecraft", matching CIItemToItem)
+    private sealed record StaticPieceEntry(string PieceType, string CreatorName);
+
     private static Dictionary<Guid, LivePieceEntry> _livePieces = [];
     private static (long Index, ulong Custom) _livePiecesStamp = (long.MinValue, 0);
 
@@ -77,9 +83,11 @@ public static class PersonaPieceTypes
     /// side slot the entry selects ("l" / "r" / "d" — left, right, default) and,
     /// for live-catalog pieces, the catalog item id behind it plus the creator
     /// and gating theme tags the pack gate checks (the compat gate is keyed by
-    /// item id). LiveItemId is null for staticdata pieces — they are base
-    /// content: never pack-gated, always treated as supported (no live compat
-    /// metadata).</summary>
+    /// item id). LiveItemId is null for staticdata pieces — no live compat
+    /// metadata, so they are always treated as supported; their creator still
+    /// feeds the pack gate, and since staticdata carries no theme tags a
+    /// Minecraft-creator staticdata accessory can never be in the allowed
+    /// set.</summary>
     public readonly record struct ResolvedPiece(string PieceType, string? LiveItemId, string? CreatorName, string[] ThemeTags, string Slot);
 
     /// <summary>
@@ -121,9 +129,9 @@ public static class PersonaPieceTypes
             return true;
         }
 
-        if (StaticPieces.TryGetValue(pieceId, out string? staticType))
+        if (StaticPieces.TryGetValue(pieceId, out StaticPieceEntry? staticPiece))
         {
-            piece = new ResolvedPiece(staticType, null, null, [], slot);
+            piece = new ResolvedPiece(staticPiece.PieceType, null, staticPiece.CreatorName, [], slot);
             return true;
         }
 
@@ -426,7 +434,7 @@ public static class PersonaPieceTypes
         }
     }
 
-    private static Dictionary<Guid, string> StaticPieces
+    private static Dictionary<Guid, StaticPieceEntry> StaticPieces
     {
         get
         {
@@ -436,7 +444,7 @@ public static class PersonaPieceTypes
             }
 
             _staticPiecesLoaded = true;
-            var pieces = new Dictionary<Guid, string>();
+            var pieces = new Dictionary<Guid, StaticPieceEntry>();
             try
             {
                 var staticData = Program.staticData;
@@ -446,7 +454,7 @@ public static class PersonaPieceTypes
                     {
                         if (item.Data is CItem.PersonaData data)
                         {
-                            pieces[data.PieceId] = data.PieceType;
+                            pieces[data.PieceId] = new StaticPieceEntry(data.PieceType, data.CreatorName ?? "Minecraft");
                         }
                     }
                 }

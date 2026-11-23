@@ -197,38 +197,52 @@ public static class IpaProcessor
             return false;
         }
 
-        File.Copy(inIpa, outIpa, true);
-
         string appEntryPrefix = $"Payload/{Path.GetFileName(appDir)}/";
-        using (var zip = ZipFile.Open(outIpa, ZipArchiveMode.Update))
+        var patchedFiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            var toDelete = zip.Entries
-                .Where(e => e.FullName.StartsWith(appEntryPrefix, StringComparison.OrdinalIgnoreCase)
-                    && (IsDirectChildEntry(e.FullName, appEntryPrefix, "_CodeSignature")
-                        || IsDirectChildEntry(e.FullName, appEntryPrefix, "SC_Info")
-                        || IsDirectChildEntry(e.FullName, appEntryPrefix, "Zachary@Cracks")))
-                .ToList();
-            foreach (var entry in toDelete)
-                entry.Delete();
+            [$"{appEntryPrefix}Info.plist"] = Path.Combine(appDir, "Info.plist"),
+            [$"{appEntryPrefix}minecraftearthtf"] = exePath,
+            [$"{appEntryPrefix}Frameworks/Xal.framework/Xal"] = Path.Combine(appDir, "Frameworks", "Xal.framework", "Xal"),
+            [$"{appEntryPrefix}Entitlements.plist"] = Path.Combine(appDir, "Entitlements.plist"),
+        };
 
-            foreach (var (entryName, filePath) in new[]
+        // Write a new archive instead of updating a copy of the original in place. The original IPA's entries use
+        // data descriptors and have "version made by" 0, so ZipArchiveMode.Update treats every entry as changed and
+        // rewrites the headers in front of the first removed entry in place, dropping the 16-byte descriptors but not
+        // moving the data. Each of those headers ends up further from its data than the one before, so the entries are corrupt.
+        using (var inZip = ZipFile.OpenRead(inIpa))
+        using (var outStream = new FileStream(outIpa, FileMode.Create, FileAccess.ReadWrite))
+        using (var outZip = new ZipArchive(outStream, ZipArchiveMode.Create))
+        {
+            foreach (var entry in inZip.Entries)
             {
-                ($"{appEntryPrefix}Info.plist", Path.Combine(appDir, "Info.plist")),
-                ($"{appEntryPrefix}minecraftearthtf", exePath),
-                ($"{appEntryPrefix}Frameworks/Xal.framework/Xal", Path.Combine(appDir, "Frameworks", "Xal.framework", "Xal")),
-            })
-            {
-                if (!File.Exists(filePath))
+                if (entry.FullName.StartsWith(appEntryPrefix, StringComparison.OrdinalIgnoreCase)
+                    && (IsDirectChildEntry(entry.FullName, appEntryPrefix, "_CodeSignature")
+                        || IsDirectChildEntry(entry.FullName, appEntryPrefix, "SC_Info")
+                        || IsDirectChildEntry(entry.FullName, appEntryPrefix, "Zachary@Cracks")))
                     continue;
 
-                var originalEntry = zip.GetEntry(entryName);
-                var originalAttributes = originalEntry?.ExternalAttributes ?? 0;
-                originalEntry?.Delete();
+                var newEntry = outZip.CreateEntry(entry.FullName, CompressionLevel.Optimal);
+                newEntry.ExternalAttributes = entry.ExternalAttributes;
+                newEntry.LastWriteTime = entry.LastWriteTime;
 
-                var newEntry = zip.CreateEntry(entryName, CompressionLevel.NoCompression);
-                if (originalAttributes != 0)
-                    newEntry.ExternalAttributes = originalAttributes;
+                if (entry.FullName.EndsWith('/'))
+                    continue;
 
+                using (var entryStream = newEntry.Open())
+                using (var sourceStream = patchedFiles.TryGetValue(entry.FullName, out var filePath) && File.Exists(filePath)
+                    ? File.OpenRead(filePath)
+                    : entry.Open())
+                    sourceStream.CopyTo(entryStream);
+            }
+
+            // Files patched or written into the decoded directory that the original IPA does not contain (e.g. Entitlements.plist).
+            foreach (var (entryName, filePath) in patchedFiles)
+            {
+                if (!File.Exists(filePath) || inZip.Entries.Any(e => string.Equals(e.FullName, entryName, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                var newEntry = outZip.CreateEntry(entryName, CompressionLevel.Optimal);
                 using (var entryStream = newEntry.Open())
                 using (var fileStream = File.OpenRead(filePath))
                     fileStream.CopyTo(entryStream);
@@ -237,6 +251,9 @@ public static class IpaProcessor
 
         if (Directory.Exists(decodedDir))
             Directory.Delete(decodedDir, true);
+
+        Log.Warning("The patched IPA is not signed. Sign it with the keychain access groups <TEAMID>.com.microsoft.xal and " +
+            "<TEAMID>.com.microsoft.adalcache in its entitlements, or Xbox sign-in fails before it sends any request. See the README for details.");
 
         Log.Information("Finished");
         return true;
@@ -552,6 +569,11 @@ public static class IpaProcessor
         new() { Group = "playfab", Adrp = 0xDAFA5C, Add = 0xDAFA60, Rd = 3, OriginalVm = 0x10419FCFE, Tail = "playfab.com" },
         new() { Group = "playfab", Adrp = 0xDAFAA4, Add = 0xDAFAA8, Rd = 3, OriginalVm = 0x10419FD12, Tail = "playfab.com/6AF55D1D10B42870/" },
         new() { Group = "playfab", Adrp = 0xDAFAE4, Add = 0xDAFAE8, Rd = 3, OriginalVm = 0x10419FD38, Tail = "playfab.com/B63A0803D3653643/" },
+        // PlayFab title API, built as "https://" + titleId + ".playfabapi.com" + path. Only the "https://" is replaced,
+        // so requests go to <scheme>://<hostname>/<titleId>.playfabapi.com/<path>.
+        new() { Group = "playfab", Adrp = 0x6D66A8, Add = 0x6D66AC, Rd = 0, OriginalVm = 0x10418472F, Tail = "" },
+        new() { Group = "playfab", Adrp = 0xB668A8, Add = 0xB668AC, Rd = 0, OriginalVm = 0x10418472F, Tail = "" },
+        new() { Group = "playfab", Adrp = 0x259E628, Add = 0x259E62C, Rd = 1, OriginalVm = 0x10418472F, Tail = "" },
     };
 
     private static void PatchServiceEndpoints(string exePath, string scheme, string hostname, bool xboxlive, bool xboxab, bool playfab,

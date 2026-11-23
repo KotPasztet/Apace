@@ -17,6 +17,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 
 [Route("Catalog")]
 [Route("20CA2.playfabapi.com/Catalog")]
+[Route("1712756451.playfabapi.com/Catalog")]
 internal sealed class CatalogController : ApaceControllerBase
 {
     private static readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions()
@@ -91,21 +92,19 @@ internal sealed class CatalogController : ApaceControllerBase
 
     private static Guid BoldRabbitFeetItemId { get; }
 
-    // The live persona marketplace (panel-toggled): when a synced catalog exists,
-    // the offer is the LIVE catalog — every 1P "Minecraft" persona piece from the
-    // legacy staticdata items drops out (their binaries are long dead; the live
-    // catalog replaces them) and the unlock-all live items are appended. The Apace
-    // custom pieces (creator KotPasztet), the client-config entries (layout,
-    // StoreConfig, skin packs) and the hardcoded Bold Rabbit Feet stay.
+    // The offer's base: the frozen 2021 staticdata catalog minus every 1P
+    // "Minecraft" PersonaDurable piece — UNCONDITIONALLY, live index or not.
+    // Staticdata carries no pack tags, so none of those accessories can ever
+    // pass the pack gate; keeping them while the live index is missing leaked
+    // ~45 gated accessories per dressing-room category. The hardcoded Bold
+    // Rabbit Feet (the shop needs it) and the Apace custom pieces (creator
+    // KotPasztet, never gated) stay; the Default Skins pack entries are
+    // non-PersonaDurable and pass untouched. When a synced catalog exists, the
+    // live catalog replaces the dropped 1P pieces (see LiveOfferItemsFor).
     private static IEnumerable<Item> BaseOfferItems
     {
         get
         {
-            if (!LivePersonaCatalog.IsAvailable)
-            {
-                return itemData;
-            }
-
             return itemData.Where(item =>
                 item.ContentType != "PersonaDurable" ||
                 item.Id == BoldRabbitFeetItemId ||
@@ -608,6 +607,17 @@ internal sealed class CatalogController : ApaceControllerBase
         }
 
         var item = CIItemToItem(cItem);
+
+        // staticdata carries no pack tags, so a 1P "Minecraft" PersonaDurable
+        // accessory can never sit in the allowed set — it never resolves (Bold
+        // Rabbit Feet is hardcoded above, not in staticdata; capes survive via
+        // their creator; persona_skin pieces are exempt).
+        if (item.ContentType == "PersonaDurable"
+            && item.DisplayProperties?.CreatorName is "Minecraft"
+            && item.DisplayProperties?.PieceType is not "persona_skin")
+        {
+            return TypedResults.NotFound();
+        }
 
         return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
             200,

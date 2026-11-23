@@ -40,10 +40,13 @@ Pack filtering needs no toggle of its own: the gate runs on the allowed pack
 set (defaults ∪ per-player grants). **Accessories serve only from the selected
 packs** — a piece needs one of its marketplace theme tags in the set, so
 tagless accessories never serve. With **no packs configured at all**, 0
-accessories serve (skins still do); the always-served staticdata still shows:
+accessories serve (skins still do); the non-accessory staticdata still shows:
 the built-in "Minecraft Default Skins" pack (Steve/Alex and friends), the
-client's vanilla Standard pack scaffolding, Bold Rabbit Feet, the Apace capes,
-the custom cosmetics, the layout and StoreConfig. **Skins are exempt**:
+client's vanilla Standard pack scaffolding, the layout and StoreConfig — plus
+Bold Rabbit Feet, the Apace capes and the custom cosmetics, which are exempt
+from the gate. The legacy Minecraft-creator staticdata accessories no longer
+serve anywhere: staticdata carries no pack tags, so the gate can never allow
+them. **Skins are exempt**:
 `persona_skin` pieces and the classic skin packs serve regardless of the
 selection. The per-category limit above applies in all cases — it caps
 whatever serves, it is not a nothing-selected fallback. The picker lists the
