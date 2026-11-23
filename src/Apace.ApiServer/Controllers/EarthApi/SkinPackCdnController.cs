@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using Apace.ApiServer.Services;
+using CItem = Apace.StaticData.Playfab.Item;
 
 namespace Apace.ApiServer.Controllers.EarthApi;
 
@@ -66,11 +67,39 @@ public class SkinPackCdnController : ControllerBase
             // got (builder did not run / assets incomplete / the live pack probed
             // dead upstream) — make it visible, these used to vanish as INF noise
             // in the access log
-            Log.Warning("Skin pack zip not found on this install: {FileName} (looked in the data volume and staticdata)", fileName);
+            if (IsKnownStaticDataSkinPackOffer(fileName, out string offerId))
+            {
+                // a known staticdata skin pack offer with no zip anywhere — the
+                // dressing room keeps rendering the offer (empty rows) instead of
+                // hiding it; for the built-in "Minecraft Default Skins" offer the
+                // fix is the default-skins texture fetch at panel start
+                // (MojangSkinTextureFetcher → MojangSkinPackBuilder)
+                Log.Warning(
+                    "Skin pack zip {FileName} of staticdata offer {OfferId} not found at {ExpectedPath} (nor in staticdata) — the client shows this pack's rows empty; for the built-in \"Minecraft Default Skins\" offer the default-skins texture fetch (MojangSkinTextureFetcher, panel start) must land the skins/*.png textures before MojangSkinPackBuilder can build the zip",
+                    fileName, offerId, Path.Combine(Program.MojangAssetsDir, "playfab", "skinpacks", fileName));
+            }
+            else
+            {
+                Log.Warning("Skin pack zip not found on this install: {FileName} (looked in the data volume and staticdata)", fileName);
+            }
+
             return TypedResults.NotFound();
         }
 
         Stream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, useAsync: true);
         return TypedResults.Stream(stream, "application/zip", fileDownloadName: fileName);
+    }
+
+    // True when <fileName> (an <offerId>.zip) belongs to a staticdata skin pack offer
+    // (the CatalogController.SkinPackOfferIds set: MarketplaceDurableCatalog_V1.2 items
+    // tagged "has_skinpack") — those 404s deserve a loud diagnostic, because the
+    // dressing room keeps showing such an offer with empty rows instead of hiding it.
+    private static bool IsKnownStaticDataSkinPackOffer(string fileName, out string offerId)
+    {
+        offerId = Path.GetFileNameWithoutExtension(fileName);
+        return Guid.TryParse(offerId, out var id)
+            && Program.staticData.Playfab.Items.TryGetValue(id, out var item)
+            && item.Data is CItem.ClientConfigData { ContentType: "MarketplaceDurableCatalog_V1.2" }
+            && item.Tags.Contains("has_skinpack");
     }
 }

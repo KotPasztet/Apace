@@ -13,6 +13,9 @@ namespace Apace.LauncherUI.Services;
 // playfab/skinpacks/<offerId>.zip, generating geometry jsons, etc.). Steps are
 // registered HERE so every panel start runs the full pipeline — currently:
 //
+//     MojangSkinTextureFetcher.FetchAsync (fetches the default skin textures
+//                                          recorded in mojang-assets.manifest.json
+//                                          into skins/ — the pack build's inputs)
 //     MojangSkinPackBuilder.BuildAsync  ("Minecraft Default Skins" pack from
 //                                       the default skin textures)
 //
@@ -32,7 +35,9 @@ public static class MojangAssetPostProcessor
     /// <summary>Signature of a post-processing step: the resolved Mojang assets dir.</summary>
     public delegate Task PostProcessStep(string mojangAssetsDir);
 
-    private static readonly List<PostProcessStep> Steps = [MojangSkinPackBuilder.BuildAsync];
+    // Order matters: the fetcher produces the inputs (skins/*.png) the pack
+    // builder consumes in the same pipeline pass.
+    private static readonly List<PostProcessStep> Steps = [MojangSkinTextureFetcher.FetchAsync, MojangSkinPackBuilder.BuildAsync];
 
     /// <summary>Registers a post-processing step (call once at startup; duplicates are ignored).</summary>
     public static void Register(PostProcessStep step)

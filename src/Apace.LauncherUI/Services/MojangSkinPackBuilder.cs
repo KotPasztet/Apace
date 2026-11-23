@@ -47,11 +47,14 @@ public static class MojangSkinPackBuilder
 
     /// <summary>
     /// Bedrock pack version (both header and module; must equal the offer's
-    /// packIdentity[0].version). Bumped to 1.0.1: the client caches imports per
+    /// packIdentity[0].version). Bumped to 1.0.2: the client caches imports per
     /// (uuid, version), so a version bump is the only way to force a re-import of
-    /// a pack it once imported empty (e.g. requested before the zip existed).
+    /// a pack it once imported empty (installs that requested the zip while the
+    /// skins/ textures were still missing — nothing downloaded them between the
+    /// asset-gate removal and the MojangSkinTextureFetcher step — hold that
+    /// cached empty import forever otherwise).
     /// </summary>
-    public const string PackVersion = "1.0.1";
+    public const string PackVersion = "1.0.2";
 
     private const string ModuleUuid = "023c897b-9573-4f1b-b5cd-19445b70a08b";
     private const string PackName = "Minecraft Default Skins";
@@ -70,6 +73,9 @@ public static class MojangSkinPackBuilder
         ("Ari", false),
         ("Noor", true),
     ];
+
+    /// <summary>The skin names the pack build expects under <c>skins/</c> (the <see cref="DefaultSkins"/> names; MojangSkinTextureFetcher targets exactly these files).</summary>
+    internal static readonly string[] DefaultSkinNames = [.. DefaultSkins.Select(entry => entry.Name)];
 
     // Fixed zip entry timestamps so rebuilt packs stay byte-stable when the
     // inputs did not change.
@@ -147,7 +153,9 @@ public static class MojangSkinPackBuilder
 
         if (included.Count == 0)
         {
-            logger.Warning("Minecraft Default Skins pack: no default skin textures under {SkinsDir} — pack not built", skinsDir);
+            logger.Warning(
+                "Minecraft Default Skins pack: no default skin textures under {SkinsDir} — pack not built; the dressing room's Default Skins rows will show empty until the texture fetch (MojangSkinTextureFetcher, panel start) succeeds into that directory or the textures / a prebuilt pack zip are dropped in manually",
+                skinsDir);
             return;
         }
 
@@ -198,7 +206,7 @@ public static class MojangSkinPackBuilder
             targetPath, included.Count, DefaultSkins.Length, PackUuid);
     }
 
-    // header.version of the pack zip currently on disk ("1.0.1") — null when the
+    // header.version of the pack zip currently on disk ("1.0.2") — null when the
     // zip is unreadable or malformed (anything unreadable gets rebuilt).
     private static string? PackVersionOnDisk(string targetPath)
     {

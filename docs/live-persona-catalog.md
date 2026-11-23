@@ -17,7 +17,11 @@ The legal frame is unchanged:
   redistributed ahead of a player actually asking for it, and nothing lands in
   the installation directory or the repo.
 - There is no asset gate: startup never blocks on the legacy persona assets
-  (their download sources are dead and the live catalog replaces them).
+  (their download sources are dead and the live catalog replaces them). The one
+  exception is the nine default skin textures for the built-in "Minecraft Default
+  Skins" pack, which `MojangSkinTextureFetcher` fetches best-effort at panel start
+  (never blocking) so `MojangSkinPackBuilder` can rebuild the pack zip — see
+  `docs/custom-persona-items.md`.
 
 ## Architecture
 

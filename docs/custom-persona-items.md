@@ -282,17 +282,24 @@ the server only supplies the catalog scaffolding around them:
   1P offer that replaces the retired City Folk pack below: it inherits the same
   `packIdentity` uuid `acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806` (the tag the client hardcodes
   its Classic Skins search on), but its `Contents` carries a servable `skinbinary` at
-  `/playfab/skinpacks/90860f69-….zip`. That zip is **not in the repo** — it is built at
-  runtime by the panel's `MojangSkinPackBuilder` (a `MojangAssetPostProcessor` step) from
-  the nine default character textures (`skins/Steve.png`, `skins/Alex.png`, `skins/Sunny.png`,
-  `skins/Kai.png`, `skins/Makena.png`, `skins/Zuri.png`, `skins/Efe.png`, `skins/Ari.png`,
-  `skins/Noor.png`) that the Mojang asset gate downloads into
-  `<data>/mojang-assets/skins/` after the user accepts the Mojang assets prompt. The
-  builder writes the pack into `<data>/mojang-assets/playfab/skinpacks/` (idempotently —
-  rebuilt only when the zip is missing or older than a re-downloaded texture; missing
-  textures are skipped with a warning), where `SkinPackCdnController` serves it. Without
-  the gated assets the offer shows but its binary 404s, mirroring the old City Folk
-  behaviour minus the dead binary.
+  `/playfab/skinpacks/90860f69-….zip`. That zip is **not in the repo** — it is produced
+  automatically at every panel start, no operator action required:
+  `MojangSkinTextureFetcher` (a `MojangAssetPostProcessor` step registered before the
+  builder) downloads the nine default character textures (`skins/Steve.png`,
+  `skins/Alex.png`, `skins/Sunny.png`, `skins/Kai.png`, `skins/Makena.png`, `skins/Zuri.png`,
+  `skins/Efe.png`, `skins/Ari.png`, `skins/Noor.png`) from the sources recorded in
+  `staticdata-extras/playfab/mojang-assets.manifest.json` (kind `skin-texture`; every
+  download is sha256/size-verified and files already present with matching size/hash are
+  skipped) into `<data>/mojang-assets/skins/`, and `MojangSkinPackBuilder` then builds the
+  pack zip from them into `<data>/mojang-assets/playfab/skinpacks/` (idempotently — rebuilt
+  only when the zip is missing, older than a re-fetched texture or carries an older pack
+  version), where `SkinPackCdnController` serves it. If the fetch cannot reach the sources
+  (or the textures were wiped), the offer still shows but its binary 404s and the pack's
+  rows render empty; the operator workaround is to drop the nine PNGs into
+  `<data>/mojang-assets/skins/` — or a prebuilt zip directly into
+  `<data>/mojang-assets/playfab/skinpacks/90860f69-bcc5-46c4-9e76-b56b9db5d729.zip` — and
+  restart the panel (a missing zip is logged loudly by `SkinPackCdnController`, naming the
+  offer id and the expected path).
 - ~~`staticdata-extras/playfab/items/b3099ceb-…json` — real 1P "City Folk Skin Pack"
   offer~~ — **removed** (Mojang content cleanup): the pack's binary was never servable
   (the real download went through the marketplace DLC pipeline and no copy of the bytes
