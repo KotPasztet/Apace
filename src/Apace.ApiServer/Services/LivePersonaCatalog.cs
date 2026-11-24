@@ -492,7 +492,8 @@ public static class LivePersonaCatalog
         string? LowestFormatVersion = null,
         float? MaxVisibleBoundsWidth = null,
         float? MaxVisibleBoundsHeight = null,
-        bool? HasNonstandardBones = null);
+        bool? HasNonstandardBones = null,
+        bool? HasTextureBindingIssue = null);
 
     private sealed class ProbeStateFile
     {
@@ -1363,7 +1364,10 @@ public static class LivePersonaCatalog
     // gate for head-family pieces ("Squid head" and friends). Bumping the
     // schema discards every stale fact file so the new facts are re-captured
     // from the binaries on disk.
-    private const int GeometryCompatSchemaVersion = 5;
+    // v6: texture binding recorded — a piece whose meta geometry_sources
+    // reference a texture file that no zip entry carries renders UNTEXTURED
+    // ("losing textures"); recorded as positive evidence only.
+    private const int GeometryCompatSchemaVersion = 6;
 
     private const int MaxCompatEntryBytes = 2 * 1024 * 1024;
 
@@ -1385,7 +1389,7 @@ public static class LivePersonaCatalog
     /// disk that no request has touched yet. Returns false when nothing is known
     /// for the item (never seen on disk, or the zip could not be parsed).
     /// </summary>
-    public static bool TryGetGeometryCompat(string itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones, out float? maxVisibleBoundsWidth, out float? maxVisibleBoundsHeight, out bool? hasNonstandardBones)
+    public static bool TryGetGeometryCompat(string itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones, out float? maxVisibleBoundsWidth, out float? maxVisibleBoundsHeight, out bool? hasNonstandardBones, out bool? hasTextureBindingIssue)
     {
         lock (StateLock)
         {
@@ -1401,11 +1405,12 @@ public static class LivePersonaCatalog
                 maxVisibleBoundsWidth = known.MaxVisibleBoundsWidth;
                 maxVisibleBoundsHeight = known.MaxVisibleBoundsHeight;
                 hasNonstandardBones = known.HasNonstandardBones;
+                hasTextureBindingIssue = known.HasTextureBindingIssue;
                 return formatVersion is not null || lowestFormatVersion is not null
                     || known.HasAnimations is not null || known.HasParticles is not null
                     || known.HasRenderControllers is not null || known.HasFaceBones is not null
                     || known.MaxVisibleBoundsWidth is not null || known.MaxVisibleBoundsHeight is not null
-                    || known.HasNonstandardBones is not null;
+                    || known.HasNonstandardBones is not null || known.HasTextureBindingIssue is not null;
             }
         }
 
@@ -1445,11 +1450,12 @@ public static class LivePersonaCatalog
                     maxVisibleBoundsWidth = captured.MaxVisibleBoundsWidth;
                     maxVisibleBoundsHeight = captured.MaxVisibleBoundsHeight;
                     hasNonstandardBones = captured.HasNonstandardBones;
+                    hasTextureBindingIssue = captured.HasTextureBindingIssue;
                     return formatVersion is not null || lowestFormatVersion is not null
                         || captured.HasAnimations is not null || captured.HasParticles is not null
                         || captured.HasRenderControllers is not null || captured.HasFaceBones is not null
                         || captured.MaxVisibleBoundsWidth is not null || captured.MaxVisibleBoundsHeight is not null
-                        || captured.HasNonstandardBones is not null;
+                        || captured.HasNonstandardBones is not null || captured.HasTextureBindingIssue is not null;
                 }
             }
         }
@@ -1463,6 +1469,7 @@ public static class LivePersonaCatalog
         maxVisibleBoundsWidth = null;
         maxVisibleBoundsHeight = null;
         hasNonstandardBones = null;
+        hasTextureBindingIssue = null;
         return false;
     }
 
@@ -1670,8 +1677,28 @@ public static class LivePersonaCatalog
         float? maxBoundsWidth = null;
         float? maxBoundsHeight = null;
         bool? hasNonstandardBones = null;
+        bool? hasTextureBindingIssue = null;
         bool sawGeometry = false;
         bool sawMetaOrManifest = false;
+        bool sawTextureEntry = false;
+        var metaTextureRefs = new List<string>();
+
+        // every zip entry basename (any layer) — a meta geometry_sources
+        // "texture" reference that matches NONE of them cannot bind on the
+        // client and the piece renders untextured
+        var entryBasenames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (CompatEntry compatEntryEntryName in entries)
+        {
+            entryBasenames.Add(compatEntryEntryName.Entry.Name);
+            if (compatEntryEntryName.Entry.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                || compatEntryEntryName.Entry.Name.EndsWith(".tga", StringComparison.OrdinalIgnoreCase)
+                || compatEntryEntryName.Entry.Name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                || compatEntryEntryName.Entry.Name.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+                || compatEntryEntryName.Entry.Name.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+            {
+                sawTextureEntry = true;
+            }
+        }
 
         // The bone lists a geometry can carry: the modern minecraft:geometry
         // entries, a root-level "bones" array and the legacy "geometry.<name>"
@@ -1769,6 +1796,16 @@ public static class LivePersonaCatalog
                 {
                     hasRenderControllers = true; // render-controller reference in meta/manifest
                 }
+
+                // the meta's geometry_sources[].texture names are the texture
+                // binding the client's persona pipeline loads — a reference no
+                // zip entry carries means the piece imports and renders
+                // UNTEXTURED (colloquially "losing textures")
+                if (entry.Name.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase)
+                    && text.Contains("geometry_sources", StringComparison.OrdinalIgnoreCase))
+                {
+                    TryReadMetaTextureRefs(text, metaTextureRefs);
+                }
             }
 
             try
@@ -1844,7 +1881,7 @@ public static class LivePersonaCatalog
         }
 
         if (!sawGeometry && highest is null && !sawMetaOrManifest && hasAnimations is not true && hasParticles is not true && hasRenderControllers is not true && hasFaceBones is not true
-            && maxBoundsWidth is null && maxBoundsHeight is null && hasNonstandardBones is not true)
+            && maxBoundsWidth is null && maxBoundsHeight is null && hasNonstandardBones is not true && hasTextureBindingIssue is not true && metaTextureRefs.Count == 0)
         {
             return null; // nothing inspectable in the zip — all fields unknown
         }
@@ -1859,7 +1896,26 @@ public static class LivePersonaCatalog
         hasFaceBones ??= sawGeometry ? false : null;
         hasNonstandardBones ??= sawGeometry ? false : null;
 
-        return new GeometryCompatInfo(highestText, hasAnimations, hasParticles, hasRenderControllers, hasFaceBones, lowestText, maxBoundsWidth, maxBoundsHeight, hasNonstandardBones);
+        // texture binding: positive evidence only. A meta that declared
+        // geometry_sources texture references resolves the fact — every
+        // reference matched an entry = false, one dangling reference = true.
+        // A piece with geometry but NO texture-like entry at all also renders
+        // untextured. Everything else stays null (unknown — never hides).
+        if (hasTextureBindingIssue is null)
+        {
+            if (metaTextureRefs.Count > 0)
+            {
+                hasTextureBindingIssue = metaTextureRefs.Any(reference =>
+                    !entryBasenames.Contains(reference)
+                    && !entryBasenames.Contains(Path.GetFileName(reference)));
+            }
+            else if (sawGeometry && !sawTextureEntry)
+            {
+                hasTextureBindingIssue = true;
+            }
+        }
+
+        return new GeometryCompatInfo(highestText, hasAnimations, hasParticles, hasRenderControllers, hasFaceBones, lowestText, maxBoundsWidth, maxBoundsHeight, hasNonstandardBones, hasTextureBindingIssue);
 
         // The description objects of modern minecraft:geometry entries — where
     // visible_bounds_width/height live. Legacy 1.8.0 wrappers carry none, so
@@ -1920,13 +1976,50 @@ public static class LivePersonaCatalog
     }
     }
 
+    // Reads the texture file names a piece meta declares for its geometry
+    // ({"geometry_sources":[{"geometry":…,"body_size":…,"texture":"x.png"}]})
+    // — the binding the client's persona pipeline loads per body size. Appends
+    // every "texture" string it finds into <paramref name="into"/>; returns
+    // false when the meta does not parse or declares none (fact stays unknown).
+    private static bool TryReadMetaTextureRefs(string metaText, List<string> into)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(metaText, LenientJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object
+                || !doc.RootElement.TryGetProperty("geometry_sources", out JsonElement sources)
+                || sources.ValueKind != JsonValueKind.Array)
+            {
+                return false;
+            }
+
+            bool any = false;
+            foreach (JsonElement source in sources.EnumerateArray())
+            {
+                if (source.ValueKind == JsonValueKind.Object
+                    && source.TryGetProperty("texture", out JsonElement texture)
+                    && texture.ValueKind == JsonValueKind.String
+                    && texture.GetString() is { Length: > 0 } name)
+                {
+                    into.Add(name);
+                    any = true;
+                }
+            }
+
+            return any;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
     // Bedrock format versions are "1.21.0" / "1.16.200" style strings — parse
     // the leading numeric components and stop at the first non-numeric one
     // (tolerating pre-release suffixes and garbage); fewer than 4 components
     // pad with 0. Unparsable input returns false (fail closed). Keep in sync
     // with PersonaPieceTypes.TryParseFormatVersion.
-    private static bool TryParseFormatVersion(string? formatVersion, out Version version)
-    {
+    private static bool TryParseFormatVersion(string? formatVersion, out Version version)    {
         version = new Version(0, 0, 0, 0);
         if (string.IsNullOrWhiteSpace(formatVersion))
         {

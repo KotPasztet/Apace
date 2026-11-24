@@ -234,10 +234,23 @@ internal sealed class ObjectController : ApaceControllerBase
 
     // The objects as stored by the client, with any player modifications
     // overlaid on the built-in defaults. Stored profiles have their piece
-    // references repaired before serving (see RepairCorruptedPieceIds).
+    // references repaired before serving (see RepairCorruptedPieceIds); the
+    // built-in defaults walk the same rewrite so the corrupted-id repair and
+    // the client-unresolvable-piece drop apply to them too (the default
+    // personaProfile2 references vanilla pieces that ship no catalog item —
+    // the "even flat things don't equip" persona build failure).
     private static async Task<Dictionary<string, object>> GetPersonaObjectsAsync(string playerId)
     {
         Dictionary<string, object> objects = DefaultPersonaObjects();
+
+        foreach (string key in objects.Keys.ToList())
+        {
+            if (objects[key] is Dictionary<string, object> wrapper
+                && wrapper.TryGetValue("DataObject", out object? dataObject))
+            {
+                wrapper["DataObject"] = RepairCorruptedPieceIds(JsonSerializer.SerializeToElement(dataObject));
+            }
+        }
 
         PersonaProfiles profiles = await GetStoredProfilesAsync(playerId);
         foreach (KeyValuePair<string, JsonElement> entry in profiles.Objects)
@@ -294,9 +307,10 @@ internal sealed class ObjectController : ApaceControllerBase
         }
 
         bool changed = false;
-        foreach (JsonNode? entry in entries)
+        var removeIndexes = new List<int>();
+        for (int i = 0; i < entries.Count; i++)
         {
-            if (entry is not JsonObject entryObject
+            if (entries[i] is not JsonObject entryObject
                 || entryObject["id"] is not JsonValue id
                 || id.GetValueKind() is not JsonValueKind.String)
             {
@@ -320,6 +334,31 @@ internal sealed class ObjectController : ApaceControllerBase
                 entryObject["id"] = JsonValue.Create(repaired);
                 changed = true;
             }
+
+            // a piece the client PROVABLY cannot resolve (it reported
+            // PersonaCreationFailed PieceNotInRepository for this uuid and the
+            // server offers no catalog source for it either) fails the WHOLE
+            // persona build — every other piece in the profile stops applying,
+            // which is the "even flat things don't equip" report. Dropping the
+            // dead reference lets the persona build finish; the registry
+            // expires and skips anything that resolves again, so the piece
+            // comes back the moment it becomes available.
+            if (NormalizedPieceId(repaired) is { } normalized
+                && PersonaMissingPieces.IsUnresolvable(normalized))
+            {
+                removeIndexes.Add(i);
+            }
+        }
+
+        if (removeIndexes.Count > 0)
+        {
+            for (int i = removeIndexes.Count - 1; i >= 0; i--)
+            {
+                entries.RemoveAt(removeIndexes[i]);
+            }
+
+            Log.Information("Dropped {Count} client-unresolvable persona piece reference(s) from a served profile (PersonaCreationFailed PieceNotInRepository)", removeIndexes.Count);
+            changed = true;
         }
 
         if (!changed)
@@ -329,6 +368,26 @@ internal sealed class ObjectController : ApaceControllerBase
 
         Log.Information("Repaired corrupted vanilla piece id(s) in a stored persona profile (d3b757f regression)");
         return JsonSerializer.SerializeToElement(root);
+    }
+
+    // "<pieceId>/d", "<pieceId>/l/d", "<pieceId>/r/d" — the suffixes persona
+    // profile entries carry (PersonaPieceTypes.NormalizePieceId); the plain
+    // guid when there is no suffix, null when the id is not a piece reference
+    // at all (skin rows, "00000000…_", ".Custom…" custom skin ids).
+    private static string? NormalizedPieceId(string rawId)
+    {
+        foreach (string suffix in new[] { "/l/d", "/r/d", "/d" })
+        {
+            if (rawId.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                rawId = rawId[..^suffix.Length];
+                break;
+            }
+        }
+
+        return Guid.TryParse(rawId, out Guid _) && !rawId.Contains('.', StringComparison.OrdinalIgnoreCase)
+            ? rawId
+            : null;
     }
 
     // Built-in persona profile objects, used for players who have never

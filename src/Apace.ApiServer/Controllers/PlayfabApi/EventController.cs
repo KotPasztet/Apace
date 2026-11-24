@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Apace.ApiServer.Models.Playfab;
+using Apace.ApiServer.Services;
 using Apace.Common.Utils;
 using Serilog;
 using System.Text.Json;
@@ -80,6 +81,8 @@ internal sealed class EventController : ApaceControllerBase
                     continue;
                 }
 
+                RecordMissingPersonaPiece(ev, name);
+
                 unknown++;
                 string raw = ev.GetRawText();
                 Log.Information("Telemetry event \"{Name}\" ({Bytes} bytes): {Event}",
@@ -98,5 +101,89 @@ internal sealed class EventController : ApaceControllerBase
             Log.Information("Telemetry batch, unparsable ({Bytes} bytes): {Body}", body.Length,
                 body.Length <= 60000 ? body : body[..60000] + "…");
         }
+
+        PersonaMissingPieces.Flush(Log.Logger);
+    }
+
+    // PersonaCreationFailed "PieceNotInRepository" events carry the piece uuid
+    // the client's persona build could not resolve anywhere — the "even flat
+    // things don't equip" root cause (the whole persona fails on that one
+    // reference). Register it so the profile-serving path drops the reference
+    // (PersonaMissingPieces); the failure contract of this endpoint is never
+    // to break over telemetry parsing, so every miss is silently ignored.
+    private static void RecordMissingPersonaPiece(JsonElement ev, string name)
+    {
+        if (!string.Equals(name, "PersonaCreationFailed", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            if (!TryGetEventProperty(ev, "Payload", out JsonElement payload))
+            {
+                return;
+            }
+
+            // some PlayFab shapes wrap the payload as a nested JSON string
+            if (payload.ValueKind == JsonValueKind.String)
+            {
+                using JsonDocument parsed = JsonDocument.Parse(payload.GetString() ?? "{}");
+                HandlePayload(parsed.RootElement);
+                return;
+            }
+
+            if (payload.ValueKind == JsonValueKind.Object)
+            {
+                HandlePayload(payload);
+            }
+        }
+        catch (JsonException)
+        {
+            // not JSON — ignore
+        }
+        catch (Exception)
+        {
+            // never break the telemetry endpoint over a malformed event
+        }
+
+        void HandlePayload(JsonElement payloadObject)
+        {
+            if (!TryGetEventProperty(payloadObject, "Properties", out JsonElement properties)
+                || properties.ValueKind != JsonValueKind.Object
+                || !TryGetEventProperty(properties, "Reason", out JsonElement reason)
+                || reason.ValueKind != JsonValueKind.String
+                || !string.Equals(reason.GetString(), "PieceNotInRepository", StringComparison.Ordinal)
+                || !TryGetEventProperty(properties, "PieceId", out JsonElement pieceId)
+                || pieceId.ValueKind != JsonValueKind.String
+                || pieceId.GetString() is not { Length: > 0 } pieceIdValue)
+            {
+                return;
+            }
+
+            PersonaMissingPieces.Record(pieceIdValue, Log.Logger);
+        }
+    }
+
+    // Event property names vary in casing between client builds (PascalCase in
+    // the observed batches) — case-insensitive lookup on the object.
+    private static bool TryGetEventProperty(JsonElement element, string name, out JsonElement value)
+    {
+        value = default;
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        foreach (JsonProperty property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        return false;
     }
 }

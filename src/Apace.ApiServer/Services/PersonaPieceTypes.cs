@@ -209,8 +209,17 @@ public static class PersonaPieceTypes
     /// Callers MUST pass <see cref="PersonaPackGate.ExperimentalAutoRepairRigs"/>
     /// (the knob hot-reloads) — a stale constant here would serve unrepaired
     /// geometry to clients that cached the offer.
+    /// <paramref name="hideCustomSkeleton"/> is the packs.json "customSkeletonMode"
+    /// Flat-only offer rule: pieces with ANY custom bone stay hidden (only
+    /// "flat" cosmetics serve). Serve-time callers pass false — a cached client
+    /// requesting a hidden piece still gets its geometry stripped.
+    /// The bones/bounds/effect checks run EVEN when the geometry format_version
+    /// is missing or unparsable: the old early "unknown" return swallowed every
+    /// bones fact for exactly the pieces the repairer needed to see (their
+    /// verdicts came out supported-with-no-evidence, so the compat gate never
+    /// hid them and the repairer silently skipped them).
     /// </summary>
-    public static CosmeticGateVerdict EvaluateCosmetic(string itemId, string? pieceType = null, bool allowRigRepair = false)
+    public static CosmeticGateVerdict EvaluateCosmetic(string itemId, string? pieceType = null, bool allowRigRepair = false, bool hideCustomSkeleton = false)
     {
         // 1. explicit verdict from the compat store, when the lane wrote one
         string? verdict = CosmeticCompatVerdicts.Lookup(itemId);
@@ -223,21 +232,18 @@ public static class PersonaPieceTypes
 
         // 2. the metadata pipeline's recorded geometry facts (worst case
         // across the piece's geometry variants)
-        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones, out float? maxVisibleBoundsWidth, out float? maxVisibleBoundsHeight, out bool? hasNonstandardBones))
+        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones, out float? maxVisibleBoundsWidth, out float? maxVisibleBoundsHeight, out bool? hasNonstandardBones, out bool? hasTextureBindingIssue))
         {
             return new CosmeticGateVerdict(true, "unknown — no compat metadata, nothing proves breakage");
         }
 
-        // A version that cannot be parsed proves nothing about compatibility —
-        // unknown, not risky. Null effect flags mean "not scanned" and do not
-        // disqualify.
+        // A version that cannot be parsed proves nothing about the UV/transform
+        // rules — but it does NOT disable the other checks below (effects,
+        // bones, bounds, texture binding all still apply).
         Version maxGeometry = PersonaPackGate.MaxGeometryFormatVersion;
         bool highestParsed = TryParseFormatVersion(formatVersion, out Version highest);
         bool lowestParsed = TryParseFormatVersion(lowestFormatVersion, out Version lowest);
-        if (!highestParsed && !lowestParsed)
-        {
-            return new CosmeticGateVerdict(true, "unknown — the recorded geometry format_version does not parse");
-        }
+        bool versionKnown = highestParsed || lowestParsed;
 
         if (highestParsed && highest >= maxGeometry)
         {
@@ -259,6 +265,13 @@ public static class PersonaPieceTypes
             return new CosmeticGateVerdict(false, "render controllers in the piece files");
         }
 
+        // The piece declares a texture its zip does not carry — the client's
+        // persona pipeline cannot bind it and the piece renders UNTEXTURED.
+        if (hasTextureBindingIssue == true)
+        {
+            return new CosmeticGateVerdict(false, "the declared texture file is missing from the piece zip (renders untextured)");
+        }
+
         // Face bones mark the persona face-accessory rig (MCPE-165232) — risky
         // only for face accessories. Other piece types legitimately carry
         // hat/head rig bones the frozen client renders fine, so an unknown or
@@ -267,6 +280,16 @@ public static class PersonaPieceTypes
         if (hasFaceBones == true && pieceType is "persona_face_accessory")
         {
             return new CosmeticGateVerdict(false, "face bones in the piece geometry (MCPE-165232 — the face-accessory rig)");
+        }
+
+        // Flat-only mode (packs.json "customSkeletonMode"): pieces with ANY
+        // custom bone stay hidden so only "flat" cosmetics serve. Applied to
+        // every piece type — the user explicitly wants only flat things (hair
+        // included; the head-family exemption below is a bones-RISK scoping,
+        // not a flat-only exemption).
+        if (hideCustomSkeleton && hasNonstandardBones == true)
+        {
+            return new CosmeticGateVerdict(false, "flat-only mode hides custom-skeleton pieces (packs.json customSkeletonMode)");
         }
 
         // Custom rig bones + oversized bounds render DISPLACED/STRETCHED on the
@@ -280,13 +303,14 @@ public static class PersonaPieceTypes
         // facts (legacy 1.8.0 geometry has no visible_bounds) serve — the
         // filter only hides on positive evidence.
         //
-        // With the experimental auto-rig repair on (allowRigRepair), custom
-        // bones alone no longer hide the piece: the serve-time repairer
-        // re-parents the custom bone-subtree roots onto "head"
-        // (PersonaRigRepairer) and the verdict reports RepairedRig so the
-        // serving side knows to rewrite the binary. The bones branch therefore
-        // does NOT return early — the oversized-bounds check below must still
-        // run, because the repair fixes bones only and cannot fix size.
+        // With a serve-time transform on (allowRigRepair — the experimental
+        // auto-rig repair OR the strip-skeleton mode), custom bones alone no
+        // longer hide the piece: the serve-time rewriter fixes the geometry
+        // (re-parent onto "head", or strip the bones entirely) and the verdict
+        // reports RepairedRig so the serving side knows to rewrite the binary.
+        // The bones branch therefore does NOT return early — the
+        // oversized-bounds check below must still run, because the transform
+        // fixes bones only and cannot fix size.
         if (IsHeadFamilyPieceType(pieceType))
         {
             bool repairableBones = false;
@@ -309,12 +333,14 @@ public static class PersonaPieceTypes
             {
                 return new CosmeticGateVerdict(
                     true,
-                    "custom rig bones — the experimental auto-rig-repair re-parents them onto \"head\" at serve time (packs.json experimentalAutoRepairRigs)",
+                    "custom rig bones — the serve-time rewriter fixes them (packs.json experimentalAutoRepairRigs / customSkeletonMode)",
                     RepairedRig: true);
             }
         }
 
-        return new CosmeticGateVerdict(true, $"geometry format_version {formatVersion}, in the supported band with no effect signals");
+        return versionKnown
+            ? new CosmeticGateVerdict(true, $"geometry format_version {formatVersion}, in the supported band with no effect signals")
+            : new CosmeticGateVerdict(true, "no parsable format_version but no risk signal either — bones/bounds/effects still checked");
     }
 
     // Deduplicated gate diagnostics: the gate runs per request over the whole

@@ -102,7 +102,7 @@ public static class PersonaRigRepairer
             return false;
         }
 
-        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out _, out _, out _, out _, out _, out _, out _, out _, out bool? hasNonstandardBones)
+        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out _, out _, out _, out _, out _, out _, out _, out _, out bool? hasNonstandardBones, out _)
             || hasNonstandardBones != true)
         {
             return false;
@@ -123,6 +123,7 @@ public static class PersonaRigRepairer
     {
         if (!IsRepairCandidate(itemId, pieceType))
         {
+            LogSkipOnce(itemId, pieceType, logger);
             return null;
         }
 
@@ -217,6 +218,41 @@ public static class PersonaRigRepairer
 
         Log.Information("Auto rig repair served {Item}: re-parented custom bone(s) {Bones} onto \"{Bone}\" (packs.json experimentalAutoRepairRigs)",
             itemId, string.Join(", ", bones), RepairParentBone);
+    }
+
+    // One line per UNREPAIRED piece that carries custom bones while the knob
+    // is on — the "kompletnie nie działa naprawiacz" report was undiagnosable
+    // because every skip path was silent. Deduplicated per item per run like
+    // LogRepairedOnce.
+    private static readonly HashSet<string> SkipsLogged = new(StringComparer.OrdinalIgnoreCase);
+
+    private static void LogSkipOnce(string itemId, string? pieceType, Serilog.ILogger logger)
+    {
+        if (!PersonaPackGate.ExperimentalAutoRepairRigs)
+        {
+            return; // the knob is off — the repairer is not supposed to do anything
+        }
+
+        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out _, out _, out _, out _, out _, out _, out _, out _, out bool? hasNonstandardBones, out _)
+            || hasNonstandardBones != true)
+        {
+            return; // no custom-bone facts — nothing the repairer could act on anyway
+        }
+
+        lock (SkipsLogged)
+        {
+            if (!SkipsLogged.Add(itemId))
+            {
+                return;
+            }
+        }
+
+        string reason = !PersonaPieceTypes.IsHeadFamilyPieceType(pieceType)
+            ? $"the piece type \"{pieceType ?? "?"}\" is not head-family (the repair scopes to head/eyes/mouth/face-accessory)"
+            : PersonaPieceTypes.EvaluateCosmetic(itemId, pieceType, allowRigRepair: true) is { Supported: false } blocked
+                ? $"the compat gate still blocks it: {blocked.Reason}"
+                : "the verdict passed but the container produced no repair (unparsable content or nothing repairable)";
+        Log.Information("Auto rig repair ON but {Item} was served UNREPAIRED: {Reason}", itemId, reason);
     }
 
     // ---------------------------------------------------------------------------

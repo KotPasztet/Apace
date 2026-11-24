@@ -175,6 +175,10 @@ public static class CosmeticCompatIndex
         public float? MaxVisibleBoundsWidth { get; set; }
         public float? MaxVisibleBoundsHeight { get; set; }
         public bool? HasNonstandardBones { get; set; }
+
+        // recorded since probe schema v6 — a meta geometry_sources texture
+        // reference no zip entry carries (the piece renders untextured)
+        public bool? HasTextureBindingIssue { get; set; }
     }
 
     /// <summary>
@@ -315,19 +319,23 @@ public static class CosmeticCompatIndex
             return Unknown;
         }
 
-        if (facts.FormatVersion is null
-            || !TryParseFormatVersion(facts.FormatVersion, out Version version))
-        {
-            return new CosmeticCompatInfo(
-                CosmeticCompatKind.Unknown,
-                "compat profile present but the geometry format_version is missing or unparsable — the piece files do not parse");
-        }
+        // The format_version being missing/unparsable no longer short-circuits
+        // the classification: the ApiServer's gate (PersonaPieceTypes
+        // .EvaluateCosmetic) evaluates effects/bones/bounds even without a
+        // parsable version — the old early-unknown return swallowed the bones
+        // signal for exactly the pieces the repairer needed to see. Same rule
+        // here so the badges match what the gate enforces.
+        bool versionKnown = facts.FormatVersion is not null
+            && TryParseFormatVersion(facts.FormatVersion, out Version _);
+        string versionText = versionKnown
+            ? $"geometry format_version {facts.FormatVersion}"
+            : "no parsable format_version";
 
-        if (version >= maxGeometry)
+        if (versionKnown && TryParseFormatVersion(facts.FormatVersion, out Version version) && version >= maxGeometry)
         {
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.Risky,
-                $"geometry format_version {facts.FormatVersion} — at or past the {maxGeometry} cap (UV rotation, transform pivots the frozen client cannot render)");
+                $"{versionText} — at or past the {maxGeometry} cap (UV rotation, transform pivots the frozen client cannot render)");
         }
 
         List<string> effects = [];
@@ -344,6 +352,13 @@ public static class CosmeticCompatIndex
         if (facts.HasRenderControllers == true)
         {
             effects.Add("render controllers");
+        }
+
+        // a declared texture no zip entry carries — the piece imports and
+        // renders UNTEXTURED ("losing textures"); recorded since schema v6
+        if (facts.HasTextureBindingIssue == true)
+        {
+            effects.Add("declared texture missing from the zip (renders untextured)");
         }
 
         // face bones mark the face-accessory rig (MCPE-165232) — risky only for
@@ -386,19 +401,21 @@ public static class CosmeticCompatIndex
         {
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.Risky,
-                $"geometry format_version {facts.FormatVersion} but uses {string.Join(", ", effects)}");
+                $"{versionText} but uses {string.Join(", ", effects)}");
         }
 
         if (repairableBones)
         {
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.AutoRepairable,
-                $"geometry format_version {facts.FormatVersion} — custom rig bones are the only breakage signal and the experimental auto-rig-repair re-parents them onto \"head\" at serve time");
+                $"{versionText} — custom rig bones are the only breakage signal and the experimental auto-rig-repair re-parents them onto \"head\" at serve time");
         }
 
         return new CosmeticCompatInfo(
             CosmeticCompatKind.Supported,
-            $"geometry format_version {facts.FormatVersion}, no animation/effect signals");
+            versionKnown
+                ? $"geometry format_version {facts.FormatVersion}, no animation/effect signals"
+                : "no parsable format_version but no risk signal either (bones/bounds/effects still checked)");
     }
 
     // Bedrock format versions are "1.21.0" / "1.16.200" style strings — parse
