@@ -667,6 +667,12 @@ public static class LivePersonaCatalog
 
     private static readonly HttpClient HttpClient = CreateHttpClient();
     private static readonly SemaphoreSlim RemoteGate = new(1, 1);
+
+    // Raw concurrency cap for CDN file downloads (thumbnails) — the polite
+    // alternative to the API pacer for content-CDN GETs: a cold dressing room
+    // asks for a whole page of thumbnails at once and they download in
+    // parallel (bounded) instead of two-per-second.
+    private static readonly SemaphoreSlim ThumbDownloadSlot = new(12, 12);
     private static DateTime _lastRemoteCall = DateTime.MinValue;
     private static readonly SemaphoreSlim LoginLock = new(1, 1);
 
@@ -684,9 +690,12 @@ public static class LivePersonaCatalog
         return client;
     }
 
-    // Polite limiter for every remote call this service makes (probe, GetItem
-    // discovery, binary/thumbnail download): at most ~2 requests per second.
-    // There are no bulk loops anywhere — the only callers are lazy, client-driven.
+    // Polite limiter for the PlayFab API surface this service calls (probe,
+    // GetItem discovery): at most ~2 requests per second. CDN FILE downloads
+    // (thumbnails, binaries) do NOT go through this — they hit the content CDN,
+    // not the API, and pacing them at 2/s serialized a cold dressing room's
+    // whole page of thumbnails (60+ images × 0.5s each = every first visit
+    // crawled). See ThumbDownloadSlot for the thumbnail concurrency cap.
     private static async Task PaceRemoteAsync(CancellationToken cancellationToken)
     {
         await RemoteGate.WaitAsync(cancellationToken);
@@ -1913,22 +1922,33 @@ public static class LivePersonaCatalog
             {
                 try
                 {
-                    await PaceRemoteAsync(cancellationToken);
-                    using var response = await HttpClient.GetAsync(candidate, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                    if (!response.IsSuccessStatusCode)
+                    // content-CDN file download — NOT the API pacer (see
+                    // PaceRemoteAsync): pacing this at 2/s serialized a cold
+                    // dressing room's whole page of thumbnails. Cap raw
+                    // concurrency instead.
+                    await ThumbDownloadSlot.WaitAsync(cancellationToken);
+                    try
                     {
-                        continue;
-                    }
+                        using var response = await HttpClient.GetAsync(candidate, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            continue;
+                        }
 
-                    string partPath = path + ".part";
-                    await using (var content = await response.Content.ReadAsStreamAsync(cancellationToken))
-                    await using (var fileStream = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                        string partPath = path + ".part";
+                        await using (var content = await response.Content.ReadAsStreamAsync(cancellationToken))
+                        await using (var fileStream = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                        {
+                            await content.CopyToAsync(fileStream, cancellationToken);
+                        }
+
+                        File.Move(partPath, path, overwrite: true);
+                        return path;
+                    }
+                    finally
                     {
-                        await content.CopyToAsync(fileStream, cancellationToken);
+                        ThumbDownloadSlot.Release();
                     }
-
-                    File.Move(partPath, path, overwrite: true);
-                    return path;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {

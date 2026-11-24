@@ -54,9 +54,18 @@
         {
             <p class="text-muted small">@_packSummary</p>
         }
-        <PackPicker PickerId="grant" Packs="@_packs" Selected="@_grants"
-                    SelectedChanged="@(v => { _grants = v; StateHasChanged(); })"
-                    EmptyHint="Nothing granted beyond the panel defaults." />
+        @if (_loadingPacks)
+        {
+            <div class="d-flex align-items-center gap-2 text-muted small py-3">
+                <span class="spinner-border spinner-border-sm"></span> Loading bundles…
+            </div>
+        }
+        else
+        {
+            <PackPicker PickerId="grant" Packs="@_packs" Selected="@_grants"
+                        SelectedChanged="@(v => { _grants = v; StateHasChanged(); })"
+                        EmptyHint="Nothing granted beyond the panel defaults." />
+        }
 
         <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveGrantsAsync" disabled="@_saving">
             @if (_saving)
@@ -79,6 +88,7 @@
     private HashSet<string> _grants = [];
     private string? _message;
     private bool _saving;
+    private bool _loadingPacks = true;
     private bool _syncing;
     private string? _syncError;
     private EarthDB? _earthDB;
@@ -106,7 +116,30 @@
 
     protected override async Task OnInitializedAsync()
     {
-        (_packs, _packSummary) = PersonaPackIndex.ReadThemePacks();
+        // Navigate-then-load (same as the Marketplace Management page): the
+        // pack index read parses the whole catalog sync — run it off the
+        // render thread so the page paints immediately and the picker fills in.
+        await Task.Yield();
+        Task packs = LoadPacksAsync();
+        Task grants = LoadGrantsAsync();
+        await Task.WhenAll(packs, grants);
+    }
+
+    private async Task LoadPacksAsync()
+    {
+        try
+        {
+            (_packs, _packSummary) = await Task.Run(PersonaPackIndex.ReadThemePacks);
+        }
+        finally
+        {
+            _loadingPacks = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadGrantsAsync()
+    {
         try
         {
             using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
@@ -125,6 +158,10 @@
         {
             Log.Error(ex, "Failed to load persona pack grants for player '{PlayerId}'", PlayerId);
             _message = $"Loading the grants failed: {ex.Message}";
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
         }
     }
 

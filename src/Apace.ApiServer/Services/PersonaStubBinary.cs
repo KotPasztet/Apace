@@ -10,9 +10,11 @@ namespace Apace.ApiServer.Services;
 // The frozen Minecraft Earth client RETRIES a failed piece download until its
 // own timeout — a 404 leaves the player stuck on "loading" — so the download
 // must SUCCEED instead: the placeholder is a complete, valid piece zip in the
-// proven-working shape (scripts/build_apace_piece.py) whose geometry carries a
-// single empty bone — the client imports it, applies the piece, renders
-// nothing and the equip completes instantly.
+// proven-working shape (scripts/build_apace_piece.py) whose geometry renders a
+// small solid-gray shape on the piece's rig bone. VISIBLE ON PURPOSE: the
+// first placeholder (empty bones, transparent texture) imported fine and
+// rendered nothing, so every equip looked like it did nothing — a player must
+// SEE the placeholder apply.
 //
 // Deterministic by construction: one piece uuid always yields the same bytes
 // (fixed timestamps, uuid-derived file keys), so a client's cached copy of the
@@ -21,8 +23,8 @@ public static class PersonaStubBinary
 {
     private const string StubName = "apace_stub";
 
-    // 1×1 fully transparent PNG — the placeholder texture.
-    private const string TransparentPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=";
+    // 1×1 solid light-gray PNG — the placeholder texture (visible).
+    private const string PlaceholderPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mPYtGnTfwAHRgMWHTGgjgAAAABJRU5ErkJggg==";
 
     // The manifest header/module version the client re-imports on ([3,0,0] —
     // same reasoning as the cape builder: a bump forces the client to use the
@@ -103,22 +105,16 @@ public static class PersonaStubBinary
         }, JsonOptions);
 
         // legacy 1.8.0 geometry — the shape the frozen client provably accepts
-        // (the Apace capes ship it); one root bone, no cubes — renders nothing
-        string geometryJson = JsonSerializer.Serialize(new Dictionary<string, object?>
-        {
-            ["format_version"] = "1.8.0",
-            [$"geometry.{StubName}.tall"] = EmptyGeometry(),
-            [$"geometry.{StubName}.medium"] = EmptyGeometry(),
-            [$"geometry.{StubName}.small"] = EmptyGeometry(),
-            [$"geometry.{StubName}.smaller"] = EmptyGeometry(),
-        }, JsonOptions);
+        // (the Apace capes ship it); renders a small gray shape on the piece's
+        // rig bone
+        string geometryJson = JsonSerializer.Serialize(BuildGeometry(pieceType), JsonOptions);
 
         string lang = $"persona.{StubName}.title=Piece";
         string languages = "[\"en_US\"]";
 
         byte[] manifestBytes = Encoding.UTF8.GetBytes(manifestJson);
         byte[] metaBytes = PersonaContentCrypto.Encrypt(Encoding.ASCII.GetBytes(metaKey), Encoding.UTF8.GetBytes(metaJson));
-        byte[] textureBytes = PersonaContentCrypto.Encrypt(Encoding.ASCII.GetBytes(textureKey), Convert.FromBase64String(TransparentPngBase64));
+        byte[] textureBytes = PersonaContentCrypto.Encrypt(Encoding.ASCII.GetBytes(textureKey), Convert.FromBase64String(PlaceholderPngBase64));
         byte[] geometryBytes = PersonaContentCrypto.Encrypt(Encoding.ASCII.GetBytes(geometryKey), Encoding.UTF8.GetBytes(geometryJson));
 
         // signatures.json first (hash of the FINAL manifest bytes), raw like real pieces
@@ -169,18 +165,86 @@ public static class PersonaStubBinary
             ["body_size"] = bodySize,
             ["texture"] = $"{StubName}.png",
         };
+    }
 
-        static Dictionary<string, object?> EmptyGeometry() => new()
+    // The placeholder renders on the rig bone the piece type attaches to — the
+    // player rig maps geometry bones by NAME ("head", "body", "leftLeg",
+    // "rightLeg", "cape"). "cape" is proven (the Apace capes render exactly
+    // this root/waist/body/cape chain, same cube); the others are the standard
+    // Bedrock player bones. All four body-size wrappers share one shape.
+    private static readonly string[] HeadPieceTypes =
+    [
+        "persona_head", "persona_face_accessory", "persona_hair", "persona_beard", "persona_eyes", "persona_mouth",
+    ];
+
+    private static Dictionary<string, object?> BuildGeometry(string pieceType) => new()
+    {
+        ["format_version"] = "1.8.0",
+        [$"geometry.{StubName}.tall"] = GeometryFor(pieceType),
+        [$"geometry.{StubName}.medium"] = GeometryFor(pieceType),
+        [$"geometry.{StubName}.small"] = GeometryFor(pieceType),
+        [$"geometry.{StubName}.smaller"] = GeometryFor(pieceType),
+    };
+
+    private static Dictionary<string, object?> GeometryFor(string pieceType)
+    {
+        List<Dictionary<string, object?>> bones = [Bone("root", null, 0, 0, 0, cubes: null)];
+        if (pieceType is "persona_back")
         {
-            ["visible_bounds_width"] = 1,
-            ["visible_bounds_height"] = 1,
+            // the proven cape layout, byte-for-byte the Apace cape's cube
+            bones.Add(Bone("waist", "root", 0, 12, 0, cubes: null));
+            bones.Add(Bone("body", "waist", 0, 24, 0, cubes: null));
+            bones.Add(Bone("cape", "body", 0, 24, -3, [Cube(-5, 8, -3, 10, 16, 1)]));
+        }
+        else if (pieceType is "persona_feet")
+        {
+            bones.Add(Bone("leftLeg", "root", -1.9f, 12, 0, [Cube(-2.9f, 4, -1.5f, 2, 5, 3)]));
+            bones.Add(Bone("rightLeg", "root", 1.9f, 12, 0, [Cube(0.9f, 4, -1.5f, 2, 5, 3)]));
+        }
+        else if (HeadPieceTypes.Contains(pieceType, StringComparer.Ordinal))
+        {
+            bones.Add(Bone("head", "root", 0, 24, 0, [Cube(-3, 32, -3, 6, 3, 6)]));
+        }
+        else
+        {
+            bones.Add(Bone("body", "root", 0, 24, 0, [Cube(-3, 26, 2, 6, 6, 1)]));
+        }
+
+        return new Dictionary<string, object?>
+        {
+            ["visible_bounds_width"] = 2,
+            ["visible_bounds_height"] = 2,
             ["visible_bounds_offset"] = new List<object> { 0f, 0.5f, 0f },
             ["texturewidth"] = 1,
             ["textureheight"] = 1,
-            ["bones"] = new List<Dictionary<string, object?>>
+            ["bones"] = bones,
+        };
+
+        static Dictionary<string, object?> Bone(string name, string? parent, float px, float py, float pz, List<Dictionary<string, object?>>? cubes)
+        {
+            var bone = new Dictionary<string, object?>
             {
-                new() { ["name"] = "root", ["pivot"] = new List<object> { 0f, 0f, 0f } },
-            },
+                ["name"] = name,
+                ["pivot"] = new List<object> { px, py, pz },
+            };
+            if (parent is not null)
+            {
+                bone["parent"] = parent;
+            }
+
+            if (cubes is not null)
+            {
+                bone["cubes"] = cubes;
+            }
+
+            return bone;
+        }
+
+        static Dictionary<string, object?> Cube(float x, float y, float z, float w, float h, float d) => new()
+        {
+            ["origin"] = new List<object> { x, y, z },
+            ["size"] = new List<object> { w, h, d },
+            ["uv"] = new List<object> { 0, 0 },
         };
     }
 

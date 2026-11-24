@@ -183,16 +183,12 @@
         <div class="card shadow" style="max-width: 30rem; width: calc(100% - 2rem);">
             <div class="card-header fw-bold">No packs enabled</div>
             <div class="card-body">
-                <p class="mb-0">
-                    No skin packs or bundles are selected in Marketplace Management — players get no
-                    player-selected marketplace cosmetics (the built-in default skins still serve, and with
-                    "Fill blank slots with random cosmetics" on the server fills every category with random pieces).
-                </p>
+                <p class="mb-0">No skin packs or bundles are selected. Select some in Marketplace Management.</p>
             </div>
             <div class="card-footer d-flex flex-wrap gap-2 justify-content-end">
                 <button class="btn btn-primary btn-sm" @onclick="GoToMarketplace">Take me there</button>
                 <button class="btn btn-outline-secondary btn-sm" @onclick="SuppressNoPacksPopupAndStart">Never show again</button>
-                <button class="btn btn-outline-secondary btn-sm" @onclick="() => _showNoPacksPopup = false">Close</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="CloseNoPacksPopupAndStart">Close</button>
             </div>
         </div>
     </div>
@@ -419,6 +415,12 @@
     {
         Settings.Instance.PersonaNoPacksPopupSuppressed = true;
         Settings.Instance.Save(Settings.DefaultPath);
+        _showNoPacksPopup = false;
+        await ServerManager.Start();
+    }
+
+    private async Task CloseNoPacksPopupAndStart()
+    {
         _showNoPacksPopup = false;
         await ServerManager.Start();
     }

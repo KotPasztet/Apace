@@ -519,11 +519,7 @@
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots), _jsonOptions));
             _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
-                + (_onlySupported ? "only client-supported cosmetics." : "client-compatibility filter off.")
-                + " The ApiServer picks this up immediately."
-                + (_defaults.Count == 0
-                    ? " No packs selected — players get 0 marketplace cosmetics; the built-in default skins still serve."
-                    : "");
+                + (_onlySupported ? "only client-supported cosmetics." : "client-compatibility filter off.");
         }
         catch (Exception ex)
         {
