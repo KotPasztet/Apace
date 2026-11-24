@@ -21,6 +21,23 @@ public static class APK
     // written next to apktool.jar (see WriteSystemAapt2Wrapper).
     internal const string SystemAapt2Path = "/usr/bin/aapt2";
 
+    // flag-filtering wrapper the Apace Dockerfile installs on top of the
+    // distro binary (REAL_AAPT2=/usr/bin/aapt2; AAPT2_PATH inside the image
+    // points at it). Searched BEFORE the raw distro binary (see
+    // SystemAapt2CandidatePaths) so Docker-derived rootfs' pick the same
+    // wrapper the image itself uses.
+    internal const string DockerWrapperAapt2Path = "/usr/local/bin/aapt2";
+
+    // Where ResolveSystemAapt2 looks for a system aapt2, in order (after the
+    // APACE_SYS_AAPT2 / AAPT2_PATH overrides). Internal (not readonly) so the
+    // stub harness can point the search at sandbox paths; production code
+    // never mutates it.
+    internal static string[] SystemAapt2CandidatePaths = [DockerWrapperAapt2Path, SystemAapt2Path];
+
+    // apt-get used by the self-heal path (see SelfHealInstallAapt). Internal
+    // (not const) for the same stub-harness reason.
+    internal static string AptGetPath = "/usr/bin/apt-get";
+
     // name of the generated system-aapt2 wrapper inside the patcher working
     // directory (the same directory apktool.jar lives in)
     internal const string SystemAapt2WrapperFileName = "aapt2-system.sh";
@@ -28,6 +45,22 @@ public static class APK
     // how long a smoke-compile candidate may run before it gets killed (see
     // ProbeAapt2Compile)
     internal const int ProbeTimeoutMilliseconds = 45_000;
+
+    // how long `<candidate> version` may run during the candidate search
+    // before it gets killed (see IsWorkingAapt2Candidate)
+    internal const int VersionProbeTimeoutMilliseconds = 15_000;
+
+    // how long each apt-get command of the self-heal path may run before it
+    // gets killed (see SelfHealInstallAapt): long enough for a slow phone's
+    // apt-get over mobile data, short enough that a wedged network cannot
+    // hang a patch job
+    internal const int SelfHealTimeoutMilliseconds = 180_000;
+
+    // the apt self-heal is attempted at most once per process lifetime
+    // (0 = not yet attempted, 1 = attempted): the patcher runs inside the
+    // long-lived Apace server, and every job on a host that still needs it
+    // would otherwise re-run apt-get (see SelfHealInstallAapt)
+    private static int selfHealAttempted;
 
     // synthetic probe exit codes for candidates that never produced a real
     // one (used in the fallback diagnostics): could not be started at all
@@ -97,9 +130,13 @@ public static class APK
         // where the real compile then SIGILLs) detects this; a failed probe
         // switches THIS build to the system aapt2 through a wrapper that
         // drops the modern flags the distro binary rejects (see
-        // WriteSystemAapt2Wrapper) so those hosts still build. Healthy hosts
-        // pass the probe and keep the bundled binary unchanged - zero
-        // regression there. Skipped entirely when AAPT2_PATH overrides the
+        // WriteSystemAapt2Wrapper) so those hosts still build. When the host
+        // has no system aapt2 at all (e.g. a stale phone rootfs that predates
+        // the Docker image's 'aapt' package) the search falls through to an
+        // apt self-heal that installs the package once and re-scans (see
+        // SelfHealInstallAapt). Healthy hosts pass the probe and keep the
+        // bundled binary unchanged - zero regression there, and the self-heal
+        // never runs. Skipped entirely when AAPT2_PATH overrides the
         // binary (see SystemTools), because apktool then never touches the
         // bundled one.
         string? systemAapt2 = null; // --aapt override for this build, or null for the bundled binary
@@ -117,22 +154,43 @@ public static class APK
         var buildOutput = new StringBuilder();
         int exitCode = RunApktool(args, buildOutput);
 
-        // Retry net: the smoke probe is a heuristic - if the bundled binary
-        // still dies inside the real build the way the probe is meant to
-        // catch (exec failure / killed by a signal, see IsAapt2ExecFailure;
-        // resource errors never match), give the build ONE more shot through
-        // the system wrapper. Never retried when the first attempt already
-        // used the wrapper or AAPT2_PATH.
+        // Retry net: the smoke probe is a heuristic - under emulation the
+        // bundled binary's SIGILL is FLAKY and can spare the tiny probe but
+        // still kill the real build (user log 2026-11-24 20:02: probe passed,
+        // build died with "exit code = 132"). When a bundled-aapt2 build
+        // dies the way the probe is meant to catch (exec failure / killed by
+        // a signal, see IsAapt2ExecFailure; resource errors never match and
+        // surface unchanged), give the build ONE more shot through the
+        // system wrapper - running the candidate search (and, if it comes up
+        // empty, the apt self-heal, see SelfHealInstallAapt) at THIS point,
+        // because the pre-flight may have passed only by fluke. Never
+        // retried when the first attempt already used the wrapper or
+        // AAPT2_PATH, and never more than once.
         if (exitCode is not 0 && systemAapt2 is null && SystemTools.Aapt2Path is null && IsAapt2ExecFailure(buildOutput.ToString(), out int bundledExitCode))
         {
             string? retryAapt2 = PrepareSystemAapt2Fallback();
 
             if (retryAapt2 is not null)
             {
-                Log.Information($"bundled aapt2 failed (exit={bundledExitCode}) - retrying with system aapt (fallback)");
+                Log.Warning($"bundled aapt2 failed (exit={bundledExitCode}) - retrying the build once with system aapt2 ({retryAapt2})");
 
                 buildOutput.Clear();
                 exitCode = RunApktool(BuildArgs(input, outApk.FullName, retryAapt2), buildOutput);
+            }
+            else
+            {
+                string exitHint = bundledExitCode switch
+                {
+                    132 => " = 128 + SIGILL",
+                    ProbeFailedToStart => " (process never started)",
+                    _ => "",
+                };
+
+                Log.Error(
+                    $"aapt2: the build failed with the aapt2 bundled in apktool.jar (exit={bundledExitCode}{exitHint}) " +
+                    "and no working system aapt2 could be found or installed - the bundled binary cannot run on this device's CPU; " +
+                    "installing the 'aapt' package (apt-get install -y aapt) or pointing AAPT2_PATH at a working aapt2 binary fixes it"
+                );
             }
         }
 
@@ -341,8 +399,10 @@ public static class APK
     }
 
     // Pre-flight aapt2 selection for one build (see Encode): smoke-compiles
-    // the bundled binary and, when that fails, the system-aapt2 wrapper, and
-    // logs the decision. Internal static so tests can drive the selection
+    // the bundled binary and, when that fails, resolves a system aapt2
+    // (running the apt self-heal first when the host has none at all, see
+    // SelfHealInstallAapt), smoke-compiles the generated wrapper, and logs
+    // the decision. Internal static so tests can drive the selection
     // (including its logging) via reflection against the built DLL, without
     // running apktool.
     internal static Aapt2Selection SelectAapt2(string jarPath, out string? systemAapt2)
@@ -357,8 +417,11 @@ public static class APK
             return Aapt2Selection.Bundled;
         }
 
-        // the bundled binary cannot compile here - can the system one?
-        string? systemBinary = ResolveSystemAapt2();
+        // the bundled binary cannot compile here - can the system one? (and
+        // if the host has none at all: can we install one? The self-heal
+        // below only ever runs in THIS branch, i.e. strictly after the
+        // bundled probe failed - see its STRICT GATE remark)
+        string? systemBinary = ResolveSystemAapt2() ?? SelfHealInstallAapt();
 
         if (systemBinary is null)
         {
@@ -375,25 +438,36 @@ public static class APK
 
         if (wrapperOk)
         {
-            Log.Information($"aapt2 pre-flight: bundled aapt2 failed (exit={bundledExitCode}), falling back to system aapt2");
-            Log.Information("using system aapt (fallback)");
+            Log.Warning($"aapt2 pre-flight: bundled aapt2 failed (exit={bundledExitCode}) - falling back to system aapt2 ({systemBinary})");
+            Log.Information($"using system aapt2 ({wrapperPath})");
             systemAapt2 = wrapperPath;
             return Aapt2Selection.SystemWrapper;
         }
 
         Log.Error(
             $"aapt2 pre-flight: bundled aapt2 failed (exit={bundledExitCode}, apktool.jar at '{jarPath}') and the system aapt2 wrapper failed too " +
-            $"(exit={wrapperExitCode}, wrapper '{wrapperPath}', system binary '{systemBinary}') - cannot build resources on this host"
+            $"(exit={wrapperExitCode}, wrapper '{wrapperPath}', system binary '{systemBinary}') - cannot build resources on this host; " +
+            "point AAPT2_PATH at a working aapt2 if one exists"
         );
         return Aapt2Selection.Unusable;
     }
 
-    // Resolves the system aapt2 the fallback goes through: APACE_SYS_AAPT2
-    // when set (honored only if that file exists - lets hosts and tests point
-    // somewhere else), /usr/bin/aapt2 (Debian/Ubuntu "aapt" package;
-    // SystemAapt2Path) otherwise. Null when nothing usable exists. On Windows
-    // the path never exists, so the wrapper-based fallback is effectively
-    // disabled there - same behavior as before it existed.
+    // Resolves the system aapt2 the fallback goes through. Candidates, in
+    // order: APACE_SYS_AAPT2 (test/host override, honored only when the file
+    // exists and answers `version` - lets hosts and tests point somewhere
+    // else), AAPT2_PATH (the same variable SystemTools uses; when it names a
+    // working binary Encode passes it via --aapt directly and never gets
+    // here, so this only ever catches a stale value), the well-known paths in
+    // SystemAapt2CandidatePaths (the flag-filtering wrapper from the Apace
+    // Dockerfile first, then the raw binary of the Debian/Ubuntu "aapt"
+    // package), and finally a PATH lookup through /bin/sh (`command -v aapt2`)
+    // for everything non-standard. Each candidate must answer `version` with
+    // exit 0 (see IsWorkingAapt2Candidate) before it is accepted; the
+    // accepted binary is still only ever used through the generated wrapper
+    // and its real-compile probe (see SelectAapt2 / WriteSystemAapt2Wrapper).
+    // Null when nothing usable exists. On Windows every candidate path is
+    // absent, so the wrapper-based fallback is effectively disabled there -
+    // same behavior as before it existed.
     internal static string? ResolveSystemAapt2()
     {
         if (OperatingSystem.IsWindows())
@@ -402,14 +476,92 @@ public static class APK
         }
 
         // APACE_SYS_AAPT2: test/host override for the system aapt2 location
-        var overridden = Environment.GetEnvironmentVariable("APACE_SYS_AAPT2");
+        string? overridden = Environment.GetEnvironmentVariable("APACE_SYS_AAPT2");
 
-        if (!string.IsNullOrWhiteSpace(overridden) && File.Exists(overridden))
+        if (IsWorkingAapt2Candidate(overridden))
         {
             return overridden;
         }
 
-        return File.Exists(SystemAapt2Path) ? SystemAapt2Path : null;
+        string? fromAapt2Path = Environment.GetEnvironmentVariable("AAPT2_PATH");
+
+        if (IsWorkingAapt2Candidate(fromAapt2Path))
+        {
+            return fromAapt2Path;
+        }
+
+        foreach (string candidate in SystemAapt2CandidatePaths)
+        {
+            if (IsWorkingAapt2Candidate(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        string? onPath = FindAapt2OnPath();
+
+        return IsWorkingAapt2Candidate(onPath) ? onPath : null;
+    }
+
+    // Quick candidacy check for one system-aapt2 location (see
+    // ResolveSystemAapt2): the file must exist and `version` must exit 0 -
+    // the cheapest command that proves the file is an executable aapt2 for
+    // THIS machine (a foreign-arch ELF, a stale or broken wrapper fails to
+    // start or exits non-zero). This is deliberately NOT the real-compile
+    // probe (see ProbeAapt2Compile): it only picks WHICH binary the fallback
+    // wrapper execs; the wrapper itself must still pass the real compile
+    // probe before any build uses it. Internal static for the stub harness.
+    internal static bool IsWorkingAapt2Candidate(string? candidatePath)
+    {
+        if (string.IsNullOrWhiteSpace(candidatePath) || !File.Exists(candidatePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            var process = U.Run(candidatePath, Path.GetTempPath(), "version");
+            int? exitCode = WaitForExitOrKill(process, VersionProbeTimeoutMilliseconds);
+
+            return exitCode is 0;
+        }
+        catch
+        {
+            return false; // did not even start (not executable, ENOEXEC, ...)
+        }
+    }
+
+    // Last resort of the candidate search (see ResolveSystemAapt2): ask the
+    // system shell where aapt2 is on PATH, through /bin/sh - present in every
+    // Debian/Ubuntu rootfs (incl. the proot rootfs on the phone) and never
+    // required on Windows (ResolveSystemAapt2 has already returned null
+    // there). `command -v` is POSIX; `which` is not. Returns the path or null.
+    private static string? FindAapt2OnPath()
+    {
+        if (!File.Exists("/bin/sh"))
+        {
+            return null;
+        }
+
+        try
+        {
+            var output = new StringBuilder();
+            var process = U.Run("/bin/sh", Path.GetTempPath(), output, "-c", "command -v aapt2");
+            int? exitCode = WaitForExitOrKill(process, VersionProbeTimeoutMilliseconds);
+
+            if (exitCode is not 0)
+            {
+                return null; // not on PATH, or the lookup itself failed / timed out
+            }
+
+            string candidate = output.ToString().Trim();
+
+            return candidate.Length > 0 && File.Exists(candidate) ? candidate : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     // Writes (idempotently) the wrapper the system-aapt2 fallback runs
@@ -468,13 +620,15 @@ public static class APK
         return wrapperPath;
     }
 
-    // Prepares the system-aapt2 fallback: resolves the system binary, writes
-    // the wrapper and smoke-tests it. Returns the wrapper path when the
-    // fallback is usable, null when it is not. Used by SelectAapt2's decision
-    // path and by the retry net in Encode.
+    // Prepares the system-aapt2 fallback: resolves the system binary (running
+    // the apt self-heal when the host has none - the self-heal gate holds,
+    // because the only caller is the retry net in Encode, i.e. the bundled
+    // aapt2 has just died inside a real build), writes the wrapper and
+    // smoke-tests it. Returns the wrapper path when the fallback is usable,
+    // null when it is not.
     internal static string? PrepareSystemAapt2Fallback()
     {
-        string? systemAapt2 = ResolveSystemAapt2();
+        string? systemAapt2 = ResolveSystemAapt2() ?? SelfHealInstallAapt();
 
         if (systemAapt2 is null)
         {
@@ -484,6 +638,140 @@ public static class APK
         string wrapperPath = WriteSystemAapt2Wrapper(systemAapt2);
 
         return ProbeAapt2Compile(wrapperPath).Ok ? wrapperPath : null;
+    }
+
+    /// <summary>
+    /// Self-heal for hosts where the aapt2 bundled in apktool.jar cannot run
+    /// (e.g. SIGILL on the arm64 phone) and NO system aapt2 exists anywhere
+    /// (e.g. a stale proot rootfs that predates the Docker image's <c>aapt</c>
+    /// package): installs the Debian/Ubuntu <c>aapt</c> package - which ships
+    /// a native /usr/bin/aapt2 for the host arch - and re-runs the candidate
+    /// search. Returns the newly resolved system aapt2, or null when the
+    /// install is impossible (no apt-get, Windows) or failed.
+    /// </summary>
+    /// <remarks>
+    /// STRICT GATE: only ever called after the bundled aapt2 failed its
+    /// pre-flight probe (SelectAapt2) or died inside a real build (the retry
+    /// net in Encode through PrepareSystemAapt2Fallback) AND the candidate
+    /// search came up empty - on hosts where the bundled binary works (x86
+    /// dev machines, Docker - which additionally always sets AAPT2_PATH so
+    /// no probe runs at all, healthy Raspberry Pis) this never executes, and
+    /// a rootfs that already ships <c>aapt</c> resolves a system candidate
+    /// before it. Both apt-get commands run with a hard timeout, log only at
+    /// Debug level and can never fail the job by themselves. Attempted at
+    /// most once per process lifetime (see <c>selfHealAttempted</c>).
+    /// </remarks>
+    internal static string? SelfHealInstallAapt()
+    {
+        if (OperatingSystem.IsWindows() || !File.Exists(AptGetPath))
+        {
+            return null; // no apt here (macOS, Alpine, Windows, ...) - nothing to self-heal with
+        }
+
+        if (Interlocked.Exchange(ref selfHealAttempted, 1) is not 0)
+        {
+            return null; // one attempt per process lifetime is enough
+        }
+
+        Log.Warning(
+            "aapt2: the bundled aapt2 is broken on this host and no system aapt2 was found - attempting to self-heal by installing the 'aapt' package (this can take a minute)");
+
+        RunAptGetQuiet("update");
+        RunAptGetQuiet("install", "-y", "aapt");
+
+        string? resolved = ResolveSystemAapt2();
+
+        if (resolved is null)
+        {
+            Log.Debug("aapt2 self-heal: still no usable system aapt2 after the install attempt");
+        }
+        else
+        {
+            Log.Debug($"aapt2 self-heal: system aapt2 now available at '{resolved}'");
+        }
+
+        return resolved;
+    }
+
+    // Runs one apt-get command of the self-heal path (see SelfHealInstallApt)
+    // with a hard timeout, logging every output line (apt is chatty on both
+    // streams) at Debug level only - a self-heal attempt must never spam the
+    // job log at Error level. Never throws: any failure (no root, no network,
+    // missing sources, timeout) just returns false and the caller re-scans as
+    // if nothing had happened.
+    private static bool RunAptGetQuiet(params string[] aptArgs)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo()
+            {
+                FileName = AptGetPath,
+                WorkingDirectory = "/",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+
+            // never prompt (debconf & friends) - there is no interactive user here
+            startInfo.EnvironmentVariables["DEBIAN_FRONTEND"] = "noninteractive";
+
+            foreach (string arg in aptArgs)
+            {
+                startInfo.ArgumentList.Add(arg);
+            }
+
+            using var process = new Process() { StartInfo = startInfo };
+
+            process.OutputDataReceived += (_, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    Log.Debug("[apt] " + e.Data);
+                }
+            };
+            process.ErrorDataReceived += (_, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    Log.Debug("[apt] " + e.Data);
+                }
+            };
+
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            try
+            {
+                // same CPU policy as U.Run - never starve the panel / game server
+                process.PriorityClass = ProcessPriorityClass.BelowNormal;
+            }
+            catch
+            {
+                // best-effort
+            }
+
+            int? exitCode = WaitForExitOrKill(process, SelfHealTimeoutMilliseconds);
+
+            if (exitCode is not 0)
+            {
+                Log.Debug($"[apt] {AptGetPath} {string.Join(' ', aptArgs)} -> {(exitCode is null ? $"killed after the {SelfHealTimeoutMilliseconds / 1000}s timeout" : $"exit={exitCode}")}");
+            }
+
+            return exitCode is 0;
+        }
+        catch
+        {
+            // NEVER fatal - the self-heal is strictly best-effort
+            return false;
+        }
+    }
+
+    // Resets the once-per-process self-heal gate (stub harness only).
+    internal static void ResetSelfHealGateForTests()
+    {
+        selfHealAttempted = 0;
     }
 
     /// <summary>
@@ -522,28 +810,16 @@ public static class APK
                 "compile", "--dir", Path.Combine(probeDir, "res"), "--legacy", "--no-crunch", "-o", outputZip
             );
 
-            if (!process.WaitForExit(ProbeTimeoutMilliseconds))
-            {
-                try
-                {
-                    process.Kill(entireProcessTree: true);
-                    process.WaitForExit();
-                }
-                catch
-                {
-                    // best-effort kill
-                }
+            int? exitCode = WaitForExitOrKill(process, ProbeTimeoutMilliseconds);
 
+            if (exitCode is null)
+            {
                 return (false, ProbeTimedOut);
             }
 
-            int exitCode = process.ExitCode;
-            process.Close();
-            process.Dispose();
-
             if (exitCode is not 0)
             {
-                return (false, exitCode);
+                return (false, exitCode.Value);
             }
 
             // aapt2 exiting 0 without producing the zip is broken too; report
@@ -561,6 +837,54 @@ public static class APK
             try
             {
                 Directory.Delete(probeDir, recursive: true);
+            }
+            catch
+            {
+                // best-effort cleanup
+            }
+        }
+    }
+
+    // Waits for `process` to exit within `timeoutMilliseconds` and returns
+    // its exit code, or null when it had to be killed (best-effort,
+    // entireProcessTree - a wedged candidate must never hang a patch job)
+    // after the timeout. The no-argument WaitForExit after a successful
+    // timed wait additionally flushes U.Run's async output handlers - needed
+    // wherever their captured output is read (e.g. FindAapt2OnPath). Never
+    // throws; disposes the process either way.
+    private static int? WaitForExitOrKill(Process process, int timeoutMilliseconds)
+    {
+        try
+        {
+            if (!process.WaitForExit(timeoutMilliseconds))
+            {
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit();
+                }
+                catch
+                {
+                    // best-effort kill
+                }
+
+                return null;
+            }
+
+            process.WaitForExit(); // flush the async output handlers
+
+            return process.ExitCode;
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            try
+            {
+                process.Close();
+                process.Dispose();
             }
             catch
             {
