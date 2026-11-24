@@ -26,11 +26,12 @@ namespace Apace.ApiServer.Services;
     //  - IsSupportedCosmetic: the client-compatibility gate behind packs.json
     //    "onlySupported" (default true) — applies the metadata pipeline's per-item
     //    compat verdict (panel-side twin: CosmeticCompatIndex): only RISKY pieces
-    //    (geometry format_version outside the [1.12.0, maxGeometryFormatVersion)
-    //    band — max configurable via packs.json, default 1.16.0 — or an
+    //    (geometry format_version at or past the maxGeometryFormatVersion cap —
+    //    max configurable via packs.json, default 1.16.0 — or an
     //    animation/particle/render-controller signal, or face bones on a
     //    face-accessory piece) are blocked; UNKNOWN pieces (no compat facts,
-    //    unparsable version) keep serving.
+    //    unparsable version) keep serving. No version floor: legacy 1.8.0
+    //    geometry renders fine (the Apace capes ship it proven-working).
 public static class PersonaPieceTypes
 {
     // The committed dressing-room layout (PersonaQueryManifest_V1.0): its
@@ -43,13 +44,15 @@ public static class PersonaPieceTypes
     // left/right variants "<pieceId>/l/d" and "<pieceId>/r/d". Longest first.
     private static readonly string[] PieceIdSuffixes = ["/l/d", "/r/d", "/d"];
 
-    // The supported geometry band, EXCLUSIVE at the top ([1.12.0, max)): the
+    // The supported geometry band, EXCLUSIVE at the top ([legacy, max)): the
     // max is PersonaPackGate.MaxGeometryFormatVersion (packs.json
     // "maxGeometryFormatVersion", default 1.16.0 — the frozen client renders
     // geometry format_version >= 1.16.0 broken, see the research note in
-    // LivePersonaCatalog), below 1.12.0 is legacy geometry. Mirrors
-    // CosmeticCompatIndex on the panel side — keep the two in sync.
-    private static readonly Version MinSupportedFormatVersion = new(1, 12, 0, 0);
+    // LivePersonaCatalog). There is deliberately NO floor: legacy 1.8.0
+    // geometry renders fine — the Apace capes (and MerelyCapes against the
+    // live persona pipeline) ship it proven-working, so a floor only mass
+    // flagged renderable pieces unsupported. Mirrors CosmeticCompatIndex on
+    // the panel side — keep the two in sync.
 
     // piece type → dressing-room group key ("dr.categories.bottom", …), parsed
     // once; empty when the layout could not be read (per-piece-type fallback)
@@ -202,11 +205,6 @@ public static class PersonaPieceTypes
         if (!highestParsed && !lowestParsed)
         {
             return new CosmeticGateVerdict(true, "unknown — the recorded geometry format_version does not parse");
-        }
-
-        if (lowestParsed && lowest < MinSupportedFormatVersion)
-        {
-            return new CosmeticGateVerdict(false, $"legacy geometry format_version {lowestFormatVersion} — below 1.12.0 (worst of the piece's geometry variants)");
         }
 
         if (highestParsed && highest >= maxGeometry)

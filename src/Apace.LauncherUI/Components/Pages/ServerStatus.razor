@@ -5,6 +5,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject LogsLogService LogService
 @inject ServerManager ServerManager
+@inject NavigationManager Navigation
 @inject IJSRuntime JS
 
 <PageTitle>Server Status - Apace</PageTitle>
@@ -175,6 +176,28 @@
     </div>
 }
 
+@if (_showNoPacksPopup)
+{
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+         style="background: rgba(0,0,0,.55); z-index: 2000;">
+        <div class="card shadow" style="max-width: 30rem; width: calc(100% - 2rem);">
+            <div class="card-header fw-bold">No packs enabled</div>
+            <div class="card-body">
+                <p class="mb-0">
+                    No skin packs or bundles are selected in Marketplace Management — players get no
+                    player-selected marketplace cosmetics (the built-in default skins still serve, and with
+                    "Fill blank slots with random cosmetics" on the server fills every category with random pieces).
+                </p>
+            </div>
+            <div class="card-footer d-flex flex-wrap gap-2 justify-content-end">
+                <button class="btn btn-primary btn-sm" @onclick="GoToMarketplace">Take me there</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="SuppressNoPacksPopupAndStart">Never show again</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => _showNoPacksPopup = false">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="card">
     <div class="card-header">▸ Live Logs</div>
     <div class="card-body">
@@ -248,6 +271,7 @@
     private bool _resourcePackPending;
     private bool _resourcePackRightsConfirmed;
     private bool _downloadingResourcePack;
+    private bool _showNoPacksPopup;
     private float _resourcePackDownloadProgress;
     private string? _resourcePackError;
     private bool _javaServerOnline;
@@ -368,7 +392,36 @@
     }
 
     private async Task StartServer()
-        => await ServerManager.Start();
+    {
+        // Nothing selected in the Marketplace Management pack picker (live
+        // marketplace on): warn before starting — the offer would carry no
+        // player-selected cosmetics. "Never show again" remembers the choice
+        // and starts; "Take me there" opens the pack picker; "Close" just
+        // dismisses (Start stays a conscious click).
+        if ((Settings.Instance.LivePersonaCatalog ?? true)
+            && Settings.Instance.PersonaDefaultPacks is not { Count: > 0 }
+            && Settings.Instance.PersonaNoPacksPopupSuppressed != true)
+        {
+            _showNoPacksPopup = true;
+            return;
+        }
+
+        await ServerManager.Start();
+    }
+
+    private void GoToMarketplace()
+    {
+        _showNoPacksPopup = false;
+        Navigation.NavigateTo("/Admin/PersonaPacks");
+    }
+
+    private async Task SuppressNoPacksPopupAndStart()
+    {
+        Settings.Instance.PersonaNoPacksPopupSuppressed = true;
+        Settings.Instance.Save(Settings.DefaultPath);
+        _showNoPacksPopup = false;
+        await ServerManager.Start();
+    }
 
     private async Task StopServer()
         => await ServerManager.Stop();

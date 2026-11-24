@@ -18,7 +18,14 @@ namespace Apace.ApiServer.Controllers.EarthApi;
 // resolve the real CDN URL via Catalog/GetItem, probe it (the new PlayFab content
 // CDN serves the same GUIDs the dark xforge CDN once did), download the piece into
 // <mojang-assets>/persona-catalog/binaries/ and serve it. The client never sees a
-// live CDN URL: every offer advertises this proxy path.
+// live CDN URL: every offer advertises this proxy path. The live fetch requires
+// entitlement (a pack selection or the blank-slot filler pool — the catalog offer
+// governs visibility), never the bare id.
+//
+// Every request resolves: the frozen client RETRIES a failed piece download until
+// its own timeout, so a 404 leaves the player stuck on "loading" — an unavailable
+// piece gets the deterministic placeholder zip (PersonaStubBinary) instead, whose
+// import succeeds instantly and renders nothing.
 [Route("playfab/persona/{fileName}")]
 public class PersonaCdnController : ControllerBase
 {
@@ -32,44 +39,17 @@ public class PersonaCdnController : ControllerBase
             return TypedResults.NotFound();
         }
 
-        // Pack gate BEFORE any directory is consulted — a zip sitting on the
-        // volume (mirrored from an earlier download) is NOT entitlement. Every
-        // zip resolves by id: a staticdata PersonaData accessory (creator
-        // Minecraft or none) refuses unconditionally (staticdata carries no
-        // pack tags, so no selection ever covers it); a live-index accessory
-        // (any creator — the search gate is creator-agnostic, mirrors it here)
-        // must be inside the allowed set (defaults ∪ every player's grants —
-        // this endpoint has no caller identity, same semantics as the lazy
-        // path). persona_skin pieces serve; emotes/other content types are not
-        // marketplace accessories and pass.
-        string gateItemId = fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+        string itemId = fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
             ? fileName[..^4]
             : fileName;
-        if (Guid.TryParse(gateItemId, out Guid itemGuid))
-        {
-            if (Program.staticData.Playfab.Items.TryGetValue(itemGuid, out CItem? staticItem)
-                && staticItem.Data is CItem.PersonaData staticPersona
-                && staticPersona.CreatorName is null or "Minecraft"
-                && staticPersona.PieceType is not "persona_skin")
-            {
-                IReadOnlySet<string> staticAllowed = await PersonaPackGate.AllAllowedPackUuidsAsync(HttpContext.RequestAborted);
-                LogPackGateRefusalOnce(fileName, staticAllowed.Count == 0 ? "no packs selected" : "staticdata carries no pack tags — no pack selection covers it");
-                return TypedResults.NotFound();
-            }
+        bool isGuidName = Guid.TryParse(itemId, out Guid itemGuid);
 
-            if (LivePersonaCatalog.GetIndexEntry(gateItemId) is { } entry
-                && entry.PieceType is not "persona_skin"
-                && entry.PieceType.StartsWith("persona_", StringComparison.Ordinal))
-            {
-                IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(HttpContext.RequestAborted);
-                if (allowed.Count == 0 || !LivePersonaCatalog.ThemeTagsOf(entry).Any(allowed.Contains))
-                {
-                    LogPackGateRefusalOnce(fileName, "live accessory outside the selected packs — a mirrored file is not entitlement");
-                    return TypedResults.NotFound();
-                }
-            }
-        }
-
+        // Disk first: a zip sitting on the volume serves whoever asks — the file
+        // being mirrored means it was served before, and the equip-side sanitize
+        // governs entitlement. The old gate-first order made pieces a player had
+        // already seen 404 on equip (stale client caches, a pack since
+        // deselected, a piece the limit later cut) — every one of those was a
+        // stuck "loading" screen.
         string filePath = Path.Combine(Program.MojangAssetsDir, "playfab", "persona", fileName);
         if (!System.IO.File.Exists(filePath))
         {
@@ -84,31 +64,33 @@ public class PersonaCdnController : ControllerBase
 
         // live persona marketplace: a miss on both dirs is the lazy probe + download
         // path for items the panel synced from the live marketplace
-        if (!System.IO.File.Exists(filePath) && LivePersonaCatalog.Enabled)
+        if (!System.IO.File.Exists(filePath) && isGuidName && LivePersonaCatalog.Enabled
+            && await CanServeLiveBinaryAsync(itemGuid, HttpContext.RequestAborted))
         {
-            // <itemId>.zip — the same name the offer's Contents entry advertises
-            string itemId = fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
-                ? fileName[..^4]
-                : fileName;
-            if (Guid.TryParse(itemId, out _))
+            try
             {
-                try
+                if (await LivePersonaCatalog.TryEnsureBinaryAsync(itemId, Log.Logger, HttpContext.RequestAborted))
                 {
-                    if (await LivePersonaCatalog.TryEnsureBinaryAsync(itemId, Log.Logger, HttpContext.RequestAborted))
-                    {
-                        filePath = LivePersonaCatalog.BinaryPath(itemId);
-                    }
+                    filePath = LivePersonaCatalog.BinaryPath(itemId);
                 }
-                finally
-                {
-                    // burst-friendly: persist probe verdicts after each request
-                    LivePersonaCatalog.FlushProbeStates(Log.Logger);
-                }
+            }
+            finally
+            {
+                // burst-friendly: persist probe verdicts after each request
+                LivePersonaCatalog.FlushProbeStates(Log.Logger);
             }
         }
 
         if (!System.IO.File.Exists(filePath))
         {
+            // the client hangs on a failed piece download — serve the placeholder
+            // instead of a 404 (guid-named binaries only; panel-managed static
+            // files keep their plain 404)
+            if (isGuidName)
+            {
+                return PlaceholderZip(itemGuid, fileName);
+            }
+
             return TypedResults.NotFound();
         }
 
@@ -116,21 +98,87 @@ public class PersonaCdnController : ControllerBase
         return TypedResults.Stream(stream, "application/zip", fileDownloadName: fileName);
     }
 
-    private static readonly HashSet<string> PackGateRefusalsLogged = [];
-
-    // One line per refused file per run (same dedup as
-    // LivePersonaCatalog.LogPackGateRefusalOnce) — the client retries the same
-    // binary, the refusal must not flood the log.
-    private static void LogPackGateRefusalOnce(string fileName, string reason)
+    // Entitlement for a LIVE fetch: the piece must be covered by a pack
+    // selection (defaults ∪ every player's grants — this endpoint has no caller
+    // identity) or by the blank-slot filler pool, or not be a gated accessory
+    // at all (skins, emotes, unknown ids serve as they always did). Staticdata
+    // Minecraft accessories carry no pack tags — no selection ever covers them,
+    // so their mirror dirs are the only source and a missing file gets the
+    // placeholder.
+    private static async Task<bool> CanServeLiveBinaryAsync(Guid itemGuid, CancellationToken cancellationToken)
     {
-        lock (PackGateRefusalsLogged)
+        if (Program.staticData.Playfab.Items.TryGetValue(itemGuid, out CItem? staticItem)
+            && staticItem.Data is CItem.PersonaData staticPersona
+            && staticPersona.CreatorName is null or "Minecraft"
+            && staticPersona.PieceType is not "persona_skin")
         {
-            if (!PackGateRefusalsLogged.Add(fileName))
+            return false;
+        }
+
+        if (Controllers.PlayfabApi.CatalogController.FillerItemIds.Contains(itemGuid.ToString()))
+        {
+            return true;
+        }
+
+        if (LivePersonaCatalog.GetIndexEntry(itemGuid.ToString()) is { } entry
+            && entry.PieceType is not "persona_skin"
+            && entry.PieceType.StartsWith("persona_", StringComparison.Ordinal))
+        {
+            IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(cancellationToken);
+            return allowed.Count > 0 && LivePersonaCatalog.ThemeTagsOf(entry).Any(allowed.Contains);
+        }
+
+        return true;
+    }
+
+    // The deterministic placeholder piece: piece uuid + type from whatever
+    // metadata carries them (the live index first, then staticdata, then the
+    // panel's custom cosmetics) — the ONE uuid the pack must use is the
+    // catalog item's PieceId, so the client imports the placeholder as exactly
+    // the piece it asked for.
+    private static FileStreamHttpResult? PlaceholderZip(Guid itemGuid, string fileName)
+    {
+        string pieceId = itemGuid.ToString();
+        string pieceType = "";
+        if (LivePersonaCatalog.GetIndexEntry(itemGuid.ToString()) is { } entry)
+        {
+            pieceId = entry.PieceId.ToString();
+            pieceType = entry.PieceType;
+        }
+        else if (Program.staticData.Playfab.Items.TryGetValue(itemGuid, out CItem? staticItem)
+            && staticItem.Data is CItem.PersonaData persona)
+        {
+            pieceId = persona.PieceId.ToString();
+            pieceType = persona.PieceType;
+        }
+        else
+        {
+            var custom = CustomCosmetics.Items.FirstOrDefault(candidate => candidate.Id.Equals(itemGuid.ToString(), StringComparison.OrdinalIgnoreCase));
+            if (custom is not null)
+            {
+                pieceId = custom.PieceId;
+                pieceType = custom.PieceType;
+            }
+        }
+
+        LogPlaceholderOnce(fileName);
+        return TypedResults.Stream(new MemoryStream(PersonaStubBinary.Build(pieceId, pieceType)), "application/zip", fileDownloadName: fileName);
+    }
+
+    private static readonly HashSet<string> PlaceholdersLogged = [];
+
+    // One line per placeholder per run (the client retries the same binary until
+    // its timeout succeeds — the first attempt is the only interesting one).
+    private static void LogPlaceholderOnce(string fileName)
+    {
+        lock (PlaceholdersLogged)
+        {
+            if (!PlaceholdersLogged.Add(fileName))
             {
                 return;
             }
         }
 
-        Log.Information("Pack gate refuses staticdata accessory binary {File}: {Reason} — binaries of accessories outside the selected packs are never fetched", fileName, reason);
+        Log.Information("Persona zip {File} is unavailable (probed dead, never mirrored or not entitled for a live fetch) — serving the deterministic placeholder piece so the equip completes instead of hanging", fileName);
     }
 }

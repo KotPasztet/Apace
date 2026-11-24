@@ -268,7 +268,7 @@ internal sealed class CatalogController : ApaceControllerBase
         string[][] themes = live.ThemeTags;
         HashSet<string> dead = LivePersonaCatalog.GetDeadItemIds();
         var filtered = new List<Item>(live.Items.Length);
-        int passed = 0, dropped = 0, deadSkipped = 0;
+        int passed = 0, dropped = 0, deadSkipped = 0, filled = 0;
         for (int i = 0; i < live.Items.Length; i++)
         {
             Item item = live.Items[i];
@@ -303,11 +303,113 @@ internal sealed class CatalogController : ApaceControllerBase
             filtered.Add(item);
         }
 
+        // Blank-slot filler (packs.json "fillBlankSlotsWithRandomCosmetics",
+        // default on): append the deterministic candidate pool AFTER the
+        // pack-selected pieces. The grouped per-category limiter over the whole
+        // composed offer keeps the first N per group — staticdata pieces and
+        // customs count first, then pack-selected live pieces, then filler —
+        // so every group fills up to the limit with the same pieces every
+        // build, nothing a player equips reshuffles, and with no packs selected
+        // every group fills completely. Nothing fills when the limit is 0.
+        if (PersonaPackGate.FillBlankSlots && PersonaPackGate.CategoryLimit > 0)
+        {
+            RefreshFiller();
+            var seen = new HashSet<Guid>();
+            foreach (Item item in filtered)
+            {
+                seen.Add(item.Id);
+            }
+
+            foreach (Item candidate in _fillerCandidates!)
+            {
+                if (seen.Add(candidate.Id))
+                {
+                    filtered.Add(candidate);
+                    filled++;
+                }
+            }
+        }
+
         (IReadOnlyCollection<string> defaultPacks, int grants) = await PersonaPackGate.AllowedCompositionAsync(playerId, cancellationToken);
-        Log.Debug("Live offer: caller={Caller} defaults={Defaults} [{Ids}] grants={Grants} offer={Offer} passed={Passed} dropped={Dropped} dead={Dead} limit={Limit}",
-            playerId ?? "-", defaultPacks.Count, string.Join(",", defaultPacks), grants, live.Items.Length, passed, dropped, deadSkipped, PersonaPackGate.CategoryLimit);
+        Log.Debug("Live offer: caller={Caller} defaults={Defaults} [{Ids}] grants={Grants} offer={Offer} passed={Passed} dropped={Dropped} dead={Dead} filled={Filled} limit={Limit}",
+            playerId ?? "-", defaultPacks.Count, string.Join(",", defaultPacks), grants, live.Items.Length, passed, dropped, deadSkipped, filled, PersonaPackGate.CategoryLimit);
 
         return filtered;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Blank-slot filler (packs.json "fillBlankSlotsWithRandomCosmetics", default on)
+    // ---------------------------------------------------------------------------
+
+    // The deterministic filler candidate pool: every live accessory (non-skin
+    // persona piece) that is alive and — while onlySupported is on —
+    // compat-supported, sorted by item id so the SAME pieces fill the same
+    // slots every offer build. LiveOfferItemsFor appends the pool AFTER the
+    // pack-selected pieces and the grouped per-category limiter keeps the
+    // composition's first N per group (staticdata pieces and customs count
+    // first, then pack-selected live pieces, then filler): every group fills
+    // up to the limit, pack pieces are never displaced, and with no packs
+    // selected every group fills completely. Refreshed per (index stamp,
+    // packs.json stamp, dead-set size).
+    private static long _fillerStamp;
+    private static Item[]? _fillerCandidates;
+    private static IReadOnlySet<string> _fillerItemIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Every live piece id the filler pool can offer — the CDN proxy
+    /// and GetPublishedItem allow these ids so filler pieces download like any
+    /// offered piece (empty while the filler is off or nothing qualifies).</summary>
+    public static IReadOnlySet<string> FillerItemIds
+    {
+        get
+        {
+            RefreshFiller();
+            return _fillerItemIds;
+        }
+    }
+
+    private static void RefreshFiller()
+    {
+        long stamp = HashCode.Combine(LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp, LivePersonaCatalog.GetDeadItemIds().Count);
+        if (_fillerStamp == stamp && _fillerCandidates is not null)
+        {
+            return;
+        }
+
+        bool onlySupported = PersonaPackGate.OnlySupported;
+        HashSet<string> dead = LivePersonaCatalog.GetDeadItemIds();
+        LiveOfferCache live = LiveOffer;
+        var candidates = new List<Item>(live.Items.Length);
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (Item item in live.Items)
+        {
+            string? pieceType = item.DisplayProperties?.PieceType;
+            if (pieceType is not "persona_skin"
+                && (pieceType is null || !pieceType.StartsWith("persona_", StringComparison.Ordinal)))
+            {
+                continue; // skins serve regardless of gating; emotes/other content types are not dressing-room pieces
+            }
+
+            string itemId = item.Id.ToString();
+            if (pieceType is not "persona_skin" && dead.Contains(itemId))
+            {
+                continue; // probed dead — its binary would hang the client, never fill with it
+            }
+
+            if (onlySupported && !PersonaPieceTypes.EvaluateCosmetic(itemId, pieceType).Supported)
+            {
+                continue; // the supported-only gate applies to filler exactly like to pack-selected pieces
+            }
+
+            candidates.Add(item);
+            ids.Add(itemId);
+        }
+
+        candidates.Sort((a, b) => string.CompareOrdinal(a.Id.ToString(), b.Id.ToString()));
+        _fillerCandidates = [.. candidates];
+        _fillerItemIds = ids;
+        _fillerStamp = stamp;
+        Log.Information("Blank-slot filler pool rebuilt: {Count} candidate piece(s) (index stamp {IndexStamp}, config stamp {ConfigStamp})",
+            _fillerCandidates.Length, LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp);
     }
 
     // The per-category size limit, counted per dressing-room GROUP (see
@@ -563,9 +665,10 @@ internal sealed class CatalogController : ApaceControllerBase
             else if (liveItem.DisplayProperties?.PieceType is not "persona_skin"
                 && (allowed.Count == 0
                     || !live.ThemeTagsById.TryGetValue(itemId, out string[]? themeTags)
-                    || !themeTags.Any(allowed.Contains)))
+                    || !themeTags.Any(allowed.Contains))
+                && !FillerItemIds.Contains(itemId.ToString()))
             {
-                verdict = "gate-refused"; // accessories serve only from the selected packs — tagless accessories never resolve; persona_skin pieces are exempt
+                verdict = "gate-refused"; // accessories serve only from the selected packs (or the blank-slot filler pool) — tagless accessories never resolve; persona_skin pieces are exempt
             }
             else if (PersonaPackGate.OnlySupported)
             {

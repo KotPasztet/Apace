@@ -1329,8 +1329,11 @@ public static class LivePersonaCatalog
     // v3: geometry detected by CONTENT (any .json holding a geometry structure,
     // lenient parse) instead of the *.geometry.json name filter, which missed
     // .geo.json / custom-named geometries and recorded all-unknown facts for
-    // perfectly parseable pieces).
-    private const int GeometryCompatSchemaVersion = 3;
+    // perfectly parseable pieces — v4: contents.json decryption: real
+    // marketplace pieces are per-file encrypted (meta/geometry/textures carry
+    // keys in the encrypted contents.json), so every scan before v3 read
+    // ciphertext and recorded all-unknown facts for most real pieces).
+    private const int GeometryCompatSchemaVersion = 4;
 
     private const int MaxCompatEntryBytes = 2 * 1024 * 1024;
 
@@ -1465,7 +1468,11 @@ public static class LivePersonaCatalog
     /// <summary>
     /// Opens a piece binary zip and reads the geometry compatibility facts. Real
     /// pieces are an outer zip holding one nested ppack0.zip (flat custom zips are
-    /// accepted too) — both layers are searched. Geometry files are detected by
+    /// accepted too) — both layers are searched. The nested layer's art files are
+    /// per-file encrypted: the layer's contents.json (256-byte ContentIdentity
+    /// header + AES-256-CFB8 body with the client's built-in key) carries every
+    /// file key, so each entry is decrypted through its layer's key map before
+    /// scanning (PersonaContentCrypto). Geometry files are then detected by
     /// CONTENT, not by name: every .json entry is lenient-parsed (comments and
     /// trailing commas are common in Bedrock files) and counts as geometry when it
     /// holds a minecraft:geometry block, a bones array or a legacy
@@ -1477,6 +1484,12 @@ public static class LivePersonaCatalog
     /// bones in the geometry bone lists. Returns null when the zip cannot be
     /// opened at all.
     /// </summary>
+    // One scanned zip entry plus the per-file key map of its zip layer — real
+    // marketplace pieces carry per-file-encrypted art inside ppack0.zip, and the
+    // layer's contents.json holds every file's key (PersonaContentCrypto).
+    // Top-layer entries carry no map (raw files).
+    private sealed record CompatEntry(ZipArchiveEntry Entry, Dictionary<string, string>? FileKeys);
+
     private static GeometryCompatInfo? InspectGeometryCompat(string zipPath)
     {
         // every opened archive stays alive until the inspection finished — the
@@ -1486,7 +1499,7 @@ public static class LivePersonaCatalog
         try
         {
             archives.Add(ZipFile.OpenRead(zipPath));
-            var entries = new List<ZipArchiveEntry>();
+            var entries = new List<CompatEntry>();
             CollectZipEntries(archives[0], entries, archives);
             return InspectCompatEntries(entries);
         }
@@ -1503,18 +1516,29 @@ public static class LivePersonaCatalog
         }
     }
 
-    private static void CollectZipEntries(ZipArchive archive, List<ZipArchiveEntry> into, List<ZipArchive> archives)
+    private static void CollectZipEntries(ZipArchive archive, List<CompatEntry> into, List<ZipArchive> archives)
     {
         foreach (ZipArchiveEntry entry in archive.Entries)
         {
-            into.Add(entry);
+            into.Add(new CompatEntry(entry, null));
             if (entry.FullName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {
                     ZipArchive nested = new(entry.Open(), ZipArchiveMode.Read, leaveOpen: false);
                     archives.Add(nested);
-                    CollectZipEntries(nested, into, archives);
+                    // the nested layer's art files are per-file encrypted — its
+                    // contents.json (raw, listed without a key) maps each path
+                    // to the key that decrypts it; a layer without a readable
+                    // contents.json is scanned raw (custom flat packs)
+                    Dictionary<string, string>? fileKeys = null;
+                    ZipArchiveEntry? contents = nested.GetEntry("contents.json");
+                    if (contents is not null)
+                    {
+                        fileKeys = PersonaContentCrypto.TryReadContentsKeys(ReadEntryBytes(contents));
+                    }
+
+                    CollectNestedZipEntries(nested, into, archives, fileKeys);
                 }
                 catch (Exception)
                 {
@@ -1522,6 +1546,35 @@ public static class LivePersonaCatalog
                 }
             }
         }
+    }
+
+    private static void CollectNestedZipEntries(ZipArchive archive, List<CompatEntry> into, List<ZipArchive> archives, Dictionary<string, string>? fileKeys)
+    {
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            into.Add(new CompatEntry(entry, fileKeys));
+            if (entry.FullName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    ZipArchive nested = new(entry.Open(), ZipArchiveMode.Read, leaveOpen: false);
+                    archives.Add(nested);
+                    CollectNestedZipEntries(nested, into, archives, fileKeys);
+                }
+                catch (Exception)
+                {
+                    // not a readable nested zip — its entries are skipped
+                }
+            }
+        }
+    }
+
+    private static byte[] ReadEntryBytes(ZipArchiveEntry entry)
+    {
+        using Stream stream = entry.Open();
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        return buffer.ToArray();
     }
 
     // The face-attachment bone names the frozen client misplaces (the persona
@@ -1533,7 +1586,7 @@ public static class LivePersonaCatalog
     // hat/head rig bones the frozen client renders fine.
     private static readonly HashSet<string> FaceBoneNames = new(StringComparer.OrdinalIgnoreCase) { "face", "hat", "head" };
 
-    private static GeometryCompatInfo? InspectCompatEntries(List<ZipArchiveEntry> entries)
+    private static GeometryCompatInfo? InspectCompatEntries(List<CompatEntry> entries)
     {
         // Worst case wins across EVERY geometry of the piece — real pieces carry
         // one geometry per body size (tall/medium/small/smaller). Geometry files
@@ -1611,8 +1664,9 @@ public static class LivePersonaCatalog
             return false;
         }
 
-        foreach (ZipArchiveEntry entry in entries)
+        foreach (CompatEntry compatEntry in entries)
         {
+            ZipArchiveEntry entry = compatEntry.Entry;
             if (!entry.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
@@ -1631,7 +1685,7 @@ public static class LivePersonaCatalog
                 sawMetaOrManifest = true;
             }
 
-            string? text = TryReadEntryText(entry);
+            string? text = TryReadEntryText(compatEntry);
             if (text is null)
             {
                 continue;
@@ -1778,18 +1832,29 @@ public static class LivePersonaCatalog
         return true;
     }
 
-    private static string? TryReadEntryText(ZipArchiveEntry entry)
+    private static string? TryReadEntryText(CompatEntry compatEntry)
     {
         try
         {
+            ZipArchiveEntry entry = compatEntry.Entry;
             if (entry.Length is < 0 or > MaxCompatEntryBytes)
             {
                 return null;
             }
 
-            using var stream = entry.Open();
-            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
-            return reader.ReadToEnd();
+            byte[] bytes = ReadEntryBytes(entry);
+            // per-file-encrypted art: the layer's contents.json key decrypts it —
+            // without this every real marketplace piece scans as ciphertext
+            if (compatEntry.FileKeys is { } keys
+                && (keys.TryGetValue(entry.Name, out string? fileKey)
+                    || keys.TryGetValue(entry.FullName, out fileKey))
+                && PersonaContentCrypto.TryDecryptEntry(bytes, fileKey) is { } plain)
+            {
+                bytes = plain;
+            }
+
+            string text = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetString(bytes);
+            return text.Length > 0 && text[0] == '\uFEFF' ? text[1..] : text; // strip a UTF-8 BOM — the strict parser throws on it
         }
         catch (Exception)
         {

@@ -34,7 +34,7 @@ public static class PersonaPackGate
     public const int DefaultCategoryLimit = 45;
 
     private sealed record PackConfig(List<string>? DefaultPacks, int? CategoryLimit, bool? OnlySupported,
-        string? MaxGeometryFormatVersion);
+        string? MaxGeometryFormatVersion, bool? FillBlankSlots);
 
     // Documented default compat threshold (see PersonaPieceTypes.IsSupportedCosmetic):
     // geometry format_version at or past the max breaks on the frozen client
@@ -54,6 +54,7 @@ public static class PersonaPackGate
     private static IReadOnlySet<string> _defaults = new HashSet<string>();
     private static int _categoryLimit = DefaultCategoryLimit;
     private static bool _onlySupported = true;
+    private static bool _fillBlankSlots = true;
     private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
     private static long _configStamp;
 
@@ -94,6 +95,29 @@ public static class PersonaPackGate
     public static bool OnlySupported => _onlySupported;
 
     /// <summary>
+    /// Fill blank dressing-room slots with stable filler pieces (packs.json
+    /// "fillBlankSlotsWithRandomCosmetics", default true when absent): after the
+    /// pack-selected pieces, the composed offer appends deterministic, supported
+    /// live pieces of every dressing-room group until the group reaches the
+    /// category limit — always the same pieces for the same catalog, so a
+    /// player's earlier-equipped pieces never reshuffle or vanish. With no packs
+    /// selected every group fills up to the limit. Nothing fills when the
+    /// category limit is 0 (no limit — there is nothing to fill up to).
+    /// </summary>
+    public static bool FillBlankSlots => _fillBlankSlots;
+
+    /// <summary>The packs.json hot-reload stamp (mtime ticks) — the filler
+    /// candidate cache keys off it, so a panel save rebuilds the filler set.</summary>
+    public static long ConfigStamp
+    {
+        get
+        {
+            LoadConfig();
+            return _configStamp;
+        }
+    }
+
+    /// <summary>
     /// The auto-gating state (no DB access) — for pages that just show the
     /// state: gating restricts the live accessories for a player when at least
     /// one pack is configured for them (defaults ∪ grants); with no defaults
@@ -122,6 +146,7 @@ public static class PersonaPackGate
                     _defaults = new HashSet<string>();
                     _categoryLimit = DefaultCategoryLimit;
                     _onlySupported = true;
+                    _fillBlankSlots = true;
                     _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
                     Log.Information("Persona pack config gone from {Path} — no packs configured, the live marketplace serves nothing until packs are selected", ConfigPath);
                 }
@@ -139,12 +164,14 @@ public static class PersonaPackGate
             _defaults = (loaded?.DefaultPacks ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
             _categoryLimit = Math.Max(0, loaded?.CategoryLimit ?? DefaultCategoryLimit);
             _onlySupported = loaded?.OnlySupported ?? true;
+            _fillBlankSlots = loaded?.FillBlankSlots ?? true;
             _maxGeometryFormatVersion = ParseVersion(loaded?.MaxGeometryFormatVersion, DefaultMaxGeometryFormatVersion);
             _configStamp = stamp;
-            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, max geometry version: {GeometryVersion}",
+            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}",
                 ConfigPath, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
                 _categoryLimit == 0 ? "none" : _categoryLimit.ToString(),
                 _onlySupported,
+                _fillBlankSlots,
                 _maxGeometryFormatVersion.ToString());
         }
         catch (Exception ex)

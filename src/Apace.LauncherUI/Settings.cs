@@ -116,14 +116,32 @@ public sealed class Settings
     /// ApiServer hides every piece whose compat profile carries positive
     /// evidence the frozen Minecraft Earth client cannot render it — geometry
     /// format_version at or past the packs.json "maxGeometryFormatVersion" cap
-    /// (default 1.16.0 — UV rotation, transform pivots) or &lt; 1.12.0
-    /// (legacy), any animation/effect signal, or face bones per rig
-    /// 1.19.50/1.20.10 (MCPE-165232). Unknown pieces (no compat profile yet)
-    /// keep serving — the filter only ever hides risky pieces, never unknown
-    /// ones. Default true — treat null as true; the ApiServer reads it from
-    /// packs.json ("onlySupported", hot-reloaded).
+    /// (default 1.16.0 — UV rotation, transform pivots), any animation/effect
+    /// signal, or face bones on a face-accessory piece (MCPE-165232). Unknown
+    /// pieces (no compat profile yet) keep serving — the filter only ever hides
+    /// risky pieces, never unknown ones. Default true — treat null as true; the
+    /// ApiServer reads it from packs.json ("onlySupported", hot-reloaded).
     /// </summary>
     public bool? PersonaOnlySupportedCosmetics { get; set; }
+
+    /// <summary>
+    /// Fill blank dressing-room slots with stable filler pieces (Marketplace
+    /// Management page, "Fill blank slots with random cosmetics"): when true,
+    /// the composed offer appends deterministic, supported live pieces of every
+    /// dressing-room group until the group reaches the category limit — the
+    /// same pieces every build, so equipped pieces never reshuffle; with no
+    /// packs selected every group fills up to the limit. Default true — treat
+    /// null as true; the ApiServer reads it from packs.json
+    /// ("fillBlankSlotsWithRandomCosmetics", hot-reloaded).
+    /// </summary>
+    public bool? PersonaFillBlankSlots { get; set; }
+
+    /// <summary>
+    /// Suppresses the "no packs selected" popup at server start (the
+    /// ServerStatus page's "Never show again" button). Null/false = the popup
+    /// shows whenever no packs are selected.
+    /// </summary>
+    public bool? PersonaNoPacksPopupSuppressed { get; set; }
 
     public enum TileDataSourceE
     {

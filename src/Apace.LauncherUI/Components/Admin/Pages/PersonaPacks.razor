@@ -55,13 +55,29 @@
             </label>
         </div>
 
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="fill-blank-slots" @bind="_fillBlankSlots" />
+            <label class="form-check-label" for="fill-blank-slots">
+                <strong>Fill blank slots with random cosmetics</strong>
+            </label>
+        </div>
+
         @if (_packSummary is not null)
         {
             <p class="text-muted small">@_packSummary</p>
         }
-        <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
-                    SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
-                    EmptyHint="Nothing selected — players get 0 accessories (default skins and custom cosmetics still serve)." />
+        @if (_loadingPacks)
+        {
+            <div class="d-flex align-items-center gap-2 text-muted small py-3">
+                <span class="spinner-border spinner-border-sm"></span> Loading bundles…
+            </div>
+        }
+        else
+        {
+            <PackPicker PickerId="def" Packs="@_packs" Selected="@_defaults"
+                        SelectedChanged="@(v => { _defaults = v; StateHasChanged(); })"
+                        EmptyHint="Nothing selected — players get 0 accessories (default skins and custom cosmetics still serve)." />
+        }
 
         <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveDefaultsAsync" disabled="@_savingDefaults">
             @if (_savingDefaults)
@@ -80,14 +96,23 @@
         <div class="row g-3">
             <div class="col-12 col-md-5">
                 <label class="form-label small text-muted" for="pack-player">Player</label>
-                <select class="form-select" id="pack-player" value="@(_selectedPlayerId ?? "")"
-                        @onchange="@(async e => await SelectPlayerAsync((string?)e.Value))">
-                    <option value="" selected>choose a player…</option>
-                    @foreach (var player in _players)
-                    {
-                        <option value="@player.Id">@PlayerLabel(player.Id)</option>
-                    }
-                </select>
+                @if (_loadingPlayers)
+                {
+                    <div class="d-flex align-items-center gap-2 text-muted small py-1">
+                        <span class="spinner-border spinner-border-sm"></span> Loading players…
+                    </div>
+                }
+                else
+                {
+                    <select class="form-select" id="pack-player" value="@(_selectedPlayerId ?? "")"
+                            @onchange="@(async e => await SelectPlayerAsync((string?)e.Value))">
+                        <option value="" selected>choose a player…</option>
+                        @foreach (var player in _players)
+                        {
+                            <option value="@player.Id">@PlayerLabel(player.Id)</option>
+                        }
+                    </select>
+                }
             </div>
         </div>
 
@@ -128,7 +153,13 @@
             <div class="alert alert-warning py-2 px-3">@_customLoadError</div>
         }
 
-        @if (_customItems.Count == 0)
+        @if (_loadingCustom)
+        {
+            <div class="d-flex align-items-center gap-2 text-muted small py-3">
+                <span class="spinner-border spinner-border-sm"></span> Loading custom cosmetics and compat badges…
+            </div>
+        }
+        else if (_customItems.Count == 0)
         {
             <p class="text-muted small mb-2">No custom cosmetics yet — add the first one below.</p>
         }
@@ -278,7 +309,7 @@
     // allowed pack set (default packs ∪ player grants) — accessories serve only
     // when one of their theme tags is in the set (tagless accessories never
     // serve), skins and skin packs serve regardless.
-    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit);
+    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit, bool FillBlankSlots);
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
 
@@ -314,6 +345,7 @@
     private List<PersonaPackIndex.ThemePackRow> _packs = [];
     private string? _packSummary;
     private bool _onlySupported = true;
+    private bool _fillBlankSlots = true;
     private int _categoryLimit = 45;
     private HashSet<string> _defaults = [];
     private HashSet<string> _grants = [];
@@ -324,6 +356,13 @@
     private bool _syncing;
     private string? _syncError;
     private EarthDB? _earthDB;
+
+    // staged loading — the page paints its shell immediately and every section
+    // fills in as its data lands (the heavy reads used to run inline before the
+    // first render and froze the whole circuit, so clicking the tab felt dead)
+    private bool _loadingPacks = true;
+    private bool _loadingCustom = true;
+    private bool _loadingPlayers = true;
 
     // Custom cosmetics state
     private List<CustomCosmeticsStore.CustomCosmeticItem> _customItems = [];
@@ -348,14 +387,48 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Navigate-then-load: only the instant settings reads run inline; the
+        // heavy work (the whole catalog index, the probe-state compat file,
+        // the player database) runs in independent background stages — on the
+        // thread pool, so the circuit's render thread stays free and the
+        // navigation stays responsive while the sections fill in.
+        await Task.Yield(); // let the prerender complete the shell first
         _onlySupported = Settings.Instance.PersonaOnlySupportedCosmetics ?? true;
+        _fillBlankSlots = Settings.Instance.PersonaFillBlankSlots ?? true;
         _categoryLimit = Math.Max(0, Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit);
         _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
-        (_packs, _packSummary) = PersonaPackIndex.ReadThemePacks();
-        (_customItems, _customLoadError) = CustomCosmeticsStore.ReadAll();
-        _compatMap = CosmeticCompatIndex.ReadAll();
-        await LoadPlayersAsync();
-        await SelectPlayerAsync(null);
+
+        Task packs = LoadPacksAsync();
+        Task custom = LoadCustomAsync();
+        Task players = LoadPlayersAsync();
+        await Task.WhenAll(packs, custom, players);
+    }
+
+    private async Task LoadPacksAsync()
+    {
+        try
+        {
+            (_packs, _packSummary) = await Task.Run(PersonaPackIndex.ReadThemePacks);
+        }
+        finally
+        {
+            _loadingPacks = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadCustomAsync()
+    {
+        try
+        {
+            (_customItems, _customLoadError) = await Task.Run(CustomCosmeticsStore.ReadAll);
+            _compatMap = await Task.Run(CosmeticCompatIndex.ReadAll);
+        }
+        finally
+        {
+            _loadingCustom = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task SyncNowAsync()
@@ -388,10 +461,16 @@
             using var liveDb = DataUtils.OpenLiveDB(Settings.Instance);
             _players = [.. (await DataUtils.GetFullProfilesAsync(_earthDB, liveDb, default)
                 .Select(player => (player.Id, player.Username)).ToListAsync())];
+            await SelectPlayerAsync(null);
         }
         catch (Exception ex)
         {
             _message = $"Loading the player list failed: {ex.Message}";
+        }
+        finally
+        {
+            _loadingPlayers = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -426,6 +505,7 @@
         {
             Settings.Instance.PersonaCategoryLimit = _categoryLimit;
             Settings.Instance.PersonaOnlySupportedCosmetics = _onlySupported;
+            Settings.Instance.PersonaFillBlankSlots = _fillBlankSlots;
             Settings.Instance.PersonaDefaultPacks = [.. _defaults];
             Settings.Instance.Save(Settings.DefaultPath);
 
@@ -437,7 +517,7 @@
             // non-empty set enforces tag filtering.
             string path = Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "packs.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit), _jsonOptions));
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots), _jsonOptions));
             _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
                 + (_onlySupported ? "only client-supported cosmetics." : "client-compatibility filter off.")
                 + " The ApiServer picks this up immediately."

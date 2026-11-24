@@ -16,12 +16,12 @@ namespace Apace.LauncherUI.Services;
 // Classification (keep in sync with the ApiServer's PersonaPieceTypes
 // .IsSupportedCosmetic — separate processes share the volume, not the code):
 //   supported  the piece files parse, every geometry variant format_version
-//              1.12.0 up to (excluding) the maxGeometryFormatVersion cap
-//              (packs.json, default 1.16.0), no animations / render controllers
-//              / flipbook / particles and no face bones;
+//              up to (excluding) the maxGeometryFormatVersion cap (packs.json,
+//              default 1.16.0), no animations / render controllers / flipbook
+//              / particles and no face bones;
 //   risky      geometry at or past the cap (UV rotation, transform pivots the
-//              frozen client cannot render) or below 1.12.0 (legacy), or ANY
-//              animation/effect signal, or face bones on a FACE ACCESSORY
+//              frozen client cannot render), or ANY animation/effect signal,
+//              or face bones on a FACE ACCESSORY
 //              (rig 1.19.50/1.20.10, MCPE-165232) — these render broken:
 //              floating parts, missing meshes. Face bones are scoped to
 //              persona_face_accessory pieces: hats, hoods and helmets
@@ -52,14 +52,16 @@ public static class CosmeticCompatIndex
     public static readonly CosmeticCompatInfo Unknown =
         new(CosmeticCompatKind.Unknown, "no compat profile yet — the metadata pipeline has not scanned this piece");
 
-    // The supported geometry band: format_version 1.12.0 up to (excluding) the
-    // max renders on the frozen Minecraft Earth client (the research note puts
-    // the breakage at 1.16.0 — UV rotation / transform pivots); anything older
-    // is legacy. The max is the same knob the ApiServer's PersonaPackGate
+    // The supported geometry band: format_version up to (excluding) the max
+    // renders on the frozen Minecraft Earth client (the research note puts
+    // the breakage at 1.16.0 — UV rotation / transform pivots). There is
+    // deliberately NO floor: legacy 1.8.0 geometry renders fine — the Apace
+    // capes (and MerelyCapes against the live persona pipeline) ship it
+    // proven-working, so a floor only mass flagged renderable pieces
+    // unsupported. The max is the same knob the ApiServer's PersonaPackGate
     // hot-reloads from packs.json ("maxGeometryFormatVersion") — mirrored here
     // so the badges show what the gate actually enforces.
-    // MaxSupported is EXCLUSIVE (the band is [Min, Max)).
-    private static readonly Version MinSupportedFormatVersion = new(1, 12, 0, 0);
+    // MaxSupported is EXCLUSIVE (the band is [legacy, Max)).
     public static readonly Version DefaultMaxSupportedFormatVersion = new(1, 16, 0, 0);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -239,13 +241,6 @@ public static class CosmeticCompatIndex
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.Unknown,
                 "compat profile present but the geometry format_version is missing or unparsable — the piece files do not parse");
-        }
-
-        if (TryParseFormatVersion(facts.LowestFormatVersion, out Version lowest) && lowest < MinSupportedFormatVersion)
-        {
-            return new CosmeticCompatInfo(
-                CosmeticCompatKind.Risky,
-                $"legacy geometry format_version {facts.LowestFormatVersion} — below 1.12.0 (worst of the piece's geometry variants)");
         }
 
         if (version >= maxGeometry)
