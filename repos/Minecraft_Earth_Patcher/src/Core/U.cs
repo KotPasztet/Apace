@@ -65,6 +65,12 @@ public static class U
     }
 
     public static Process Run(string file, string workDir, params string[] args)
+        => Run(file, workDir, null, args);
+
+    // output: optional capture of the combined [OUT]/[ERR] lines next to the
+    // Serilog logging below (e.g. for the aapt2 failure-signature check in
+    // APK.Encode); the logging itself is identical either way.
+    public static Process Run(string file, string workDir, StringBuilder? output, params string[] args)
     {
         var shellExecute = false;
 
@@ -103,6 +109,7 @@ public static class U
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     Log.Debug("[OUT] " + e.Data);
+                    output?.AppendLine(e.Data);
                 }
             };
             process.ErrorDataReceived += (sender, e) =>
@@ -110,6 +117,7 @@ public static class U
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     Log.Error("[ERR] " + e.Data);
+                    output?.AppendLine(e.Data);
                 }
             };
         }
