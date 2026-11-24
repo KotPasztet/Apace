@@ -135,22 +135,37 @@ client through the content-key receipt channel:
 
 - the client registers pack keys from its PlayFab entitlement receipts. The
   receipt rides on the `/inventory/GetInventoryItems` response (which Apace
-  serves itself): a JWT-shaped `Receipt` string whose payload validates with
-  `iss == "https://playfab.com"` and `aud == "https://playfab.com/B63A0803D3653643/"`
+  serves itself): a JWS `Receipt` string (RS256-signed) whose payload validates
+  with `iss == "https://playfab.com"` and `aud == "https://playfab.com/B63A0803D3653643/"`
   (the MCE title id hash) and carries `Receipt.Entitlements[]` entries of
   `{FriendlyId: <pack uuid>, ContentKey: <key>, CreatorId, Quantity, InstanceId}`;
 - the same response pattern is cached in `premium_cache/*.ent` on the device;
 - receipts are processed asynchronously: payload validated, then each
   entitlement's FriendlyId→ContentKey lands in the client's ContentKeyMap,
-  which the pack access strategies consult when loading contents.json.
+  which the pack access strategies consult when loading contents.json;
+- the client fetches the receipt issuer certificate while validating the
+  receipt (`GET /inventory/GetReceiptIssuerCertificateAsPem` — the real service
+  answers `{"code":200,"status":"OK","data":{"PemCert":"-----BEGIN
+  CERTIFICATE-----…"}}`, an RSA certificate for
+  `mcreceiptissuer.inventory.prod.economy.playfab.com`). Apace serves its own
+  self-signed twin, generated once and persisted in the data volume
+  (`<data>/persona-catalog/receipt-issuer.pem` + `receipt-issuer.key.pem`,
+  see `Services/ReceiptIssuerCertificate.cs`), and signs the receipts with
+  that key — so a client that verifies the receipt signature against the
+  served certificate succeeds. No PlayFab secret is needed.
 
-Because the receipts are plain JSON inside an alg=none JWT, no PlayFab secret
-is needed — but if the client enforces a receipt signature we cannot see, the
-key never registers and the client decrypts with whatever fallback it uses;
-decryption then yields garbage, the contents parse fails and the pack is
-rejected GRACEFULLY (no crash — the body is always ≥ 16 bytes, so the
-underflow can never happen again). In that case the cape still won't equip;
-the fallback plan is swapping the item's `PieceId` to a real piece.
+Before 2026-11-25 the receipts were unsigned (alg=none) and the certificate
+endpoint 404'd, leaving the client's receipt validation unable to complete —
+receipt-keyed pieces (the Apace capes, panel custom cosmetics) were the
+suspected cannot-equip set of that date. If a future device test still shows
+the key never registering (the client decrypts with whatever fallback it
+uses, decryption yields garbage, the contents parse fails and the pack is
+rejected GRACEFULLY — no crash, the body is always ≥ 16 bytes, so the
+underflow can never happen again), the next suspects are a pinned issuer
+chain (a client that validates the certificate against the Microsoft TLS CA
+chain rejects any self-signed certificate we can produce) or an ES256
+signature requirement; the fallback plan is swapping the item's `PieceId` to
+a real piece.
 
 The piece inside the nested `ppack0.zip` (plaintext, you can open it):
 

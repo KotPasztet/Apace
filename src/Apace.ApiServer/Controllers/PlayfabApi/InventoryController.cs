@@ -15,7 +15,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 // GetInventoryItems as a burst when it syncs persona state (dressing room / store).
 //
 // GetInventoryItems additionally carries the CONTENT KEY receipt: the client parses
-// the response, extracts the "Receipt" token (JWT-shaped: base64url(header).base64url(payload)),
+// the response, extracts the "Receipt" token (JWS: base64url(header).base64url(payload).base64url(signature)),
 // validates the payload's iss == "https://playfab.com" and
 // aud == "https://playfab.com/B63A0803D3653643/" (the MCE title id hash), and registers
 // every Receipt.Entitlements[] entry as a pack decryption key:
@@ -141,9 +141,17 @@ internal sealed class InventoryController : ApaceControllerBase
                 }).ToArray(),
             },
         });
-        // JWT shape header.payload.signature; alg=none, empty signature
+        // JWS shape header.payload.signature — RS256-signed with the receipt
+        // issuer key (the private half of the certificate
+        // GetReceiptIssuerCertificateAsPem serves), so a client that verifies
+        // the receipt signature against the issuer certificate succeeds. The
+        // unsigned alg=none shape (empty signature) is only the fallback when
+        // no key is available — it can never verify against any certificate.
         entitlementCount = entitlements.Count;
-        return $"{Base64Url("""{"alg":"none","typ":"JWT"}""")}.{Base64Url(payload)}.";
+        string signingInput = $"{Base64Url("""{"alg":"RS256","typ":"JWT"}""")}.{Base64Url(payload)}";
+        return ReceiptIssuerCertificate.TrySignRS256(Encoding.UTF8.GetBytes(signingInput), out byte[]? signature)
+            ? $"{signingInput}.{Base64Url(signature)}"
+            : $"{signingInput}.";
     }
 
     // Custom cosmetics need a receipt InstanceId (same field shape as the built-in
@@ -155,13 +163,14 @@ internal sealed class InventoryController : ApaceControllerBase
         return new Guid(hash.AsSpan(0, 16)).ToString();
     }
 
-    private static string Base64Url(string s)
-    {
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(s))
+    private static string Base64Url(byte[] bytes)
+        => Convert.ToBase64String(bytes)
             .Replace('+', '-')
             .Replace('/', '_')
             .TrimEnd('=');
-    }
+
+    private static string Base64Url(string s)
+        => Base64Url(Encoding.UTF8.GetBytes(s));
 
     private async Task<string> ReadBodyAsync()
     {
@@ -226,14 +235,49 @@ internal sealed class InventoryController : ApaceControllerBase
             new Dictionary<string, object>()
             {
                 ["Items"] = Array.Empty<object>(),
-                // bumped from 1/MQ== when live-piece entitlements first shipped:
-                // the client persists inventory responses (premium_cache/*.ent),
+                // bumped from 1/MQ== when live-piece entitlements first shipped
+                // and from 2/MQ== when the receipt became RS256-signed: the
+                // client persists inventory responses (premium_cache/*.ent),
                 // so a fresh ETag value forces any cached receipt to be treated
                 // as stale — nothing server-side consumes this value
-                ["ETag"] = "2/MQ==",
+                ["ETag"] = "3/MQ==",
                 ["ItemMetadata"] = Array.Empty<object>(),
                 ["Subscriptions"] = Array.Empty<object>(),
                 ["Receipt"] = receipt,
+            }
+        ));
+    }
+
+    // The receipt issuer certificate the client fetches while validating the
+    // GetInventoryItems receipt (PlayFab Economy v2 receipt validation). The
+    // real service answers {"code":200,"status":"OK","data":{"PemCert":
+    // "-----BEGIN CERTIFICATE-----…"}} with an RSA certificate for
+    // mcreceiptissuer.inventory.prod.economy.playfab.com (probed against the
+    // live 20ca2 service 2026-11-25) — Apace serves its own persisted
+    // self-signed twin and signs the receipts with its private key
+    // (Services/ReceiptIssuerCertificate). This endpoint 404ing left the
+    // client's receipt validation unable to complete (2026-11-25 session log:
+    // GET /inventory/GetReceiptIssuerCertificateAsPem → 404), suspected of
+    // making every receipt-proven entitlement unvalidatable — receipt-keyed
+    // pieces (the Apace capes, panel custom cosmetics) then cannot equip.
+    // The MCE client calls it with GET; POST is kept for SDK parity (the real
+    // service accepts both).
+    [HttpGet("GetReceiptIssuerCertificateAsPem")]
+    [HttpPost("GetReceiptIssuerCertificateAsPem")]
+    public async Task<ContentHttpResult> GetReceiptIssuerCertificateAsPem()
+    {
+        if (HttpMethods.IsPost(Request.Method))
+        {
+            await ReadBodyAsync();
+        }
+
+        string pem = ReceiptIssuerCertificate.CertificatePem;
+        return JsonPascalCase(new PlayfabOkResponse(
+            200,
+            "OK",
+            new Dictionary<string, object>()
+            {
+                ["PemCert"] = pem,
             }
         ));
     }

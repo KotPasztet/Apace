@@ -92,6 +92,150 @@ internal sealed class CatalogController : ApaceControllerBase
 
     private static Guid BoldRabbitFeetItemId { get; }
 
+    // ---------------------------------------------------------------------------
+    // Built-in skin pack offers (code-defined fallback for missing staticdata)
+    // ---------------------------------------------------------------------------
+
+    // The committed built-in skin pack offers (staticdata-extras/playfab/items:
+    // Standard, Minecraft Default Skins, Apace Skins) as code-defined twins of
+    // those item JSONs. staticdata stays the source of truth and serves
+    // verbatim whenever it carries the item; these fill in ONLY ids the
+    // deployed staticdata is missing — an operator edit/removal through the
+    // panel's file browser, or an install whose staticdata predates the item.
+    // The MCE client resolves a downloaded skin pack by searching
+    // MarketplaceDurableCatalog_V1.2 for its packIdentity uuid as a TAG (the
+    // Default Skins uuid acf11539-… is hardcoded in the client): an empty
+    // answer there strands the pack — it imports, but its skins cannot be
+    // selected or equipped (the 2026-11-25 "some cosmetics can't be equipped"
+    // session showed exactly that empty search right after the pack zip
+    // downloaded). Keep the uuids/tags in lockstep with
+    // staticdata-extras/playfab/items/*.json and MojangSkinPackBuilder.
+    private static readonly CItem[] BuiltinSkinPackItems =
+    [
+        BuiltinSkinPackOffer(
+            id: "c8a4571e-6df0-4b39-9d2e-1f6fbcad4e03",
+            friendlyId: "9a5a67e2-4d3b-4f07-a1c4-88b0e5f2f6aa",
+            title: "Standard",
+            description: "The classic Minecraft skins - Steve and Alex.",
+            thumbnailId: "8b52ee1a-9c4b-4a70-9f6e-2d47a53b1c04",
+            packUuid: "c18e65aa-7b21-4637-9b63-8ad63622ef01",
+            packVersion: "1.0.0",
+            skinCount: 3,
+            creatorName: "Minecraft",
+            tags: ["c8a4571e-6df0-4b39-9d2e-1f6fbcad4e03", "c18e65aa-7b21-4637-9b63-8ad63622ef01", "skinpack", "has_skinpack", "1P", "tag.cat"],
+            contentsUrl: null, // the vanilla pack is built into the client — no skinbinary to download
+            itemReferenceId: "7d5e5f1c-8b3a-4a2e-9c6d-0e1b2a3c4d5e",
+            created: new(2026, 11, 21, 20, 0, 0, DateTimeKind.Utc)),
+        BuiltinSkinPackOffer(
+            id: "90860f69-bcc5-46c4-9e76-b56b9db5d729",
+            friendlyId: "bb111cab-b44d-46cc-b0c4-2316fcf4a494",
+            title: "Minecraft Default Skins",
+            description: "The nine Minecraft default skins - Steve, Alex, Sunny, Kai, Makena, Zuri, Efe, Ari and Noor.",
+            thumbnailId: "6192ef59-f090-423d-8471-90ddeaff3624",
+            packUuid: "acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806", // the uuid the MCE client hardcodes its Classic Skins search on
+            packVersion: "1.0.2",
+            skinCount: 9,
+            creatorName: "Minecraft",
+            tags: ["90860f69-bcc5-46c4-9e76-b56b9db5d729", "acf11539-f3ca-4ac6-b3a9-fdd1c2cf3806", "skinpack", "has_skinpack", "1P", "tag.cat"],
+            contentsUrl: "/playfab/skinpacks/90860f69-bcc5-46c4-9e76-b56b9db5d729.zip", // built into the data volume by MojangSkinPackBuilder
+            itemReferenceId: "6192ef59-f090-423d-8471-90ddeaff3624",
+            created: new(2026, 11, 22, 0, 0, 0, DateTimeKind.Utc)),
+        BuiltinSkinPackOffer(
+            id: "42a5f927-0369-47f4-b271-e64e814fa47f",
+            friendlyId: "ca74c960-ad18-461c-9355-2ca210fef580",
+            title: "Apace Skins",
+            description: "A custom skin pack by KotPasztet!",
+            thumbnailId: "4ef41e47-cba1-4358-a84f-2d265c286f0f",
+            packUuid: "3724ccc4-f959-41f5-a877-6cad824b08b7",
+            packVersion: "1.0.0",
+            skinCount: 1,
+            creatorName: "KotPasztet",
+            tags: ["42a5f927-0369-47f4-b271-e64e814fa47f", "3724ccc4-f959-41f5-a877-6cad824b08b7", "skinpack", "has_skinpack", "tag.cat"],
+            contentsUrl: "/playfab/skinpacks/42a5f927-0369-47f4-b271-e64e814fa47f.zip",
+            itemReferenceId: "4f8e8e19-3218-4614-b0ff-3cd97e173f48",
+            created: new(2026, 11, 21, 20, 0, 0, DateTimeKind.Utc)),
+    ];
+
+    // One CItem shaped exactly like the staticdata-extras item JSON it twins
+    // (MarketplaceDurableCatalog_V1.2 bundle, verbatim displayProperties,
+    // skinbinary Contents pointing at the SkinPackCdnController proxy path).
+    private static CItem BuiltinSkinPackOffer(string id, string friendlyId, string title, string description, string thumbnailId,
+        string packUuid, string packVersion, int skinCount, string creatorName, string[] tags, string? contentsUrl,
+        string itemReferenceId, DateTime created)
+    {
+        var displayProperties = JsonSerializer.SerializeToElement(new
+        {
+            creatorName,
+            offerId = friendlyId,
+            price = 0,
+            purchasable = true,
+            packIdentity = new[] { new { type = "skinpack", uuid = packUuid, version = packVersion } },
+            skinPack = new { count = skinCount },
+        });
+
+        return new CItem(
+            true, // Purchasable — every built-in offer is free
+            new CItem.ClientConfigData(
+                "MarketplaceDurableCatalog_V1.2",
+                "bundle",
+                "1.0.0",
+                "65535.65535.65535",
+                false, // IsStackable
+                0, // Price — 0 = free
+                displayProperties
+            ),
+            title,
+            description,
+            thumbnailId,
+            created,
+            created,
+            new(2019, 10, 1, 0, 0, 0, DateTimeKind.Utc),
+            Guid.Parse(id),
+            Guid.Parse(friendlyId),
+            "B63A0803D3653643",
+            "301F442C3B63DC20",
+            tags,
+            new Dictionary<string, CItem.KeywordValues>(),
+            contentsUrl is null
+                ? []
+                : [new CItem.QueryManifestContent(friendlyId, contentsUrl, "65535.65535.65535", "1.0.0", [], "skinbinary")],
+            [new CItem.ItemReference(Guid.Parse(itemReferenceId), 1)],
+            new Dictionary<string, string>(),
+            new Dictionary<string, string>()
+        );
+    }
+
+    // The fallback view: built-in offers whose id the deployed staticdata does
+    // NOT carry, mapped once per run. Reads the staticdata dictionary — never
+    // itemData: this can run inside the CatalogController static constructor
+    // (CIItemToItem → MergeSkinPackOffersIntoFeaturedQuery →
+    // SkinPackOfferIds), while itemData is still being assigned. An active
+    // fallback is logged once per id: it means the staticdata item file was
+    // removed or edited on this install.
+    private static Item[]? _builtinSkinPackFallbackItems;
+
+    private static Item[] BuiltinSkinPackFallbackItems
+    {
+        get
+        {
+            if (_builtinSkinPackFallbackItems is null)
+            {
+                _builtinSkinPackFallbackItems = BuiltinSkinPackItems
+                    .Where(builtin => !StaticData.Playfab.Items.ContainsKey(builtin.Id))
+                    .Select(builtin =>
+                    {
+                        Log.Information(
+                            "Built-in skin pack offer {Id} ({Title}) is missing from the deployed staticdata — serving the code-defined fallback offer so the client's Classic Skins pack search (pack uuid tag {Tag}) resolves",
+                            builtin.Id, builtin.Title, builtin.Tags.Skip(1).FirstOrDefault() ?? "?");
+                        return CIItemToItem(builtin);
+                    })
+                    .ToArray();
+            }
+
+            return _builtinSkinPackFallbackItems;
+        }
+    }
+
     // The offer's base: the frozen 2021 staticdata catalog minus every 1P
     // "Minecraft" PersonaDurable piece — UNCONDITIONALLY, live index or not.
     // Staticdata carries no pack tags, so none of those accessories can ever
@@ -528,6 +672,7 @@ internal sealed class CatalogController : ApaceControllerBase
                 string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
                 IReadOnlyList<Item> livePacks = LiveSkinPackItemsFor();
                 IEnumerable<Item> source = BaseOfferItems
+                    .Concat(BuiltinSkinPackFallbackItems) // built-in skin pack offers missing from staticdata — the client's Classic Skins searches must resolve them
                     .Concat(CustomOfferItems) // customs count first for the grouped per-category limit
                     .Concat(await LiveOfferItemsFor(callerId, cancellationToken))
                     .Concat(livePacks);
@@ -722,6 +867,23 @@ internal sealed class CatalogController : ApaceControllerBase
 
         if (!StaticData.Playfab.Items.TryGetValue(itemId, out var cItem))
         {
+            // last resolve lane: the code-defined built-in skin pack offers the
+            // deployed staticdata does not carry (an operator edit/removal, or
+            // an older install) — same standing rule as above: a client that
+            // knows the item id (featured query, cached offer) must always
+            // resolve, a 404 here strands the equip
+            Item? builtinItem = BuiltinSkinPackFallbackItems.FirstOrDefault(candidate => candidate.Id == itemId);
+            if (builtinItem is not null)
+            {
+                return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
+                    200,
+                    "OK",
+                    new GetPublishedItemResponse(
+                        WithSkinPackRow(ToResponse(builtinItem, Request), livePacks)
+                    )
+                ), jsonOptions), "application/json");
+            }
+
             // TODO: fake not found
             return TypedResults.NotFound();
         }
@@ -772,7 +934,11 @@ internal sealed class CatalogController : ApaceControllerBase
     private static IEnumerable<string> SkinPackOfferIds => StaticData.Playfab.Items.Values
         .Where(item => item.Data is CItem.ClientConfigData { ContentType: "MarketplaceDurableCatalog_V1.2" }
             && item.Tags.Contains("has_skinpack"))
-        .Select(item => item.Id.ToString());
+        .Select(item => item.Id.ToString())
+        // the code-defined fallback offers (ids the deployed staticdata does
+        // not carry) join the featured row the same way — see
+        // BuiltinSkinPackFallbackItems; the merge below dedupes
+        .Concat(BuiltinSkinPackFallbackItems.Select(item => item.Id.ToString()));
 
     private static JsonElement MergeSkinPackOffersIntoFeaturedQuery(JsonElement displayProperties)
     {
