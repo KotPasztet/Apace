@@ -10,11 +10,13 @@ namespace Apace.ApiServer.Services;
 // The frozen Minecraft Earth client RETRIES a failed piece download until its
 // own timeout — a 404 leaves the player stuck on "loading" — so the download
 // must SUCCEED instead: the placeholder is a complete, valid piece zip in the
-// proven-working shape (scripts/build_apace_piece.py) whose geometry renders a
-// small solid-gray shape on the piece's rig bone. VISIBLE ON PURPOSE: the
-// first placeholder (empty bones, transparent texture) imported fine and
-// rendered nothing, so every equip looked like it did nothing — a player must
-// SEE the placeholder apply.
+// proven-working shape (scripts/build_apace_piece.py) whose geometry is the
+// proven cape chain — a visible gray block on the player's back. VISIBLE ON
+// PURPOSE: the first placeholder (empty bones, transparent texture) imported
+// fine and rendered nothing, so every equip looked like it did nothing — a
+// player must SEE the placeholder apply. Per-type rigs were tried and HANG
+// the client's import (see BuildGeometry); the cape chain is the only shape
+// this client provably accepts.
 //
 // Deterministic by construction: one piece uuid always yields the same bytes
 // (fixed timestamps, uuid-derived file keys), so a client's cached copy of the
@@ -29,12 +31,12 @@ public static class PersonaStubBinary
     // a 1×1 texture was suspected of failing the client's import silently.
     private const string PlaceholderPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAATElEQVR42u3PMQ0AAAwDoPrXU4GVsHsJOCB9LgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIClwHoScHw0xgO1AAAAABJRU5ErkJggg==";
 
-    // The manifest header/module version the client re-imports on ([3,0,1] —
+    // The manifest header/module version the client re-imports on ([3,0,2] —
     // same reasoning as the cape builder: a bump forces the client to use the
     // fresh pack instead of a cached copy of a previous one; bumped when the
-    // contents listing + texture fixes landed, since clients that already
-    // imported the earlier broken placeholder would otherwise keep its cache).
-    private static readonly int[] BuildVersion = [3, 0, 1];
+    // geometry changed to the proven cape chain, since clients that already
+    // imported an earlier placeholder would otherwise keep its cache).
+    private static readonly int[] BuildVersion = [3, 0, 2];
 
     // fixed timestamps like the real pieces — keeps builds deterministic
     private static readonly DateTimeOffset OuterStamp = new(2020, 1, 29, 23, 6, 56, TimeSpan.Zero);
@@ -114,10 +116,9 @@ public static class PersonaStubBinary
             },
         }, JsonOptions);
 
-        // legacy 1.8.0 geometry — the shape the frozen client provably accepts
-        // (the Apace capes ship it); renders a small gray shape on the piece's
-        // rig bone
-        string geometryJson = JsonSerializer.Serialize(BuildGeometry(pieceType), JsonOptions);
+        // legacy 1.8.0 geometry — the proven cape chain, the only rig the
+        // frozen client provably imports AND renders (see BuildGeometry)
+        string geometryJson = JsonSerializer.Serialize(BuildGeometry(), JsonOptions);
 
         // trailing newline exactly like the proven builder's lang files
         string lang = $"persona.{StubName}.title=Piece\n";
@@ -184,48 +185,33 @@ public static class PersonaStubBinary
         };
     }
 
-    // The placeholder renders on the rig bone the piece type attaches to — the
-    // player rig maps geometry bones by NAME ("head", "body", "leftLeg",
-    // "rightLeg", "cape"). "cape" is proven (the Apace capes render exactly
-    // this root/waist/body/cape chain, same cube); the others are the standard
-    // Bedrock player bones. All four body-size wrappers share one shape.
-    private static readonly string[] HeadPieceTypes =
-    [
-        "persona_head", "persona_face_accessory", "persona_hair", "persona_beard", "persona_eyes", "persona_mouth",
-    ];
-
-    private static Dictionary<string, object?> BuildGeometry(string pieceType) => new()
+    // ONE rig for every placeholder type, no per-type branching: the proven
+    // cape chain, byte-for-byte the Apace cape's geometry (root→waist→body→
+    // cape, the cape cube on the "cape" bone). History: the first placeholder
+    // had EMPTY bones and imported fine (it just rendered nothing); the
+    // per-type rigs (head/legs/body) were guesses and the client SILENTLY
+    // HANGS applying them — no retry, no error, SetObjects never reached. The
+    // cape chain is the only rig this client PROVABLY imports AND renders, so
+    // every placeholder uses it: the piece applies (unblocking the persona
+    // save) and shows a visible gray block on the player's back.
+    private static Dictionary<string, object?> BuildGeometry() => new()
     {
         ["format_version"] = "1.8.0",
-        [$"geometry.{StubName}.tall"] = GeometryFor(pieceType),
-        [$"geometry.{StubName}.medium"] = GeometryFor(pieceType),
-        [$"geometry.{StubName}.small"] = GeometryFor(pieceType),
-        [$"geometry.{StubName}.smaller"] = GeometryFor(pieceType),
+        [$"geometry.{StubName}.tall"] = GeometryFor(),
+        [$"geometry.{StubName}.medium"] = GeometryFor(),
+        [$"geometry.{StubName}.small"] = GeometryFor(),
+        [$"geometry.{StubName}.smaller"] = GeometryFor(),
     };
 
-    private static Dictionary<string, object?> GeometryFor(string pieceType)
+    private static Dictionary<string, object?> GeometryFor()
     {
-        List<Dictionary<string, object?>> bones = [Bone("root", null, 0, 0, 0, cubes: null)];
-        if (pieceType is "persona_back")
-        {
-            // the proven cape layout, byte-for-byte the Apace cape's cube
-            bones.Add(Bone("waist", "root", 0, 12, 0, cubes: null));
-            bones.Add(Bone("body", "waist", 0, 24, 0, cubes: null));
-            bones.Add(Bone("cape", "body", 0, 24, -3, [Cube(-5, 8, -3, 10, 16, 1)]));
-        }
-        else if (pieceType is "persona_feet")
-        {
-            bones.Add(Bone("leftLeg", "root", -1.9f, 12, 0, [Cube(-2.9f, 4, -1.5f, 2, 5, 3)]));
-            bones.Add(Bone("rightLeg", "root", 1.9f, 12, 0, [Cube(0.9f, 4, -1.5f, 2, 5, 3)]));
-        }
-        else if (HeadPieceTypes.Contains(pieceType, StringComparer.Ordinal))
-        {
-            bones.Add(Bone("head", "root", 0, 24, 0, [Cube(-3, 32, -3, 6, 3, 6)]));
-        }
-        else
-        {
-            bones.Add(Bone("body", "root", 0, 24, 0, [Cube(-3, 26, 2, 6, 6, 1)]));
-        }
+        List<Dictionary<string, object?>> bones =
+        [
+            Bone("root", null, 0, 0, 0, cubes: null),
+            Bone("waist", "root", 0, 12, 0, cubes: null),
+            Bone("body", "waist", 0, 24, 0, cubes: null),
+            Bone("cape", "body", 0, 24, -3, [Cube(-5, 8, -3, 10, 16, 1)]),
+        ];
 
         return new Dictionary<string, object?>
         {
