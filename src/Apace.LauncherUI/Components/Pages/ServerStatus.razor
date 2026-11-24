@@ -1,6 +1,7 @@
 @page "/ServerStatus"
 @rendermode InteractiveServer
 @using System.Security.Claims
+@using Serilog
 @using Apace.LauncherUI.Utils
 @inject AuthenticationStateProvider AuthStateProvider
 @inject LogsLogService LogService
@@ -29,6 +30,34 @@
         });
 
         observer.observe(container, { childList: true, subtree: true });
+    };
+
+    // Copies text to the BROWSER's clipboard (the panel client's clipboard,
+    // not the server's). navigator.clipboard needs a user gesture + secure
+    // context; from a Blazor Server round-trip the activation window usually
+    // still holds in Chromium, but a textarea + execCommand fallback keeps it
+    // working when the promise rejects (e.g. Firefox, or a slow circuit).
+    window.copyLogsToClipboard = (text) => {
+        const fallback = () => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand('copy');
+            } finally {
+                document.body.removeChild(ta);
+            }
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).catch(fallback);
+        }
+        fallback();
+        return Promise.resolve();
     };
 </script>
 
@@ -209,7 +238,7 @@
                 }
             </div>
 
-            <div class="log-filter mb-3">
+            <div class="log-filter mb-3 align-items-center flex-wrap gap-2">
                 <span class="log-filter-label">Levels:</span>
                 @foreach (var level in _allLevels)
                 {
@@ -219,6 +248,16 @@
                             @onclick="() => ToggleLogLevel(level)">
                         @(isSelected ? "✓ " : "")@GetShortLevel(level)
                     </button>
+                }
+
+                <button class="btn btn-secondary btn-sm ms-auto"
+                        title="Copy every visible log line of the @(_activeTab) tab to this device's clipboard"
+                        @onclick="CopyAllLogs" disabled="@_isCopyingLogs">
+                    @(_isCopyingLogs ? "Copying…" : "⧉ Copy All")
+                </button>
+                @if (!string.IsNullOrEmpty(_copyLogsStatus))
+                {
+                    <span class="text-muted" style="font-size: 0.75rem;">@_copyLogsStatus</span>
                 }
             </div>
 
@@ -529,6 +568,46 @@
         else
         {
             _selectedLevels.Add(level);
+        }
+    }
+
+    // "Copy All" for the live log panel: puts every visible line of the
+    // ACTIVE tab (Launcher / ApiServer / …, respecting the level filter) on
+    // the BROWSER's clipboard via JS interop — never the server's clipboard.
+    private bool _isCopyingLogs = false;
+    private string? _copyLogsStatus;
+
+    private async Task CopyAllLogs()
+    {
+        if (_isCopyingLogs)
+        {
+            return;
+        }
+
+        _isCopyingLogs = true;
+        _copyLogsStatus = null;
+        StateHasChanged();
+
+        try
+        {
+            List<LogEvent> logs = LogService.GetLogsFor(_activeTab)
+                .Where(log => string.IsNullOrEmpty(log.Level) || _selectedLevels.Contains(log.Level))
+                .ToList();
+            string text = string.Join('\n', logs.Select(log =>
+                $"[{FormatTimestamp(log.Timestamp)}] [{GetShortLevel(log.Level)}] {log.RenderedMessage}"));
+
+            await JS.InvokeVoidAsync("copyLogsToClipboard", text);
+            _copyLogsStatus = $"Copied {logs.Count} lines to clipboard";
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Copying the live logs of {Tab} to the clipboard failed", _activeTab);
+            _copyLogsStatus = "Copy failed — see server logs";
+        }
+        finally
+        {
+            _isCopyingLogs = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 

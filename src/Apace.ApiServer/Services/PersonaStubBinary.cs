@@ -23,13 +23,18 @@ public static class PersonaStubBinary
 {
     private const string StubName = "apace_stub";
 
-    // 1×1 solid light-gray PNG — the placeholder texture (visible).
-    private const string PlaceholderPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mPYtGnTfwAHRgMWHTGgjgAAAABJRU5ErkJggg==";
+    // 64×64 solid light-gray PNG — the placeholder texture (visible). Sized
+    // like the real pieces: the proven-importable packs ship 128×128+ square
+    // power-of-two textures and the smallest proven-working one is 128×128, so
+    // a 1×1 texture was suspected of failing the client's import silently.
+    private const string PlaceholderPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAATElEQVR42u3PMQ0AAAwDoPrXU4GVsHsJOCB9LgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIClwHoScHw0xgO1AAAAABJRU5ErkJggg==";
 
-    // The manifest header/module version the client re-imports on ([3,0,0] —
+    // The manifest header/module version the client re-imports on ([3,0,1] —
     // same reasoning as the cape builder: a bump forces the client to use the
-    // fresh pack instead of a cached copy of a previous one).
-    private static readonly int[] BuildVersion = [3, 0, 0];
+    // fresh pack instead of a cached copy of a previous one; bumped when the
+    // contents listing + texture fixes landed, since clients that already
+    // imported the earlier broken placeholder would otherwise keep its cache).
+    private static readonly int[] BuildVersion = [3, 0, 1];
 
     // fixed timestamps like the real pieces — keeps builds deterministic
     private static readonly DateTimeOffset OuterStamp = new(2020, 1, 29, 23, 6, 56, TimeSpan.Zero);
@@ -64,6 +69,11 @@ public static class PersonaStubBinary
 
     private static byte[] BuildZip(string pieceUuid, string pieceType)
     {
+        // normalize ONCE: meta and the geometry rig must agree on the type
+        // (an empty pieceType used to write meta "persona_head" but build the
+        // body rig — an internal disagreement the client can choke on)
+        pieceType = string.IsNullOrWhiteSpace(pieceType) ? "persona_head" : pieceType;
+
         // per-file keys derived from the piece uuid — deterministic, unique per piece
         var rng = new Random(BitConverter.ToInt32(SHA256.HashData(Encoding.ASCII.GetBytes(pieceUuid)), 0));
         string metaKey = GenerateKey(rng);
@@ -97,7 +107,7 @@ public static class PersonaStubBinary
         {
             ["piece_id"] = pieceUuid,
             ["piece_name"] = StubName,
-            ["piece_type"] = string.IsNullOrWhiteSpace(pieceType) ? "persona_head" : pieceType,
+            ["piece_type"] = pieceType,
             ["geometry_sources"] = new List<Dictionary<string, object?>>
             {
                 GeometrySource("tall"), GeometrySource("medium"), GeometrySource("small"), GeometrySource("smaller"),
@@ -109,8 +119,9 @@ public static class PersonaStubBinary
         // rig bone
         string geometryJson = JsonSerializer.Serialize(BuildGeometry(pieceType), JsonOptions);
 
-        string lang = $"persona.{StubName}.title=Piece";
-        string languages = "[\"en_US\"]";
+        // trailing newline exactly like the proven builder's lang files
+        string lang = $"persona.{StubName}.title=Piece\n";
+        string languages = "[\"en_US\"]\n";
 
         byte[] manifestBytes = Encoding.UTF8.GetBytes(manifestJson);
         byte[] metaBytes = PersonaContentCrypto.Encrypt(Encoding.ASCII.GetBytes(metaKey), Encoding.UTF8.GetBytes(metaJson));
@@ -135,7 +146,11 @@ public static class PersonaStubBinary
             ($"{StubName}.meta.json", metaKey),
             ($"{StubName}.png", textureKey),
             ($"{StubName}.geometry.json", geometryKey),
-            ("signatures.json", null),
+            // signatures.json is deliberately NOT listed: the proven-importable
+            // zip's contents body lists exactly the six files above and ships
+            // signatures.json raw and unlisted — an extra listed keyless entry
+            // is the kind of unrecognized key that makes the client's import
+            // await never complete (the hang).
         ]);
 
         using var outer = new MemoryStream();
@@ -143,6 +158,7 @@ public static class PersonaStubBinary
         {
             ZipArchiveEntry outerEntry = outerArchive.CreateEntry("ppack0.zip");
             outerEntry.LastWriteTime = OuterStamp;
+            outerEntry.ExternalAttributes = 0x1800000; // unix mode 0600, like the proven builder's entries
             using (var inner = outerEntry.Open())
             using (var innerArchive = new ZipArchive(inner, ZipArchiveMode.Create, leaveOpen: true))
             {
@@ -150,8 +166,9 @@ public static class PersonaStubBinary
                 WriteRaw(innerArchive, "texts/en_US.lang", Encoding.UTF8.GetBytes(lang));
                 WriteRaw(innerArchive, "texts/languages.json", Encoding.UTF8.GetBytes(languages));
                 WriteRaw(innerArchive, $"{StubName}.meta.json", metaBytes);
-                WriteRaw(innerArchive, $"{StubName}.png", textureBytes);
+                // geometry before texture, the proven builder's order
                 WriteRaw(innerArchive, $"{StubName}.geometry.json", geometryBytes);
+                WriteRaw(innerArchive, $"{StubName}.png", textureBytes);
                 WriteRaw(innerArchive, "signatures.json", Encoding.ASCII.GetBytes(signaturesJson));
                 WriteRaw(innerArchive, "contents.json", contentsBytes);
             }
@@ -215,8 +232,8 @@ public static class PersonaStubBinary
             ["visible_bounds_width"] = 2,
             ["visible_bounds_height"] = 2,
             ["visible_bounds_offset"] = new List<object> { 0f, 0.5f, 0f },
-            ["texturewidth"] = 1,
-            ["textureheight"] = 1,
+            ["texturewidth"] = 64,
+            ["textureheight"] = 64,
             ["bones"] = bones,
         };
 
@@ -252,6 +269,7 @@ public static class PersonaStubBinary
     {
         ZipArchiveEntry entry = archive.CreateEntry(name);
         entry.LastWriteTime = InnerStamp;
+        entry.ExternalAttributes = 0x1800000; // unix mode 0600, like the proven builder's entries
         using Stream stream = entry.Open();
         stream.Write(bytes, 0, bytes.Length);
     }
