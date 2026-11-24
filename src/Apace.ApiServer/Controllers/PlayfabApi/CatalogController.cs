@@ -292,7 +292,7 @@ internal sealed class CatalogController : ApaceControllerBase
             if (onlySupported)
             {
                 string itemId = item.Id.ToString();
-                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId);
+                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId, item.DisplayProperties?.PieceType);
                 if (!compat.Supported)
                 {
                     PersonaPieceTypes.LogCompatVerdictOnce("catalog offer", itemId, compat.Reason);
@@ -569,7 +569,7 @@ internal sealed class CatalogController : ApaceControllerBase
             }
             else if (PersonaPackGate.OnlySupported)
             {
-                compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString());
+                compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString(), liveItem.DisplayProperties?.PieceType);
                 if (!compat.Supported)
                 {
                     verdict = "unsupported";
@@ -617,7 +617,7 @@ internal sealed class CatalogController : ApaceControllerBase
         {
             if (PersonaPackGate.OnlySupported)
             {
-                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString());
+                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString(), customItem.DisplayProperties?.PieceType);
                 if (!compat.Supported)
                 {
                     PersonaPieceTypes.LogCompatVerdictOnce("published item", itemId.ToString(), compat.Reason);

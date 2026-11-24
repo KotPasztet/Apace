@@ -21,9 +21,12 @@ namespace Apace.LauncherUI.Services;
 //              / flipbook / particles and no face bones;
 //   risky      geometry at or past the cap (UV rotation, transform pivots the
 //              frozen client cannot render) or below 1.12.0 (legacy), or ANY
-//              animation/effect signal, or face bones (rig 1.19.50/1.20.10,
-//              MCPE-165232) — these render broken: floating parts, missing
-//              meshes;
+//              animation/effect signal, or face bones on a FACE ACCESSORY
+//              (rig 1.19.50/1.20.10, MCPE-165232) — these render broken:
+//              floating parts, missing meshes. Face bones are scoped to
+//              persona_face_accessory pieces: hats, hoods and helmets
+//              legitimately carry hat/head rig bones the frozen client renders
+//              fine, so other piece types never turn risky on them;
 //   unknown    no profile (nothing scanned or nothing parsable in the zip) —
 //              unknown pieces keep serving while the panel's "only supported"
 //              switch is on; the filter only ever hides risky pieces.
@@ -156,9 +159,10 @@ public static class CosmeticCompatIndex
 
             var map = new Dictionary<string, CosmeticCompatInfo>(geometry.Count, StringComparer.OrdinalIgnoreCase);
             Version maxGeometry = MaxGeometryFormatVersion;
+            Dictionary<string, string> pieceTypes = LoadPieceTypes();
             foreach (var (itemId, facts) in geometry)
             {
-                map[itemId] = Classify(facts, maxGeometry);
+                map[itemId] = Classify(facts, maxGeometry, pieceTypes.GetValueOrDefault(itemId));
             }
 
             return map;
@@ -174,7 +178,55 @@ public static class CosmeticCompatIndex
     public static CosmeticCompatInfo Lookup(Dictionary<string, CosmeticCompatInfo> map, string itemId)
         => map.TryGetValue(itemId, out CosmeticCompatInfo? info) ? info : Unknown;
 
-    private static CosmeticCompatInfo Classify(GeometryFacts? facts, Version maxGeometry)
+    /// <summary>The synced catalog index — its items carry the piece type the
+    /// face-bone scoping needs (same file the ApiServer's LivePersonaCatalog
+    /// reads). Custom cosmetics are not in the index; their piece types come
+    /// from the caller when one is known, and unknown/missing piece types never
+    /// block on face bones (the filter only hides positive evidence).</summary>
+    public static string IndexPath
+        => Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "index.json");
+
+    private sealed class IndexFile
+    {
+        public List<IndexItem>? Items { get; set; }
+    }
+
+    private sealed class IndexItem
+    {
+        public string? Id { get; set; }
+        public string? PieceType { get; set; }
+    }
+
+    private static Dictionary<string, string> LoadPieceTypes()
+    {
+        try
+        {
+            if (!File.Exists(IndexPath))
+            {
+                return [];
+            }
+
+            var file = JsonSerializer.Deserialize<IndexFile>(File.ReadAllText(IndexPath), JsonOptions);
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (IndexItem? item in file?.Items ?? [])
+            {
+                if (!string.IsNullOrWhiteSpace(item?.Id) && !string.IsNullOrWhiteSpace(item.PieceType))
+                {
+                    map[item.Id] = item.PieceType;
+                }
+            }
+
+            return map;
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            // a corrupt index must never break the display — face bones then
+            // never scope to anything and no badge turns risky on them
+            return [];
+        }
+    }
+
+    private static CosmeticCompatInfo Classify(GeometryFacts? facts, Version maxGeometry, string? pieceType)
     {
         if (facts is null)
         {
@@ -219,9 +271,11 @@ public static class CosmeticCompatIndex
             effects.Add("render controllers");
         }
 
-        if (facts.HasFaceBones == true)
+        // face bones mark the face-accessory rig (MCPE-165232) — risky only for
+        // face accessories; hats/hoods legitimately carry hat/head bones
+        if (facts.HasFaceBones == true && pieceType is "persona_face_accessory")
         {
-            effects.Add("face bones (rig 1.19.50/1.20.10, MCPE-165232)");
+            effects.Add("face bones (face-accessory rig 1.19.50/1.20.10, MCPE-165232)");
         }
 
         if (effects.Count > 0)

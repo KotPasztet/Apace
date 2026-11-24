@@ -1325,10 +1325,24 @@ public static class LivePersonaCatalog
     // what it records so the previous file is discarded (v1: first-wins scan
     // without render-controller / face-bone capture, and the nested ppack0.zip
     // content was unreadable after collection — v2: worst-case aggregation
-    // across all geometry candidates + the full effect scans on both zip layers).
-    private const int GeometryCompatSchemaVersion = 2;
+    // across all geometry candidates + the full effect scans on both zip layers —
+    // v3: geometry detected by CONTENT (any .json holding a geometry structure,
+    // lenient parse) instead of the *.geometry.json name filter, which missed
+    // .geo.json / custom-named geometries and recorded all-unknown facts for
+    // perfectly parseable pieces).
+    private const int GeometryCompatSchemaVersion = 3;
 
     private const int MaxCompatEntryBytes = 2 * 1024 * 1024;
+
+    // Bedrock resource JSON is lenient in the wild: // comments and trailing
+    // commas are common, and the strict parser threw on them — hiding perfectly
+    // parseable geometries behind all-unknown facts. Parse leniently everywhere
+    // in the probe.
+    private static readonly JsonDocumentOptions LenientJson = new()
+    {
+        CommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true,
+    };
 
     /// <summary>
     /// Geometry compatibility facts for a piece binary — worst-case geometry
@@ -1451,12 +1465,17 @@ public static class LivePersonaCatalog
     /// <summary>
     /// Opens a piece binary zip and reads the geometry compatibility facts. Real
     /// pieces are an outer zip holding one nested ppack0.zip (flat custom zips are
-    /// accepted too) — both layers are searched. Only clear signals set a value:
-    /// the highest/lowest parsed geometry format_version across ALL candidates
-    /// (one per body size), a non-empty top-level animations object or
-    /// *.animation.json entries, particle/flipbook and render-controller
-    /// references in geometry/meta/manifest json, and face bones in the geometry
-    /// bone lists. Returns null when the zip cannot be opened at all.
+    /// accepted too) — both layers are searched. Geometry files are detected by
+    /// CONTENT, not by name: every .json entry is lenient-parsed (comments and
+    /// trailing commas are common in Bedrock files) and counts as geometry when it
+    /// holds a minecraft:geometry block, a bones array or a legacy
+    /// geometry.&lt;name&gt; wrapper — whatever the file is called (.geometry.json,
+    /// .geo.json, custom names). Signals: the highest/lowest parsed geometry
+    /// format_version across ALL candidates (one per body size), a non-empty
+    /// top-level animations object or *.animation.json entries, particle/flipbook
+    /// and render-controller references in geometry/meta/manifest json, and face
+    /// bones in the geometry bone lists. Returns null when the zip cannot be
+    /// opened at all.
     /// </summary>
     private static GeometryCompatInfo? InspectGeometryCompat(string zipPath)
     {
@@ -1508,17 +1527,23 @@ public static class LivePersonaCatalog
     // The face-attachment bone names the frozen client misplaces (the persona
     // face-accessory rig of 1.19.50/1.20.10, MCPE-165232 — see the
     // CosmeticCompatIndex risky rule). Exact bone-name match so "forehead" or
-    // "arrowhead" cannot trigger it.
+    // "arrowhead" cannot trigger it. Recorded as a per-piece FACT — whether it
+    // marks the piece risky is the gate's call (PersonaPieceTypes scopes it to
+    // face-accessory pieces): hats, hoods and helmets legitimately carry
+    // hat/head rig bones the frozen client renders fine.
     private static readonly HashSet<string> FaceBoneNames = new(StringComparer.OrdinalIgnoreCase) { "face", "hat", "head" };
 
     private static GeometryCompatInfo? InspectCompatEntries(List<ZipArchiveEntry> entries)
     {
-        // Worst case wins across EVERY geometry candidate of the piece — real
-        // pieces carry one geometry per body size (tall/medium/small/smaller)
-        // and first-wins let a modern variant hide behind the first one read.
-        // The recorded facts are what the gate classifies: highest/lowest parsed
-        // format_version (a single out-of-band variant moves one of them) and
-        // every effect signal OR-ed in from all candidates.
+        // Worst case wins across EVERY geometry of the piece — real pieces carry
+        // one geometry per body size (tall/medium/small/smaller). Geometry files
+        // are detected by CONTENT, not by name: piece zips carry .geometry.json,
+        // .geo.json and arbitrary custom names alike, and the old name filter
+        // recorded all-unknown facts for parseable pieces. Every .json entry is
+        // lenient-parsed (Bedrock files commonly carry comments and trailing
+        // commas — the strict parser threw and hid the geometry) and counts as a
+        // geometry when it holds a minecraft:geometry block, a bones array or a
+        // legacy geometry.<name> wrapper.
         Version? highest = null;
         Version? lowest = null;
         string? highestText = null;
@@ -1529,34 +1554,132 @@ public static class LivePersonaCatalog
         bool? hasFaceBones = null;
         bool sawGeometry = false;
         bool sawMetaOrManifest = false;
-        var geometryCandidates = new List<ZipArchiveEntry>();
 
-        void ParseGeometryCandidate(ZipArchiveEntry entry)
+        // The bone lists a geometry can carry: the modern minecraft:geometry
+        // entries, a root-level "bones" array and the legacy "geometry.<name>"
+        // wrapper objects — whichever shape the file uses.
+        static IEnumerable<JsonElement> BoneLists(JsonElement root)
         {
+            if (root.TryGetProperty("bones", out JsonElement rootBones)
+                && rootBones.ValueKind == JsonValueKind.Array)
+            {
+                yield return rootBones;
+            }
+
+            if (root.TryGetProperty("minecraft:geometry", out JsonElement geometries)
+                && geometries.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement geometry in geometries.EnumerateArray())
+                {
+                    if (geometry.ValueKind == JsonValueKind.Object
+                        && geometry.TryGetProperty("bones", out JsonElement geometryBones)
+                        && geometryBones.ValueKind == JsonValueKind.Array)
+                    {
+                        yield return geometryBones;
+                    }
+                }
+            }
+
+            foreach (JsonProperty property in root.EnumerateObject())
+            {
+                if (property.Value.ValueKind == JsonValueKind.Object
+                    && property.Value.TryGetProperty("bones", out JsonElement wrapped)
+                    && wrapped.ValueKind == JsonValueKind.Array)
+                {
+                    yield return wrapped;
+                }
+            }
+        }
+
+        bool ScanFaceBones(JsonElement root)
+        {
+            foreach (JsonElement bones in BoneLists(root))
+            {
+                foreach (JsonElement bone in bones.EnumerateArray())
+                {
+                    if (bone.ValueKind == JsonValueKind.Object
+                        && bone.TryGetProperty("name", out JsonElement name)
+                        && name.ValueKind == JsonValueKind.String
+                        && name.GetString() is { Length: > 0 } boneName
+                        && FaceBoneNames.Contains(boneName))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        foreach (ZipArchiveEntry entry in entries)
+        {
+            if (!entry.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (entry.Name.EndsWith(".animation.json", StringComparison.OrdinalIgnoreCase))
+            {
+                hasAnimations = true; // animation files in the zip — a clear signal
+                continue;
+            }
+
+            bool isMetaOrManifest = entry.Name.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase)
+                || entry.Name.Equals("manifest.json", StringComparison.OrdinalIgnoreCase);
+            if (isMetaOrManifest)
+            {
+                sawMetaOrManifest = true;
+            }
+
             string? text = TryReadEntryText(entry);
             if (text is null)
             {
-                return;
+                continue;
             }
 
-            // render-controller references anywhere in the geometry json — the
-            // frozen client cannot resolve them (untextured/wrong render pass)
-            if (text.Contains("render_controllers", StringComparison.OrdinalIgnoreCase)
-                || text.Contains("controller.render.", StringComparison.OrdinalIgnoreCase))
+            if (isMetaOrManifest)
             {
-                hasRenderControllers = true;
+                if (text.Contains("particle", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("flipbook", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasParticles = true; // particle/flipbook reference in meta/manifest
+                }
+
+                if (text.Contains("render_controllers", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("controller.render.", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasRenderControllers = true; // render-controller reference in meta/manifest
+                }
             }
 
             try
             {
-                using var doc = JsonDocument.Parse(text);
+                using var doc = JsonDocument.Parse(text, LenientJson);
                 if (doc.RootElement.ValueKind != JsonValueKind.Object)
                 {
-                    return;
+                    continue;
+                }
+
+                JsonElement root = doc.RootElement;
+                if (!root.TryGetProperty("minecraft:geometry", out _)
+                    && !BoneLists(root).Any())
+                {
+                    continue; // meta, manifest, entity json — no geometry structure
                 }
 
                 sawGeometry = true;
-                JsonElement root = doc.RootElement;
+
+                // render-controller references in the geometry json — the frozen
+                // client cannot resolve them (untextured/wrong render pass).
+                // Deliberately NOT scanned on entity/attachable json: persona
+                // pieces render through the persona pipeline, a dead client_entity
+                // file with a controller.render reference is harmless and the
+                // filter must not hide the piece over it
+                if (text.Contains("render_controllers", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("controller.render.", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasRenderControllers = true;
+                }
                 if (root.TryGetProperty("format_version", out JsonElement version))
                 {
                     string? candidateVersion = version.ValueKind == JsonValueKind.String ? version.GetString() : version.GetRawText();
@@ -1593,121 +1716,7 @@ public static class LivePersonaCatalog
             }
             catch (JsonException)
             {
-                // malformed geometry json — the raw-text scans above still counted
-            }
-        }
-
-        // both geometry shapes carry the bone list: legacy root "bones" and the
-        // 1.12.0+ "minecraft:geometry" array of { description, bones }
-        bool ScanFaceBones(JsonElement root)
-        {
-            if (root.TryGetProperty("minecraft:geometry", out JsonElement geometries) && geometries.ValueKind == JsonValueKind.Array)
-            {
-                foreach (JsonElement geometry in geometries.EnumerateArray())
-                {
-                    if (ScanBoneNames(geometry))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return ScanBoneNames(root);
-        }
-
-        bool ScanBoneNames(JsonElement element)
-        {
-            if (element.ValueKind == JsonValueKind.Object
-                && element.TryGetProperty("bones", out JsonElement bones)
-                && bones.ValueKind == JsonValueKind.Array)
-            {
-                foreach (JsonElement bone in bones.EnumerateArray())
-                {
-                    if (bone.ValueKind == JsonValueKind.Object
-                        && bone.TryGetProperty("name", out JsonElement name)
-                        && name.ValueKind == JsonValueKind.String
-                        && name.GetString() is { Length: > 0 } boneName
-                        && FaceBoneNames.Contains(boneName))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        foreach (ZipArchiveEntry entry in entries)
-        {
-            if (entry.Name.EndsWith(".geometry.json", StringComparison.OrdinalIgnoreCase))
-            {
-                geometryCandidates.Add(entry);
-            }
-            else if (entry.Name.EndsWith(".animation.json", StringComparison.OrdinalIgnoreCase))
-            {
-                hasAnimations = true; // animation files in the zip — a clear signal
-            }
-            else if (entry.Name.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase)
-                     || entry.Name.Equals("manifest.json", StringComparison.OrdinalIgnoreCase))
-            {
-                sawMetaOrManifest = true;
-                string? text = TryReadEntryText(entry);
-                if (text is null)
-                {
-                    continue;
-                }
-
-                if (text.Contains("particle", StringComparison.OrdinalIgnoreCase)
-                    || text.Contains("flipbook", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasParticles = true; // particle/flipbook reference in meta/manifest
-                }
-
-                if (text.Contains("render_controllers", StringComparison.OrdinalIgnoreCase)
-                    || text.Contains("controller.render.", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasRenderControllers = true; // render-controller reference in meta/manifest
-                }
-
-                // a meta may point at its geometry files by name (geometry_sources
-                // references) — collect those as candidates too
-                try
-                {
-                    using var doc = JsonDocument.Parse(text);
-                    if (doc.RootElement.ValueKind == JsonValueKind.Object
-                        && doc.RootElement.TryGetProperty("geometry_sources", out JsonElement sources)
-                        && sources.ValueKind == JsonValueKind.Object)
-                    {
-                        foreach (JsonProperty source in sources.EnumerateObject())
-                        {
-                            string? reference = source.Value.ValueKind switch
-                            {
-                                JsonValueKind.String => source.Value.GetString(),
-                                JsonValueKind.Object when source.Value.TryGetProperty("file", out JsonElement file) => file.GetString(),
-                                _ => null,
-                            };
-                            if (string.IsNullOrWhiteSpace(reference))
-                            {
-                                continue;
-                            }
-
-                            geometryCandidates.AddRange(entries.Where(candidate => candidate.Name.Equals(reference, StringComparison.OrdinalIgnoreCase)));
-                        }
-                    }
-                }
-                catch (JsonException)
-                {
-                    // meta json is not parseable — the raw-text scans above still counted
-                }
-            }
-        }
-
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (ZipArchiveEntry candidate in geometryCandidates)
-        {
-            if (seen.Add(candidate.FullName))
-            {
-                ParseGeometryCandidate(candidate);
+                // malformed json — the raw-text scans above still counted
             }
         }
 

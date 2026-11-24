@@ -23,13 +23,14 @@ namespace Apace.ApiServer.Services;
 //    objects (universalApp entries carry piece ids like "<pieceId>/d"). The
 //    live catalog index is checked by PieceId first, then the committed
 //    staticdata persona items.
-//  - IsSupportedCosmetic: the client-compatibility gate behind packs.json
-//    "onlySupported" (default true) — applies the metadata pipeline's per-item
-//    compat verdict (panel-side twin: CosmeticCompatIndex): only RISKY pieces
-//    (geometry format_version outside the [1.12.0, maxGeometryFormatVersion)
-//    band — max configurable via packs.json, default 1.16.0 — or an
-//    animation/particle/render-controller/face-bone signal) are blocked;
-//    UNKNOWN pieces (no compat facts, unparsable version) keep serving.
+    //  - IsSupportedCosmetic: the client-compatibility gate behind packs.json
+    //    "onlySupported" (default true) — applies the metadata pipeline's per-item
+    //    compat verdict (panel-side twin: CosmeticCompatIndex): only RISKY pieces
+    //    (geometry format_version outside the [1.12.0, maxGeometryFormatVersion)
+    //    band — max configurable via packs.json, default 1.16.0 — or an
+    //    animation/particle/render-controller signal, or face bones on a
+    //    face-accessory piece) are blocked; UNKNOWN pieces (no compat facts,
+    //    unparsable version) keep serving.
 public static class PersonaPieceTypes
 {
     // The committed dressing-room layout (PersonaQueryManifest_V1.0): its
@@ -166,9 +167,15 @@ public static class PersonaPieceTypes
     /// <summary>
     /// The full compat verdict behind <see cref="IsSupportedCosmetic"/> — same
     /// precedence, plus the reason the enforcement points log (once per item
-    /// per run, see <see cref="LogCompatVerdictOnce"/>).
+    /// per run, see <see cref="LogCompatVerdictOnce"/>). <paramref name="pieceType"/>
+    /// is the dressing-room piece type of the item when the caller knows it (the
+    /// catalog metadata carries it): the face-bone signal marks the face-accessory
+    /// rig (MCPE-165232) and is risky only for persona_face_accessory pieces —
+    /// hats, hoods and helmets legitimately carry hat/head rig bones the frozen
+    /// client renders fine (it shipped with hundreds of them), so other/unknown
+    /// piece types never block on face bones.
     /// </summary>
-    public static CosmeticGateVerdict EvaluateCosmetic(string itemId)
+    public static CosmeticGateVerdict EvaluateCosmetic(string itemId, string? pieceType = null)
     {
         // 1. explicit verdict from the compat store, when the lane wrote one
         string? verdict = CosmeticCompatVerdicts.Lookup(itemId);
@@ -222,9 +229,14 @@ public static class PersonaPieceTypes
             return new CosmeticGateVerdict(false, "render controllers in the piece files");
         }
 
-        if (hasFaceBones == true)
+        // Face bones mark the persona face-accessory rig (MCPE-165232) — risky
+        // only for face accessories. Other piece types legitimately carry
+        // hat/head rig bones the frozen client renders fine, so an unknown or
+        // non-accessory piece type never blocks here — the filter only hides
+        // pieces with positive evidence of incompatibility.
+        if (hasFaceBones == true && pieceType is "persona_face_accessory")
         {
-            return new CosmeticGateVerdict(false, "face bones in the piece geometry (MCPE-165232)");
+            return new CosmeticGateVerdict(false, "face bones in the piece geometry (MCPE-165232 — the face-accessory rig)");
         }
 
         return new CosmeticGateVerdict(true, $"geometry format_version {formatVersion}, in the supported band with no effect signals");
