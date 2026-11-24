@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased (dev) — the APK patcher survives CPUs the bundled aapt2 cannot run on: a pre-flight probe switches that build to the system aapt2
+
+> The patcher job died at `I: Building resources with aapt2...` on the user's phone: apktool 3.0.3 extracts the aapt2 binary bundled in its own jar and executes it, and on CPUs older than that binary's baseline it dies with exit code 132 (SIGILL) mid-build (a Raspberry Pi runs the same binary fine). The build now probes the bundled binary with the `version` subcommand BEFORE the resource build and, on any non-zero exit, switches this build to the distro aapt2 (`--aapt /usr/bin/aapt2`, generic ARMv8-A baseline). apktool 3.0.3 has no aapt1 mode (`--use-aapt1` is rejected as an unknown option), so `--aapt` is the only aapt-selection mechanism it offers — hence aapt2, not `/usr/bin/aapt`. Healthy hosts pass the probe and keep the byte-identical bundled invocation; hosts with `AAPT2_PATH` set (the Docker image) never run the bundled binary and skip the probe entirely.
+
+### 🛠️ Patcher (Android)
+
+- **Pre-flight** (`Minecraft_Earth_Patcher/APK.cs`): `Encode` extracts the bundled aapt2 (`prebuilt/linux/aapt2` inside apktool.jar) to a temp file and runs it with `version` — the same probe apktool itself performs (aapt2 has no `--version` option); a non-zero exit or exec failure falls back, and exactly one INFO line states the decision (`using bundled aapt2` / `using system aapt (fallback)`).
+- **Fallback binary present** (`Dockerfile`, `install-termux.sh`): the image already installs the `aapt` package (Ubuntu, amd64+arm64) which provides `/usr/bin/aapt2` — the build now hard-fails at image build time if it is missing; the Termux proot Ubuntu (where the phone SIGILL happens) installs `aapt` too.
+
 ## Unreleased (dev) — the pack gate covers every live accessory: partner-creator pieces no longer bypass it and probe-dead pieces leave the searches at once
 
 > With NOTHING selected the dressing room still served ~30 live accessories per category: the pack gate applied only to pieces whose marketplace `creatorName` is "Minecraft", so partner-creator accessories (the sync stores the creator verbatim and the 20ca2 catalog carries partner items) bypassed it entirely. The gate now runs on all live accessories (any creator, skins exempt) at the offer, published-item and binary paths — customs keep serving untouched. Probe-dead pieces also vanish from the catalog searches immediately (they used to keep listing until the next index re-sync, so the client rendered broken "unsupported" tiles whose binaries 404).

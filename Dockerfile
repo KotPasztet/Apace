@@ -93,7 +93,16 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     wget \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # aapt ships /usr/bin/aapt AND /usr/bin/aapt2 for both image arches (the
+    # base aspnet:10.0 image is Ubuntu, package built from
+    # android-platform-frameworks-base for amd64 + arm64). /usr/bin/aapt2 is
+    # what the patcher's build falls back to (--aapt) when the aapt2 bundled
+    # in apktool.jar fails its pre-flight probe (SIGILL on older ARM CPUs) -
+    # hard-fail the image build here rather than discover a missing distro
+    # package at patch time.
+    && test -x /usr/bin/aapt \
+    && test -x /usr/bin/aapt2
 
 # Docker CLI + compose v2 plugin, installed from the BASE DISTRO's own apt
 # repos (docker.io + docker-compose-v2; universe is already enabled in the

@@ -66,7 +66,10 @@ echo "Installing Ubuntu packages (Java 17, libraries; one-time, can take a few m
 proot-distro login "$DISTRO" -- /bin/bash -e -c '
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y -qq ca-certificates curl unzip libicu-dev libstdc++6 >/dev/null
+    # aapt: /usr/bin/aapt2 is the fallback the patcher build switches to when
+    # the aapt2 bundled in apktool.jar cannot run on this CPU (SIGILL) - the
+    # distro build targets the generic ARMv8-A baseline, so it works here.
+    apt-get install -y -qq ca-certificates curl unzip libicu-dev libstdc++6 aapt >/dev/null
     apt-get install -y -qq openjdk-17-jre-headless >/dev/null \
         || apt-get install -y -qq openjdk-21-jre-headless >/dev/null
     java -version 2>&1 | head -1
