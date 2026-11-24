@@ -58,6 +58,9 @@ public sealed class PatchJob
     /// <summary>Path of the uploaded, original APK/IPA.</summary>
     public required string InputPath { get; init; }
 
+    /// <summary>Optional resource pack (Android) the job patches in; kept so pages never delete a file a running job still needs (see <see cref="PatcherService.IsJobFilePath"/>).</summary>
+    public string? ResourcePackPath { get; init; }
+
     public required string InputFileName { get; init; }
 
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;

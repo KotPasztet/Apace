@@ -86,6 +86,11 @@ internal sealed class PatcherController : ControllerBase
             return BadRequest(ex is OperationCanceledException ? "Upload cancelled." : ex.Message);
         }
 
+        // record the fully-written upload so the patch job can verify its input
+        // (see PatcherService.VerifyInputFileAsync - the job waits for a racing
+        // upload instead of letting apktool fail on a half-written file)
+        PatcherService.RegisterCompletedUpload(targetPath, totalBytes);
+
         var verified = platform == PatchPlatform.Android
             ? hash == ApkProcessor.ApkHash
             : hash == IpaProcessor.IpaHash;
@@ -196,6 +201,11 @@ internal sealed class PatcherController : ControllerBase
 
         var extension = platform == PatchPlatform.Android ? ".apk" : ".ipa";
         var uploadDir = Path.Combine(PatcherService.BaseDir, "uploads");
+
+        // idempotent: the chunk endpoint created it already, but never let a
+        // wiped/re-created data dir turn the final move into a failure
+        Directory.CreateDirectory(uploadDir);
+
         var partPath = Path.Combine(uploadDir, $"{id:N}{extension}.part");
 
         if (!System.IO.File.Exists(partPath))
@@ -231,6 +241,10 @@ internal sealed class PatcherController : ControllerBase
         {
             return BadRequest("Upload cancelled.");
         }
+
+        // record the fully-written upload so the patch job can verify its input
+        // (see PatcherService.VerifyInputFileAsync)
+        PatcherService.RegisterCompletedUpload(targetPath, totalBytes);
 
         var verified = platform == PatchPlatform.Android
             ? hash == ApkProcessor.ApkHash

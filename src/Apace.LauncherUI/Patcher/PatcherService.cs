@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using MCEPatcher.Core;
@@ -98,6 +99,8 @@ public sealed class PatcherService
     /// <summary>
     /// Validates the request, queues the job and returns it immediately.
     /// Actual patching happens in the background; follow <see cref="PatchJob.Status"/>.
+    /// The input file's availability is verified (and, if needed, waited for) by the
+    /// background job itself - see <see cref="VerifyInputFileAsync"/>.
     /// </summary>
     public PatchJob CreateJob(PatchRequest request)
     {
@@ -119,6 +122,7 @@ public sealed class PatcherService
             WorkDir = Path.Combine(JobsDir, $"{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..8]}"),
             InputPath = request.InputPath,
             InputFileName = request.InputFileName,
+            ResourcePackPath = request.ResourcePackPath,
         };
 
         Directory.CreateDirectory(job.WorkDir);
@@ -173,6 +177,17 @@ public sealed class PatcherService
 
             job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] Starting {job.Platform} patch ({job.Mode} mode)");
 
+            // Make sure the uploaded input is really on disk and readable BEFORE
+            // apktool is launched. The upload and the job start are two independent
+            // client calls (XHR to /api/patcher/upload* vs. this call), and the page
+            // that uploaded the file used to delete it again when its circuit was
+            // torn down (the Generate anchor navigates that page away) - which made
+            // the FIRST patcher run after a server start die with apktool's cryptic
+            // "INPUT FILE ... WAS NOT FOUND OR WAS NOT READABLE". This verifies the
+            // file (waiting for a racing upload if needed) and, when it is really
+            // gone, fails the job with a precise message of its own.
+            await VerifyInputFileAsync(job);
+
             bool success = job.Platform == PatchPlatform.Android
                 ? await RunAndroidAsync(job, request)
                 : await RunIosAsync(job, request);
@@ -201,6 +216,145 @@ public sealed class PatcherService
             gate.Release();
             CleanupJobWorkingFiles(job);
             patchLock.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Completed uploads the server has fully written to disk: final path ->
+    /// (exact size, when it finished). Filled by the upload endpoints
+    /// (PatcherController) once a file is completely received, so that job start
+    /// can verify its input against authoritative data.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, (long Size, DateTimeOffset CompletedAt)> completedUploads =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Records a fully-written upload (called by the upload endpoints once the file is complete).</summary>
+    public static void RegisterCompletedUpload(string path, long size)
+    {
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            completedUploads[path] = (size, DateTimeOffset.UtcNow);
+        }
+    }
+
+    /// <summary>Forgets an upload record (the file was deleted or consumed by a finished job).</summary>
+    public static void DeregisterUpload(string path)
+    {
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            completedUploads.TryRemove(path, out _);
+        }
+    }
+
+    /// <summary>Size/completion time of a fully-received upload, if this path is one.</summary>
+    public static bool TryGetCompletedUpload(string path, out long size, out DateTimeOffset completedAt)
+    {
+        if (completedUploads.TryGetValue(path ?? "", out var record))
+        {
+            size = record.Size;
+            completedAt = record.CompletedAt;
+            return true;
+        }
+
+        size = 0;
+        completedAt = default;
+        return false;
+    }
+
+    /// <summary>
+    /// True while any queued or running job still needs this file (as its input
+    /// APK/IPA or its resource pack). Pages must not delete such a file - the
+    /// job will read it long after the page that uploaded it is gone.
+    /// </summary>
+    public bool IsJobFilePath(string path)
+    {
+        lock (jobsLock)
+        {
+            return jobs.Any(job => !job.IsFinished
+                && (string.Equals(job.InputPath, path, StringComparison.OrdinalIgnoreCase)
+                    || (job.ResourcePackPath is not null
+                        && string.Equals(job.ResourcePackPath, path, StringComparison.OrdinalIgnoreCase))));
+        }
+    }
+
+    /// <summary>
+    /// Verifies the job's input file is present and readable before apktool is
+    /// launched, so a lost upload never surfaces as apktool's cryptic
+    /// "INPUT FILE (...) WAS NOT FOUND OR WAS NOT READABLE".
+    ///
+    /// The upload and the job start are two independent client calls, so a
+    /// racing client may start the job while the file is still being written:
+    /// when the input is not usable yet, the job waits (bounded, 60 s) for it
+    /// to appear and stop growing instead of failing immediately. Only when it
+    /// never becomes readable does the job fail with a precise message.
+    /// </summary>
+    private static async Task VerifyInputFileAsync(PatchJob job)
+    {
+        const int TimeoutSeconds = 60;
+        const int PollMilliseconds = 500;
+
+        var path = job.InputPath;
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(TimeoutSeconds);
+        var announcedWait = false;
+        long lastLength = -1;
+
+        while (true)
+        {
+            if (TryMeasureReadableLength(path, out var length))
+            {
+                // the upload endpoints register the exact final size once a
+                // file is fully received - a matching length is authoritative
+                if (TryGetCompletedUpload(path, out var expected, out _) && length == expected)
+                {
+                    job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] Input file ready: {length} bytes.");
+                    return;
+                }
+
+                // unknown size (e.g. a third-party client): require the length
+                // to stop growing across two consecutive polls
+                if (length > 0 && length == lastLength)
+                {
+                    job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] Input file ready: {length} bytes.");
+                    return;
+                }
+
+                lastLength = length;
+            }
+
+            if (DateTimeOffset.UtcNow >= deadline)
+            {
+                break;
+            }
+
+            if (!announcedWait)
+            {
+                announcedWait = true;
+                job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [INF] The uploaded input file is not readable yet - waiting up to {TimeoutSeconds} s for the upload to finish...");
+            }
+
+            await Task.Delay(PollMilliseconds);
+        }
+
+        throw TryGetCompletedUpload(path, out _, out var completedAt)
+            ? new InvalidOperationException(
+                $"The uploaded input file '{path}' (fully received at {completedAt:yyyy-MM-dd HH:mm:ss} UTC) is missing or unreadable - it was most likely deleted while the job was starting (e.g. the uploading page was closed or removed the file before the patch could begin). Re-upload the original file and start the job again.")
+            : new InvalidOperationException(
+                $"The uploaded input file '{path}' was not found or was not readable within {TimeoutSeconds} s - the upload may have failed or the file was removed. Re-upload the original file and start the job again.");
+    }
+
+    /// <summary>Opens the file for reading to prove it exists AND is readable; false if it does not (yet).</summary>
+    private static bool TryMeasureReadableLength(string path, out long length)
+    {
+        try
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            length = fs.Length;
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            length = 0;
+            return false;
         }
     }
 
@@ -430,10 +584,17 @@ public sealed class PatcherService
 
     private static void Validate(PatchRequest request)
     {
-        if (!File.Exists(request.InputPath))
+        if (string.IsNullOrWhiteSpace(request.InputPath))
         {
-            throw new ArgumentException("The uploaded input file no longer exists.");
+            throw new ArgumentException("An uploaded input file is required.");
         }
+
+        // NOTE: the input file's existence is deliberately NOT checked here. The
+        // upload and the job start are two independent client calls that can race
+        // (a client may start the job before its upload request finishes), so the
+        // job itself verifies - and if needed waits for - the file (see
+        // VerifyInputFileAsync) and reports a precise error instead of failing the
+        // request outright while the upload is still in flight.
 
         if (request.Platform == PatchPlatform.Android)
         {
@@ -621,6 +782,15 @@ public sealed class PatcherService
         }
         catch
         {
+        }
+
+        // the job consumed its uploads - forget them in the completed-upload
+        // registry so it cannot grow without bound
+        DeregisterUpload(job.InputPath);
+
+        if (job.ResourcePackPath is not null)
+        {
+            DeregisterUpload(job.ResourcePackPath);
         }
     }
 }

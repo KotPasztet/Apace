@@ -1022,7 +1022,7 @@
 
         if (resourcePackPath is not null)
         {
-            TryDelete(resourcePackPath);
+            TryDeleteUpload(resourcePackPath);
         }
 
         var uploadDir = Path.Combine(PatcherService.BaseDir, "uploads");
@@ -1051,10 +1051,7 @@
         // abort an in-flight XHR upload, if any
         _ = JS.InvokeVoidAsync("apacePatcher.cancel");
 
-        if (uploadedPath is not null)
-        {
-            TryDelete(uploadedPath);
-        }
+        TryDeleteUpload(uploadedPath);
 
         uploadedPath = null;
         uploadedName = string.Empty;
@@ -1075,6 +1072,28 @@
         }
     }
 
+    /// <summary>
+    /// Deletes an uploaded file - but NEVER one that a queued or running job
+    /// still needs, and always forgets it in the completed-upload registry.
+    /// See <see cref="StartGeneration"/> for why the page must stop owning a
+    /// file the moment a job is created from it.
+    /// </summary>
+    private void TryDeleteUpload(string? path)
+    {
+        if (path is null)
+        {
+            return;
+        }
+
+        if (PatcherService.IsJobFilePath(path))
+        {
+            return; // a queued/running job still reads this file
+        }
+
+        PatcherService.DeregisterUpload(path);
+        TryDelete(path);
+    }
+
     private void StartGeneration()
     {
         if (uploadedPath is null)
@@ -1093,6 +1112,17 @@
         {
             var request = BuildRequest();
             var job = PatcherService.CreateJob(request);
+
+            // Ownership handoff: from here the JOB owns the uploaded file (it
+            // deletes it when it finishes - PatcherService.CleanupJobWorkingFiles).
+            // The page must forget the path immediately, because this very click
+            // also navigates the page away (the Generate anchor's default action)
+            // and the circuit teardown - Dispose() below - used to delete the
+            // file out from under the just-started job. That race was always
+            // lost by the FIRST patcher run after a server start (coldest JIT,
+            // first java/apktool spawns): apktool then died with
+            // "INPUT FILE (...) WAS NOT FOUND OR WAS NOT READABLE".
+            uploadedPath = null;
 
             // switch straight to the job view in-place - no navigation, the log
             // poller (PollAsync) keeps the detailed log lines updating live
@@ -1371,10 +1401,9 @@
         _ = JS.InvokeVoidAsync("apacePatcher.cancel");
 
         // orphaned uploads (never turned into a job) should not linger on disk
-        if (uploadedPath is not null)
-        {
-            TryDelete(uploadedPath);
-        }
+        // - but never delete a file a queued/running job still needs (see
+        // StartGeneration: a handed-off upload is no longer tracked here anyway)
+        TryDeleteUpload(uploadedPath);
     }
 }
 
