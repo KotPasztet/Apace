@@ -90,6 +90,29 @@ internal sealed class InventoryController : ApaceControllerBase
                     liveCount++;
                 }
             }
+
+            // ALSO every raw-index piece uuid (probe-dead, offer-hidden, emote —
+            // a client that cached such a piece from an earlier session still
+            // receives a stub for it) and every staticdata persona piece: a
+            // stub whose uuid carries no entitlement hangs the client's import
+            foreach (Guid pieceId in LivePersonaCatalog.GetAllIndexPieceIds())
+            {
+                if (!entitlements.ContainsKey(pieceId.ToString()))
+                {
+                    entitlements[pieceId.ToString()] = (ApaceContentKey, StableInstanceId(pieceId.ToString()));
+                    liveCount++;
+                }
+            }
+
+            foreach (CItem staticItem in Program.staticData.Playfab.Items.Values)
+            {
+                if (staticItem.Data is CItem.PersonaData staticPersona
+                    && !entitlements.ContainsKey(staticPersona.PieceId.ToString()))
+                {
+                    entitlements[staticPersona.PieceId.ToString()] = (ApaceContentKey, StableInstanceId(staticPersona.PieceId.ToString()));
+                    liveCount++;
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -203,7 +226,11 @@ internal sealed class InventoryController : ApaceControllerBase
             new Dictionary<string, object>()
             {
                 ["Items"] = Array.Empty<object>(),
-                ["ETag"] = "1/MQ==",
+                // bumped from 1/MQ== when live-piece entitlements first shipped:
+                // the client persists inventory responses (premium_cache/*.ent),
+                // so a fresh ETag value forces any cached receipt to be treated
+                // as stale — nothing server-side consumes this value
+                ["ETag"] = "2/MQ==",
                 ["ItemMetadata"] = Array.Empty<object>(),
                 ["Subscriptions"] = Array.Empty<object>(),
                 ["Receipt"] = receipt,

@@ -135,6 +135,12 @@ public static class CosmeticCompatIndex
         // LOWEST — a single legacy variant moves it below the band minimum.
         // Missing (older file) just skips the legacy-mix check.
         public string? LowestFormatVersion { get; set; }
+
+        // recorded since probe schema v5 — displaced-render signals for the
+        // head family; older fact files leave them null (unknown, serving)
+        public float? MaxVisibleBoundsWidth { get; set; }
+        public float? MaxVisibleBoundsHeight { get; set; }
+        public bool? HasNonstandardBones { get; set; }
     }
 
     /// <summary>
@@ -310,6 +316,23 @@ public static class CosmeticCompatIndex
         if (facts.HasFaceBones == true && pieceType is "persona_face_accessory")
         {
             effects.Add("face bones (face-accessory rig 1.19.50/1.20.10, MCPE-165232)");
+        }
+
+        // custom rig bones + oversized bounds — displaced/stretched renders on
+        // the frozen client; scoped to the head family exactly like the gate
+        // (PersonaPieceTypes): hair exempt (ponytails), back/outerwear exempt
+        // (wings exceed bounds). Keep in sync with the gate's thresholds.
+        if (pieceType is "persona_head" or "persona_eyes" or "persona_mouth" or "persona_face_accessory")
+        {
+            if (facts.HasNonstandardBones == true)
+            {
+                effects.Add("custom rig bones (the client binds only the standard player bones)");
+            }
+
+            if (facts.MaxVisibleBoundsWidth > 2.0f || facts.MaxVisibleBoundsHeight > 3.0f)
+            {
+                effects.Add($"oversized bounds ({facts.MaxVisibleBoundsWidth}x{facts.MaxVisibleBoundsHeight})");
+            }
         }
 
         if (effects.Count > 0)

@@ -308,6 +308,14 @@ public static class LivePersonaCatalog
     public static LiveIndexItem? GetIndexEntry(string itemId)
         => Index?.Items.FirstOrDefault(item => item.Id == itemId);
 
+    /// <summary>Every piece uuid in the raw live index — probe-dead, offer-hidden
+    /// and emote entries included. The receipt must cover uuids a client may
+    /// still hold from earlier sessions: a dead or unoffered piece still
+    /// receives a stub, and a stub whose uuid carries no receipt entitlement
+    /// hangs the client's import forever.</summary>
+    public static IReadOnlyList<Guid> GetAllIndexPieceIds()
+        => Index?.Items.Select(item => item.PieceId).Distinct().ToList() ?? [];
+
     /// <summary>unlock-all: the offer item is a plain free item, whatever the marketplace says.</summary>
     public static CItem BuildOfferItem(LiveIndexItem entry)
     {
@@ -481,7 +489,10 @@ public static class LivePersonaCatalog
         // null (null = not scanned, not disqualifying on their own).
         bool? HasRenderControllers = null,
         bool? HasFaceBones = null,
-        string? LowestFormatVersion = null);
+        string? LowestFormatVersion = null,
+        float? MaxVisibleBoundsWidth = null,
+        float? MaxVisibleBoundsHeight = null,
+        bool? HasNonstandardBones = null);
 
     private sealed class ProbeStateFile
     {
@@ -1071,7 +1082,13 @@ public static class LivePersonaCatalog
                 && entry.PieceType is not "persona_skin")
             {
                 IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(cancellationToken);
-                if (allowed.Count == 0 || !ThemeTagsOf(entry).Any(allowed.Contains))
+                // filler pieces were OFFERED to the player (CatalogController
+                // mirrors its pool into PersonaPackGate.FillerExemptItemIds) —
+                // their binaries download like any offered piece; gating them
+                // here again would force every filler piece outside the
+                // selected packs onto the gray placeholder stub
+                if (!PersonaPackGate.FillerExemptItemIds.Contains(itemId)
+                    && (allowed.Count == 0 || !ThemeTagsOf(entry).Any(allowed.Contains)))
                 {
                     LogPackGateRefusalOnce(itemId, allowed.Count == 0 ? "no packs selected" : "theme tags outside the selected packs", logger);
                     return false;
@@ -1342,7 +1359,11 @@ public static class LivePersonaCatalog
     // marketplace pieces are per-file encrypted (meta/geometry/textures carry
     // keys in the encrypted contents.json), so every scan before v3 read
     // ciphertext and recorded all-unknown facts for most real pieces).
-    private const int GeometryCompatSchemaVersion = 4;
+    // v5: visible_bounds + custom rig bones recorded — the displaced-render
+    // gate for head-family pieces ("Squid head" and friends). Bumping the
+    // schema discards every stale fact file so the new facts are re-captured
+    // from the binaries on disk.
+    private const int GeometryCompatSchemaVersion = 5;
 
     private const int MaxCompatEntryBytes = 2 * 1024 * 1024;
 
@@ -1364,7 +1385,7 @@ public static class LivePersonaCatalog
     /// disk that no request has touched yet. Returns false when nothing is known
     /// for the item (never seen on disk, or the zip could not be parsed).
     /// </summary>
-    public static bool TryGetGeometryCompat(string itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones)
+    public static bool TryGetGeometryCompat(string itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones, out float? maxVisibleBoundsWidth, out float? maxVisibleBoundsHeight, out bool? hasNonstandardBones)
     {
         lock (StateLock)
         {
@@ -1377,9 +1398,14 @@ public static class LivePersonaCatalog
                 hasParticles = known.HasParticles;
                 hasRenderControllers = known.HasRenderControllers;
                 hasFaceBones = known.HasFaceBones;
+                maxVisibleBoundsWidth = known.MaxVisibleBoundsWidth;
+                maxVisibleBoundsHeight = known.MaxVisibleBoundsHeight;
+                hasNonstandardBones = known.HasNonstandardBones;
                 return formatVersion is not null || lowestFormatVersion is not null
                     || known.HasAnimations is not null || known.HasParticles is not null
-                    || known.HasRenderControllers is not null || known.HasFaceBones is not null;
+                    || known.HasRenderControllers is not null || known.HasFaceBones is not null
+                    || known.MaxVisibleBoundsWidth is not null || known.MaxVisibleBoundsHeight is not null
+                    || known.HasNonstandardBones is not null;
             }
         }
 
@@ -1416,9 +1442,14 @@ public static class LivePersonaCatalog
                     hasParticles = captured.HasParticles;
                     hasRenderControllers = captured.HasRenderControllers;
                     hasFaceBones = captured.HasFaceBones;
+                    maxVisibleBoundsWidth = captured.MaxVisibleBoundsWidth;
+                    maxVisibleBoundsHeight = captured.MaxVisibleBoundsHeight;
+                    hasNonstandardBones = captured.HasNonstandardBones;
                     return formatVersion is not null || lowestFormatVersion is not null
                         || captured.HasAnimations is not null || captured.HasParticles is not null
-                        || captured.HasRenderControllers is not null || captured.HasFaceBones is not null;
+                        || captured.HasRenderControllers is not null || captured.HasFaceBones is not null
+                        || captured.MaxVisibleBoundsWidth is not null || captured.MaxVisibleBoundsHeight is not null
+                        || captured.HasNonstandardBones is not null;
                 }
             }
         }
@@ -1429,6 +1460,9 @@ public static class LivePersonaCatalog
         hasParticles = null;
         hasRenderControllers = null;
         hasFaceBones = null;
+        maxVisibleBoundsWidth = null;
+        maxVisibleBoundsHeight = null;
+        hasNonstandardBones = null;
         return false;
     }
 
@@ -1595,6 +1629,21 @@ public static class LivePersonaCatalog
     // hat/head rig bones the frozen client renders fine.
     private static readonly HashSet<string> FaceBoneNames = new(StringComparer.OrdinalIgnoreCase) { "face", "hat", "head" };
 
+    // The standard player-rig bone names the frozen client binds correctly.
+    // Pieces carrying ANY bone outside this set (whole-head replacements with
+    // invented bone trees — "Squid head", "Jelly UFO head" — custom tentacle
+    // chains, floating props) render DISPLACED/STRETCHED on the frozen client:
+    // the bones the client cannot bind leave their cubes at raw local
+    // coordinates. Recorded as a per-piece FACT — whether it marks the piece
+    // risky is the gate's call (PersonaPieceTypes scopes it to head-family
+    // types; hair is exempt — ponytails legitimately add bones).
+    private static readonly HashSet<string> StandardRigBoneNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "root", "waist", "body", "head", "hat", "cape",
+        "leftArm", "rightArm", "leftLeg", "rightLeg",
+        "leftSleeve", "rightSleeve", "leftPants", "rightPants", "jacket",
+    };
+
     private static GeometryCompatInfo? InspectCompatEntries(List<CompatEntry> entries)
     {
         // Worst case wins across EVERY geometry of the piece — real pieces carry
@@ -1614,6 +1663,9 @@ public static class LivePersonaCatalog
         bool? hasParticles = null;
         bool? hasRenderControllers = null;
         bool? hasFaceBones = null;
+        float? maxBoundsWidth = null;
+        float? maxBoundsHeight = null;
+        bool? hasNonstandardBones = null;
         bool sawGeometry = false;
         bool sawMetaOrManifest = false;
 
@@ -1776,6 +1828,10 @@ public static class LivePersonaCatalog
                 {
                     hasFaceBones = true;
                 }
+
+                // visible bounds + custom rig bones — oversized and custom-rigged
+                // head pieces render displaced/stretched on the frozen client
+                ScanRigShape(root);
             }
             catch (JsonException)
             {
@@ -1783,7 +1839,8 @@ public static class LivePersonaCatalog
             }
         }
 
-        if (!sawGeometry && highest is null && !sawMetaOrManifest && hasAnimations is not true && hasParticles is not true && hasRenderControllers is not true && hasFaceBones is not true)
+        if (!sawGeometry && highest is null && !sawMetaOrManifest && hasAnimations is not true && hasParticles is not true && hasRenderControllers is not true && hasFaceBones is not true
+            && maxBoundsWidth is null && maxBoundsHeight is null && hasNonstandardBones is not true)
         {
             return null; // nothing inspectable in the zip — all fields unknown
         }
@@ -1796,8 +1853,67 @@ public static class LivePersonaCatalog
         hasParticles ??= sawMetaOrManifest ? false : null;
         hasRenderControllers ??= sawGeometry || sawMetaOrManifest ? false : null;
         hasFaceBones ??= sawGeometry ? false : null;
+        hasNonstandardBones ??= sawGeometry ? false : null;
 
-        return new GeometryCompatInfo(highestText, hasAnimations, hasParticles, hasRenderControllers, hasFaceBones, lowestText);
+        return new GeometryCompatInfo(highestText, hasAnimations, hasParticles, hasRenderControllers, hasFaceBones, lowestText, maxBoundsWidth, maxBoundsHeight, hasNonstandardBones);
+
+        // The description objects of modern minecraft:geometry entries — where
+    // visible_bounds_width/height live. Legacy 1.8.0 wrappers carry none, so
+    // the bounds stay null and the gate serves (fail-open, like every fact).
+    static IEnumerable<JsonElement> GeometryDescriptions(JsonElement root)
+    {
+        if (root.TryGetProperty("minecraft:geometry", out JsonElement geometries)
+            && geometries.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement geometry in geometries.EnumerateArray())
+            {
+                if (geometry.ValueKind == JsonValueKind.Object
+                    && geometry.TryGetProperty("description", out JsonElement description)
+                    && description.ValueKind == JsonValueKind.Object)
+                {
+                    yield return description;
+                }
+            }
+        }
+    }
+
+    void ScanRigShape(JsonElement root)
+    {
+        foreach (JsonElement description in GeometryDescriptions(root))
+        {
+            if (description.TryGetProperty("visible_bounds_width", out JsonElement width)
+                && width.ValueKind == JsonValueKind.Number
+                && width.TryGetSingle(out float w)
+                && (maxBoundsWidth is null || w > maxBoundsWidth))
+            {
+                maxBoundsWidth = w;
+            }
+
+            if (description.TryGetProperty("visible_bounds_height", out JsonElement height)
+                && height.ValueKind == JsonValueKind.Number
+                && height.TryGetSingle(out float h)
+                && (maxBoundsHeight is null || h > maxBoundsHeight))
+            {
+                maxBoundsHeight = h;
+            }
+        }
+
+        foreach (JsonElement bones in BoneLists(root))
+        {
+            foreach (JsonElement bone in bones.EnumerateArray())
+            {
+                if (bone.ValueKind == JsonValueKind.Object
+                    && bone.TryGetProperty("name", out JsonElement name)
+                    && name.ValueKind == JsonValueKind.String
+                    && name.GetString() is { Length: > 0 } boneName
+                    && !StandardRigBoneNames.Contains(boneName)
+                    && !FaceBoneNames.Contains(boneName))
+                {
+                    hasNonstandardBones = true;
+                }
+            }
+        }
+    }
     }
 
     // Bedrock format versions are "1.21.0" / "1.16.200" style strings — parse

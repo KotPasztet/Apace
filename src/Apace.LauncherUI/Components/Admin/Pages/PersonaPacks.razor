@@ -519,7 +519,8 @@
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots), _jsonOptions));
             _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
-                + (_onlySupported ? "only client-supported cosmetics." : "client-compatibility filter off.");
+                + (_onlySupported ? "only client-supported cosmetics. " : "client-compatibility filter off. ")
+                + "Changes apply after a game restart — if they don't take effect, clear the game app's cache.";
         }
         catch (Exception ex)
         {

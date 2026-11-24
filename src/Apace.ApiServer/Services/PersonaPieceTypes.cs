@@ -191,7 +191,7 @@ public static class PersonaPieceTypes
 
         // 2. the metadata pipeline's recorded geometry facts (worst case
         // across the piece's geometry variants)
-        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones))
+        if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out string? formatVersion, out string? lowestFormatVersion, out bool? hasAnimations, out bool? hasParticles, out bool? hasRenderControllers, out bool? hasFaceBones, out float? maxVisibleBoundsWidth, out float? maxVisibleBoundsHeight, out bool? hasNonstandardBones))
         {
             return new CosmeticGateVerdict(true, "unknown — no compat metadata, nothing proves breakage");
         }
@@ -235,6 +235,28 @@ public static class PersonaPieceTypes
         if (hasFaceBones == true && pieceType is "persona_face_accessory")
         {
             return new CosmeticGateVerdict(false, "face bones in the piece geometry (MCPE-165232 — the face-accessory rig)");
+        }
+
+        // Custom rig bones + oversized bounds render DISPLACED/STRETCHED on the
+        // frozen client (the "rozjeżdżające się" cosmetics: whole-head
+        // replacements with invented bone trees — "Squid head", "Jelly UFO
+        // head" — whose unbindable bones leave their cubes at raw local
+        // coordinates, and pieces extending far beyond the head slot). Scoped
+        // to the head family: hair is exempt (ponytails legitimately add
+        // bones), back/outerwear exempt (wings exceed bounds), body/limb types
+        // keep their legacy behavior. Null facts (legacy 1.8.0 geometry has no
+        // visible_bounds) serve — the filter only hides on positive evidence.
+        if (pieceType is "persona_head" or "persona_eyes" or "persona_mouth" or "persona_face_accessory")
+        {
+            if (hasNonstandardBones == true)
+            {
+                return new CosmeticGateVerdict(false, "custom rig bones in the piece geometry (the frozen client binds only the standard player bones — these render displaced)");
+            }
+
+            if (maxVisibleBoundsWidth > 2.0f || maxVisibleBoundsHeight > 3.0f)
+            {
+                return new CosmeticGateVerdict(false, $"oversized head geometry (visible bounds {maxVisibleBoundsWidth}x{maxVisibleBoundsHeight} — extends far beyond the head slot)");
+            }
         }
 
         return new CosmeticGateVerdict(true, $"geometry format_version {formatVersion}, in the supported band with no effect signals");

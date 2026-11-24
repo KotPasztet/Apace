@@ -408,6 +408,12 @@ internal sealed class CatalogController : ApaceControllerBase
         _fillerCandidates = [.. candidates];
         _fillerItemIds = ids;
         _fillerStamp = stamp;
+        // mirror the pool into the binary-fetch pipeline's exemption set — the
+        // CDN proxy and GetPublishedItem allow these ids, and with this the lazy
+        // fetch does too (previously filler pieces outside the selected packs
+        // were gate-refused there and always stubbed)
+        PersonaPackGate.FillerExemptItemIds.Clear();
+        PersonaPackGate.FillerExemptItemIds.UnionWith(ids);
         Log.Information("Blank-slot filler pool rebuilt: {Count} candidate piece(s) (index stamp {IndexStamp}, config stamp {ConfigStamp})",
             _fillerCandidates.Length, LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp);
     }

@@ -58,6 +58,15 @@ public static class PersonaPackGate
     private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
     private static long _configStamp;
 
+    // Item ids currently offered as blank-slot filler (CatalogController.RefreshFiller
+    // mirrors its pool here). The binary fetch pipeline consults this set: filler
+    // pieces were OFFERED to players like any other piece, so their binaries
+    // download like any offered piece too — without the exemption the lazy fetch
+    // re-ran the pack gate WITHOUT it (the controller's own serve check has it)
+    // and every filler piece outside the selected packs was forced onto the gray
+    // placeholder stub.
+    public static readonly HashSet<string> FillerExemptItemIds = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Max geometry format_version the frozen client renders (packs.json
     /// "maxGeometryFormatVersion", default "1.16.0") — at or past it, UV rotation /
     /// per-face UV / transform pivots break. Consumed by the actual gate math in
