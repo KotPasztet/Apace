@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Apace.ApiServer.Models.Playfab;
 using Apace.ApiServer.Services;
+using CItem = Apace.StaticData.Playfab.Item;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -47,11 +48,12 @@ internal sealed class InventoryController : ApaceControllerBase
         ("5cae9ae7-bf1b-4ee2-8edd-9615743ea02c", "9e3f4a6c-b5d7-4182-ac43-7e6f8a9bac03"), // Apace Cape 512
     ];
 
-    private static string BuildReceiptToken(out int entitlementCount, out int customCount)
+    private static string BuildReceiptToken(out int entitlementCount, out int customCount, out int liveCount)
     {
-        // custom cosmetics first, then the built-in Apace capes — the merge dedupes
-        // by FriendlyId (pack uuid) with the panel's custom entries taking
-        // precedence over a same-named built-in pack
+        // custom cosmetics first, then the built-in Apace capes, then every
+        // live persona piece — the merge dedupes by FriendlyId (pack uuid)
+        // with the panel's custom entries taking precedence over a same-named
+        // built-in pack
         var entitlements = new Dictionary<string, (string ContentKey, string InstanceId)>(StringComparer.OrdinalIgnoreCase);
         foreach (var custom in CustomCosmetics.Entitlements)
         {
@@ -65,6 +67,33 @@ internal sealed class InventoryController : ApaceControllerBase
             {
                 entitlements[e.FriendlyId] = (ApaceContentKey, e.InstanceId);
             }
+        }
+
+        // every live persona piece the offer can serve (stub OR real binary —
+        // both encrypt contents.json with the same built-in Skin&Persona key)
+        // must carry a receipt entitlement: the client registers
+        // FriendlyId→ContentKey in its ContentKeyMap and consults it when
+        // loading contents.json — a pack uuid without a registered key leaves
+        // the import await pending forever (download 200 OK → silence →
+        // SetObjects never reached). This was exactly the difference between
+        // the working set (3 capes + customs = the receipted set) and every
+        // stubbed live piece.
+        liveCount = 0;
+        try
+        {
+            foreach (CItem item in LivePersonaCatalog.GetOfferItems())
+            {
+                if (item.Data is CItem.PersonaData persona
+                    && !entitlements.ContainsKey(persona.PieceId.ToString()))
+                {
+                    entitlements[persona.PieceId.ToString()] = (ApaceContentKey, StableInstanceId(persona.PieceId.ToString()));
+                    liveCount++;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "could not enumerate live persona pieces for receipt entitlements");
         }
 
         if (customCount > 0)
@@ -165,8 +194,9 @@ internal sealed class InventoryController : ApaceControllerBase
     public async Task<ContentHttpResult> GetInventoryItems()
     {
         await ReadBodyAsync();
-        var receipt = BuildReceiptToken(out int entitlementCount, out int customCount);
-        Log.Information("inventory GetInventoryItems serving {Count} content-key entitlements ({Custom} custom cosmetic(s))", entitlementCount, customCount);
+        var receipt = BuildReceiptToken(out int entitlementCount, out int customCount, out int liveCount);
+        Log.Information("inventory GetInventoryItems serving {Count} content-key entitlements ({Custom} custom cosmetic(s), {Live} live persona piece(s))",
+            entitlementCount, customCount, liveCount);
         return JsonPascalCase(new PlayfabOkResponse(
             200,
             "OK",

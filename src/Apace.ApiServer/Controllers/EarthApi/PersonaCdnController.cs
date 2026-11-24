@@ -161,6 +161,16 @@ public class PersonaCdnController : ControllerBase
             }
         }
 
+        // the ContentIdentity the stub advertises MUST match what the catalog
+        // promised (packIdentity PieceId) and MUST have a receipt entitlement —
+        // log both facts per serve; an unindexed id (fallback to the raw item
+        // guid) can never equip, even with receipts
+        Log.Information(
+            "Placeholder {File}: ContentIdentity {PieceId}, piece type {PieceType}{Unindexed}",
+            fileName, pieceId, string.IsNullOrWhiteSpace(pieceType) ? "?" : pieceType,
+            pieceId == itemGuid.ToString()
+                ? " — UNINDEXED id: no live-index/staticdata/custom metadata resolved, the client cannot equip this"
+                : "");
         LogPlaceholderOnce(fileName);
         return TypedResults.Stream(new MemoryStream(PersonaStubBinary.Build(pieceId, pieceType)), "application/zip", fileDownloadName: fileName);
     }
