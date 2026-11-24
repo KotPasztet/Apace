@@ -150,6 +150,18 @@ public sealed class Settings
     public bool? PersonaAutoRepairRigs { get; set; }
 
     /// <summary>
+    /// EXPERIMENTAL, DEFAULT OFF (Marketplace Management page, "extra skeleton"
+    /// mode dropdown, packs.json "customSkeletonMode"): what the ApiServer does
+    /// with cosmetics carrying a custom (non-standard) rig the frozen client
+    /// cannot bind. "strip" removes every custom bone from the served geometry
+    /// and merges its cubes into the nearest standard bone (rigid render,
+    /// nothing flies apart); "flatOnly" does the same at serve time AND hides
+    /// every custom-skeleton piece from the offer so only "flat" cosmetics are
+    /// listed. Treat null/"" as off.
+    /// </summary>
+    public string? PersonaSkeletonMode { get; set; }
+
+    /// <summary>
     /// Suppresses the "no packs selected" popup at server start (the
     /// ServerStatus page's "Never show again" button). Null/false = the popup
     /// shows whenever no packs are selected.

@@ -7,27 +7,41 @@ using Serilog;
 
 namespace Apace.ApiServer.Services;
 
-// EXPERIMENTAL serve-time auto rig repairer for 3D-broken cosmetics (packs.json
-// "experimentalAutoRepairRigs", DEFAULT OFF — PersonaPackGate). Pieces flagged
-// risky ONLY because of non-standard ("custom") bones — whole-head replacements
-// with invented bone trees ("Squid head", "Jelly UFO head") — render DISPLACED
-// on the frozen MCE client: it binds only the standard player rig bones, and
-// every bone outside that set leaves its cubes at raw local coordinates, so the
-// model scatters. When the knob is on, this class rewrites the piece binary at
-// serve time: every custom bone that is the ROOT of a custom subtree (its
-// parent is absent or a standard/face bone) is re-parented onto the standard
-// "head" bone; deeper custom-bone → custom-bone links stay untouched, so each
-// subtree hangs together under head and the client can bind the whole chain.
+// EXPERIMENTAL serve-time rig fixer for 3D-broken cosmetics (packs.json
+// "experimentalAutoRepairRigs" re-parent, DEFAULT OFF — PersonaPackGate; plus
+// the "customSkeletonMode" knob: "strip" / "flatOnly"). Pieces flagged risky
+// ONLY because of non-standard ("custom") bones — whole-head replacements with
+// invented bone trees ("Squid head", "Jelly UFO head") — render DISPLACED on
+// the frozen MCE client: it binds only the standard player rig bones, and
+// every bone outside that set leaves its cubes at raw local coordinates, so
+// the model scatters. Two transforms, both rewrite the piece binary at serve
+// time:
 //
-// Why changing only "parent" is correct: the codebase never parses bone pivots
-// (the compat probe records bone NAMES, format versions and visible bounds —
-// LivePersonaCatalog.ScanRigShape), so nothing here can contradict the format
-// semantics it was verified against: in Bedrock geometry (format_version
-// >= 1.12.0) bone "pivot", cube "origin" and cube "pivot" are ABSOLUTE
-// model-space coordinates, not relative to the parent bone — the "parent" field
-// only supplies the transform hierarchy the client binds against. Leaving
-// every coordinate verbatim and touching only "parent" therefore cannot move
-// any geometry at rest; it just gives the unbindable roots a bindable parent.
+//  - REPAIR (re-parent, "experimentalAutoRepairRigs"): every custom bone that
+//    is the ROOT of a custom subtree is re-parented onto the standard "head"
+//    bone; deeper custom-bone → custom-bone links stay untouched, so each
+//    subtree hangs together under head and the client can bind the whole
+//    chain.
+//  - STRIP (packs.json "customSkeletonMode": "strip" or "flatOnly"): every
+//    custom bone is REMOVED and its cubes merge into the nearest standard
+//    ancestor bone — the served geometry only contains standard bones, so it
+//    renders rigidly on the standard rig and nothing can fly apart. In
+//    Flat-only mode the offer additionally HIDES every custom-skeleton piece
+//    (PersonaPieceTypes hideCustomSkeleton) so only "flat" cosmetics are
+//    listed; the strip still applies to binaries a cached client requests.
+//
+// Why moving cubes between bones cannot move any VERTICES: the codebase never
+// parses bone pivots (the compat probe records bone NAMES, format versions and
+// visible bounds — LivePersonaCatalog.ScanRigShape), so nothing here can
+// contradict the format semantics it was verified against: in Bedrock geometry
+// (format_version >= 1.12.0) bone "pivot", cube "origin" and cube "pivot" are
+// ABSOLUTE model-space coordinates, not relative to the parent bone. On the
+// frozen client an unbindable custom bone ignores its own pivot/rotation
+// entirely — its cubes render at their raw absolute coordinates, which is the
+// observed displaced-but-stationary rest pose. Merging those cubes into the
+// standard ancestor (keeping every coordinate verbatim, dropping only the dead
+// bone nodes) therefore reproduces the exact rest pose AND makes the cubes
+// follow the ancestor the client actually binds.
 //
 // Container handling mirrors the compat probe (LivePersonaCatalog
 // .CollectZipEntries / InspectCompatEntries) exactly: piece binaries are an
@@ -50,16 +64,31 @@ namespace Apace.ApiServer.Services;
 public static class PersonaRigRepairer
 {
     /// <summary>The short cache-identity marker worked into the ETags of
-    /// repaired pieces ("r1") — a repaired piece's identity differs from the
-    /// unrepaired bytes, so clients re-download after the admin flips the
-    /// toggle. Bump it if the transform itself ever changes meaningfully.</summary>
-    public const string RepairMarker = "r1";
+    /// rewritten pieces — a rewritten piece's identity differs from the
+    /// original bytes, so clients re-download after the admin flips a knob.
+    /// Bump it if a transform itself ever changes meaningfully ("r2": the
+    /// strip transform joined the re-parent repair).</summary>
+    public const string RepairMarker = "r2";
 
-    // The bone the custom subtree roots are re-parented onto. The head slot is
-    // where the repair applies (the gate scopes custom bones to the head
-    // family — PersonaPieceTypes.IsHeadFamilyPieceType), and "head" is one of
-    // the standard player bones the frozen client provably binds (it shipped
-    // with hundreds of hat/head-rigged pieces).
+    /// <summary>The marker the server currently serves for rewritten pieces —
+    /// mode-aware ("r2-strip" while a strip mode is active, "r2" for the plain
+    /// re-parent repair) so flipping between the knobs is also an identity
+    /// change the client can see.</summary>
+    public static string CurrentServeMarker
+        => PersonaPackGate.CustomSkeletonMode switch
+        {
+            PersonaPackGate.CustomSkeletonModes.Strip => $"{RepairMarker}-strip",
+            PersonaPackGate.CustomSkeletonModes.FlatOnly => $"{RepairMarker}-flat",
+            _ => RepairMarker,
+        };
+
+    // The bone custom subtree roots are re-parented onto (repair), and the
+    // fallback hoist target for stripped cubes whose whole bone chain is
+    // custom (strip). The head slot is where the repair applies (the gate
+    // scopes custom bones to the head family — PersonaPieceTypes
+    // .IsHeadFamilyPieceType), and "head" is one of the standard player bones
+    // the frozen client provably binds (it shipped with hundreds of
+    // hat/head-rigged pieces).
     private const string RepairParentBone = "head";
 
     // Outer zip + ppack0.zip + (exotic) deeper layers — mirrors how far the
@@ -72,8 +101,8 @@ public static class PersonaRigRepairer
 
     // Repaired binaries are cheap to rebuild and few in number (only head
     // pieces whose sole risk signal is custom bones) — a small cache keyed by
-    // item id with the SOURCE file stamp validates them; beyond the cap the
-    // cache clears rather than grows.
+    // "<mode>|<item id>" with the SOURCE file stamp validates them; beyond the
+    // cap the cache clears rather than grows.
     private const int MaxCachedPieces = 64;
 
     private static readonly ConcurrentDictionary<string, (long Stamp, RepairedBinary Binary)> RepairCache = new(StringComparer.OrdinalIgnoreCase);
@@ -87,17 +116,19 @@ public static class PersonaRigRepairer
     public sealed record RepairedBinary(byte[] Bytes, string ETag);
 
     /// <summary>
-    /// True when the piece's geometry should be rewritten at serve time: the
-    /// experimental toggle is on, the piece is head-family (same scoping as
-    /// the v5 bone check), its recorded compat facts show custom bones, and
-    /// the repair-aware verdict confirms custom bones were the ONLY risk
-    /// signal (any other signal — format version, effects, oversized bounds,
-    /// an explicit compat-verdicts.json override — still hides the piece, and
-    /// the repair fixes bones only, so it must not touch those).
+    /// True when the piece's geometry should be REWRITTEN at serve time with
+    /// the active transform (strip when a customSkeletonMode is set, re-parent
+    /// otherwise under the experimental repair toggle): the piece is
+    /// head-family (same scoping as the v5 bone check), its recorded compat
+    /// facts show custom bones, and the transform-aware verdict confirms
+    /// custom bones were the ONLY risk signal (any other signal — format
+    /// version, effects, oversized bounds, an explicit compat-verdicts.json
+    /// override — still hides the piece, and the transform fixes bones only,
+    /// so it must not touch those).
     /// </summary>
     public static bool IsRepairCandidate(string itemId, string? pieceType)
     {
-        if (!PersonaPackGate.ExperimentalAutoRepairRigs || !PersonaPieceTypes.IsHeadFamilyPieceType(pieceType))
+        if (!PersonaPackGate.ServeTimeTransformActive || !PersonaPieceTypes.IsHeadFamilyPieceType(pieceType))
         {
             return false;
         }
@@ -108,6 +139,8 @@ public static class PersonaRigRepairer
             return false;
         }
 
+        // hideCustomSkeleton: false — the serve-time caller strips instead of
+        // hiding, whatever the offer-side Flat-only rule decided
         return PersonaPieceTypes.EvaluateCosmetic(itemId, pieceType, allowRigRepair: true) is { Supported: true, RepairedRig: true };
     }
 
@@ -146,48 +179,52 @@ public static class PersonaRigRepairer
             return null;
         }
 
-        if (RepairCache.TryGetValue(itemId, out (long Stamp, RepairedBinary Binary) cached) && cached.Stamp == stamp)
+        // the transform identity rides in the cache key: flipping between the
+        // repair and the strip knob rebuilds instead of serving stale output
+        string cacheKey = $"{PersonaPackGate.CustomSkeletonMode}|{itemId}";
+        if (RepairCache.TryGetValue(cacheKey, out (long Stamp, RepairedBinary Binary) cached) && cached.Stamp == stamp)
         {
             return cached.Binary;
         }
 
-        var repairedBones = new List<string>();
-        byte[]? repaired = null;
+        bool strip = PersonaPackGate.CustomSkeletonMode != PersonaPackGate.CustomSkeletonModes.Off;
+        var transformedBones = new List<string>();
+        byte[]? transformed = null;
         try
         {
-            repaired = RewriteLayer(original, fileKeys: null, firstNestedReadsOwnKeys: true, repairedBones, MaxLayers);
+            transformed = RewriteLayer(original, fileKeys: null, firstNestedReadsOwnKeys: true, transformedBones, MaxLayers, strip);
         }
         catch (Exception ex)
         {
             logger.Warning(ex, "Auto rig repair could not rewrite {Item} ({Path}) — serving the original binary", itemId, zipPath);
         }
 
-        if (repaired is null || repairedBones.Count == 0)
+        if (transformed is null || transformedBones.Count == 0)
         {
             return null; // unparsable / binary-only / no repairable bones — skip silently
         }
 
-        var binary = new RepairedBinary(repaired, BuildEtag(itemId, stamp));
+        var binary = new RepairedBinary(transformed, BuildEtag(itemId, stamp));
         if (RepairCache.Count >= MaxCachedPieces)
         {
             RepairCache.Clear();
         }
 
-        RepairCache[itemId] = (stamp, binary);
-        LogRepairedOnce(itemId, repairedBones);
+        RepairCache[cacheKey] = (stamp, binary);
+        LogTransformedOnce(itemId, transformedBones, strip);
         return binary;
     }
 
-    /// <summary>The stable serve-time ETag for a repaired piece: the short
-    /// repair marker ("r1") plus an FNV-1a fingerprint of the SOURCE file
-    /// stamp (mtime + size, folded without GetHashCode — that is
+    /// <summary>The stable serve-time ETag for a rewritten piece: the mode
+    /// marker (CurrentServeMarker) plus an FNV-1a fingerprint of the SOURCE
+    /// file stamp (mtime + size, folded without GetHashCode — that is
     /// process-randomized and would break restart stability) plus the item id.
     /// Deterministic, so it survives restarts unchanged while the toggle state
-    /// and the source bytes are unchanged; flipping the toggle off stops the
+    /// and the source bytes are unchanged; flipping a knob off stops the
     /// marker from being served at all, which is the identity change that
     /// makes clients re-fetch.</summary>
     private static string BuildEtag(string itemId, long stamp)
-        => $"\"{RepairMarker}-{Fnv1a(BitConverter.GetBytes(stamp)):x8}-{itemId}\"";
+        => $"\"{CurrentServeMarker}-{Fnv1a(BitConverter.GetBytes(stamp)):x8}-{itemId}\"";
 
     // mtime + size folded into one identity: a re-mirrored or re-uploaded
     // binary produces a different stamp (fresh repair), an untouched file
@@ -206,7 +243,7 @@ public static class PersonaRigRepairer
         return hash;
     }
 
-    private static void LogRepairedOnce(string itemId, List<string> bones)
+    private static void LogTransformedOnce(string itemId, List<string> bones, bool strip)
     {
         lock (RepairedLogged)
         {
@@ -216,8 +253,16 @@ public static class PersonaRigRepairer
             }
         }
 
-        Log.Information("Auto rig repair served {Item}: re-parented custom bone(s) {Bones} onto \"{Bone}\" (packs.json experimentalAutoRepairRigs)",
-            itemId, string.Join(", ", bones), RepairParentBone);
+        if (strip)
+        {
+            Log.Information("Skeleton strip served {Item}: removed custom bone(s) {Bones} — their cubes merged into the nearest standard bone (packs.json customSkeletonMode: {Mode})",
+                itemId, string.Join(", ", bones), PersonaPackGate.CustomSkeletonMode);
+        }
+        else
+        {
+            Log.Information("Auto rig repair served {Item}: re-parented custom bone(s) {Bones} onto \"{Bone}\" (packs.json experimentalAutoRepairRigs)",
+                itemId, string.Join(", ", bones), RepairParentBone);
+        }
     }
 
     // One line per UNREPAIRED piece that carries custom bones while the knob
@@ -228,9 +273,9 @@ public static class PersonaRigRepairer
 
     private static void LogSkipOnce(string itemId, string? pieceType, Serilog.ILogger logger)
     {
-        if (!PersonaPackGate.ExperimentalAutoRepairRigs)
+        if (!PersonaPackGate.ServeTimeTransformActive)
         {
-            return; // the knob is off — the repairer is not supposed to do anything
+            return; // every knob is off — the rewriter is not supposed to do anything
         }
 
         if (!LivePersonaCatalog.TryGetGeometryCompat(itemId, out _, out _, out _, out _, out _, out _, out _, out _, out bool? hasNonstandardBones, out _)
@@ -248,11 +293,11 @@ public static class PersonaRigRepairer
         }
 
         string reason = !PersonaPieceTypes.IsHeadFamilyPieceType(pieceType)
-            ? $"the piece type \"{pieceType ?? "?"}\" is not head-family (the repair scopes to head/eyes/mouth/face-accessory)"
+            ? $"the piece type \"{pieceType ?? "?"}\" is not head-family (the rewriter scopes to head/eyes/mouth/face-accessory)"
             : PersonaPieceTypes.EvaluateCosmetic(itemId, pieceType, allowRigRepair: true) is { Supported: false } blocked
                 ? $"the compat gate still blocks it: {blocked.Reason}"
-                : "the verdict passed but the container produced no repair (unparsable content or nothing repairable)";
-        Log.Information("Auto rig repair ON but {Item} was served UNREPAIRED: {Reason}", itemId, reason);
+                : "the verdict passed but the container produced no rewrite (unparsable content or nothing repairable)";
+        Log.Information("Rig rewriter ON but {Item} was served UNCHANGED: {Reason}", itemId, reason);
     }
 
     // ---------------------------------------------------------------------------
@@ -269,7 +314,7 @@ public static class PersonaRigRepairer
     /// new container bytes; throws only on structural zip failures (the caller
     /// catches and serves the original).
     /// </summary>
-    private static byte[] RewriteLayer(byte[] zipBytes, Dictionary<string, string>? fileKeys, bool firstNestedReadsOwnKeys, List<string> repairedBones, int depth)
+    private static byte[] RewriteLayer(byte[] zipBytes, Dictionary<string, string>? fileKeys, bool firstNestedReadsOwnKeys, List<string> transformedBones, int depth, bool strip)
     {
         using var sourceStream = new MemoryStream(zipBytes);
         using var sourceArchive = new ZipArchive(sourceStream, ZipArchiveMode.Read, leaveOpen: false);
@@ -295,12 +340,12 @@ public static class PersonaRigRepairer
                             Dictionary<string, string>? childKeys = firstNestedReadsOwnKeys
                                 ? TryReadLayerKeys(originalBytes) ?? fileKeys
                                 : fileKeys;
-                            payload = RewriteLayer(originalBytes, childKeys, firstNestedReadsOwnKeys: false, repairedBones, depth - 1);
+                            payload = RewriteLayer(originalBytes, childKeys, firstNestedReadsOwnKeys: false, transformedBones, depth - 1, strip);
                         }
                     }
                     else
                     {
-                        payload = PatchJsonEntry(originalBytes, fileKeys, entry, repairedBones);
+                        payload = PatchJsonEntry(originalBytes, fileKeys, entry, transformedBones, strip);
                     }
                 }
 
@@ -327,12 +372,13 @@ public static class PersonaRigRepairer
         => entry.CompressedLength == entry.Length && entry.Length > 0 ? CompressionLevel.NoCompression : CompressionLevel.Optimal;
 
     /// <summary>Patches ONE .json entry: decrypts it when the layer's key map
-    /// holds a key for it, applies the bone re-parenting when it holds a
-    /// geometry structure, and re-encrypts with the same key when it was
-    /// decrypted (the client's contents.json keeps validating). Null = leave
-    /// the entry byte-identical (not a geometry, nothing repairable, or the
-    /// key did not decrypt — foreign/corrupt content is never rewritten).</summary>
-    private static byte[]? PatchJsonEntry(byte[] bytes, Dictionary<string, string>? fileKeys, ZipArchiveEntry entry, List<string> repairedBones)
+    /// holds a key for it, applies the active bone transform (strip or
+    /// re-parent) when it holds a geometry structure, and re-encrypts with the
+    /// same key when it was decrypted (the client's contents.json keeps
+    /// validating). Null = leave the entry byte-identical (not a geometry,
+    /// nothing repairable, or the key did not decrypt — foreign/corrupt
+    /// content is never rewritten).</summary>
+    private static byte[]? PatchJsonEntry(byte[] bytes, Dictionary<string, string>? fileKeys, ZipArchiveEntry entry, List<string> transformedBones, bool strip)
     {
         string? fileKey = null;
         if (fileKeys is not null
@@ -347,7 +393,9 @@ public static class PersonaRigRepairer
             bytes = decrypted;
         }
 
-        byte[]? patched = PatchGeometry(bytes, repairedBones);
+        byte[]? patched = strip
+            ? StripGeometry(bytes, transformedBones)
+            : PatchGeometry(bytes, transformedBones);
         if (patched is null)
         {
             return null;
@@ -475,6 +523,261 @@ public static class PersonaRigRepairer
         }
 
         return Encoding.UTF8.GetBytes(root.ToJsonString());
+    }
+
+    /// <summary>STRIP: removes every custom bone from the geometry and merges
+    /// its cubes into the nearest standard/face ancestor bone, so the served
+    /// skeleton contains ONLY bones the frozen client binds and the piece
+    /// renders rigidly (nothing can fly apart). Returns null when the content
+    /// is not a geometry structure or nothing was stripped — the entry then
+    /// stays byte-identical.
+    ///
+    /// Safety: cube "origin"/"pivot" are ABSOLUTE model-space coordinates, so
+    /// moving a cube from an unbindable bone into a bindable ancestor changes
+    /// no vertex position at rest (the frozen client ignored the dead bone's
+    /// pivot/rotation entirely — that was the displaced rest pose) and the
+    /// cubes start following the ancestor the client actually binds. The
+    /// stripped bones' locators are dropped with them ("almost completely" by
+    /// design); a custom bone whose WHOLE chain has no standard ancestor above
+    /// it keeps its own cubes attached to itself when the bones list carries
+    /// no bindable fallback bone at all — its custom children are still
+    /// stripped and their cubes bubble up to it.</summary>
+    private static byte[]? StripGeometry(byte[] plainJson, List<string> strippedBones)
+    {
+        string text = Encoding.UTF8.GetString(plainJson);
+        if (text.Length > 0 && text[0] == '\uFEFF')
+        {
+            text = text[1..]; // strip a UTF-8 BOM — the strict parser throws on it
+        }
+
+        JsonNode? parsed;
+        try
+        {
+            parsed = JsonNode.Parse(text, documentOptions: LenientJson);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        if (parsed is not JsonObject root || !HoldsGeometry(root))
+        {
+            return null;
+        }
+
+        int changed = 0;
+        foreach (JsonArray bones in BoneLists(root))
+        {
+            changed += StripBoneList(bones, strippedBones);
+        }
+
+        if (changed == 0)
+        {
+            return null;
+        }
+
+        return Encoding.UTF8.GetBytes(root.ToJsonString());
+    }
+
+    private static int StripBoneList(JsonArray bones, List<string> strippedBones)
+    {
+        // name → bone, so parent links resolve (first occurrence wins for
+        // duplicate names)
+        var byName = new Dictionary<string, JsonObject>(StringComparer.OrdinalIgnoreCase);
+        foreach (JsonNode? node in bones)
+        {
+            if (node is JsonObject bone
+                && GetBoneName(bone) is { Length: > 0 } name)
+            {
+                byName.TryAdd(name, bone);
+            }
+        }
+
+        var visited = new HashSet<JsonObject>(ReferenceEqualityComparer.Instance);
+        int changed = 0;
+
+        foreach (JsonNode? node in bones.ToList()) // snapshot — bones get removed inside
+        {
+            if (node is not JsonObject bone
+                || visited.Contains(bone)
+                || GetBoneName(bone) is not { Length: > 0 } boneName)
+            {
+                continue;
+            }
+
+            string? parentName = GetParentName(bone);
+            bool parentIsCustom = parentName is not null
+                && byName.TryGetValue(parentName, out JsonObject? parentBone)
+                && IsCustomBone(parentName, parentBone);
+            if (parentIsCustom)
+            {
+                continue; // reached through its custom parent's recursion
+            }
+
+            // top of a subtree: recursion strips the custom descendants and
+            // bubbles their cubes up; a null return means the bone stayed
+            List<JsonNode>? hoisted = ProcessBone(bone, bones, visited, strippedBones, ref changed);
+
+            if (hoisted is { Count: > 0 })
+            {
+                // the recursion root itself was custom — merge everything into
+                // its bindable parent, else "head", else any standard bone
+                JsonObject? target = null;
+                if (parentName is not null
+                    && byName.TryGetValue(parentName, out JsonObject? parent)
+                    && !IsCustomBone(parentName, parent))
+                {
+                    target = parent;
+                }
+
+                target ??= FindFallbackBone(bones);
+                if (target is not null)
+                {
+                    AttachCubes(target, hoisted);
+                    bones.Remove(bone);
+                }
+                else
+                {
+                    // no bindable bone anywhere in this list — keep the root
+                    // (its custom children were still stripped and their cubes
+                    // bubble up to it, which is the client's rest pose anyway)
+                    AttachCubes(bone, hoisted);
+                    strippedBones.RemoveAll(candidate => string.Equals(candidate, boneName, StringComparison.Ordinal));
+                }
+            }
+
+            visited.Add(bone);
+        }
+
+        return changed;
+    }
+
+    // Post-order strip of one bone subtree. Returns the cubes to bubble up to
+    // the nearest bindable ancestor when the bone itself was custom (null when
+    // the bone stayed — its own cubes plus everything its stripped children
+    // hoisted are re-attached in place).
+    private static List<JsonNode>? ProcessBone(JsonObject bone, JsonArray bones, HashSet<JsonObject> visited, List<string> strippedBones, ref int changed)
+    {
+        visited.Add(bone);
+        string boneName = GetBoneName(bone)!;
+        bool custom = IsCustomBone(boneName, bone);
+
+        List<JsonNode> hoist = [];
+        List<JsonNode> own = DetachCubes(bone);
+
+        // recurse into the bones parented to this one (snapshot — they get
+        // removed when stripped)
+        foreach (JsonNode? childNode in bones.ToList())
+        {
+            if (childNode is not JsonObject child
+                || visited.Contains(child)
+                || GetBoneName(child) is not { Length: > 0 } childName
+                || !string.Equals(GetParentName(child), boneName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            List<JsonNode>? childHoist = ProcessBone(child, bones, visited, strippedBones, ref changed);
+            if (childHoist is not null)
+            {
+                hoist.AddRange(childHoist);
+                bones.Remove(child);
+            }
+        }
+
+        if (custom)
+        {
+            strippedBones.Add(boneName);
+            changed++;
+            hoist.InsertRange(0, own);
+            return hoist;
+        }
+
+        AttachCubes(bone, own);
+        AttachCubes(bone, hoist);
+        return null;
+    }
+
+    private static string? GetBoneName(JsonObject bone)
+        => bone["name"] is JsonValue nameValue && nameValue.TryGetValue(out string? name) ? name : null;
+
+    private static string? GetParentName(JsonObject bone)
+        => bone["parent"] is JsonValue parentValue && parentValue.TryGetValue(out string? parent) ? parent : null;
+
+    // custom bone = outside the standard player rig AND outside the
+    // face-attachment set (hat/head bones the client renders fine) — the exact
+    // sets the compat probe records bones with, so the strip never removes a
+    // bone the client binds
+    private static bool IsCustomBone(string boneName, JsonObject bone)
+        => !LivePersonaCatalog.StandardRigBoneNames.Contains(boneName)
+            && !LivePersonaCatalog.FaceBoneNames.Contains(boneName);
+
+    private static JsonObject? FindFallbackBone(JsonArray bones)
+    {
+        JsonObject? firstStandard = null;
+        foreach (JsonNode? node in bones)
+        {
+            if (node is not JsonObject bone
+                || GetBoneName(bone) is not { Length: > 0 } name)
+            {
+                continue;
+            }
+
+            if (string.Equals(name, RepairParentBone, StringComparison.OrdinalIgnoreCase))
+            {
+                return bone; // "head" — the preferred hoist target for head-family pieces
+            }
+
+            if (firstStandard is null
+                && LivePersonaCatalog.StandardRigBoneNames.Contains(name))
+            {
+                firstStandard = bone;
+            }
+        }
+
+        return firstStandard;
+    }
+
+    // Detaches the bone's "cubes" member and returns its cube nodes
+    // parentless, ready to attach elsewhere (a JsonNode can only have one
+    // parent — re-adding a still-attached node throws).
+    private static List<JsonNode> DetachCubes(JsonObject bone)
+    {
+        var cubes = new List<JsonNode>();
+        if (bone["cubes"] is JsonArray array)
+        {
+            foreach (JsonNode? cube in array.ToList())
+            {
+                if (cube is not null)
+                {
+                    array.Remove(cube);
+                    cubes.Add(cube);
+                }
+            }
+
+            bone.Remove("cubes");
+        }
+
+        return cubes;
+    }
+
+    private static void AttachCubes(JsonObject bone, List<JsonNode> cubes)
+    {
+        if (cubes.Count == 0)
+        {
+            return;
+        }
+
+        if (bone["cubes"] is not JsonArray array)
+        {
+            array = [];
+            bone["cubes"] = array;
+        }
+
+        foreach (JsonNode cube in cubes)
+        {
+            array.Add(cube);
+        }
     }
 
     // Geometry detection by CONTENT, same as the probe: a minecraft:geometry

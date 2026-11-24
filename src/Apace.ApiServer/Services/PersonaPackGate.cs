@@ -34,8 +34,24 @@ public static class PersonaPackGate
 {
     public const int DefaultCategoryLimit = 45;
 
+    /// <summary>The "customSkeletonMode" knob (packs.json, default off): what
+    /// the server does with cosmetics that carry a custom (non-standard) rig —
+    /// the invented bone trees ("Squid head" tentacle chains) the frozen client
+    /// cannot bind, which render scattered. Off serves them as-is (hidden by
+    /// the compat gate while onlySupported is on); Strip rewrites the served
+    /// geometry so every custom bone is REMOVED and its cubes merge into the
+    /// nearest standard bone (rigid, nothing can fly apart); FlatOnly does the
+    /// same at serve time AND hides every custom-skeleton piece from the offer
+    /// so only "flat" cosmetics are listed.</summary>
+    public enum CustomSkeletonModes
+    {
+        Off = 0,
+        Strip = 1,
+        FlatOnly = 2,
+    }
+
     private sealed record PackConfig(List<string>? DefaultPacks, int? CategoryLimit, bool? OnlySupported,
-        string? MaxGeometryFormatVersion, bool? FillBlankSlots, bool? ExperimentalAutoRepairRigs);
+        string? MaxGeometryFormatVersion, bool? FillBlankSlots, bool? ExperimentalAutoRepairRigs, string? CustomSkeletonMode);
 
     // Documented default compat threshold (see PersonaPieceTypes.IsSupportedCosmetic):
     // geometry format_version at or past the max breaks on the frozen client
@@ -57,6 +73,7 @@ public static class PersonaPackGate
     private static bool _onlySupported = true;
     private static bool _fillBlankSlots = true;
     private static bool _experimentalAutoRepairRigs;
+    private static CustomSkeletonModes _customSkeletonMode;
     private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
     private static long _configStamp;
 
@@ -132,6 +149,24 @@ public static class PersonaPackGate
     /// </summary>
     public static bool ExperimentalAutoRepairRigs => _experimentalAutoRepairRigs;
 
+    /// <summary>The packs.json "customSkeletonMode" knob (default Off, see
+    /// <see cref="CustomSkeletonModes"/>). Hot-reloaded with the rest of the
+    /// config; unparsable values fall back to Off.</summary>
+    public static CustomSkeletonModes CustomSkeletonMode => _customSkeletonMode;
+
+    /// <summary>True when a serve-time geometry transform is active at all —
+    /// the experimental auto-rig repair (re-parent) or the custom-skeleton
+    /// stripper. The compat gate lets custom-bones-only head pieces through
+    /// only while this is true (they are rewritten at serve time instead of
+    /// being hidden).</summary>
+    public static bool ServeTimeTransformActive
+        => _experimentalAutoRepairRigs || _customSkeletonMode != CustomSkeletonModes.Off;
+
+    /// <summary>True in Flat-only mode (packs.json "customSkeletonMode":
+    /// "flatOnly") — the offer hides every piece with custom bones so only
+    /// "flat" cosmetics serve.</summary>
+    public static bool FlatOnlyActive => _customSkeletonMode == CustomSkeletonModes.FlatOnly;
+
     /// <summary>The packs.json hot-reload stamp (mtime ticks) — the filler
     /// candidate cache keys off it, so a panel save rebuilds the filler set.</summary>
     public static long ConfigStamp
@@ -174,6 +209,7 @@ public static class PersonaPackGate
                     _onlySupported = true;
                     _fillBlankSlots = true;
                     _experimentalAutoRepairRigs = false;
+                    _customSkeletonMode = CustomSkeletonModes.Off;
                     _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
                     Log.Information("Persona pack config gone from {Path} — no packs configured, the live marketplace serves nothing until packs are selected", ConfigPath);
                 }
@@ -193,21 +229,33 @@ public static class PersonaPackGate
             _onlySupported = loaded?.OnlySupported ?? true;
             _fillBlankSlots = loaded?.FillBlankSlots ?? true;
             _experimentalAutoRepairRigs = loaded?.ExperimentalAutoRepairRigs ?? false;
+            _customSkeletonMode = ParseCustomSkeletonMode(loaded?.CustomSkeletonMode);
             _maxGeometryFormatVersion = ParseVersion(loaded?.MaxGeometryFormatVersion, DefaultMaxGeometryFormatVersion);
             _configStamp = stamp;
-            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}, experimental auto rig repair: {AutoRepairRigs}",
+            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}, experimental auto rig repair: {AutoRepairRigs}, custom skeleton mode: {CustomSkeletonMode}",
                 ConfigPath, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
                 _categoryLimit == 0 ? "none" : _categoryLimit.ToString(),
                 _onlySupported,
                 _fillBlankSlots,
                 _maxGeometryFormatVersion.ToString(),
-                _experimentalAutoRepairRigs);
+                _experimentalAutoRepairRigs,
+                _customSkeletonMode);
         }
         catch (Exception ex)
         {
             Log.Warning(ex, "Could not load the persona pack config from {Path}", ConfigPath);
         }
     }
+
+    // "off" / "strip" / "flatOnly" (case-insensitive, JSON-friendly camelCase
+    // like the rest of the file) — anything else falls back to Off.
+    private static CustomSkeletonModes ParseCustomSkeletonMode(string? value)
+        => value?.Trim().ToLowerInvariant() switch
+        {
+            "strip" => CustomSkeletonModes.Strip,
+            "flatonly" or "flat-only" or "flat" => CustomSkeletonModes.FlatOnly,
+            _ => CustomSkeletonModes.Off,
+        };
 
     // "1.21.0" / "1.16.200" style threshold strings — leading numeric components,
     // zero-padded to four; unparsable values fall back to the default.

@@ -79,14 +79,16 @@ public static class CosmeticCompatIndex
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    // The "maxGeometryFormatVersion" + "experimentalAutoRepairRigs" halves of
-    // packs.json (the panel writes the file itself — these ride along in the
-    // same save) — stamp-cached like the ApiServer's PersonaPackGate load,
-    // missing/unparsable falls back to the defaults.
+    // The "maxGeometryFormatVersion" + "experimentalAutoRepairRigs" +
+    // "customSkeletonMode" halves of packs.json (the panel writes the file
+    // itself — these ride along in the same save) — stamp-cached like the
+    // ApiServer's PersonaPackGate load, missing/unparsable falls back to the
+    // defaults.
     private sealed class PacksKnobs
     {
         public string? MaxGeometryFormatVersion { get; set; }
         public bool? ExperimentalAutoRepairRigs { get; set; }
+        public string? CustomSkeletonMode { get; set; }
     }
 
     public static string PacksPath
@@ -95,6 +97,7 @@ public static class CosmeticCompatIndex
     private static (long Mtime, long Length) _packsStamp;
     private static Version _maxGeometryFormatVersion = DefaultMaxSupportedFormatVersion;
     private static bool _experimentalAutoRepairRigs;
+    private static string _customSkeletonMode = "off";
 
     private static void EnsureKnobsLoaded()
     {
@@ -110,6 +113,12 @@ public static class CosmeticCompatIndex
                     ? parsed
                     : DefaultMaxSupportedFormatVersion;
                 _experimentalAutoRepairRigs = file?.ExperimentalAutoRepairRigs ?? false;
+                _customSkeletonMode = file?.CustomSkeletonMode?.Trim().ToLowerInvariant() switch
+                {
+                    "strip" => "strip",
+                    "flatonly" or "flat-only" or "flat" => "flatOnly",
+                    _ => "off",
+                };
             }
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
@@ -138,6 +147,20 @@ public static class CosmeticCompatIndex
         {
             EnsureKnobsLoaded();
             return _experimentalAutoRepairRigs;
+        }
+    }
+
+    /// <summary>The packs.json "customSkeletonMode" knob (default off),
+    /// mirrored from the ApiServer's PersonaPackGate — "strip"/"flatOnly"
+    /// remove the custom bones from served geometry (Flat-only additionally
+    /// hides custom-skeleton pieces from the offer), so custom-bone pieces
+    /// badge as auto-repairable under either knob.</summary>
+    private static string CustomSkeletonMode
+    {
+        get
+        {
+            EnsureKnobsLoaded();
+            return _customSkeletonMode;
         }
     }
 
@@ -245,10 +268,11 @@ public static class CosmeticCompatIndex
             var map = new Dictionary<string, CosmeticCompatInfo>(geometry.Count, StringComparer.OrdinalIgnoreCase);
             Version maxGeometry = MaxGeometryFormatVersion;
             bool autoRepairRigs = ExperimentalAutoRepairRigs;
+            string skeletonMode = CustomSkeletonMode;
             Dictionary<string, string> pieceTypes = LoadPieceTypes();
             foreach (var (itemId, facts) in geometry)
             {
-                map[itemId] = Classify(facts, maxGeometry, pieceTypes.GetValueOrDefault(itemId), autoRepairRigs);
+                map[itemId] = Classify(facts, maxGeometry, pieceTypes.GetValueOrDefault(itemId), autoRepairRigs, skeletonMode);
             }
 
             return map;
@@ -312,7 +336,7 @@ public static class CosmeticCompatIndex
         }
     }
 
-    private static CosmeticCompatInfo Classify(GeometryFacts? facts, Version maxGeometry, string? pieceType, bool autoRepairRigs)
+    private static CosmeticCompatInfo Classify(GeometryFacts? facts, Version maxGeometry, string? pieceType, bool autoRepairRigs, string skeletonMode = "off")
     {
         if (facts is null)
         {
@@ -377,11 +401,14 @@ public static class CosmeticCompatIndex
         // auto-repairable below; oversized bounds or any other effect signal
         // still mean Risky (the repair fixes bones only).
         bool repairableBones = false;
+        bool stripMode = skeletonMode is "strip" or "flatOnly";
         if (pieceType is "persona_head" or "persona_eyes" or "persona_mouth" or "persona_face_accessory")
         {
             if (facts.HasNonstandardBones == true)
             {
-                if (autoRepairRigs)
+                // a serve-time transform is active under either knob: the
+                // experimental re-parent repair, or the custom-skeleton strip
+                if (autoRepairRigs || stripMode)
                 {
                     repairableBones = true;
                 }
@@ -408,7 +435,9 @@ public static class CosmeticCompatIndex
         {
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.AutoRepairable,
-                $"{versionText} — custom rig bones are the only breakage signal and the experimental auto-rig-repair re-parents them onto \"head\" at serve time");
+                stripMode
+                    ? $"{versionText} — custom rig bones are the only breakage signal and the experimental skeleton strip removes them at serve time (packs.json customSkeletonMode)"
+                    : $"{versionText} — custom rig bones are the only breakage signal and the experimental auto-rig-repair re-parents them onto \"head\" at serve time");
         }
 
         return new CosmeticCompatInfo(

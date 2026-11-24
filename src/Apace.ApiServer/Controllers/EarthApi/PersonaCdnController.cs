@@ -94,13 +94,15 @@ public class PersonaCdnController : ControllerBase
             return TypedResults.NotFound();
         }
 
-        // EXPERIMENTAL auto-rig repair (packs.json "experimentalAutoRepairRigs",
-        // DEFAULT OFF): head-family pieces whose ONLY compat risk is custom rig
-        // bones get their geometry re-parented onto the standard "head" bone at
-        // serve time so the frozen client can bind it (PersonaRigRepairer). Not
-        // a candidate, unparsable content or nothing repairable → the original
-        // file serves exactly as before; the repaired bytes carry the repair
-        // marker in their ETag so clients re-download after the toggle flips.
+        // EXPERIMENTAL serve-time rig rewriter (packs.json
+        // "experimentalAutoRepairRigs" re-parent, DEFAULT OFF; packs.json
+        // "customSkeletonMode" "strip"/"flatOnly" removes the custom bones
+        // entirely): head-family pieces whose ONLY compat risk is custom rig
+        // bones get their geometry rewritten at serve time so the frozen client
+        // can bind it (PersonaRigRepairer). Not a candidate, unparsable content
+        // or nothing repairable → the original file serves exactly as before;
+        // the rewritten bytes carry the rewriter marker in their ETag so
+        // clients re-download after a knob flips.
         if (isGuidName)
         {
             try

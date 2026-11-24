@@ -293,7 +293,9 @@ internal sealed class CatalogController : ApaceControllerBase
             {
                 string itemId = item.Id.ToString();
                 PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(
-                    itemId, item.DisplayProperties?.PieceType, PersonaPackGate.ExperimentalAutoRepairRigs);
+                    itemId, item.DisplayProperties?.PieceType,
+                    allowRigRepair: PersonaPackGate.ServeTimeTransformActive,
+                    hideCustomSkeleton: PersonaPackGate.FlatOnlyActive);
                 if (!compat.Supported)
                 {
                     PersonaPieceTypes.LogCompatVerdictOnce("catalog offer", itemId, compat.Reason);
@@ -396,7 +398,10 @@ internal sealed class CatalogController : ApaceControllerBase
                 continue; // probed dead — its binary would hang the client, never fill with it
             }
 
-            if (onlySupported && !PersonaPieceTypes.EvaluateCosmetic(itemId, pieceType, PersonaPackGate.ExperimentalAutoRepairRigs).Supported)
+            if (onlySupported && !PersonaPieceTypes.EvaluateCosmetic(
+                    itemId, pieceType,
+                    allowRigRepair: PersonaPackGate.ServeTimeTransformActive,
+                    hideCustomSkeleton: PersonaPackGate.FlatOnlyActive).Supported)
             {
                 continue; // the supported-only gate applies to filler exactly like to pack-selected pieces
             }
@@ -1056,19 +1061,18 @@ internal sealed class CatalogController : ApaceControllerBase
     {
         string host = $"{(request.IsHttps ? "https://" : "http://")}{request.Host.Value}";
 
-        // Cache identity for the experimental auto-rig repair: a piece whose
-        // verdict passed ONLY because of the repair (custom bones were its
-        // sole risk signal) carries the short repair marker in its catalog
-        // ETag, so its identity differs from the unrepaired bytes and clients
-        // re-download after the admin flips the toggle. Deterministic per
-        // toggle state — stable across restarts while the toggle is
-        // unchanged; null (as before) for everything else. The same marker is
-        // served on the binary response (PersonaCdnController /
-        // PersonaRigRepairer).
+        // Cache identity for the serve-time rig rewriter (repair / strip): a
+        // piece whose verdict passed ONLY because a transform is active (custom
+        // bones were its sole risk signal) carries the rewriter marker in its
+        // catalog ETag, so its identity differs from the unrepaired bytes and
+        // clients re-download after the admin flips a knob. Deterministic per
+        // knob state — stable across restarts while the knobs are unchanged;
+        // null (as before) for everything else. The same marker is served on
+        // the binary response (PersonaCdnController / PersonaRigRepairer).
         string? etag = item.DisplayProperties?.PieceType is { } pieceType
-            && PersonaPackGate.ExperimentalAutoRepairRigs
+            && PersonaPackGate.ServeTimeTransformActive
             && PersonaPieceTypes.EvaluateCosmetic(item.Id.ToString(), pieceType, allowRigRepair: true) is { Supported: true, RepairedRig: true }
-                ? PersonaRigRepairer.RepairMarker
+                ? PersonaRigRepairer.CurrentServeMarker
                 : item.ETag;
 
         return item with

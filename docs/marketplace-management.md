@@ -45,10 +45,30 @@ no restart needed.
   ONLY because of custom rig bones get their geometry rewritten at serve time:
   each custom bone-subtree root is re-parented onto the standard `head` bone
   so the frozen client can bind it and the model holds together instead of
-  scattering. Repaired binaries carry a repair marker (`r1`) in their ETag so
-  clients re-download after the toggle flips; oversized, animated or
-  format-flagged pieces are never repaired (they stay hidden). Each repaired
-  piece logs one line (item id + bones re-parented) in the ApiServer log.
+  scattering. Rewritten binaries carry a rewriter marker (`r2`) in their ETag
+  so clients re-download after a knob flips; oversized, animated or
+  format-flagged pieces are never rewritten (they stay hidden). Each rewritten
+  piece logs one line (item id + bones) in the ApiServer log — and when a knob
+  is ON but a custom-boned piece was served UNCHANGED, one line explains why
+  (piece type out of scope, gate blocks, nothing repairable).
+
+- **Experimental: extra skeleton handling** (packs.json `customSkeletonMode`,
+  default `off`) — what the server does with the invented bone trees the
+  frozen client cannot bind (the scattered "3D" cosmetics):
+  - `off` — serve as they are (hidden by the supported-cosmetics gate).
+  - `strip` — every custom bone is REMOVED from the served geometry and its
+    cubes merge into the nearest standard bone (cube coordinates are absolute
+    model-space values, so nothing moves at rest — the part just follows the
+    bone the client actually binds instead of flying apart).
+  - `flatOnly` — the strip applies at serve time AND the offer HIDES every
+    piece with a custom skeleton (hair included), so only "flat" cosmetics
+    are listed.
+  Rewritten binaries carry the mode marker (`r2-strip` / `r2-flat`) in their
+  ETag; the strip scopes to the head family exactly like the repair (hair
+  keeps its ponytail exemption at offer level in strip mode; Flat-only hides
+  custom-boned hair too — only flat things serve). Pieces a client already
+  downloaded are cached client-side and only refresh after the client
+  re-downloads them (fresh install / cleared app cache).
 
 ## Pack filtering (defaults and grants)
 

@@ -63,6 +63,21 @@
             </label>
         </div>
 
+        <div class="row g-2 align-items-center mb-3">
+            <div class="col-12 col-lg-5">
+                <label class="form-label small text-muted mb-1" for="skeleton-mode">
+                    <strong>Experimental: extra skeleton handling</strong>
+                    <span class="text-muted small">— default off (experimental).</span>
+                </label>
+                <select class="form-select form-select-sm" id="skeleton-mode" @bind="_skeletonMode">
+                    <option value="off">Off — serve cosmetics as they are</option>
+                    <option value="strip">Strip the custom skeleton — merge its cubes into the standard bone (rigid)</option>
+                    <option value="flatOnly">Flat-only — strip AND hide every piece with a custom skeleton (only flat things)</option>
+                </select>
+                <div class="form-text small">Removes the invented bone trees the game cannot bind (scattered "3D" cosmetics). Applies to newly downloaded pieces — clients cache pieces they already have.</div>
+            </div>
+        </div>
+
         <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" id="fill-blank-slots" @bind="_fillBlankSlots" />
             <label class="form-check-label" for="fill-blank-slots">
@@ -317,7 +332,16 @@
     // allowed pack set (default packs ∪ player grants) — accessories serve only
     // when one of their theme tags is in the set (tagless accessories never
     // serve), skins and skin packs serve regardless.
-    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit, bool FillBlankSlots, bool ExperimentalAutoRepairRigs);
+    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit, bool FillBlankSlots, bool ExperimentalAutoRepairRigs, string CustomSkeletonMode);
+
+    // the packs.json "customSkeletonMode" vocabulary — anything unknown is off
+    private static string NormalizeSkeletonMode(string? value)
+        => value?.Trim().ToLowerInvariant() switch
+        {
+            "strip" => "strip",
+            "flatonly" or "flat-only" or "flat" => "flatOnly",
+            _ => "off",
+        };
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
 
@@ -355,6 +379,7 @@
     private bool _onlySupported = true;
     private bool _fillBlankSlots = true;
     private bool _autoRepairRigs;
+    private string _skeletonMode = "off";
     private int _categoryLimit = 45;
     private HashSet<string> _defaults = [];
     private HashSet<string> _grants = [];
@@ -405,6 +430,7 @@
         _onlySupported = Settings.Instance.PersonaOnlySupportedCosmetics ?? true;
         _fillBlankSlots = Settings.Instance.PersonaFillBlankSlots ?? true;
         _autoRepairRigs = Settings.Instance.PersonaAutoRepairRigs ?? false;
+        _skeletonMode = NormalizeSkeletonMode(Settings.Instance.PersonaSkeletonMode);
         _categoryLimit = Math.Max(0, Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit);
         _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
 
@@ -517,6 +543,7 @@
             Settings.Instance.PersonaOnlySupportedCosmetics = _onlySupported;
             Settings.Instance.PersonaFillBlankSlots = _fillBlankSlots;
             Settings.Instance.PersonaAutoRepairRigs = _autoRepairRigs;
+            Settings.Instance.PersonaSkeletonMode = _skeletonMode;
             Settings.Instance.PersonaDefaultPacks = [.. _defaults];
             Settings.Instance.Save(Settings.DefaultPath);
 
@@ -528,10 +555,11 @@
             // non-empty set enforces tag filtering.
             string path = Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "packs.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots, _autoRepairRigs), _jsonOptions));
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots, _autoRepairRigs, NormalizeSkeletonMode(_skeletonMode)), _jsonOptions));
             _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
                 + (_onlySupported ? "only client-supported cosmetics. " : "client-compatibility filter off. ")
                 + (_autoRepairRigs ? "Experimental rig auto-repair on. " : "")
+                + (_skeletonMode == "off" ? "" : _skeletonMode == "flatOnly" ? "Flat-only mode: custom skeletons stripped and hidden. " : "Custom skeletons stripped at serve time. ")
                 + "Changes apply after a game restart — if they don't take effect, clear the game app's cache.";
         }
         catch (Exception ex)
