@@ -292,7 +292,8 @@ internal sealed class CatalogController : ApaceControllerBase
             if (onlySupported)
             {
                 string itemId = item.Id.ToString();
-                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId, item.DisplayProperties?.PieceType);
+                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(
+                    itemId, item.DisplayProperties?.PieceType, PersonaPackGate.ExperimentalAutoRepairRigs);
                 if (!compat.Supported)
                 {
                     PersonaPieceTypes.LogCompatVerdictOnce("catalog offer", itemId, compat.Reason);
@@ -395,7 +396,7 @@ internal sealed class CatalogController : ApaceControllerBase
                 continue; // probed dead — its binary would hang the client, never fill with it
             }
 
-            if (onlySupported && !PersonaPieceTypes.EvaluateCosmetic(itemId, pieceType).Supported)
+            if (onlySupported && !PersonaPieceTypes.EvaluateCosmetic(itemId, pieceType, PersonaPackGate.ExperimentalAutoRepairRigs).Supported)
             {
                 continue; // the supported-only gate applies to filler exactly like to pack-selected pieces
             }
@@ -642,68 +643,46 @@ internal sealed class CatalogController : ApaceControllerBase
             ));
         }
 
-        // live persona offer resolves first (the legacy 1P persona items are replaced
-        // by their live twins when the live marketplace is on); the panel's custom
-        // cosmetics come next (own content — never pack-gated, the supported-only
-        // gate still applies); live skin packs follow (skins are exempt from pack
-        // selection — every indexed pack resolves); staticdata stays for
-        // everything else (layout, store config, skin packs, buildplates, Apace
-        // pieces). A live piece resolves like an unknown id too when the pack gate
-        // hides it from this caller — accessories (any creator) need the allowed
-        // set non-empty AND one of their theme tags in it (tagless accessories
-        // never resolve; persona_skin pieces are exempt) — or its compat verdict
-        // is risky (onlySupported) or it probed dead (the binary would 404).
-        string? callerId = PlayfabAuth() is { IsB: false } caller ? caller.A.Id : null;
+        // GetPublishedItem is the DOWNLOAD path, not the offer: the frozen client
+        // resolves this endpoint for a piece it is about to download/equip. Every
+        // visibility gate (pack selection, onlySupported compat, probe-dead)
+        // already shapes what the OFFER advertises (Catalog/Search + the
+        // blank-slot filler pool), so a client that never saw an item in its offer
+        // never asks for it here. An item the client HAS — granted by an earlier
+        // offer, cached receipts, or its own persona profile — must ALWAYS
+        // resolve: a 404 here strands the equip on the "Wczytywanie…" loading
+        // screen (standing rule: restrict by not delivering; never block
+        // download/equip of an already-granted item). What actually ships is
+        // decided by the binary endpoint: mirrored files serve, an entitled live
+        // fetch downloads, everything else returns the deterministic placeholder
+        // (imports instantly, renders nothing) — a piece uuid never 404s there.
         IReadOnlyList<Item> livePacks = LiveSkinPackItemsFor();
         HashSet<Guid> servedPackIds = [.. livePacks.Select(pack => pack.Id)];
-
         LiveOfferCache? live = LivePersonaCatalog.IsAvailable ? LiveOffer : null;
-        IReadOnlySet<string> allowed = await PersonaPackGate.AllowedPackUuidsAsync(callerId, cancellationToken);
 
         if (live is not null && live.ById.TryGetValue(itemId, out var liveItem))
         {
-            string verdict = "served";
-            PersonaPieceTypes.CosmeticGateVerdict? compat = null;
-            if (LivePersonaCatalog.GetDeadItemIds().Contains(itemId.ToString()))
-            {
-                verdict = "dead"; // probed dead — the binary 404s, resolve NotFound instead of advertising a broken piece
-            }
-            else if (liveItem.DisplayProperties?.PieceType is not "persona_skin"
-                && (allowed.Count == 0
-                    || !live.ThemeTagsById.TryGetValue(itemId, out string[]? themeTags)
-                    || !themeTags.Any(allowed.Contains))
-                && !FillerItemIds.Contains(itemId.ToString()))
-            {
-                verdict = "gate-refused"; // accessories serve only from the selected packs (or the blank-slot filler pool) — tagless accessories never resolve; persona_skin pieces are exempt
-            }
-            else if (PersonaPackGate.OnlySupported)
-            {
-                compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString(), liveItem.DisplayProperties?.PieceType);
-                if (!compat.Supported)
-                {
-                    verdict = "unsupported";
-                }
-            }
-
-            (IReadOnlyCollection<string> defaultPacks, int grants) = await PersonaPackGate.AllowedCompositionAsync(callerId, cancellationToken);
-            Log.Debug("Published live item: caller={Caller} defaults={Defaults} grants={Grants} verdict={Verdict}",
-                callerId ?? "-", defaultPacks.Count, grants, verdict);
-
-            if (verdict is not "served")
-            {
-                if (compat is { } bad && !bad.Supported)
-                {
-                    PersonaPieceTypes.LogCompatVerdictOnce("published item", itemId.ToString(), bad.Reason);
-                }
-
-                return TypedResults.NotFound();
-            }
-
             return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
                 200,
                 "OK",
                 new GetPublishedItemResponse(
                     ToResponse(liveItem, Request)
+                )
+            ), jsonOptions), "application/json");
+        }
+
+        // not in the current offer — a cached client may still hold an entry that
+        // probed dead, is emote-only or otherwise offer-hidden since; resolve it
+        // from the raw index so the piece still downloads (a stub for a dead
+        // binary) instead of 404ing
+        if (LivePersonaCatalog.Enabled
+            && LivePersonaCatalog.GetIndexEntry(itemId.ToString()) is { } rawEntry)
+        {
+            return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
+                200,
+                "OK",
+                new GetPublishedItemResponse(
+                    ToResponse(CIItemToItem(LivePersonaCatalog.BuildOfferItem(rawEntry)), Request)
                 )
             ), jsonOptions), "application/json");
         }
@@ -720,20 +699,13 @@ internal sealed class CatalogController : ApaceControllerBase
         }
 
         // custom cosmetics resolve like any other item id (their ids are panel
-        // GUIDs that never collide with staticdata or the live catalog)
+        // GUIDs that never collide with staticdata or the live catalog) — with
+        // no gate here either: the supported-only gate filters them out of the
+        // OFFER (and new grants), while an already-granted cosmetic must stay
+        // downloadable even if its compat verdict later changed
         Item? customItem = CustomOfferItems.FirstOrDefault(candidate => candidate.Id == itemId);
         if (customItem is not null)
         {
-            if (PersonaPackGate.OnlySupported)
-            {
-                PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(itemId.ToString(), customItem.DisplayProperties?.PieceType);
-                if (!compat.Supported)
-                {
-                    PersonaPieceTypes.LogCompatVerdictOnce("published item", itemId.ToString(), compat.Reason);
-                    return TypedResults.NotFound();
-                }
-            }
-
             return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
                 200,
                 "OK",
@@ -751,16 +723,12 @@ internal sealed class CatalogController : ApaceControllerBase
 
         var item = CIItemToItem(cItem);
 
-        // staticdata carries no pack tags, so a 1P "Minecraft" PersonaDurable
-        // accessory can never sit in the allowed set — it never resolves (Bold
-        // Rabbit Feet is hardcoded above, not in staticdata; capes survive via
-        // their creator; persona_skin pieces are exempt).
-        if (item.ContentType == "PersonaDurable"
-            && item.DisplayProperties?.CreatorName is "Minecraft"
-            && item.DisplayProperties?.PieceType is not "persona_skin")
-        {
-            return TypedResults.NotFound();
-        }
+        // no pack/creator gate here either: staticdata 1P "Minecraft" accessories
+        // are excluded from the OFFER unconditionally (BaseOfferItems), so they
+        // are never newly granted — but a client that cached one from an earlier
+        // session still receives a receipt entitlement for it and must be able
+        // to resolve and download the piece (the binary endpoint answers the
+        // proxy URL with the real mirrored file or the importable placeholder)
 
         return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
             200,
@@ -1088,8 +1056,24 @@ internal sealed class CatalogController : ApaceControllerBase
     {
         string host = $"{(request.IsHttps ? "https://" : "http://")}{request.Host.Value}";
 
+        // Cache identity for the experimental auto-rig repair: a piece whose
+        // verdict passed ONLY because of the repair (custom bones were its
+        // sole risk signal) carries the short repair marker in its catalog
+        // ETag, so its identity differs from the unrepaired bytes and clients
+        // re-download after the admin flips the toggle. Deterministic per
+        // toggle state — stable across restarts while the toggle is
+        // unchanged; null (as before) for everything else. The same marker is
+        // served on the binary response (PersonaCdnController /
+        // PersonaRigRepairer).
+        string? etag = item.DisplayProperties?.PieceType is { } pieceType
+            && PersonaPackGate.ExperimentalAutoRepairRigs
+            && PersonaPieceTypes.EvaluateCosmetic(item.Id.ToString(), pieceType, allowRigRepair: true) is { Supported: true, RepairedRig: true }
+                ? PersonaRigRepairer.RepairMarker
+                : item.ETag;
+
         return item with
         {
+            ETag = etag,
             Images = item.Images.Select(image => image with { Url = host + image.Url, }),
             Contents = item.Contents.Select(content => content switch
             {

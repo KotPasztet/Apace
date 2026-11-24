@@ -137,6 +137,19 @@ public sealed class Settings
     public bool? PersonaFillBlankSlots { get; set; }
 
     /// <summary>
+    /// EXPERIMENTAL, DEFAULT OFF (Marketplace Management page, "auto-repair
+    /// broken 3D rigs"): when true, the ApiServer rewrites the geometry of
+    /// head-family pieces whose ONLY compat risk signal is custom rig bones at
+    /// serve time — each custom bone-subtree root is re-parented onto the
+    /// standard "head" bone, so the frozen Minecraft Earth client can bind the
+    /// geometry and the piece renders attached instead of scattered. Bounds-
+    /// /animation-/particle-flagged pieces are never repaired. The ApiServer
+    /// reads it from packs.json ("experimentalAutoRepairRigs", hot-reloaded);
+    /// treat null as false.
+    /// </summary>
+    public bool? PersonaAutoRepairRigs { get; set; }
+
+    /// <summary>
     /// Suppresses the "no packs selected" popup at server start (the
     /// ServerStatus page's "Never show again" button). Null/false = the popup
     /// shows whenever no packs are selected.

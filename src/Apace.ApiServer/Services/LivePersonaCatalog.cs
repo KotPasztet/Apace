@@ -1626,8 +1626,10 @@ public static class LivePersonaCatalog
     // "arrowhead" cannot trigger it. Recorded as a per-piece FACT — whether it
     // marks the piece risky is the gate's call (PersonaPieceTypes scopes it to
     // face-accessory pieces): hats, hoods and helmets legitimately carry
-    // hat/head rig bones the frozen client renders fine.
-    private static readonly HashSet<string> FaceBoneNames = new(StringComparer.OrdinalIgnoreCase) { "face", "hat", "head" };
+    // hat/head rig bones the frozen client renders fine. Internal — the
+    // serve-time auto-rig repairer (PersonaRigRepairer) classifies bones with
+    // the exact same sets, so the two can never drift apart.
+    internal static readonly HashSet<string> FaceBoneNames = new(StringComparer.OrdinalIgnoreCase) { "face", "hat", "head" };
 
     // The standard player-rig bone names the frozen client binds correctly.
     // Pieces carrying ANY bone outside this set (whole-head replacements with
@@ -1636,8 +1638,10 @@ public static class LivePersonaCatalog
     // the bones the client cannot bind leave their cubes at raw local
     // coordinates. Recorded as a per-piece FACT — whether it marks the piece
     // risky is the gate's call (PersonaPieceTypes scopes it to head-family
-    // types; hair is exempt — ponytails legitimately add bones).
-    private static readonly HashSet<string> StandardRigBoneNames = new(StringComparer.OrdinalIgnoreCase)
+    // types; hair is exempt — ponytails legitimately add bones). Internal — the
+    // serve-time auto-rig repairer (PersonaRigRepairer) classifies bones with
+    // the exact same sets, so the two can never drift apart.
+    internal static readonly HashSet<string> StandardRigBoneNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "root", "waist", "body", "head", "hat", "cape",
         "leftArm", "rightArm", "leftLeg", "rightLeg",

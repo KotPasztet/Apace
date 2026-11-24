@@ -159,13 +159,35 @@ public static class PersonaPieceTypes
     ///  3. unknown (no compat metadata, unparsable version) serves — the
     ///     filter only ever hides pieces with positive evidence of
     ///     incompatibility, so with the gate on the rule is verdict != "risky".
+    /// The EXPERIMENTAL packs.json "experimentalAutoRepairRigs" knob (default
+    /// off) lifts exactly one signal: a head-family piece risky ONLY on custom
+    /// rig bones serves when the caller passes
+    /// <see cref="PersonaPackGate.ExperimentalAutoRepairRigs"/> into
+    /// <see cref="EvaluateCosmetic"/> — the serve-time repairer then rewrites
+    /// the geometry (see <see cref="EvaluateCosmetic"/>).
     /// </summary>
     public static bool IsSupportedCosmetic(string itemId) => EvaluateCosmetic(itemId).Supported;
 
     /// <summary>One compat-gate verdict: whether the piece serves, plus the
     /// reason string for the deduplicated diagnostics (always set — supported
-    /// verdicts carry the band/evidence summary too).</summary>
-    public sealed record CosmeticGateVerdict(bool Supported, string Reason);
+    /// verdicts carry the band/evidence summary too). <see cref="RepairedRig"/>
+    /// is true ONLY when the verdict passed because of the experimental
+    /// serve-time rig repair (the piece would have been risky on the custom
+    /// bones alone) — the serve-side repairer (PersonaRigRepairer) and the
+    /// response ETag marker both key off it.</summary>
+    public sealed record CosmeticGateVerdict(bool Supported, string Reason, bool RepairedRig = false);
+
+    /// <summary>
+    /// The dressing-room piece types the v5 displaced-render gate scopes to:
+    /// everything rendered in the head slot. Hair is exempt (ponytails
+    /// legitimately add bones), back/outerwear exempt (wings exceed bounds),
+    /// body/limb types keep their legacy behavior. Shared by the gate below
+    /// and the serve-time auto-rig repairer (PersonaRigRepairer), so the
+    /// repair scoping can never drift from the gate scoping. Panel twin:
+    /// CosmeticCompatIndex.Classify.
+    /// </summary>
+    public static bool IsHeadFamilyPieceType(string? pieceType)
+        => pieceType is "persona_head" or "persona_eyes" or "persona_mouth" or "persona_face_accessory";
 
     /// <summary>
     /// The full compat verdict behind <see cref="IsSupportedCosmetic"/> — same
@@ -177,8 +199,18 @@ public static class PersonaPieceTypes
     /// hats, hoods and helmets legitimately carry hat/head rig bones the frozen
     /// client renders fine (it shipped with hundreds of them), so other/unknown
     /// piece types never block on face bones.
+    /// <paramref name="allowRigRepair"/> is the packs.json
+    /// "experimentalAutoRepairRigs" knob (default off): when true, a head-family
+    /// piece whose ONLY risk signal is custom rig bones becomes servable — the
+    /// serve-time repairer re-parents the custom bones so they render attached —
+    /// and the verdict carries <see cref="CosmeticGateVerdict.RepairedRig"/>.
+    /// Every other signal still hides: the repair fixes BONES only, so oversized
+    /// bounds, effects and a modern format_version keep the piece risky.
+    /// Callers MUST pass <see cref="PersonaPackGate.ExperimentalAutoRepairRigs"/>
+    /// (the knob hot-reloads) — a stale constant here would serve unrepaired
+    /// geometry to clients that cached the offer.
     /// </summary>
-    public static CosmeticGateVerdict EvaluateCosmetic(string itemId, string? pieceType = null)
+    public static CosmeticGateVerdict EvaluateCosmetic(string itemId, string? pieceType = null, bool allowRigRepair = false)
     {
         // 1. explicit verdict from the compat store, when the lane wrote one
         string? verdict = CosmeticCompatVerdicts.Lookup(itemId);
@@ -242,20 +274,43 @@ public static class PersonaPieceTypes
         // replacements with invented bone trees — "Squid head", "Jelly UFO
         // head" — whose unbindable bones leave their cubes at raw local
         // coordinates, and pieces extending far beyond the head slot). Scoped
-        // to the head family: hair is exempt (ponytails legitimately add
-        // bones), back/outerwear exempt (wings exceed bounds), body/limb types
-        // keep their legacy behavior. Null facts (legacy 1.8.0 geometry has no
-        // visible_bounds) serve — the filter only hides on positive evidence.
-        if (pieceType is "persona_head" or "persona_eyes" or "persona_mouth" or "persona_face_accessory")
+        // to the head family (see IsHeadFamilyPieceType): hair is exempt
+        // (ponytails legitimately add bones), back/outerwear exempt (wings
+        // exceed bounds), body/limb types keep their legacy behavior. Null
+        // facts (legacy 1.8.0 geometry has no visible_bounds) serve — the
+        // filter only hides on positive evidence.
+        //
+        // With the experimental auto-rig repair on (allowRigRepair), custom
+        // bones alone no longer hide the piece: the serve-time repairer
+        // re-parents the custom bone-subtree roots onto "head"
+        // (PersonaRigRepairer) and the verdict reports RepairedRig so the
+        // serving side knows to rewrite the binary. The bones branch therefore
+        // does NOT return early — the oversized-bounds check below must still
+        // run, because the repair fixes bones only and cannot fix size.
+        if (IsHeadFamilyPieceType(pieceType))
         {
+            bool repairableBones = false;
             if (hasNonstandardBones == true)
             {
-                return new CosmeticGateVerdict(false, "custom rig bones in the piece geometry (the frozen client binds only the standard player bones — these render displaced)");
+                if (!allowRigRepair)
+                {
+                    return new CosmeticGateVerdict(false, "custom rig bones in the piece geometry (the frozen client binds only the standard player bones — these render displaced)");
+                }
+
+                repairableBones = true;
             }
 
             if (maxVisibleBoundsWidth > 2.0f || maxVisibleBoundsHeight > 3.0f)
             {
                 return new CosmeticGateVerdict(false, $"oversized head geometry (visible bounds {maxVisibleBoundsWidth}x{maxVisibleBoundsHeight} — extends far beyond the head slot)");
+            }
+
+            if (repairableBones)
+            {
+                return new CosmeticGateVerdict(
+                    true,
+                    "custom rig bones — the experimental auto-rig-repair re-parents them onto \"head\" at serve time (packs.json experimentalAutoRepairRigs)",
+                    RepairedRig: true);
             }
         }
 

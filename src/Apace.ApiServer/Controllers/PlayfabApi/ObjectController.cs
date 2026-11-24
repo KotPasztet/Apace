@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Serilog;
 using Apace.ApiServer.Models.Playfab;
 using Apace.ApiServer.Services;
@@ -232,7 +233,8 @@ internal sealed class ObjectController : ApaceControllerBase
     }
 
     // The objects as stored by the client, with any player modifications
-    // overlaid on the built-in defaults.
+    // overlaid on the built-in defaults. Stored profiles have their piece
+    // references repaired before serving (see RepairCorruptedPieceIds).
     private static async Task<Dictionary<string, object>> GetPersonaObjectsAsync(string playerId)
     {
         Dictionary<string, object> objects = DefaultPersonaObjects();
@@ -243,11 +245,90 @@ internal sealed class ObjectController : ApaceControllerBase
             objects[entry.Key] = new Dictionary<string, object>
             {
                 ["ObjectName"] = entry.Key,
-                ["DataObject"] = entry.Value,
+                ["DataObject"] = RepairCorruptedPieceIds(entry.Value),
             };
         }
 
         return objects;
+    }
+
+    // Commit d3b757f typo'd two vanilla piece uuids in the built-in default
+    // profiles ("…b32c…" became "…b32e…" and "…9a5c…" became "…7a5c…"). The
+    // 0.33 client has the ORIGINAL pieces built in but cannot resolve the
+    // corrupted ids from anywhere — no catalog item, no receipt, no binary —
+    // so every persona build that walks them fails with
+    // PersonaCreationFailed "PieceNotInRepository" (and, for the bottom piece,
+    // "TopBottomMissing"): the dressing room spins on "Wczytywanie…" until its
+    // timeout. Fixing the defaults alone is NOT enough: players who opened the
+    // dressing room since the regression have the corrupted ids SAVED in their
+    // stored profiles (the client round-trips them through SetObjects), so
+    // every served profile gets its references rewritten to the originals.
+    // This is a pure reference repair — nothing is removed, no grant is
+    // restricted, and the client persists the repaired ids onward.
+    private static readonly (string Broken, string Original)[] CorruptedPieceIdRepairs =
+    [
+        ("68bfe60d-f30a-422f-b32e-72374ebdd057", "68bfe60d-f30a-422f-b32c-72374ebdd057"),
+        ("2bb1473b-7a5c-4eae-9fd5-82302a6aa3da", "2bb1473b-9a5c-4eae-9fd5-82302a6aa3da"),
+    ];
+
+    private static JsonElement RepairCorruptedPieceIds(JsonElement dataObject)
+    {
+        if (dataObject.ValueKind != JsonValueKind.Object)
+        {
+            return dataObject;
+        }
+
+        JsonNode? root;
+        try
+        {
+            root = JsonNode.Parse(dataObject.GetRawText());
+        }
+        catch (JsonException)
+        {
+            return dataObject;
+        }
+
+        if (root?["personaCollection"]?["universalApp"] is not JsonArray entries)
+        {
+            return dataObject;
+        }
+
+        bool changed = false;
+        foreach (JsonNode? entry in entries)
+        {
+            if (entry is not JsonObject entryObject
+                || entryObject["id"] is not JsonValue id
+                || id.GetValueKind() is not JsonValueKind.String)
+            {
+                continue;
+            }
+
+            string? value = id.GetValue<string>();
+            if (string.IsNullOrEmpty(value))
+            {
+                continue;
+            }
+
+            string repaired = value;
+            foreach ((string broken, string original) in CorruptedPieceIdRepairs)
+            {
+                repaired = repaired.Replace(broken, original, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (!string.Equals(repaired, value, StringComparison.Ordinal))
+            {
+                entryObject["id"] = JsonValue.Create(repaired);
+                changed = true;
+            }
+        }
+
+        if (!changed)
+        {
+            return dataObject;
+        }
+
+        Log.Information("Repaired corrupted vanilla piece id(s) in a stored persona profile (d3b757f regression)");
+        return JsonSerializer.SerializeToElement(root);
     }
 
     // Built-in persona profile objects, used for players who have never
@@ -300,7 +381,13 @@ internal sealed class ObjectController : ApaceControllerBase
                             new Dictionary<string, object> { ["id"] = "1042557f-d1f9-44e3-ba78-f404e8fb7363/d" ,},
                             new Dictionary<string, object> { ["id"] = "f1e4c577-19ba-4d77-9222-47f145857f78/d" ,},
                             new Dictionary<string, object> { ["id"] = "49f93789-a512-4c47-95cb-0606cdc1c2be/d", },
-                            new Dictionary<string, object> { ["id"] = "68bfe60d-f30a-422f-b32e-72374ebdd057/d", },
+                            // d3b757f typo'd this vanilla piece uuid (…b32c… became
+                            // …b32e…). The client 0.33 has the b32c piece built in but
+                            // no b32e anywhere (no catalog item, no receipt, no
+                            // binary), so every persona build containing it failed
+                            // with PersonaCreationFailed "PieceNotInRepository" — the
+                            // stuck "Wczytywanie…" equip hang.
+                            new Dictionary<string, object> { ["id"] = "68bfe60d-f30a-422f-b32c-72374ebdd057/d", },
                             new Dictionary<string, object> { ["id"] = "b6702f0e-a4b5-497a-8820-6c8e3946bb55/d", },
                             new Dictionary<string, object>
                             {
@@ -310,7 +397,7 @@ internal sealed class ObjectController : ApaceControllerBase
                             new Dictionary<string, object>
                             {
                                 ["col"] = DataArray1,
-                                ["id"] = "2bb1473b-7a5c-4eae-9fd5-82302a6aa3da/d",
+                                ["id"] = "2bb1473b-9a5c-4eae-9fd5-82302a6aa3da/d",
                             },
                             new Dictionary<string, object>
                             {
@@ -345,7 +432,7 @@ internal sealed class ObjectController : ApaceControllerBase
                             new Dictionary<string, object> { ["id"] = "1042557f-d1f9-44e3-ba78-f404e8fb7363/d", },
                             new Dictionary<string, object> { ["id"] = "f1e4c577-19ba-4d77-9222-47f145857f78/d", },
                             new Dictionary<string, object> { ["id"] = "49f93789-a512-4c47-95cb-0606cdc1c2be/d", },
-                            new Dictionary<string, object> { ["id"] = "68bfe60d-f30a-422f-b32e-72374ebdd057/d" ,},
+                            new Dictionary<string, object> { ["id"] = "68bfe60d-f30a-422f-b32c-72374ebdd057/d" ,},
                             new Dictionary<string, object> { ["id"] = "b6702f0e-a4b5-497a-8820-6c8e3946bb55/d", },
                             new Dictionary<string, object>
                             {
@@ -360,7 +447,7 @@ internal sealed class ObjectController : ApaceControllerBase
                             new Dictionary<string, object>
                             {
                                 ["col"] = new object[] { "#ff2f1f0f", "#0", "#0", "#0" },
-                                ["id"] = "2bb1473b-7a5c-4eae-9fd5-82302a6aa3da/d",
+                                ["id"] = "2bb1473b-9a5c-4eae-9fd5-82302a6aa3da/d",
                             }
                         }
                     },

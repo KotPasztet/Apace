@@ -27,12 +27,28 @@ no restart needed.
     1.19.50/1.20.10, MCPE-165232). Those render broken: floating parts,
     missing meshes. Risky pieces are hidden from the marketplace and refused
     on equip.
+  - *auto-repairable* — shown instead of *risky* when the ONLY breakage
+    evidence is custom rig bones on a head-family piece and the
+    **Experimental: auto-repair broken 3D rigs** switch below is on: the
+    ApiServer re-parents the custom bones onto the standard `head` bone at
+    serve time (packs.json `experimentalAutoRepairRigs`), so the piece serves
+    and renders attached. Oversized bounds or any other signal keeps the
+    badge *risky* — the repair fixes bones only.
   - *unknown* — no scan yet; unknown pieces keep serving (the filter only ever
     hides pieces with positive evidence of breakage). Turn the switch off to
     serve everything.
 
   The max is `packs.json`'s `maxGeometryFormatVersion` (default `1.16.0`,
   hot-reloaded, hand-edit only — the panel's Save does not write the key).
+
+- **Experimental: auto-repair broken 3D rigs** (default off) — pieces hidden
+  ONLY because of custom rig bones get their geometry rewritten at serve time:
+  each custom bone-subtree root is re-parented onto the standard `head` bone
+  so the frozen client can bind it and the model holds together instead of
+  scattering. Repaired binaries carry a repair marker (`r1`) in their ETag so
+  clients re-download after the toggle flips; oversized, animated or
+  format-flagged pieces are never repaired (they stay hidden). Each repaired
+  piece logs one line (item id + bones re-parented) in the ApiServer log.
 
 ## Pack filtering (defaults and grants)
 

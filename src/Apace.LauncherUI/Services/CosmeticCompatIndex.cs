@@ -14,7 +14,7 @@ namespace Apace.LauncherUI.Services;
 // page) plus feeds the "Allow only supported cosmetics" toggle explanation.
 //
 // Classification (keep in sync with the ApiServer's PersonaPieceTypes
-// .IsSupportedCosmetic — separate processes share the volume, not the code):
+// .EvaluateCosmetic — separate processes share the volume, not the code):
 //   supported  the piece files parse, every geometry variant format_version
 //              up to (excluding) the maxGeometryFormatVersion cap (packs.json,
 //              default 1.16.0), no animations / render controllers / flipbook
@@ -27,6 +27,12 @@ namespace Apace.LauncherUI.Services;
 //              persona_face_accessory pieces: hats, hoods and helmets
 //              legitimately carry hat/head rig bones the frozen client renders
 //              fine, so other piece types never turn risky on them;
+//   auto-      custom rig bones on a head-family piece AND nothing else risky
+//   repairable AND the packs.json "experimentalAutoRepairRigs" toggle is on —
+//              the ApiServer's serve-time repairer re-parents the custom
+//              bones onto "head" so they render attached (oversized bounds
+//              or any other signal keeps the piece plain risky — the repair
+//              fixes bones only);
 //   unknown    no profile (nothing scanned or nothing parsable in the zip) —
 //              unknown pieces keep serving while the panel's "only supported"
 //              switch is on; the filter only ever hides risky pieces.
@@ -39,6 +45,13 @@ public static class CosmeticCompatIndex
 
         // Positive evidence of breakage (new/legacy geometry, effects, face bones).
         Risky,
+
+        // The ONLY breakage evidence is custom rig bones on a head-family piece
+        // and the experimental auto-repair toggle is ON: the ApiServer re-parents
+        // the custom bones onto "head" at serve time (PersonaRigRepairer) and the
+        // piece serves. Badge = "auto-repairable". (When the toggle is off the
+        // same piece classifies plain Risky.)
+        AutoRepairable,
 
         // No profile — served even while "only supported" is on (no evidence of breakage).
         Unknown,
@@ -66,13 +79,14 @@ public static class CosmeticCompatIndex
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    // The "maxGeometryFormatVersion" half of packs.json (the panel writes the
-    // file without it — the knob is a hand-edit) — stamp-cached like the
-    // ApiServer's PersonaPackGate load, missing/unparsable falls back to the
-    // default band.
+    // The "maxGeometryFormatVersion" + "experimentalAutoRepairRigs" halves of
+    // packs.json (the panel writes the file itself — these ride along in the
+    // same save) — stamp-cached like the ApiServer's PersonaPackGate load,
+    // missing/unparsable falls back to the defaults.
     private sealed class PacksKnobs
     {
         public string? MaxGeometryFormatVersion { get; set; }
+        public bool? ExperimentalAutoRepairRigs { get; set; }
     }
 
     public static string PacksPath
@@ -80,30 +94,50 @@ public static class CosmeticCompatIndex
 
     private static (long Mtime, long Length) _packsStamp;
     private static Version _maxGeometryFormatVersion = DefaultMaxSupportedFormatVersion;
+    private static bool _experimentalAutoRepairRigs;
+
+    private static void EnsureKnobsLoaded()
+    {
+        try
+        {
+            var info = new FileInfo(PacksPath);
+            (long Mtime, long Length) stamp = info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (0, 0);
+            if (stamp != _packsStamp)
+            {
+                _packsStamp = stamp;
+                var file = info.Exists ? JsonSerializer.Deserialize<PacksKnobs>(File.ReadAllText(PacksPath), JsonOptions) : null;
+                _maxGeometryFormatVersion = file?.MaxGeometryFormatVersion is { } knob && TryParseFormatVersion(knob, out Version parsed)
+                    ? parsed
+                    : DefaultMaxSupportedFormatVersion;
+                _experimentalAutoRepairRigs = file?.ExperimentalAutoRepairRigs ?? false;
+            }
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            // a corrupt file must never break the display — keep the last values
+        }
+    }
 
     private static Version MaxGeometryFormatVersion
     {
         get
         {
-            try
-            {
-                var info = new FileInfo(PacksPath);
-                (long Mtime, long Length) stamp = info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (0, 0);
-                if (stamp != _packsStamp)
-                {
-                    _packsStamp = stamp;
-                    var file = info.Exists ? JsonSerializer.Deserialize<PacksKnobs>(File.ReadAllText(PacksPath), JsonOptions) : null;
-                    _maxGeometryFormatVersion = file?.MaxGeometryFormatVersion is { } knob && TryParseFormatVersion(knob, out Version parsed)
-                        ? parsed
-                        : DefaultMaxSupportedFormatVersion;
-                }
-            }
-            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
-            {
-                // a corrupt file must never break the display — keep the last value
-            }
-
+            EnsureKnobsLoaded();
             return _maxGeometryFormatVersion;
+        }
+    }
+
+    /// <summary>The packs.json "experimentalAutoRepairRigs" knob (default
+    /// false), mirrored from the ApiServer's PersonaPackGate — when on, the
+    /// ApiServer re-parents custom rig bones of head-family pieces whose ONLY
+    /// risk signal they are onto "head" at serve time, so the badge shows
+    /// auto-repairable instead of plain risky for them.</summary>
+    private static bool ExperimentalAutoRepairRigs
+    {
+        get
+        {
+            EnsureKnobsLoaded();
+            return _experimentalAutoRepairRigs;
         }
     }
 
@@ -206,10 +240,11 @@ public static class CosmeticCompatIndex
 
             var map = new Dictionary<string, CosmeticCompatInfo>(geometry.Count, StringComparer.OrdinalIgnoreCase);
             Version maxGeometry = MaxGeometryFormatVersion;
+            bool autoRepairRigs = ExperimentalAutoRepairRigs;
             Dictionary<string, string> pieceTypes = LoadPieceTypes();
             foreach (var (itemId, facts) in geometry)
             {
-                map[itemId] = Classify(facts, maxGeometry, pieceTypes.GetValueOrDefault(itemId));
+                map[itemId] = Classify(facts, maxGeometry, pieceTypes.GetValueOrDefault(itemId), autoRepairRigs);
             }
 
             return map;
@@ -273,7 +308,7 @@ public static class CosmeticCompatIndex
         }
     }
 
-    private static CosmeticCompatInfo Classify(GeometryFacts? facts, Version maxGeometry, string? pieceType)
+    private static CosmeticCompatInfo Classify(GeometryFacts? facts, Version maxGeometry, string? pieceType, bool autoRepairRigs)
     {
         if (facts is null)
         {
@@ -320,13 +355,25 @@ public static class CosmeticCompatIndex
 
         // custom rig bones + oversized bounds — displaced/stretched renders on
         // the frozen client; scoped to the head family exactly like the gate
-        // (PersonaPieceTypes): hair exempt (ponytails), back/outerwear exempt
-        // (wings exceed bounds). Keep in sync with the gate's thresholds.
+        // (PersonaPieceTypes.IsHeadFamilyPieceType): hair exempt (ponytails),
+        // back/outerwear exempt (wings exceed bounds). Keep in sync with the
+        // gate's thresholds. With the experimental auto-repair on, custom
+        // bones alone no longer make the piece plain risky — it becomes
+        // auto-repairable below; oversized bounds or any other effect signal
+        // still mean Risky (the repair fixes bones only).
+        bool repairableBones = false;
         if (pieceType is "persona_head" or "persona_eyes" or "persona_mouth" or "persona_face_accessory")
         {
             if (facts.HasNonstandardBones == true)
             {
-                effects.Add("custom rig bones (the client binds only the standard player bones)");
+                if (autoRepairRigs)
+                {
+                    repairableBones = true;
+                }
+                else
+                {
+                    effects.Add("custom rig bones (the client binds only the standard player bones)");
+                }
             }
 
             if (facts.MaxVisibleBoundsWidth > 2.0f || facts.MaxVisibleBoundsHeight > 3.0f)
@@ -340,6 +387,13 @@ public static class CosmeticCompatIndex
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.Risky,
                 $"geometry format_version {facts.FormatVersion} but uses {string.Join(", ", effects)}");
+        }
+
+        if (repairableBones)
+        {
+            return new CosmeticCompatInfo(
+                CosmeticCompatKind.AutoRepairable,
+                $"geometry format_version {facts.FormatVersion} — custom rig bones are the only breakage signal and the experimental auto-rig-repair re-parents them onto \"head\" at serve time");
         }
 
         return new CosmeticCompatInfo(

@@ -94,8 +94,56 @@ public class PersonaCdnController : ControllerBase
             return TypedResults.NotFound();
         }
 
+        // EXPERIMENTAL auto-rig repair (packs.json "experimentalAutoRepairRigs",
+        // DEFAULT OFF): head-family pieces whose ONLY compat risk is custom rig
+        // bones get their geometry re-parented onto the standard "head" bone at
+        // serve time so the frozen client can bind it (PersonaRigRepairer). Not
+        // a candidate, unparsable content or nothing repairable → the original
+        // file serves exactly as before; the repaired bytes carry the repair
+        // marker in their ETag so clients re-download after the toggle flips.
+        if (isGuidName)
+        {
+            try
+            {
+                if (PersonaRigRepairer.TryRepair(itemId, ResolvePieceType(itemGuid), filePath, Log.Logger) is { } repaired)
+                {
+                    // an explicit ETag also opts this response out of the generic
+                    // ETag middleware (it skips responses that carry one), so the
+                    // marker identity reaches the client unmodified
+                    Response.Headers.ETag = repaired.ETag;
+                    return TypedResults.Stream(new MemoryStream(repaired.Bytes), "application/zip", fileDownloadName: fileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                // never crash the download — a failed request strands the player
+                // on its loading screen
+                Log.Warning(ex, "Auto rig repair failed for {Item} — serving the original binary", itemId);
+            }
+        }
+
         Stream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, useAsync: true);
         return TypedResults.Stream(stream, "application/zip", fileDownloadName: fileName);
+    }
+
+    // The dressing-room piece type of a catalog item id, resolved exactly like
+    // PlaceholderZip below (live index → staticdata → custom cosmetics) — the
+    // rig repairer scopes to the head family by piece type. Null when nothing
+    // resolves (then nothing is repaired).
+    private static string? ResolvePieceType(Guid itemGuid)
+    {
+        if (LivePersonaCatalog.GetIndexEntry(itemGuid.ToString()) is { } entry)
+        {
+            return entry.PieceType;
+        }
+
+        if (Program.staticData.Playfab.Items.TryGetValue(itemGuid, out CItem? staticItem)
+            && staticItem.Data is CItem.PersonaData staticPersona)
+        {
+            return staticPersona.PieceType;
+        }
+
+        return CustomCosmetics.Items.FirstOrDefault(candidate => candidate.Id.Equals(itemGuid.ToString(), StringComparison.OrdinalIgnoreCase))?.PieceType;
     }
 
     // Entitlement for a LIVE fetch: the piece must be covered by a pack

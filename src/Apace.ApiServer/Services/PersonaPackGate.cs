@@ -13,7 +13,8 @@ namespace Apace.ApiServer.Services;
 // categories, and the classic-skin packs follow the gate by their pack uuid.
 //
 // packs.json (written by the panel next to the catalog index, hot-reloaded by
-// mtime) holds { defaultPacks, categoryLimit, onlySupported } plus the compat
+// mtime) holds { defaultPacks, categoryLimit, onlySupported, fillBlankSlotsWithRandomCosmetics,
+// experimentalAutoRepairRigs } plus the compat
 // knob "maxGeometryFormatVersion" (optional — hand-edit only, the panel's Save
 // keeps only its own fields); old files may
 // still carry the deprecated "gating" flag — it is ignored (the deserializer
@@ -34,7 +35,7 @@ public static class PersonaPackGate
     public const int DefaultCategoryLimit = 45;
 
     private sealed record PackConfig(List<string>? DefaultPacks, int? CategoryLimit, bool? OnlySupported,
-        string? MaxGeometryFormatVersion, bool? FillBlankSlots);
+        string? MaxGeometryFormatVersion, bool? FillBlankSlots, bool? ExperimentalAutoRepairRigs);
 
     // Documented default compat threshold (see PersonaPieceTypes.IsSupportedCosmetic):
     // geometry format_version at or past the max breaks on the frozen client
@@ -55,6 +56,7 @@ public static class PersonaPackGate
     private static int _categoryLimit = DefaultCategoryLimit;
     private static bool _onlySupported = true;
     private static bool _fillBlankSlots = true;
+    private static bool _experimentalAutoRepairRigs;
     private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
     private static long _configStamp;
 
@@ -115,6 +117,21 @@ public static class PersonaPackGate
     /// </summary>
     public static bool FillBlankSlots => _fillBlankSlots;
 
+    /// <summary>
+    /// EXPERIMENTAL, DEFAULT OFF (packs.json "experimentalAutoRepairRigs", default
+    /// false when absent): when true, head-family pieces whose ONLY compat risk
+    /// signal is custom rig bones (PersonaPieceTypes.EvaluateCosmetic with
+    /// repair-awareness) have their geometry rewritten at serve time — the
+    /// repairer re-parents each custom bone-subtree root onto the standard
+    /// "head" bone so the frozen client can bind the geometry and render the
+    /// piece attached instead of displaced. Nothing changes while the knob is
+    /// off; oversized/animations/particles/format-version pieces are never
+    /// repaired (the transform fixes bones only — they stay hidden). The
+    /// transform lives in PersonaRigRepairer; the panel's
+    /// CosmeticCompatIndex mirrors the verdict awareness.
+    /// </summary>
+    public static bool ExperimentalAutoRepairRigs => _experimentalAutoRepairRigs;
+
     /// <summary>The packs.json hot-reload stamp (mtime ticks) — the filler
     /// candidate cache keys off it, so a panel save rebuilds the filler set.</summary>
     public static long ConfigStamp
@@ -156,6 +173,7 @@ public static class PersonaPackGate
                     _categoryLimit = DefaultCategoryLimit;
                     _onlySupported = true;
                     _fillBlankSlots = true;
+                    _experimentalAutoRepairRigs = false;
                     _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
                     Log.Information("Persona pack config gone from {Path} — no packs configured, the live marketplace serves nothing until packs are selected", ConfigPath);
                 }
@@ -174,14 +192,16 @@ public static class PersonaPackGate
             _categoryLimit = Math.Max(0, loaded?.CategoryLimit ?? DefaultCategoryLimit);
             _onlySupported = loaded?.OnlySupported ?? true;
             _fillBlankSlots = loaded?.FillBlankSlots ?? true;
+            _experimentalAutoRepairRigs = loaded?.ExperimentalAutoRepairRigs ?? false;
             _maxGeometryFormatVersion = ParseVersion(loaded?.MaxGeometryFormatVersion, DefaultMaxGeometryFormatVersion);
             _configStamp = stamp;
-            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}",
+            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}, experimental auto rig repair: {AutoRepairRigs}",
                 ConfigPath, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
                 _categoryLimit == 0 ? "none" : _categoryLimit.ToString(),
                 _onlySupported,
                 _fillBlankSlots,
-                _maxGeometryFormatVersion.ToString());
+                _maxGeometryFormatVersion.ToString(),
+                _experimentalAutoRepairRigs);
         }
         catch (Exception ex)
         {

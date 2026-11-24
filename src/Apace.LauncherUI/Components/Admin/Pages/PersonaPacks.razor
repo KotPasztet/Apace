@@ -56,6 +56,14 @@
         </div>
 
         <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="auto-repair-rigs" @bind="_autoRepairRigs" />
+            <label class="form-check-label" for="auto-repair-rigs">
+                <strong>Experimental: auto-repair broken 3D rigs</strong>
+                <span class="text-muted small">— default off. Rewrites custom bones of risky head pieces so they render attached; applies on next client restart.</span>
+            </label>
+        </div>
+
+        <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" id="fill-blank-slots" @bind="_fillBlankSlots" />
             <label class="form-check-label" for="fill-blank-slots">
                 <strong>Fill blank slots with random cosmetics</strong>
@@ -309,7 +317,7 @@
     // allowed pack set (default packs ∪ player grants) — accessories serve only
     // when one of their theme tags is in the set (tagless accessories never
     // serve), skins and skin packs serve regardless.
-    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit, bool FillBlankSlots);
+    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit, bool FillBlankSlots, bool ExperimentalAutoRepairRigs);
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
 
@@ -346,6 +354,7 @@
     private string? _packSummary;
     private bool _onlySupported = true;
     private bool _fillBlankSlots = true;
+    private bool _autoRepairRigs;
     private int _categoryLimit = 45;
     private HashSet<string> _defaults = [];
     private HashSet<string> _grants = [];
@@ -395,6 +404,7 @@
         await Task.Yield(); // let the prerender complete the shell first
         _onlySupported = Settings.Instance.PersonaOnlySupportedCosmetics ?? true;
         _fillBlankSlots = Settings.Instance.PersonaFillBlankSlots ?? true;
+        _autoRepairRigs = Settings.Instance.PersonaAutoRepairRigs ?? false;
         _categoryLimit = Math.Max(0, Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit);
         _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
 
@@ -506,6 +516,7 @@
             Settings.Instance.PersonaCategoryLimit = _categoryLimit;
             Settings.Instance.PersonaOnlySupportedCosmetics = _onlySupported;
             Settings.Instance.PersonaFillBlankSlots = _fillBlankSlots;
+            Settings.Instance.PersonaAutoRepairRigs = _autoRepairRigs;
             Settings.Instance.PersonaDefaultPacks = [.. _defaults];
             Settings.Instance.Save(Settings.DefaultPath);
 
@@ -517,9 +528,10 @@
             // non-empty set enforces tag filtering.
             string path = Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "packs.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots), _jsonOptions));
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots, _autoRepairRigs), _jsonOptions));
             _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
                 + (_onlySupported ? "only client-supported cosmetics. " : "client-compatibility filter off. ")
+                + (_autoRepairRigs ? "Experimental rig auto-repair on. " : "")
                 + "Changes apply after a game restart — if they don't take effect, clear the game app's cache.";
         }
         catch (Exception ex)
@@ -815,6 +827,7 @@
     {
         CosmeticCompatIndex.CosmeticCompatKind.Supported => "text-bg-success",
         CosmeticCompatIndex.CosmeticCompatKind.Risky => "text-bg-danger",
+        CosmeticCompatIndex.CosmeticCompatKind.AutoRepairable => "text-bg-warning",
         _ => "text-bg-secondary",
     };
 
@@ -822,6 +835,7 @@
     {
         CosmeticCompatIndex.CosmeticCompatKind.Supported => "supported",
         CosmeticCompatIndex.CosmeticCompatKind.Risky => "risky",
+        CosmeticCompatIndex.CosmeticCompatKind.AutoRepairable => "auto-repairable",
         _ => "unknown",
     };
 
