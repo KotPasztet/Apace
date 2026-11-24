@@ -143,7 +143,46 @@ public static class CosmeticCompatIndex
     /// corrupt file yields an empty map — every badge then shows unknown, and
     /// the page must never break over a file it only reads for display.
     /// </summary>
+    // Cached by (mtime, length) of both source files: the marketplace pages
+    // re-read this on EVERY navigation, and the probe-state + index files grew
+    // into the megabytes (12k pieces probed) — re-parsing both JSONs made each
+    // page visit take seconds. The returned map is shared — treat it as
+    // read-only (use Lookup; never mutate).
+    private static readonly object CacheLock = new();
+    private static (DateTime ProbeWrite, long ProbeLength, DateTime IndexWrite, long IndexLength, DateTime PacksWrite, Dictionary<string, CosmeticCompatInfo> Map)? _cache;
+
     public static Dictionary<string, CosmeticCompatInfo> ReadAll()
+    {
+        FileInfo probeInfo = new(ProbeStatePath);
+        FileInfo indexInfo = new(IndexPath);
+        FileInfo packsInfo = new(PacksPath);
+        (DateTime, long, DateTime, long, DateTime) key = (
+            probeInfo.Exists ? probeInfo.LastWriteTimeUtc : DateTime.MinValue,
+            probeInfo.Exists ? probeInfo.Length : -1,
+            indexInfo.Exists ? indexInfo.LastWriteTimeUtc : DateTime.MinValue,
+            indexInfo.Exists ? indexInfo.Length : -1,
+            packsInfo.Exists ? packsInfo.LastWriteTimeUtc : DateTime.MinValue);
+
+        lock (CacheLock)
+        {
+            if (_cache is { } cached
+                && key == (cached.ProbeWrite, cached.ProbeLength, cached.IndexWrite, cached.IndexLength, cached.PacksWrite))
+            {
+                return cached.Map;
+            }
+        }
+
+        Dictionary<string, CosmeticCompatInfo> map = ReadAllUncached();
+
+        lock (CacheLock)
+        {
+            _cache = (key.Item1, key.Item2, key.Item3, key.Item4, key.Item5, map);
+        }
+
+        return map;
+    }
+
+    private static Dictionary<string, CosmeticCompatInfo> ReadAllUncached()
     {
         try
         {

@@ -212,14 +212,21 @@
         _liveDB = new FileInfo(Settings.Instance.LiveDatabaseConnectionString!);
         _objectStore = new DirectoryInfo(Path.Combine(Program.DataDir, "object_store"));
 
-        LoadSizes();
+        // The object_store size walks the whole directory tree (thousands of
+        // object files) — run it off the render thread so the page paints
+        // immediately and the sizes fill in (this panel is a tab of System
+        // Configuration, which used to hang on this walk on every visit).
+        await LoadSizesAsync();
     }
 
-    private void LoadSizes()
+    private async Task LoadSizesAsync()
     {
-        _earthDbB = SafeLength(_earthDB);
-        _liveDbB = SafeLength(_liveDB);
-        _objectStoreB = SafeLength(_objectStore);
+        (long Earth, long Live, long ObjectStore) sizes = await Task.Run(() =>
+            (SafeLength(_earthDB), SafeLength(_liveDB), SafeLength(_objectStore)));
+        _earthDbB = sizes.Earth;
+        _liveDbB = sizes.Live;
+        _objectStoreB = sizes.ObjectStore;
+        await InvokeAsync(StateHasChanged);
     }
 
     private static long SafeLength(FileInfo file)
@@ -289,7 +296,7 @@
         finally
         {
             _isProcessing = false;
-            LoadSizes();
+            await LoadSizesAsync();
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -363,7 +370,7 @@
             Log.Error(ex, "Failed to delete server data");
         }
 
-        LoadSizes();
+        await LoadSizesAsync();
         CancelDelete();
         StateHasChanged();
     }
@@ -653,6 +660,11 @@
 
     private string FormatBytes(long bytes)
     {
+        if (bytes < 0)
+        {
+            return "…"; // the sizes load off the render thread — shown while measuring
+        }
+
         if (bytes is <= 0)
         {
             return "0 B";

@@ -347,6 +347,10 @@ main {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    /* a long unbroken line (error text, uuid, url) must not push the content
+       past the viewport — the flex child shrinks and the text wraps instead
+       of scrolling the whole page sideways */
+    min-width: 0;
 }
 
 .sidebar {
@@ -418,6 +422,10 @@ main > .top-row a:hover {
 .content {
     flex: 1;
     padding: 24px;
+    max-width: 100%;
+    /* inherited: long tokens wrap on phones instead of stretching the layout
+       to the right (the error-message-stretches-the-page problem) */
+    overflow-wrap: anywhere;
 }
 
 .content::-webkit-scrollbar,

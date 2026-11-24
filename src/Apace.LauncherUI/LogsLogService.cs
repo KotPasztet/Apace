@@ -12,7 +12,9 @@ public class LogsLogService : ILogEventSink
 
     public event Action? OnLogReceived;
 
-    private const int MaxLogs = 500;
+    // 3× the original 500: the home page's log panel scrolls a much longer
+    // history before the ring buffer evicts old lines.
+    private const int MaxLogs = 1500;
 
     public void AddExternalLogs(params ReadOnlySpan<LogEvent> logs)
     {

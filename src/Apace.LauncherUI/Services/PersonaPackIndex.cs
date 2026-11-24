@@ -48,6 +48,37 @@ public static class PersonaPackIndex
     /// </summary>
     public static (List<ThemePackRow> Packs, string? Summary) ReadThemePacks()
     {
+        // Cached by (mtime, length) of the catalog index: the marketplace pages
+        // call this on EVERY navigation and the index now holds ~12k synced
+        // items — re-parsing made each visit take seconds. The returned list is
+        // shared — treat it as read-only.
+        string path = LivePersonaCatalogSync.IndexPath;
+        FileInfo info = new(path);
+        (DateTime Write, long Length) key = info.Exists ? (info.LastWriteTimeUtc, info.Length) : (DateTime.MinValue, -1);
+
+        lock (CacheLock)
+        {
+            if (_themePacksCache is { } cached && key == (cached.Write, cached.Length))
+            {
+                return (cached.Packs, cached.Summary);
+            }
+        }
+
+        (List<ThemePackRow> Packs, string? Summary) result = ReadThemePacksUncached();
+
+        lock (CacheLock)
+        {
+            _themePacksCache = (key.Write, key.Length, result.Packs, result.Summary);
+        }
+
+        return result;
+    }
+
+    private static readonly object CacheLock = new();
+    private static (DateTime Write, long Length, List<ThemePackRow> Packs, string? Summary)? _themePacksCache;
+
+    private static (List<ThemePackRow> Packs, string? Summary) ReadThemePacksUncached()
+    {
         try
         {
             string path = LivePersonaCatalogSync.IndexPath;

@@ -71,7 +71,15 @@
 </div>
 
 <div class="row gap-4">
-    @if (_buildplates == null || !_buildplates.Any())
+    @if (_loading)
+    {
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 text-muted py-3">
+                <span class="spinner-border spinner-border-sm"></span> Loading buildplates…
+            </div>
+        </div>
+    }
+    else if (_buildplates == null || !_buildplates.Any())
     {
         <div class="col-12">
             <div class="alert alert-info">
@@ -339,6 +347,7 @@
     private int _pageSize = 8;
     private int _totalItems = 0;
     private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)_totalItems / _pageSize));
+    private bool _loading = true;
 
     // Modal State
     private bool _showDeleteModal = false;
@@ -359,10 +368,26 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _user = authState.User;
 
-        _resourcePackManager = await ResourcePackManagerSingleton.GetResourcePackManagerAsync();
         _previewsEnabled = Settings.Instance.LauncherBuildplatePreview is true;
 
-        await LoadBuildplates();
+        // Navigate-then-load (same staged pattern as the marketplace pages):
+        // the resource pack manager loads every java resource pack on its first
+        // use and the list queries the DB — run them off the render path so the
+        // page paints immediately and the grid fills in with a spinner.
+        _loading = true;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                _resourcePackManager = await ResourcePackManagerSingleton.GetResourcePackManagerAsync();
+                await LoadBuildplates();
+            }
+            finally
+            {
+                _loading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        });
     }
 
     private async Task LoadBuildplates()

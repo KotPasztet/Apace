@@ -97,7 +97,7 @@ internal sealed class ObjectController : ApaceControllerBase
     }
 
     [HttpPost("SetObjects")]
-    public async Task<Results<Ok, ForbidHttpResult, BadRequest>> SetObjects()
+    public async Task<Results<ContentHttpResult, ForbidHttpResult, BadRequest>> SetObjects()
     {
         var cancellationToken = Request.HttpContext.RequestAborted;
 
@@ -132,11 +132,17 @@ internal sealed class ObjectController : ApaceControllerBase
     // Persists persona (skin) profile objects sent by the client so the
     // selected skin survives restarts. Rate limited because these are small
     // but unbounded database writes triggered by client actions.
-    private async Task<Results<Ok, ForbidHttpResult, BadRequest>> HandleSetPersonaObjectsAsync(string playerId, SetObjectsRequest request)
+    //
+    // The response MUST be a full PlayFab SetObjectsResponse JSON: this call is
+    // the last step of the dressing-room save flow, and an empty 200 body
+    // (which this endpoint used to return) fails the client's response parse —
+    // the player saw the save hang on "Wczytywanie" forever. Mirrors the
+    // GetObjects shape above (code/status/data with ProfileVersion + Entity).
+    private async Task<Results<ContentHttpResult, ForbidHttpResult, BadRequest>> HandleSetPersonaObjectsAsync(string playerId, SetObjectsRequest request)
     {
         if (request.Objects is null || request.Objects.Count == 0)
         {
-            return TypedResults.Ok();
+            return SetObjectsOkResponse(playerId, request.Entity.Type, []);
         }
 
         if (!RateLimiter.IsAllowed($"playfab_setobjects:{playerId}", 30, TimeSpan.FromMinutes(1)))
@@ -149,6 +155,7 @@ internal sealed class ObjectController : ApaceControllerBase
         {
             PersonaProfiles profiles = await GetStoredProfilesAsync(playerId);
 
+            List<Dictionary<string, object>> setResult = [];
             foreach (SetObjectsRequest.SetObjectR obj in request.Objects)
             {
                 if (!string.IsNullOrEmpty(obj.ObjectName) && obj.DataObject is not null)
@@ -160,12 +167,19 @@ internal sealed class ObjectController : ApaceControllerBase
                     // lives in the provisioning paths only: Catalog/Search,
                     // Catalog/GetItem and the persona binary endpoint.
                     profiles.Objects[obj.ObjectName] = obj.DataObject.Value.Clone();
+                    setResult.Add(new Dictionary<string, object>
+                    {
+                        ["ObjectName"] = obj.ObjectName,
+                        ["SetResult"] = "Success",
+                    });
                 }
             }
 
             await new EarthDB.Query(true)
                 .Update("personaProfile", playerId, profiles)
                 .ExecuteAsync(Program.DB, Request.HttpContext.RequestAborted);
+
+            return SetObjectsOkResponse(playerId, request.Entity.Type, setResult);
         }
         catch (Exception ex)
         {
@@ -175,8 +189,27 @@ internal sealed class ObjectController : ApaceControllerBase
             Log.Error(ex, "SetObjects: storing the persona profile of {PlayerId} failed", playerId);
             return TypedResults.BadRequest();
         }
+    }
 
-        return TypedResults.Ok();
+    // The PlayFab-shaped success response: ProfileVersion mirrors the value
+    // GetObjects serves (172), SetResult reports every upserted object.
+    private static Results<ContentHttpResult, ForbidHttpResult, BadRequest> SetObjectsOkResponse(string entityId, string entityType, List<Dictionary<string, object>> setResult)
+    {
+        return JsonPascalCase(new PlayfabOkResponse(
+            200,
+            "OK",
+            new Dictionary<string, object>
+            {
+                ["ProfileVersion"] = 172,
+                ["Entity"] = new Dictionary<string, object>
+                {
+                    ["Id"] = entityId,
+                    ["Type"] = entityType,
+                    ["TypeString"] = entityType,
+                },
+                ["SetResult"] = setResult,
+            }
+        ));
     }
 
     private static async Task<PersonaProfiles> GetStoredProfilesAsync(string playerId)
