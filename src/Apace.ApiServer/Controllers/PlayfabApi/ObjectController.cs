@@ -173,8 +173,12 @@ internal sealed class ObjectController : ApaceControllerBase
                 .Update("personaProfile", playerId, profiles)
                 .ExecuteAsync(Program.DB, Request.HttpContext.RequestAborted);
         }
-        catch (EarthDB.DatabaseException)
+        catch (Exception ex)
         {
+            // database errors and anything else that escapes the flow below —
+            // a KeyNotFound on a first-time profile row used to surface as a
+            // 500 here, which the client showed as a failed profile save
+            Log.Error(ex, "SetObjects: storing the persona profile of {PlayerId} failed", playerId);
             return TypedResults.BadRequest();
         }
 
@@ -316,7 +320,18 @@ internal sealed class ObjectController : ApaceControllerBase
         EarthDB.Results results = await new EarthDB.Query(false)
             .Get("personaProfile", playerId, typeof(PersonaProfiles))
             .ExecuteAsync(Program.DB);
-        return results.Get<PersonaProfiles>("personaProfile");
+
+        // first-time players have no stored row — Results.Get throws
+        // KeyNotFoundException on a missing name, so fall back to an empty
+        // profile instead of letting the read path 500
+        try
+        {
+            return results.Get<PersonaProfiles>("personaProfile");
+        }
+        catch (KeyNotFoundException)
+        {
+            return new PersonaProfiles();
+        }
     }
 
     // The objects as stored by the client, with any player modifications

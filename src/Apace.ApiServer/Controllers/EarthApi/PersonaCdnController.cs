@@ -32,26 +32,42 @@ public class PersonaCdnController : ControllerBase
             return TypedResults.NotFound();
         }
 
-        // Pack gate for the frozen 2021 staticdata binaries, before the mirror and
-        // staticdata fallback dirs are consulted: a zip named <itemId>.zip whose id
-        // resolves to a staticdata PersonaData of a Minecraft-creator (or creatorless)
-        // accessory downloads only through the same allowed set the live lazy path
-        // gates against — staticdata persona items carry no pack tags, so no pack
-        // selection ever covers them and the binary refuses whether the set is empty
-        // (no packs selected) or not. Live-mirrored zips have no staticdata entry and
-        // stay governed by the lazy-path gate below.
-        string staticItemId = fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+        // Pack gate BEFORE any directory is consulted — a zip sitting on the
+        // volume (mirrored from an earlier download) is NOT entitlement. Every
+        // zip resolves by id: a staticdata PersonaData accessory (creator
+        // Minecraft or none) refuses unconditionally (staticdata carries no
+        // pack tags, so no selection ever covers it); a live-index accessory
+        // (any creator — the search gate is creator-agnostic, mirrors it here)
+        // must be inside the allowed set (defaults ∪ every player's grants —
+        // this endpoint has no caller identity, same semantics as the lazy
+        // path). persona_skin pieces serve; emotes/other content types are not
+        // marketplace accessories and pass.
+        string gateItemId = fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
             ? fileName[..^4]
             : fileName;
-        if (Guid.TryParse(staticItemId, out Guid staticItemGuid)
-            && Program.staticData.Playfab.Items.TryGetValue(staticItemGuid, out CItem? staticItem)
-            && staticItem.Data is CItem.PersonaData staticPersona
-            && staticPersona.CreatorName is null or "Minecraft"
-            && staticPersona.PieceType is not "persona_skin")
+        if (Guid.TryParse(gateItemId, out Guid itemGuid))
         {
-            IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(HttpContext.RequestAborted);
-            LogPackGateRefusalOnce(fileName, allowed.Count == 0 ? "no packs selected" : "staticdata carries no pack tags — no pack selection covers it");
-            return TypedResults.NotFound();
+            if (Program.staticData.Playfab.Items.TryGetValue(itemGuid, out CItem? staticItem)
+                && staticItem.Data is CItem.PersonaData staticPersona
+                && staticPersona.CreatorName is null or "Minecraft"
+                && staticPersona.PieceType is not "persona_skin")
+            {
+                IReadOnlySet<string> staticAllowed = await PersonaPackGate.AllAllowedPackUuidsAsync(HttpContext.RequestAborted);
+                LogPackGateRefusalOnce(fileName, staticAllowed.Count == 0 ? "no packs selected" : "staticdata carries no pack tags — no pack selection covers it");
+                return TypedResults.NotFound();
+            }
+
+            if (LivePersonaCatalog.GetIndexEntry(gateItemId) is { } entry
+                && entry.PieceType is not "persona_skin"
+                && entry.PieceType.StartsWith("persona_", StringComparison.Ordinal))
+            {
+                IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(HttpContext.RequestAborted);
+                if (allowed.Count == 0 || !LivePersonaCatalog.ThemeTagsOf(entry).Any(allowed.Contains))
+                {
+                    LogPackGateRefusalOnce(fileName, "live accessory outside the selected packs — a mirrored file is not entitlement");
+                    return TypedResults.NotFound();
+                }
+            }
         }
 
         string filePath = Path.Combine(Program.MojangAssetsDir, "playfab", "persona", fileName);

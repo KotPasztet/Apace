@@ -718,7 +718,7 @@ h2, .h2 {
     letter-spacing: 4px;
 }
 
-.text-muted, .text-secondary {
+.text-muted, .text-secondary, .form-text {
     color: #9a9ab0 !important;
     font-weight: 700;
 }
@@ -1679,7 +1679,7 @@ html.dark .display-4, html.dark .display-5 {
     color: #d4ff7a;
 }
 
-html.dark .text-muted, html.dark .text-secondary {
+html.dark .text-muted, html.dark .text-secondary, html.dark .form-text {
     color: #b7c79e !important;
 }
 
