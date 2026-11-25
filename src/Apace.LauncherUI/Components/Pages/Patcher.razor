@@ -170,8 +170,21 @@
                                 <input class="form-control" placeholder="@ApaceAddress" @bind="iosLocatorHostname" />
                             </div>
                         </div>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Login protocol</label>
+                                <select class="form-select" @bind="iosAuthProtocol">
+                                    <option value="@((int)PatchProtocol.Http)">Http</option>
+                                    <option value="@((int)PatchProtocol.Https)">Https</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Login server address (single-domain)</label>
+                                <input class="form-control" placeholder="@ApaceAddress" @bind="iosAuthHostname" />
+                            </div>
+                        </div>
                         <p class="text-muted" style="font-size: 0.75rem;">
-                            The official Microsoft login is kept - only the game API address is redirected.
+                            Login goes through the custom login server by default - Microsoft login is disabled server-side.
                         </p>
                     }
                 </div>
@@ -783,7 +796,7 @@
     private bool iosRemoveDrm = true;
     private bool iosForceWebView = true;
     private bool iosForceInteractive = true;
-    private bool iosUseCustomAuth;
+    private bool iosUseCustomAuth = true;
     private bool iosChangeXal = true;
     private bool iosChangePlayfab = true;
     private bool iosChangeXboxAb = true;
@@ -1279,7 +1292,7 @@
     }
 
 
-    /// <summary>iOS simple mode mirrors the desktop patcher: only the locator is redirected, official login is kept.</summary>
+    /// <summary>iOS simple mode: Auto defaults with the address overrides below - login goes through the custom login server (Microsoft login is disabled server-side).</summary>
     private IosRequest BuildIosSimple()
     {
         return new IosRequest
@@ -1293,16 +1306,16 @@
             AppName = iosAppName,
             ChangeIcon = true,
             RemoveDrm = true,
-            ChangeLoginServerAddress = false,
-            ChangeXalAuthAddress = false,
-            ChangePlayfabApiAddress = false,
-            ChangeXboxAbAddress = false,
-            ChangeXboxLiveAddress = false,
-            ForceInAppWebView = false,
+            ChangeLoginServerAddress = true,
+            ChangeXalAuthAddress = true,
+            ChangePlayfabApiAddress = true,
+            ChangeXboxAbAddress = true,
+            ChangeXboxLiveAddress = true,
+            ForceInAppWebView = true,
             ForceInteractiveSignIn = true,
             LoginServerSingleDomainMode = true,
-            LoginServerProtocol = PatchProtocol.Http,
-            LoginServerHostname = string.Empty,
+            LoginServerProtocol = iosAuthProtocol,
+            LoginServerHostname = iosAuthHostname,
             XalProtocol = PatchProtocol.Http,
             XalHostname = string.Empty,
             PlayfabApiProtocol = PatchProtocol.Http,
