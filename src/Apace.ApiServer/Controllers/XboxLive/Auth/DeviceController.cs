@@ -17,10 +17,13 @@ internal sealed class DeviceController : ApaceControllerBase
         string TokenType
     )
     {
+        // The Android client's device auth carries RPS fields, but iOS Xal sends a proof-of-possession
+        // body (Id, DeviceType, SerialNumber, Version, ProofKey, ...) without AuthMethod/RpsTicket/SiteName.
+        // Non-nullable members make ASP.NET reject that with a 400, so every field is optional here.
         internal sealed record PropertiesR(
-            string AuthMethod,
-            string? RpsTicket,
-            string? SiteName
+            string? AuthMethod = null,
+            string? RpsTicket = null,
+            string? SiteName = null
         );
     }
 

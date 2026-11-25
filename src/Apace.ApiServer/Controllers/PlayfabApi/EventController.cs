@@ -11,6 +11,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 [Route("Event")]
 [Route("20CA2.playfabapi.com/Event")]
 [Route("1712756451.playfabapi.com/Event")]
+[Route("11509.playfabapi.com/Event")]
 internal sealed class EventController : ApaceControllerBase
 {
     [HttpPost("WriteTelemetryEvents")]

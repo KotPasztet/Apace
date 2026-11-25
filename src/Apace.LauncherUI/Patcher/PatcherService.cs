@@ -481,6 +481,8 @@ public sealed class PatcherService
             DisableSunsetTimeCheck = a.DisableSunsetTimeCheck,
             DisableSpeedLimit = a.DisableSpeedLimit,
             ChangeAppName = a.ChangeAppName,
+            ChangeBundleId = a.ChangeBundleId,
+            BundleId = a.BundleId,
             RemoveDrm = a.RemoveDrm,
         };
 
@@ -671,6 +673,11 @@ public sealed class PatcherService
         if (a.ChangeLocatorAddress && string.IsNullOrWhiteSpace(a.LocatorHostname))
         {
             throw new ArgumentException("Enter the locator (API server) address first.");
+        }
+
+        if (a.ChangeBundleId && !IpaProcessor.IsValidBundleId(a.BundleId))
+        {
+            throw new ArgumentException("Enter a valid bundle ID first (letters, digits, '-' and '.', e.g. com.example.app).");
         }
 
         if (!a.ChangeLoginServerAddress)

@@ -33,6 +33,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 [Route("inventory")]
 [Route("20CA2.playfabapi.com/inventory")]
 [Route("1712756451.playfabapi.com/inventory")]
+[Route("11509.playfabapi.com/inventory")]
 internal sealed class InventoryController : ApaceControllerBase
 {
     private const string ApaceContentKey = "s5s5ejuDru4uchuF2drUFuthaspAbepE";

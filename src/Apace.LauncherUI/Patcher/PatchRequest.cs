@@ -83,6 +83,10 @@ public sealed record IosRequest
     public required bool ChangeAppName { get; init; }
     public required string AppName { get; init; }
 
+    /// <summary>True: rewrite CFBundleIdentifier so the patched app installs next to the original.</summary>
+    public bool ChangeBundleId { get; init; }
+    public string BundleId { get; init; } = string.Empty;
+
     /// <summary>True: the Apace icon replaces the launcher icon. Null icon path -> panel default.</summary>
     public required bool ChangeIcon { get; init; }
 

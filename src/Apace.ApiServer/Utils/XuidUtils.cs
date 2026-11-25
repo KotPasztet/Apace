@@ -7,6 +7,9 @@ namespace Apace.ApiServer.Utils;
 // The iOS XAL client requires a numeric (uint64) xuid, so derive a stable one from the id.
 internal static class XuidUtils
 {
+    // Title id of the iOS app; XAL rejects sisu/xsts responses whose title id doesn't match its own config
+    public const string IosTitleId = "1712756451";
+
     public static ulong FromUserId(string userId)
     {
         byte[] bytes = Convert.FromHexString(userId);

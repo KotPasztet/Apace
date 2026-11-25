@@ -12,6 +12,11 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 [Route("Client")]
 [Route("20CA2.playfabapi.com/Client")]
 [Route("1712756451.playfabapi.com/Client")]
+// The iOS app's own compiled-in PlayFab title id is "11509" (Android's is "20CA2", the locator's
+// PlayfabTitleId). The PlayFab endpoint patch in the patcher only rewrites the scheme+host, so the
+// iOS client keeps calling <server>/<its title id>.playfabapi.com - every PlayFab title id the
+// clients can produce needs a route or the sign-in sequence dies on a 404 before the login page shows.
+[Route("11509.playfabapi.com/Client")]
 internal sealed partial class LoginController : ApaceControllerBase
 {
     private static Config config => Program.config;

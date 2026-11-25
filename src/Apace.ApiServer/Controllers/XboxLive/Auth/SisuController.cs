@@ -206,7 +206,7 @@ internal sealed class SisuController : ApaceControllerBase
     private static string GetTitleId(string appId)
         => appId.ToLowerInvariant() switch
         {
-            "0000000040281e53" => "1712756451", // Minecraft Earth iOS
+            "0000000040281e53" => XuidUtils.IosTitleId, // Minecraft Earth iOS
             _ => "2037747551", // Minecraft Earth Android, as in TitleController
         };
 

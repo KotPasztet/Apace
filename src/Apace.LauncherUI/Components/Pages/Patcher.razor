@@ -75,6 +75,19 @@
                apacePatcher.upload) straight from the XHR progress events - it keeps
                moving even when the Blazor circuit is busy. Blazor shows its own
                file card below once the upload finishes. *@
+            @* Shared note for both platforms: where to obtain the original client file. *@
+            <p class="text-muted" style="font-size: 0.75rem;">
+                Looking for the original Minecraft Earth APK/IPA file? Grab it from the
+                <a href="https://discord.com/channels/1520161725662499006/1575228548606722193" target="_blank" rel="noopener">Apace Discord</a>.
+            </p>
+            @if (platform == PatchPlatform.Ios)
+            {
+                <p class="text-muted" style="font-size: 0.75rem;">
+                    The patched IPA is ready to install: sideload it with Sideloadly or SideStore - that is the only step.
+                    The tool re-signs the app with your Apple ID and keeps the embedded Xbox sign-in (XAL) keychain
+                    entitlements, so no Mac codesign script or manual provisioning profile work is needed.
+                </p>
+            }
             @if (uploadedPath is not null)
             {
                 <div class="file-item mt-3">
@@ -452,6 +465,19 @@
                             </div>
                         }
                         <div class="form-check mt-2">
+                            <input type="checkbox" class="form-check-input" id="iosChangeBundleId" @bind="iosChangeBundleId" />
+                            <label class="form-check-label" for="iosChangeBundleId">Change bundle ID (installs next to the original app instead of replacing it)</label>
+                        </div>
+                        @if (iosChangeBundleId)
+                        {
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Bundle ID</label>
+                                    <input class="form-control" @bind="iosBundleId" />
+                                </div>
+                            </div>
+                        }
+                        <div class="form-check mt-2">
                             <input type="checkbox" class="form-check-input" id="iosChangeIcon" @bind="iosChangeIcon" />
                             <label class="form-check-label" for="iosChangeIcon">Change app icon (uses the Apace icon)</label>
                         </div>
@@ -792,6 +818,8 @@
     private bool iosDisableSpeedLimit;
     private bool iosChangeAppName = true;
     private string iosAppName = "Apace";
+    private bool iosChangeBundleId = true;
+    private string iosBundleId = "com.kotpasztet.apace";
     private bool iosChangeIcon = true;
     private bool iosRemoveDrm = true;
     private bool iosForceWebView = true;
@@ -1268,6 +1296,8 @@
             DisableSpeedLimit = false,
             ChangeAppName = true,
             AppName = iosAppName,
+            ChangeBundleId = true,
+            BundleId = iosBundleId,
             ChangeIcon = true,
             RemoveDrm = true,
             ChangeLoginServerAddress = true,
@@ -1304,6 +1334,8 @@
             DisableSpeedLimit = false,
             ChangeAppName = true,
             AppName = iosAppName,
+            ChangeBundleId = true,
+            BundleId = iosBundleId,
             ChangeIcon = true,
             RemoveDrm = true,
             ChangeLoginServerAddress = true,
@@ -1338,6 +1370,8 @@
             DisableSpeedLimit = iosDisableSpeedLimit,
             ChangeAppName = iosChangeAppName,
             AppName = iosAppName,
+            ChangeBundleId = iosChangeBundleId,
+            BundleId = iosBundleId,
             ChangeIcon = iosChangeIcon,
             RemoveDrm = iosRemoveDrm,
             ChangeLoginServerAddress = iosUseCustomAuth,

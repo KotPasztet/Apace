@@ -13,6 +13,9 @@ namespace Apace.ApiServer;
 
 public class Startup
 {
+    // masks JWT-style tokens in the auth debug log so it can be shared without leaking them
+    private static readonly System.Text.RegularExpressions.Regex JwtRegex = new(@"eyJ[\w-]+\.[\w-]+\.[\w-]+");
+
     public Startup(IConfiguration configuration)
     {
         Configuration = configuration;
@@ -115,6 +118,91 @@ public class Startup
             context.Items.Add("RequestStartedOn", DateTimeOffset.UtcNow);
             await next();
         });
+
+        // Debug aid for reverse-engineering the iOS (Xal/SISU) login flow: set APACE_LOG_AUTH_BODIES=1
+        // to log method, headers and body of requests to the auth/login endpoints. Bodies can contain
+        // tokens, so this stays off unless explicitly enabled.
+        if (Environment.GetEnvironmentVariable("APACE_LOG_AUTH_BODIES") == "1")
+        {
+            app.Use(async (context, next) =>
+            {
+                string path = context.Request.Path.Value ?? string.Empty;
+                if (path.Contains("xboxlive.com", StringComparison.OrdinalIgnoreCase)
+                    || path.Contains("live.com", StringComparison.OrdinalIgnoreCase)
+                    || path.Contains("playfab", StringComparison.OrdinalIgnoreCase)
+                    || path.Contains("oauth", StringComparison.OrdinalIgnoreCase)
+                    || path.Contains("sisu", StringComparison.OrdinalIgnoreCase)
+                    || path.Contains("ppsecure", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Request.EnableBuffering();
+                    string body;
+                    using (var reader = new System.IO.StreamReader(context.Request.Body, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
+                    {
+                        body = await reader.ReadToEndAsync();
+                    }
+                    context.Request.Body.Position = 0;
+
+                    if (body.Length > 8000)
+                    {
+                        body = body[..8000] + "...(truncated)";
+                    }
+
+                    // login form posts carry the user's username and password, never log those
+                    if (context.Request.Method == "POST"
+                        && (path.Contains("oauth20_authorize", StringComparison.OrdinalIgnoreCase)
+                            || path.Contains("ppsecure", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        body = $"(redacted, {body.Length} chars: may contain credentials)";
+                    }
+
+                    string headers = string.Join("; ", context.Request.Headers.Select(h => $"{h.Key}={h.Value}"));
+                    Log.Information("AUTHDEBUG {Method} {Path}{Query} | Headers: {Headers} | Body: {Body}",
+                        context.Request.Method, path, context.Request.QueryString,
+                        JwtRegex.Replace(headers, "<jwt>"), JwtRegex.Replace(body, "<jwt>"));
+
+                    // also log what the server answers (status, redirect target, body); gzip is switched off so the body is readable
+                    context.Request.Headers.Remove("Accept-Encoding");
+                    var originalResponseBody = context.Response.Body;
+                    using var capturedResponse = new MemoryStream();
+                    context.Response.Body = capturedResponse;
+                    try
+                    {
+                        await next();
+                    }
+                    finally
+                    {
+                        capturedResponse.Position = 0;
+                        string responseBody;
+                        using (var responseReader = new System.IO.StreamReader(capturedResponse, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
+                        {
+                            responseBody = await responseReader.ReadToEndAsync();
+                        }
+
+                        if (context.Response.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            responseBody = $"(html page, {responseBody.Length} chars)";
+                        }
+                        else if (responseBody.Length > 8000)
+                        {
+                            responseBody = responseBody[..8000] + "...(truncated)";
+                        }
+
+                        Log.Information("AUTHDEBUG-RESPONSE {Method} {Path} -> {Status} | Location: {Location} | Body: {Body}",
+                            context.Request.Method, path, context.Response.StatusCode,
+                            JwtRegex.Replace(context.Response.Headers.Location.ToString(), "<jwt>"),
+                            JwtRegex.Replace(responseBody, "<jwt>"));
+
+                        capturedResponse.Position = 0;
+                        await capturedResponse.CopyToAsync(originalResponseBody);
+                        context.Response.Body = originalResponseBody;
+                    }
+
+                    return;
+                }
+
+                await next();
+            });
+        }
 
         app.UseSerilogRequestLogging(options =>
         {

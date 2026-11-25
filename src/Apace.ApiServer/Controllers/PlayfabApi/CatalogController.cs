@@ -18,6 +18,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 [Route("Catalog")]
 [Route("20CA2.playfabapi.com/Catalog")]
 [Route("1712756451.playfabapi.com/Catalog")]
+[Route("11509.playfabapi.com/Catalog")]
 internal sealed class CatalogController : ApaceControllerBase
 {
     private static readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions()
@@ -760,8 +761,13 @@ internal sealed class CatalogController : ApaceControllerBase
         IEnumerable<Item> items;
         try
         {
-            string filter = request.Filter
-                .Replace("platforms/any(tp: tp eq 'android.googleplay' and tp eq 'title.earth')", "platforms/any(tp: tp eq 'android.googleplay') and platforms/any(tp: tp eq 'title.earth')");
+            // "platforms/any(tp: tp eq 'X' and tp eq 'title.earth')" can never match (one value can't equal two
+            // strings), so the clients' platform filter (android.googleplay, ios.store, ...) is split into two
+            // separate any() checks before the filter is evaluated
+            string filter = System.Text.RegularExpressions.Regex.Replace(
+                request.Filter,
+                @"platforms/any\(tp:\s*tp eq '([^']+)'\s+and\s+tp eq '([^']+)'\)",
+                "platforms/any(tp: tp eq '$1') and platforms/any(tp: tp eq '$2')");
 
                 // base offer (staticdata) plus the panel's custom cosmetics (own
                 // content — never pack-gated, like staticdata) and, when the live

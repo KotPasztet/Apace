@@ -10,6 +10,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 [Route("Authentication")]
 [Route("20CA2.playfabapi.com/Authentication")]
 [Route("1712756451.playfabapi.com/Authentication")]
+[Route("11509.playfabapi.com/Authentication")]
 internal sealed class AuthenticationController : ApaceControllerBase
 {
     private static Config config => Program.config;

@@ -15,6 +15,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 [Route("Client")]
 [Route("20CA2.playfabapi.com/Client")]
 [Route("1712756451.playfabapi.com/Client")]
+[Route("11509.playfabapi.com/Client")]
 internal sealed partial class ClientController : ApaceControllerBase
 {
     private static Config config => Program.config;

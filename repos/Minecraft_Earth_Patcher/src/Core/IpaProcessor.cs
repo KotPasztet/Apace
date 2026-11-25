@@ -113,6 +113,23 @@ public static class IpaProcessor
             Log.Debug("Done");
         }
 
+        if (options.ChangeBundleId)
+        {
+            if (!IsValidBundleId(options.BundleId))
+            {
+                Log.Fatal($"'{options.BundleId}' is not a valid bundle ID (use letters, digits, '-' and '.', e.g. com.example.app)");
+                return false;
+            }
+
+            Log.Information($"Changing bundle ID to '{options.BundleId}'");
+            if (!PatchBundleId(appDir, options.BundleId!.Trim()))
+            {
+                Log.Fatal("Could not find CFBundleIdentifier in Info.plist");
+                return false;
+            }
+            Log.Debug("Done");
+        }
+
         if (options.ChangeIcon && !string.IsNullOrWhiteSpace(options.IconPath))
         {
             Log.Information("Changing app icon");
@@ -190,6 +207,12 @@ public static class IpaProcessor
             Log.Debug("Done");
         }
 
+        if (options.RemoveDrm)
+        {
+            Log.Information("*****Pseudo-signing patched binaries (ldid)*****");
+            await PseudoSignPatchedBinaries(appDir, exePath, decodedDir);
+        }
+
         Log.Information("*****Building IPA*****");
         if (string.Equals(Path.GetFullPath(inIpa), Path.GetFullPath(outIpa), StringComparison.OrdinalIgnoreCase))
         {
@@ -252,8 +275,9 @@ public static class IpaProcessor
         if (Directory.Exists(decodedDir))
             Directory.Delete(decodedDir, true);
 
-        Log.Warning("The patched IPA is not signed. Sign it with the keychain access groups <TEAMID>.com.microsoft.xal and " +
-            "<TEAMID>.com.microsoft.adalcache in its entitlements, or Xbox sign-in fails before it sends any request. See the README for details.");
+        Log.Information("The patched IPA is ready to install: sideload it with Sideloadly or SideStore (works from any platform). " +
+            "The tool re-signs the app with your Apple ID and keeps the entitlements embedded in the binaries " +
+            "(the Xbox sign-in keychain groups), so no manual codesign script or provisioning profile work is needed.");
 
         Log.Information("Finished");
         return true;
@@ -493,6 +517,113 @@ public static class IpaProcessor
     private static string EscapeXml(string value)
     {
         return value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+    }
+
+    public static bool IsValidBundleId(string? bundleId)
+    {
+        if (string.IsNullOrWhiteSpace(bundleId))
+            return false;
+
+        string id = bundleId.Trim();
+        if (id.Length > 155 || !id.Contains('.') || id.StartsWith('.') || id.EndsWith('.') || id.Contains(".."))
+            return false;
+
+        return id.All(c => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '.');
+    }
+
+    /// <summary>
+    /// Rewrites the app's own CFBundleIdentifier so the patched build installs next to the original
+    /// instead of replacing it. Returns false when the key is missing.
+    /// </summary>
+    private static bool PatchBundleId(string appDir, string bundleId)
+    {
+        string plistPath = Path.Combine(appDir, "Info.plist");
+        if (!File.Exists(plistPath))
+            return false;
+
+        string text = File.ReadAllText(plistPath);
+
+        const string keyTag = "<key>CFBundleIdentifier</key>";
+        int keyIdx = text.IndexOf(keyTag, StringComparison.Ordinal);
+        if (keyIdx < 0)
+            return false;
+
+        int open = text.IndexOf("<string>", keyIdx + keyTag.Length, StringComparison.Ordinal);
+        int close = open < 0 ? -1 : text.IndexOf("</string>", open, StringComparison.Ordinal);
+        if (open < 0 || close < 0)
+            return false;
+
+        int valueStart = open + "<string>".Length;
+        text = text.Substring(0, valueStart) + EscapeXml(bundleId) + text.Substring(close);
+
+        WritePlist(plistPath, text);
+        return true;
+    }
+
+    // The entitlements pseudo-signed INTO the patched binaries. The plain group names are deliberate:
+    // sideload tools read these groups from the embedded signature and re-prefix each one with the
+    // signing team's id (which a team wildcard profile covers) when they re-sign the app - writing a
+    // literal team id or the $(AppIdentifierPrefix) placeholder here would defeat that step.
+    // (Entitlements.plist in the bundle - see WriteXalEntitlements - is only consumed by manual
+    // Xcode/codesign workflows; iOS itself reads the entitlements from the code signature.)
+    private static void WriteLdidEntitlements(string path)
+    {
+        string entitlements =
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>keychain-access-groups</key>
+                <array>
+                    <string>com.microsoft.xal</string>
+                    <string>com.microsoft.adalcache</string>
+                </array>
+            </dict>
+            </plist>
+            """;
+
+        WritePlist(path, entitlements);
+    }
+
+    // Stripping the original signature removed its entitlements, and the Xbox sign-in library (XAL)
+    // fails before sending any request when the com.microsoft.xal / com.microsoft.adalcache keychain
+    // groups are missing from the code signature. ldid re-embeds them into the binaries it signs, so
+    // the sideload tools that re-sign the app pick the groups up and re-apply them with the signing
+    // team's prefix. Every failure here is non-fatal: the IPA still installs, it just degrades to the
+    // pre-ldid behavior (sign-in needs an entitlements-carrying re-sign).
+    private static async Task PseudoSignPatchedBinaries(string appDir, string exePath, string decodedDir)
+    {
+        if (!await Ldid.EnsureAsync())
+        {
+            Log.Warning("ldid is not available, the patched binaries carry NO embedded entitlements. The IPA will still install, " +
+                "but Xbox sign-in then needs a re-sign that adds the keychain access groups <TEAMID>.com.microsoft.xal and " +
+                "<TEAMID>.com.microsoft.adalcache (Sideloadly/SideStore keep the entitlements embedded in the binaries when present).");
+            return;
+        }
+
+        string entitlementsPath = Path.Combine(decodedDir, "ldid-entitlements.plist");
+        WriteLdidEntitlements(entitlementsPath);
+
+        var targets = new List<string> { exePath };
+
+        string xalPath = Path.Combine(appDir, "Frameworks", "Xal.framework", "Xal");
+        if (File.Exists(xalPath))
+        {
+            targets.Add(xalPath);
+        }
+
+        foreach (string target in targets)
+        {
+            if (Ldid.PseudoSign(target, entitlementsPath))
+            {
+                Log.Information($"Embedded the XAL keychain entitlements into {Path.GetFileName(target)} (ldid pseudo-sign)");
+            }
+            else
+            {
+                Log.Warning($"ldid could not pseudo-sign {Path.GetFileName(target)} - Xbox sign-in may need a re-sign that adds the XAL keychain access groups.");
+            }
+        }
     }
 
     private static string StripPort(string host)
@@ -814,6 +945,8 @@ public static class IpaProcessor
         public bool DisableSunsetTimeCheck { get; set; } = true;
         public bool DisableSpeedLimit { get; set; } = false;
         public bool ChangeAppName { get; set; } = true;
+        public bool ChangeBundleId { get; set; } = false;
+        public string BundleId { get; set; } = "";
         public bool ChangeIcon { get; set; } = false;
         public string IconPath { get; set; } = "";
         public bool RemoveDrm { get; set; } = true;

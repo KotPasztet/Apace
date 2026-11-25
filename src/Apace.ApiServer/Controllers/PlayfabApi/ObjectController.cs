@@ -15,6 +15,7 @@ namespace Apace.ApiServer.Controllers.PlayfabApi;
 [Route("Object")]
 [Route("20CA2.playfabapi.com/Object")]
 [Route("1712756451.playfabapi.com/Object")]
+[Route("11509.playfabapi.com/Object")]
 internal sealed class ObjectController : ApaceControllerBase
 {
     private sealed record GetObjectsRequest(

@@ -45,13 +45,17 @@ internal sealed class XstsController : ApaceControllerBase
         var titleTokenAuth = JwtUtils.Verify<Tokens.Xbox.AuthToken>(request.Properties.TitleToken, config.XboxLive.AuthTokenSecretBytes)?.Data;
         var userTokenAuth = JwtUtils.Verify<Tokens.Xbox.AuthToken>(request.Properties.UserTokens[0], config.XboxLive.AuthTokenSecretBytes)?.Data;
 
-        if (deviceTokenAuth is not Tokens.Xbox.DeviceToken || titleTokenAuth is not Tokens.Xbox.TitleToken || userTokenAuth is not Tokens.Xbox.UserToken userToken)
+        if (deviceTokenAuth is not Tokens.Xbox.DeviceToken || titleTokenAuth is not Tokens.Xbox.TitleToken titleToken || userTokenAuth is not Tokens.Xbox.UserToken userToken)
         {
             return TypedResults.Unauthorized();
         }
 
         string relyingParty = NormalizeRelyingParty(request.RelyingParty);
-        bool numericXid = relyingParty != request.RelyingParty;
+
+        // iOS (XAL) needs the numeric xid everywhere, whether or not the relying party was prefixed with the server address
+        bool numericXid = relyingParty != request.RelyingParty || titleToken.Tid == XuidUtils.IosTitleId;
+
+        Log.Information($"XSTS authorize: relying party '{request.RelyingParty}' (normalized '{relyingParty}'), title {titleToken.Tid}, user {userToken.Username}, numeric xid {numericXid}");
 
         switch (relyingParty)
         {
