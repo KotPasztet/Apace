@@ -18,6 +18,10 @@
 - **"Downloaded — press Start again" banner + failure surfacing** (`Components/Pages/ServerStatus.razor`): the 2 s poll detects the download's true→false transition — on success a green `alert-success` banner tells the user to press Start again (also set by the manual Download button's success branch; cleared by any real start attempt, the banner's "Not now" link, or a new download), on failure the resource pack alert shows "Resource pack download failed — see the Live Logs for details." unless a more specific reason is already displayed.
 - **`FileChecker.ResourcePackValid`** (`FileChecker.cs`): new public accessor over the private stat-based `ResourcePackFileIsValid()`, so the page can gate starts cheaply (and the guard does not depend on the dismissible `ResourcePackPending` flag).
 
+### 📱 Mobile home title
+
+- **Home page hero** (`Components/Pages/Home.razor`): the home page `<h1>` reads "Apace Mobile Launcher" when the panel runs inside the Android launcher app (`LanIp.IsMobileLauncher` — the `APACE_MOBILE=1` marker or the TracerPid fallback), and stays "Apace Launcher" everywhere else. Both the signed-in and signed-out hero branches are covered; the browser tab title, the sidebar brand and every other page are untouched — a desktop user can never see the mobile title (`IsMobileLauncher` is computed once and false on any detection failure).
+
 ### 🗺️ Map provider key popup
 
 - **Setting** (`Settings.cs`): new `MapKeyPopupSuppressed` (persisted in config.json, mirrors `PersonaNoPacksPopupSuppressed`).
