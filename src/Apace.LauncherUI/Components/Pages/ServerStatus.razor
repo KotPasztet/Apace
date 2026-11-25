@@ -93,7 +93,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
                 <strong>Resource pack missing</strong><br />
-                <small>The vanilla resource pack (<code>staticdata/resourcepacks/vanilla.zip</code>) is required before the server can start — Start All downloads it automatically, or use the button below.</small>
+                <small>The vanilla resource pack (<code>staticdata/resourcepacks/vanilla.zip</code>) is required before the server can start. Starting the server will ask you to confirm the download; after it finishes, press Start again.</small>
                 @if (!string.IsNullOrEmpty(_resourcePackError))
                 {
                     <br />
@@ -129,6 +129,18 @@
         <div class="d-flex justify-content-between align-items-center mt-1">
             <small class="text-muted">@(_downloadingResourcePack ? "Downloading resource pack" : "Waiting for the resource pack download")... @((_resourcePackDownloadProgress * 100).ToString("F0"))%</small>
             <button type="button" class="btn btn-link btn-sm p-0" @onclick="CancelResourcePackDownload">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (_resourcePackDownloadJustFinished)
+{
+    <div class="alert alert-success">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <strong>Resource pack downloaded — press Start again to boot the server.</strong>
+            </div>
+            <button type="button" class="btn btn-link btn-sm" @onclick="DismissResourcePackDownloadBanner">Not now</button>
         </div>
     </div>
 }
@@ -244,6 +256,29 @@
     </div>
 }
 
+@if (_showResourcePackConsent)
+{
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+         style="background: rgba(0,0,0,.55); z-index: 2000;">
+        <div class="card shadow" style="max-width: 30rem; width: calc(100% - 2rem);">
+            <div class="card-header fw-bold">Resource pack required</div>
+            <div class="card-body">
+                <p class="mb-2">The server needs the vanilla resource pack (<code>staticdata/resourcepacks/vanilla.zip</code>, ~131 MB, one-time download) before it can start. After the download finishes, press Start again to boot the server.</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="resourcePackConsentRights" @bind="_popupRightsConfirmed" />
+                    <label class="form-check-label" for="resourcePackConsentRights">
+                        I confirm I own a licensed copy of Minecraft: Earth / Bedrock and accept the applicable Terms
+                    </label>
+                </div>
+            </div>
+            <div class="card-footer d-flex flex-wrap gap-2 justify-content-end">
+                <button class="btn btn-primary btn-sm" @onclick="ConfirmResourcePackConsent" disabled="@(!_popupRightsConfirmed)">Confirm &amp; download</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="CancelResourcePackConsent">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="card">
     <div class="card-header">▸ Live Logs</div>
     <div class="card-body">
@@ -349,6 +384,22 @@
     private bool _showMapKeyPopup;
     private Func<Task>? _pendingMapKeyStartAction;
 
+    // Resource pack consent popup (outer start guard): set when a start was
+    // requested while the pack is missing and not downloading — it asks for
+    // the rights confirmation before anything is fetched. The pending action
+    // is stored but intentionally NEVER invoked: starting always requires a
+    // fresh, deliberate Start click after the pack is in place.
+    private bool _showResourcePackConsent;
+    private bool _popupRightsConfirmed;
+    private Func<Task>? _pendingConsentStartAction;
+
+    // "Resource pack downloaded" success banner (two-phase start: download,
+    // then the user presses Start again). Cleared by a real start attempt,
+    // the dismiss link, or a new download; _prevDownloadRunning lets the 2 s
+    // poll below detect the download's true→false transition.
+    private bool _resourcePackDownloadJustFinished;
+    private bool _prevDownloadRunning;
+
     protected override async Task OnInitializedAsync()
     {
         // Refresh before anything else (and before the auth lookup): the page
@@ -374,6 +425,30 @@
             // the pending alert while a download is running instead of
             // re-stating the file mid-download.
             var downloadRunning = Apace.LauncherUI.FileChecker.IsResourcePackDownloading;
+
+            // Download lifecycle: when a download just FINISHED (true→false),
+            // either show the "press Start again" banner (pack valid) or
+            // surface the failure — unless the manual Download button already
+            // reported a more specific reason. When one STARTS (false→true),
+            // clear the stale banner/error from a previous run.
+            if (_prevDownloadRunning && !downloadRunning)
+            {
+                if (Apace.LauncherUI.FileChecker.ResourcePackValid)
+                {
+                    _resourcePackDownloadJustFinished = true;
+                }
+                else if (string.IsNullOrEmpty(_resourcePackError))
+                {
+                    _resourcePackError = "Resource pack download failed — see the Live Logs for details.";
+                }
+            }
+            else if (!_prevDownloadRunning && downloadRunning)
+            {
+                _resourcePackDownloadJustFinished = false;
+                _resourcePackError = null;
+            }
+            _prevDownloadRunning = downloadRunning;
+
             var downloadProgress = Apace.LauncherUI.FileChecker.ResourcePackDownloadProgress;
             var resourcePackPending = (_downloadingResourcePack || downloadRunning)
                 ? _resourcePackPending
@@ -483,7 +558,7 @@
             return;
         }
 
-        await RunWithMapKeyGuard(() => ServerManager.Start());
+        await RunWithResourcePackConsent(() => RunWithMapKeyGuard(() => ServerManager.Start()));
     }
 
     private void GoToMarketplace()
@@ -497,13 +572,38 @@
         Settings.Instance.PersonaNoPacksPopupSuppressed = true;
         Settings.Instance.Save(Settings.DefaultPath);
         _showNoPacksPopup = false;
-        await RunWithMapKeyGuard(() => ServerManager.Start());
+        await RunWithResourcePackConsent(() => RunWithMapKeyGuard(() => ServerManager.Start()));
     }
 
     private async Task CloseNoPacksPopupAndStart()
     {
         _showNoPacksPopup = false;
-        await RunWithMapKeyGuard(() => ServerManager.Start());
+        await RunWithResourcePackConsent(() => RunWithMapKeyGuard(() => ServerManager.Start()));
+    }
+
+    // ── Resource pack consent guard (OUTER, wraps the map-key guard below) ──
+    //
+    // The pack is a hard start prerequisite and fetching ~131 MB needs the
+    // user's explicit OK (rights confirmation). While the pack is missing and
+    // not already downloading, every start parks here and shows the consent
+    // popup; "Confirm & download" fetches the pack only — the server boots on
+    // the NEXT Start click (two-phase start). With the pack valid, a download
+    // already running, or the rights confirmed this session, the start runs
+    // unchanged.
+    private async Task RunWithResourcePackConsent(Func<Task> startAction)
+    {
+        if (!FileChecker.ResourcePackValid && !_resourcePackRightsConfirmed
+            && !FileChecker.IsResourcePackDownloading)
+        {
+            // Kept only so Cancel/Confirm can drop it — intentionally never
+            // invoked: starting always requires a fresh, deliberate Start click.
+            _pendingConsentStartAction = startAction;
+            _showResourcePackConsent = true;
+            return;
+        }
+
+        _resourcePackDownloadJustFinished = false; // a real start attempt clears the banner
+        await startAction();
     }
 
     // ── Map provider key guard (shared by every start entry point) ──
@@ -584,7 +684,7 @@
         => await ServerManager.Stop();
 
     private async Task RestartServer()
-        => await RunWithMapKeyGuard(() => ServerManager.Restart());
+        => await RunWithResourcePackConsent(() => RunWithMapKeyGuard(() => ServerManager.Restart()));
 
     private async Task KillAll()
     {
@@ -630,6 +730,7 @@
             {
                 _resourcePackPending = false;
                 _resourcePackRightsConfirmed = false;
+                _resourcePackDownloadJustFinished = true;
             }
             else
             {
@@ -656,8 +757,30 @@
         _resourcePackPending = false;
     }
 
+    // Consent popup buttons: "Confirm & download" remembers the confirmation
+    // and fetches the pack (never starts the server — two-phase start);
+    // "Cancel" just dismisses and drops the parked start action.
+    private async Task ConfirmResourcePackConsent()
+    {
+        _resourcePackRightsConfirmed = true;
+        _popupRightsConfirmed = false;
+        _showResourcePackConsent = false;
+        _pendingConsentStartAction = null;
+        await DownloadResourcePack();
+    }
+
+    private void CancelResourcePackConsent()
+    {
+        _showResourcePackConsent = false;
+        _pendingConsentStartAction = null;
+        _popupRightsConfirmed = false;
+    }
+
+    private void DismissResourcePackDownloadBanner()
+        => _resourcePackDownloadJustFinished = false;
+
     private async Task StartComponent(string exeName)
-        => await RunWithMapKeyGuard(() => ServerManager.StartComponents(exeName));
+        => await RunWithResourcePackConsent(() => RunWithMapKeyGuard(() => ServerManager.StartComponents(exeName)));
 
     private bool HasPermission(string permission)
         => _user?.HasPermission(permission) ?? false;

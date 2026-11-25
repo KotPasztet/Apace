@@ -451,9 +451,13 @@ public sealed class ServerManager : IDisposable
     /// page-level initialization callers of EnsureComponentsOnline are
     /// intentionally NOT gated: they only wake already-configured helper
     /// components and must not trigger a 131 MB download on page open.
+    /// Two-phase start: when the pack had to be fetched, the start stops
+    /// after the download — the next start click proceeds.
     /// </summary>
     public async Task<bool> StartComponents(string exeName)
     {
+        bool packWasMissing = !FileChecker.ResourcePackValid;
+
         try
         {
             await FileChecker.EnsureResourcePackReadyAsync();
@@ -466,6 +470,14 @@ public sealed class ServerManager : IDisposable
         catch (Exception ex)
         {
             Log.Logger.Error(ex, "Resource pack is not ready — aborting component start");
+            return false;
+        }
+
+        if (packWasMissing)
+        {
+            // Two-phase start: the pack was just fetched (or waited for) — do not boot
+            // the server automatically. EULA and the rest run on the NEXT start click.
+            Log.Logger.Information("Resource pack downloaded — press Start again to boot the server.");
             return false;
         }
 
@@ -771,6 +783,8 @@ public sealed class ServerManager : IDisposable
             }
         }
 
+        bool packWasMissing = !FileChecker.ResourcePackValid;
+
         // Resource pack gate — kept outside FileChecker.CheckAsync on purpose
         // so it also holds when Settings.SkipFileChecks is true: the server
         // must not boot (and the EULA prompt must not appear) before the pack
@@ -786,6 +800,15 @@ public sealed class ServerManager : IDisposable
         catch (Exception ex)
         {
             logger.Error(ex, "Resource pack is not ready — aborting server start");
+            Status = ServerStatus.Offline;
+            return;
+        }
+
+        if (packWasMissing)
+        {
+            // Two-phase start: the pack was just fetched (or waited for) — do not boot
+            // the server automatically. EULA and the rest run on the NEXT start click.
+            logger.Information("Resource pack downloaded — press Start again to boot the server.");
             Status = ServerStatus.Offline;
             return;
         }

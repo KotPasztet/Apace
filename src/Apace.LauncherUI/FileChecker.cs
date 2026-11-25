@@ -423,6 +423,9 @@ internal static class FileChecker
     /// <summary>Progress (0..1) of the current or most recent resource pack download, whoever started it.</summary>
     public static float ResourcePackDownloadProgress => ResourcePackDownloader.CurrentProgress;
 
+    /// <summary>True when the vanilla.zip resource pack is present and passes validation (cheap stat-based check, safe for the UI).</summary>
+    public static bool ResourcePackValid => ResourcePackFileIsValid();
+
     /// <summary>Cancels a running resource pack download, if any.</summary>
     public static void CancelResourcePackDownload() => ResourcePackDownloader.Cancel();
 }
