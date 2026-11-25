@@ -40,9 +40,13 @@ namespace Apace.ApiServer.Services;
 //   - Thumbnails are resolved the same lazy way by MojangImagesCdnController
 //     (cache → live CDN URL → Bedrock-Persona mirror URL → 404).
 //
-// There is deliberately NO bulk probing: the only remote calls are the lazy,
-// client-driven ones (plus the panel's own sync), all funneled through a shared
-// ≤2 req/s pacer with per-request retry/backoff.
+// The old "deliberately NO bulk probing" rule is GONE: the upstream content CDN
+// is dying (2026-11-25 — a sampled dressing-room session lost 12/12 cold fetches
+// and direct probes confirmed 404 on the primary AND both alternate hosts, i.e.
+// the binaries are gone globally, not blocked per-IP). BinaryWarmUp below now
+// mirrors every servable piece into the volume in the background (paced, one at
+// a time) BEFORE the client asks; the lazy per-request pipeline stays as the
+// fallback for pieces a pass has not reached yet.
 public static class LivePersonaCatalog
 {
     public const string CatalogDirName = "persona-catalog";
@@ -671,6 +675,185 @@ public static class LivePersonaCatalog
                 SaveProbeStates(logger);
             }
         }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Background binary warm-up: mirror every servable piece into the volume
+    // ---------------------------------------------------------------------------
+
+    // The upstream content CDN is dying (see the header). A fresh install used
+    // to meet every piece cold: each une mirrored piece cost the client a
+    // resolve → probe → (404 everywhere) → placeholder round-trip — seconds of
+    // "wczytywanie…" per tap, and a piece that renders nothing afterwards: the
+    // "most things cannot be equipped" report. This loop mirrors every piece
+    // the binary path can serve (pack-selected accessories + filler pieces +
+    // skins + the thematic skin packs) into the volume in the background, one
+    // item at a time through the same ≤2 req/s API pacer the lazy pipeline
+    // uses. Live verdicts persist in probe-state (repeat passes are cheap:
+    // mirrored pieces and fresh verdicts are skipped), dead verdicts drop the
+    // pieces from the offer before the client ever sees them, and still-alive
+    // pieces are captured permanently before the CDN loses them too. The pack
+    // gate decides the scope: accessories outside the allowed pack set are
+    // refused by the binary path anyway, so warming them is pointless — when
+    // the pack selection changes (ConfigStamp), the newly allowed pieces get
+    // warmed on the next pass.
+    private static long _warmUpIndexStamp = -1;
+    private static long _warmUpGateStamp = -1;
+    private static int _warmUpLoopStarted;
+
+    /// <summary>Starts (once per process) the background loop that mirrors every
+    /// servable live-catalog piece into the volume. Safe to call from any
+    /// startup path; a no-op when the live catalog is disabled.</summary>
+    public static void EnsureBinaryWarmUpStarted(ILogger logger)
+    {
+        if (!Enabled || Interlocked.Exchange(ref _warmUpLoopStarted, 1) == 1)
+        {
+            return;
+        }
+
+        _ = Task.Run(() => WarmUpLoopAsync(logger));
+    }
+
+    private static async Task WarmUpLoopAsync(ILogger logger)
+    {
+        // let the server finish booting (staticdata load, DB open, config) before
+        // the first pass competes for the network pacer
+        await Task.Delay(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+
+        while (true)
+        {
+            try
+            {
+                long indexStamp = IndexStamp;
+                long gateStamp = PersonaPackGate.ConfigStamp;
+                if (IsAvailable && (indexStamp != _warmUpIndexStamp || gateStamp != _warmUpGateStamp))
+                {
+                    _warmUpIndexStamp = indexStamp;
+                    _warmUpGateStamp = gateStamp;
+                    await RunWarmUpPassAsync(logger).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warning(ex, "Live persona binary warm-up pass failed — the loop keeps running");
+            }
+
+            // 60 s cadence: the idle check is two long compares + (when the stamp
+            // moved) candidate enumeration, so a hot loop would buy nothing
+            await Task.Delay(TimeSpan.FromMinutes(1)).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task RunWarmUpPassAsync(ILogger logger)
+    {
+        var index = Index;
+        if (index is null)
+        {
+            return;
+        }
+
+        // everything the binary path can actually serve — accessories with a
+        // theme tag inside the allowed pack set, filler pieces (offered by the
+        // catalog regardless of the gate) and skins (gate-exempt). Anything
+        // else is refused by the pack gate before the pipeline runs.
+        IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(CancellationToken.None).ConfigureAwait(false);
+        List<string> candidates = [];
+        lock (StateLock)
+        {
+            LoadProbeStates();
+            var localMirrors = GetLocalPersonaBinaries();
+            foreach (var entry in index.Items)
+            {
+                if (entry.IsEmote)
+                {
+                    continue; // never offered — the dressing room has no emote tab
+                }
+
+                string itemId = entry.Id;
+                if (localMirrors.ContainsKey(itemId))
+                {
+                    continue; // mirrored binary present — alive with no upstream access
+                }
+
+                bool servable = entry.PieceType == "persona_skin"
+                    || PersonaPackGate.FillerExemptItemIds.Contains(itemId)
+                    || (allowed.Count > 0 && ThemeTagsOf(entry).Any(allowed.Contains));
+                if (!servable)
+                {
+                    continue;
+                }
+
+                if (ProbeStates.TryGetValue(itemId, out var state))
+                {
+                    if (state.State == "live" && FileExistsNonEmpty(BinaryPath(itemId)))
+                    {
+                        continue; // mirrored during an earlier pass
+                    }
+
+                    if (state.State == "dead" && !IsStaleDead(state))
+                    {
+                        continue; // freshly probed dead — nothing to fetch
+                    }
+                }
+
+                candidates.Add(itemId);
+            }
+        }
+
+        // thematic skin packs after the pieces (skins serve regardless of the
+        // gate, the packs are the client's Classic Skins imports)
+        List<string> packCandidates = [.. index.SkinPacks
+            .Where(pack => !FileExistsNonEmpty(SkinPackZipPath(pack.Id)))
+            .Select(pack => pack.Id)];
+
+        if (candidates.Count == 0 && packCandidates.Count == 0)
+        {
+            logger.Debug("Live persona binary warm-up: nothing to do ({Indexed} indexed piece(s) all fresh)", index.Items.Count);
+            return;
+        }
+
+        logger.Information("Live persona binary warm-up starting: {Pieces} piece(s) + {Packs} skin pack(s) to mirror (index stamp {Stamp})",
+            candidates.Count, packCandidates.Count, IndexStamp);
+        int live = 0, dead = 0, processed = 0;
+        foreach (string itemId in candidates)
+        {
+            // the per-item gate serializes us behind any client request for the
+            // same piece — the client always wins the race
+            bool ok = await TryEnsureBinaryAsync(itemId, logger, CancellationToken.None).ConfigureAwait(false);
+            if (ok)
+            {
+                live++;
+            }
+            else
+            {
+                dead++;
+            }
+
+            processed++;
+            if (processed % 50 == 0)
+            {
+                logger.Information("Live persona binary warm-up: {Processed}/{Total} — {Live} mirrored, {Dead} dead",
+                    processed, candidates.Count, live, dead);
+                FlushProbeStates(logger);
+            }
+        }
+
+        foreach (string offerId in packCandidates)
+        {
+            bool ok = await TryEnsureSkinPackZipAsync(offerId, logger, CancellationToken.None).ConfigureAwait(false);
+            if (ok)
+            {
+                live++;
+            }
+            else
+            {
+                dead++;
+            }
+        }
+
+        FlushProbeStates(logger);
+        logger.Information("Live persona binary warm-up pass finished: {Processed} piece(s) + {Packs} pack(s) — {Live} mirrored, {Dead} dead/unavailable",
+            processed, packCandidates.Count, live, dead);
     }
 
     // ---------------------------------------------------------------------------

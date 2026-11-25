@@ -156,5 +156,14 @@ public class Startup
         {
             endpoints.MapControllers();
         });
+
+        // Background mirror of every servable live-catalog piece into the volume
+        // (see LivePersonaCatalog.BinaryWarmUp) — the upstream content CDN is
+        // losing MCE binaries, so still-alive pieces must be captured before the
+        // client asks and dead ones must drop from the offer up front. Idempotent:
+        // Program.Main starts the same loop (one per process).
+        app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>()
+            .ApplicationStarted.Register(() =>
+                Services.LivePersonaCatalog.EnsureBinaryWarmUpStarted(Log.Logger));
     }
 }

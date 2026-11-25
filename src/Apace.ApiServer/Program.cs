@@ -428,6 +428,12 @@ public static class Program
 
         Log.Information("Updated live db");
 
+        // Background mirror of every servable live-catalog piece into the volume
+        // (see LivePersonaCatalog.BinaryWarmUp): the upstream content CDN is
+        // losing MCE binaries, so still-alive pieces must be captured before
+        // the client asks and dead ones must drop from the offer up front.
+        Services.LivePersonaCatalog.EnsureBinaryWarmUpStarted(Log.Logger);
+
         host.Run();
 
         return 0;
