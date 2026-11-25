@@ -20,7 +20,13 @@ public sealed class Settings
         ObjectStorePort = 5396,
         // Fresh installs prefill the machine's real LAN IPv4 (never a fake
         // placeholder); 127.0.0.1 only when no LAN address could be detected.
-        IPv4 = LanIp.DetectLanIPv4() ?? "127.0.0.1",
+        // Mobile launcher: the patched client runs on the SAME phone as the
+        // server — localhost is the only stable address there (the Wi-Fi IP
+        // changes between networks, the cellular IP is unreachable), so LAN
+        // detection is bypassed entirely.
+        IPv4 = LanIp.IsMobileLauncher
+            ? "127.0.0.1"
+            : LanIp.DetectLanIPv4() ?? "127.0.0.1",
         EarthDatabaseConnectionString = Path.Combine(Program.DataDirRelative, "earth.db"),
         LiveDatabaseConnectionString = Path.Combine(Program.DataDirRelative, "live.db"),
         EnableTileRenderingLabel = true,
@@ -249,13 +255,27 @@ public sealed class Settings
         // Legacy placeholder upgrade: installs configured before LAN
         // auto-detection carry the literal "192.168.x.x" placeholder (it
         // passes hostname validation as a DNS name, so it survived every
-        // re-save). Replace it — and ONLY it — with the detected LAN address;
-        // any other value (a real user-set IP or hostname) is preserved
-        // verbatim, including on redeploys and self-updates.
-        if (settings.IPv4 == "192.168.x.x" && LanIp.DetectLanIPv4() is { } detectedLanIp)
+        // re-save). Replace it — and ONLY it — with the right default for
+        // the platform: 127.0.0.1 on mobile (the client runs on the same
+        // phone), the detected LAN address on desktop (and only when
+        // detection succeeds — otherwise keep the placeholder until it can
+        // be upgraded). Any other value (a real user-set IP or hostname) is
+        // preserved verbatim, including on redeploys and self-updates — so a
+        // mobile install that already picked up a LAN IP from a previous
+        // dev build keeps it; the user can set 127.0.0.1 manually or
+        // reinstall.
+        if (settings.IPv4 == "192.168.x.x")
         {
-            Log.Information($"Replacing the legacy default IPv4 placeholder '192.168.x.x' with the detected LAN address: '{detectedLanIp}'");
-            settings.IPv4 = detectedLanIp;
+            if (LanIp.IsMobileLauncher)
+            {
+                Log.Information("Replacing the legacy default IPv4 placeholder '192.168.x.x' with '127.0.0.1' (mobile launcher: the client runs on the same device)");
+                settings.IPv4 = "127.0.0.1";
+            }
+            else if (LanIp.DetectLanIPv4() is { } detectedLanIp)
+            {
+                Log.Information($"Replacing the legacy default IPv4 placeholder '192.168.x.x' with the detected LAN address: '{detectedLanIp}'");
+                settings.IPv4 = detectedLanIp;
+            }
         }
 
         UriHostNameType nameType = Uri.CheckHostName(settings.IPv4);
