@@ -70,6 +70,9 @@ public partial class Program
 
         builder.Services.AddSingleton<ServerManager>();
         builder.Services.AddSingleton<PatcherService>();
+        // Signed, cookie-less download URLs for patched clients (the Android
+        // launcher hands them to the system browser; see PatcherDownloadTokens).
+        builder.Services.AddSingleton<PatcherDownloadTokens>();
 
         var updateCheckService = new UpdateCheckService();
         builder.Services.AddSingleton(updateCheckService);

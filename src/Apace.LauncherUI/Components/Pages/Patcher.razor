@@ -9,6 +9,7 @@
 @attribute [Authorize(Policy = Permissions.UsePatcher)]
 @rendermode InteractiveServer
 @inject PatcherService PatcherService
+@inject PatcherDownloadTokens DownloadTokens
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @inject ServerManager ServerManager
@@ -622,7 +623,7 @@
                                 case PatchJobStatus.Queued: <span class="file-status text-muted">Queued</span> break;
                                 case PatchJobStatus.Running: <span class="file-status" style="color: #64b5f6;">Running...</span> break;
                                 case PatchJobStatus.Succeeded:
-                                    <a class="btn btn-sm btn-primary" target="_blank" rel="noopener" href="/api/patcher/download/@job.Id">Download (@FormatBytes(job.OutputFileSize))</a>
+                                    <a class="btn btn-sm btn-primary" target="_blank" rel="noopener" href="@DownloadTokens.CreateUrl(job.Id)">Download (@FormatBytes(job.OutputFileSize))</a>
                                     break;
                                 case PatchJobStatus.Failed: <span class="file-status text-danger" title="@job.Error">Failed</span> break;
                             }
@@ -681,8 +682,12 @@
                     @* target="_blank" keeps the download completely outside Blazor's
                        navigation interception (NavigationLock / enhanced navigation) -
                        the browser fires a plain GET in a new document, so a busy or
-                       unresponsive SignalR circuit can never stall the click. *@
-                    <a class="btn btn-primary" target="_blank" rel="noopener" href="/api/patcher/download/@ActiveJob.Id">Download @ActiveJob.OutputFileName (@FormatBytes(ActiveJob.OutputFileSize))</a>
+                       unresponsive SignalR circuit can never stall the click.
+                       The URL is SIGNED (PatcherDownloadTokens) instead of relying on
+                       the session cookie, so external tools can fetch it too - e.g.
+                       the Android launcher hands this link to Chrome, which then
+                       downloads through the platform's own flow. *@
+                    <a class="btn btn-primary" target="_blank" rel="noopener" href="@DownloadTokens.CreateUrl(ActiveJob.Id)">Download @ActiveJob.OutputFileName (@FormatBytes(ActiveJob.OutputFileSize))</a>
                     <span class="text-muted small align-middle ms-2">The download streams right away - the wait is just the file (~@FormatBytes(ActiveJob.OutputFileSize)) transferring over your network.</span>
                 }
                 @if (ActiveJob.IsFinished)

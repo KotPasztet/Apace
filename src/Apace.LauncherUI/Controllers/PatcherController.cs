@@ -17,10 +17,12 @@ internal sealed class PatcherController : ControllerBase
     private const long MaxUploadBytes = 3L * 1024 * 1024 * 1024; // 3 GB (matches the patcher page)
 
     private readonly PatcherService _patcherService;
+    private readonly PatcherDownloadTokens _downloadTokens;
 
-    public PatcherController(PatcherService patcherService)
+    public PatcherController(PatcherService patcherService, PatcherDownloadTokens downloadTokens)
     {
         _patcherService = patcherService;
+        _downloadTokens = downloadTokens;
     }
 
     /// <summary>
@@ -258,8 +260,37 @@ internal sealed class PatcherController : ControllerBase
     internal sealed record UploadResult(string Name, string FileName, long Size, string Hash, bool Verified);
 
 
+    /// <summary>
+    /// Cookie-authorized download (desktop browsers, panel fetches). The patcher
+    /// page links here only as a legacy fallback - it prefers <see cref="DownloadByLink"/>.
+    /// </summary>
     [HttpGet("download/{jobId}")]
+    [Authorize(Policy = Permissions.UsePatcher)]
     public IActionResult Download(string jobId)
+    {
+        return Serve(jobId);
+    }
+
+    /// <summary>
+    /// Self-contained signed download URL (see <see cref="PatcherDownloadTokens"/>)
+    /// for consumers without the panel session cookie - most importantly the
+    /// Apace Launcher's WebView handing the link to the system browser (Chrome),
+    /// which downloads through Android's own flow. [AllowAnonymous] on purpose:
+    /// the HMAC in the URL IS the authorization for this one file.
+    /// </summary>
+    [HttpGet("dl/{jobId}/{expiry:long}/{token}")]
+    [AllowAnonymous]
+    public IActionResult DownloadByLink(string jobId, long expiry, string token)
+    {
+        if (!_downloadTokens.Validate(jobId, expiry, token))
+        {
+            return Forbid();
+        }
+
+        return Serve(jobId);
+    }
+
+    private IActionResult Serve(string jobId)
     {
         var job = _patcherService.GetJob(jobId);
 
