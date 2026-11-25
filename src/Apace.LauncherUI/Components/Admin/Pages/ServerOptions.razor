@@ -192,6 +192,17 @@ else
                 </div>
 
                 <div class="mb-3 form-check form-switch">
+                    <InputCheckbox @bind-Value="SettingsModel.PatcherRejectNonOriginalApk" class="form-check-input"
+                                   id="patcherRejectNonOriginalApk" />
+                    <label class="form-check-label" for="patcherRejectNonOriginalApk">Reject non-original APK/IPA uploads</label>
+                    <div class="form-text text-white">
+                        Patcher: fail the job immediately when the uploaded APK/IPA is not the supported
+                        original Minecraft Earth build (already-patched APKs and re-packed mirrors
+                        mismatch). Off = only a warning in the job log.
+                    </div>
+                </div>
+
+                <div class="mb-3 form-check form-switch">
                     <InputCheckbox @bind-Value="SettingsModel.LivePersonaCatalog" class="form-check-input"
                                    id="livePersonaCatalog" />
                     <label class="form-check-label" for="livePersonaCatalog">Live persona marketplace</label>
@@ -456,6 +467,7 @@ else
         SettingsModel.TileDatabaseConnectionString = source.TileDatabaseConnectionString;
         SettingsModel.GeneratePreviewOnImport = source.GeneratePreviewOnImport ?? false;
         SettingsModel.SkipFileChecks = source.SkipFileChecks ?? false;
+        SettingsModel.PatcherRejectNonOriginalApk = source.PatcherRejectNonOriginalApk ?? Settings.Default.PatcherRejectNonOriginalApk ?? true;
         SettingsModel.LivePersonaCatalog = source.LivePersonaCatalog ?? Settings.Default.LivePersonaCatalog ?? true;
         SettingsModel.PersonaCatalogSyncIntervalHours = source.PersonaCatalogSyncIntervalHours ?? Settings.Default.PersonaCatalogSyncIntervalHours ?? 24;
         SettingsModel.StaticDataPath = source.StaticDataPath;
@@ -485,6 +497,7 @@ else
         settings.TileDatabaseConnectionString = SettingsModel.TileDatabaseConnectionString;
         settings.GeneratePreviewOnImport = SettingsModel.GeneratePreviewOnImport;
         settings.SkipFileChecks = SettingsModel.SkipFileChecks;
+        settings.PatcherRejectNonOriginalApk = SettingsModel.PatcherRejectNonOriginalApk;
         settings.LivePersonaCatalog = SettingsModel.LivePersonaCatalog;
         settings.PersonaCatalogSyncIntervalHours = SettingsModel.PersonaCatalogSyncIntervalHours;
         settings.StaticDataPath = SettingsModel.StaticDataPath;
@@ -510,6 +523,12 @@ else
     {
         [Required, Range(1, ushort.MaxValue, ErrorMessage = $"Port must be between 1 and 65535")]
         public int? ApiPort
+        {
+            get;
+            set;
+        }
+
+        public bool PatcherRejectNonOriginalApk
         {
             get;
             set;

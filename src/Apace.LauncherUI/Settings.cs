@@ -42,6 +42,7 @@ public sealed class Settings
         BridgePort = 19132,
         LivePersonaCatalog = true,
         PersonaCatalogSyncIntervalHours = 24,
+        PatcherRejectNonOriginalApk = true,
     };
 
     public static Settings Instance { get; set; } = Default;
@@ -184,6 +185,17 @@ public sealed class Settings
     /// is missing.
     /// </summary>
     public bool? MapKeyPopupSuppressed { get; set; }
+
+    /// <summary>
+    /// Patcher input gate (Patcher page): when true (default), an uploaded
+    /// APK/IPA whose hash does not match the supported ORIGINAL Minecraft
+    /// Earth build fails the job immediately with a clear message instead of
+    /// decoding for minutes and dying in apktool with a cryptic smali error —
+    /// already-patched APKs (re-signed by any patcher) and re-packed mirrors
+    /// all mismatch. Null/false = the old warning-only behavior for operators
+    /// who knowingly patch a different build.
+    /// </summary>
+    public bool? PatcherRejectNonOriginalApk { get; set; }
 
     public enum TileDataSourceE
     {
@@ -371,6 +383,12 @@ public sealed class Settings
         {
             Log.Warning($"PersonaCatalogSyncIntervalHours is invalid, using default: '{Default.PersonaCatalogSyncIntervalHours}'");
             settings.PersonaCatalogSyncIntervalHours = Default.PersonaCatalogSyncIntervalHours;
+        }
+
+        if (settings.PatcherRejectNonOriginalApk is null)
+        {
+            Log.Warning($"PatcherRejectNonOriginalApk is invalid, using default: '{Default.PatcherRejectNonOriginalApk}'");
+            settings.PatcherRejectNonOriginalApk = Default.PatcherRejectNonOriginalApk;
         }
 
         Log.Information("Loaded settings");

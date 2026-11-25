@@ -387,7 +387,25 @@ public sealed class PatcherService
         {
             if (!ApkProcessor.VerifyApkHash(fs))
             {
-                job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [WRN] The .apk file hash does not match the supported original - patching may fail.");
+                // Hard reject (default): a hash mismatch means the upload is not
+                // the supported ORIGINAL Minecraft Earth APK. An already-patched
+                // APK (re-signed by any patcher) or a re-packed mirror decodes
+                // fine for minutes and then dies in apktool with a cryptic smali
+                // error (the field-reported Interop.smali "missing EOF at
+                // '.param'"). Fail the job NOW with the actual reason instead.
+                // The settings toggle "Reject non-original APK/IPA uploads"
+                // restores the old warning-only behavior for operators who
+                // knowingly patch a different build.
+                if (Settings.Instance.PatcherRejectNonOriginalApk is not false)
+                {
+                    throw new InvalidOperationException(
+                        "The uploaded APK is NOT the supported original Minecraft Earth APK (SHA-256 mismatch). " +
+                        "Already-patched APKs cannot be patched again and re-packed mirrors break the client — " +
+                        "upload the original com.mojang.minecraftearth 0.33.0 APK you got from Google Play. " +
+                        "The check can be disabled in the panel settings (\"Reject non-original APK/IPA uploads\").");
+                }
+
+                job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [WRN] The .apk file hash does not match the supported original - patching may fail (hard rejection disabled in the settings).");
             }
         }
 
@@ -426,7 +444,15 @@ public sealed class PatcherService
         {
             if (!IpaProcessor.VerifyHash(fs))
             {
-                job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [WRN] The .ipa file hash does not match the supported original - patching may fail.");
+                if (Settings.Instance.PatcherRejectNonOriginalApk is not false)
+                {
+                    throw new InvalidOperationException(
+                        "The uploaded IPA is NOT the supported original Minecraft Earth IPA (hash mismatch). " +
+                        "Already-patched IPAs cannot be patched again — upload the original Minecraft Earth 0.33.0 IPA. " +
+                        "The check can be disabled in the panel settings (\"Reject non-original APK/IPA uploads\").");
+                }
+
+                job.AddLog($"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss} [WRN] The .ipa file hash does not match the supported original - patching may fail (hard rejection disabled in the settings).");
             }
         }
 
