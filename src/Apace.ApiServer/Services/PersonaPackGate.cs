@@ -34,15 +34,23 @@ public static class PersonaPackGate
 {
     public const int DefaultCategoryLimit = 45;
 
-    /// <summary>The "customSkeletonMode" knob (packs.json, default off): what
-    /// the server does with cosmetics that carry a custom (non-standard) rig —
-    /// the invented bone trees ("Squid head" tentacle chains) the frozen client
-    /// cannot bind, which render scattered. Off serves them as-is (hidden by
-    /// the compat gate while onlySupported is on); Strip rewrites the served
-    /// geometry so every custom bone is REMOVED and its cubes merge into the
-    /// nearest standard bone (rigid, nothing can fly apart); FlatOnly does the
-    /// same at serve time AND hides every custom-skeleton piece from the offer
-    /// so only "flat" cosmetics are listed.</summary>
+    /// <summary>The baseline "customSkeletonMode" when packs.json omits the
+    /// key: Flat only — the user's requested default (extra skeleton handling
+    /// ON, offer/serve both strip custom skeletons, so custom-bone pieces
+    /// qualify everywhere the gate consults them).</summary>
+    public const CustomSkeletonModes DefaultCustomSkeletonMode = CustomSkeletonModes.FlatOnly;
+
+    /// <summary>The "customSkeletonMode" knob (packs.json, default Flat only):
+    /// what the server does with cosmetics that carry a custom (non-standard)
+    /// rig — the invented bone trees ("Squid head" tentacle chains) the frozen
+    /// client cannot bind, which render scattered. Off serves them as-is
+    /// (hidden by the compat gate while onlySupported is on); Strip rewrites
+    /// the served geometry so every custom bone is REMOVED and its cubes merge
+    /// into the nearest standard bone (rigid, nothing can fly apart); FlatOnly
+    /// does the same at serve time AND — for pieces the rewriter CANNOT
+    /// flatten — hides them from the offer. A piece the strip CAN flatten
+    /// counts as flat and serves stripped (custom bones are always
+    /// flattenable, so with Flat only on, no piece hides on bones alone).</summary>
     public enum CustomSkeletonModes
     {
         Off = 0,
@@ -73,7 +81,7 @@ public static class PersonaPackGate
     private static bool _onlySupported = true;
     private static bool _fillBlankSlots = true;
     private static bool _experimentalAutoRepairRigs;
-    private static CustomSkeletonModes _customSkeletonMode;
+    private static CustomSkeletonModes _customSkeletonMode = DefaultCustomSkeletonMode;
     private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
     private static long _configStamp;
 
@@ -222,7 +230,7 @@ public static class PersonaPackGate
                     _onlySupported = true;
                     _fillBlankSlots = true;
                     _experimentalAutoRepairRigs = false;
-                    _customSkeletonMode = CustomSkeletonModes.Off;
+                    _customSkeletonMode = DefaultCustomSkeletonMode;
                     _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
                     Log.Information("Persona pack config gone from {Path} — no packs configured, the live marketplace serves nothing until packs are selected", ConfigPath);
                 }
@@ -262,12 +270,17 @@ public static class PersonaPackGate
 
     // "off" / "strip" / "flatOnly" (case-insensitive, JSON-friendly camelCase
     // like the rest of the file) — anything else falls back to Off.
+    // Default OFF in the enum's name only — the user's baseline config is
+    // "Flat only": the extra skeleton handling starts ON so risky custom
+    // skeletons are flattened at serve time instead of serving raw. An
+    // explicit "off" in packs.json still turns it off.
     private static CustomSkeletonModes ParseCustomSkeletonMode(string? value)
         => value?.Trim().ToLowerInvariant() switch
         {
             "strip" => CustomSkeletonModes.Strip,
             "flatonly" or "flat-only" or "flat" => CustomSkeletonModes.FlatOnly,
-            _ => CustomSkeletonModes.Off,
+            "off" => CustomSkeletonModes.Off,
+            _ => DefaultCustomSkeletonMode,
         };
 
     // "1.21.0" / "1.16.200" style threshold strings — leading numeric components,

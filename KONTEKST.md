@@ -99,37 +99,56 @@ dlatego „miniaturki są, a binarek nie ma": to dwie różne magistrale.
 ## 5. Wybrane pakiety i filler
 
 - `packs.json` (`/Admin/PersonaPacks`): defaulty packów (theme tagi `tag.*`),
-  granty per gracz, `categoryLimit` (default 45/grupę), `onlySupported`,
-  `fillBlankSlotsWithRandomCosmetics`, `experimentalAutoRepairRigs`,
-  `customSkeletonMode`, `maxGeometryFormatVersion`.
+  granty per gracz, `categoryLimit`, `onlySupported`, `fillBlankSlotsWithRandomCosmetics`,
+  `experimentalAutoRepairRigs`, `customSkeletonMode`, `maxGeometryFormatVersion`.
+  **Baseline (defaulty): limit 45, onlySupported ON, fill ON, auto-repair OFF,
+  customSkeletonMode = FlatOnly.**
 - Akcesoria serwują się TYLKO z wybranych pakietów (theme tag ∩ allowed);
   skiny (`persona_skin` + MarketplaceDurableCatalog packs) zawsze.
-- **Filler** („wypełnij puste sloty losowymi kosmetykami"): gdy ON — pool =
-  WSZYSTKIE zmirrorowane akcesoria (nie tylko wybrane pakiety!), deterministyczny
-  (sort po item id), doklejany po pack-filtered przed limiterem grup.
-  Warm-up ściaga binarki dla całego poola (scope = ten sam switch). Gdy OFF —
-  pool pusty.
+- **Filler** („wypełnij puste sloty losowymi kosmetykami", default ON): pool =
+  WSZYSTKIE zmirrorowane akcesoria przechodzące bramkę kompatybilności
+  (deterministycznie, sort po item id), doklejany po pack-filtered przed
+  limiterem grup — **każda kategoria wypełnia się kwalifikującymi się
+  kosmetykami AŻ DO LIMITU (45)**. Warm-up ściaga binarki dla całego poola
+  (scope = ten sam switch: ON → wszystko, OFF → selected bundles + skiny).
+  Gdy OFF — pool pusty.
+- **Limiter grup** (`ApplyGroupedCategoryLimit`): pierwsze 45 per grupa
+  wygrywa — staticdata i customs liczą się pierwsze, potem pack-selected,
+  potem filler. Grupy z layoutu; nieznane typy mają własny kubełek.
+- **Cache oferty NIE może zamarzać**: ukryty zbiór (binarka na dysku?)
+  odświeża się przez licznik `MarkBinaryLanded()` (każde lądowanie pliku).
+  Poprzedni sygnał — mtime katalogu binarek — na Docker volume NIE DRGAŁ:
+  oferta stała na 257 piece'ach mimo 759 pobranych, pool fillera na 255,
+  a zakładki twarzy dostawały „matched no items". Objaw zamarznięcia w
+  logu: „Blank-slot filler pool rebuilt: N candidates" z identycznym stampem
+  przez wiele minut przy aktywnym warm-upie.
 
 ## 6. Kompatybilność i naprawa rigów (marker `r3`)
 
 - Bramka (`EvaluateCosmetic`): hide przy positive evidence — format_version
   ≥ cap, particles, render controllers, brakujące texture binding, face bones
   (tylko face_accessory), oversized head bounds.
-- **Auto-repair ON** (`experimentalAutoRepairRigs` / `customSkeletonMode`):
-  piece z custom kośćmi i/lub animacjami przestają być ukrywane — rewriter
-  przy serwowaniu:
-  - head-family (head/eyes/mouth/face_accessory): re-parent custom korzeni
-    na `head` — chyba że subtree ma rotacje; wtedy STRIP (rigid hoist,
-    rest pose zachowany — rotacja wokół złego pivota to było „psuje geometrię");
-  - pozostałe typy: STRIP (cubes → najbliższy standardowy przodek);
-  - **ANIMACJE: usuwane** — blok `animations` z geometrii, a pliki
-    `*.animation.json` dostają pusty payload `{"format_version":"1.8.0","animations":{}}`
-    (wpis w zipie zostaje, manifest się nie sypie);
-  - ETagi z markerem `r3`/`r3-strip`/`r3-flat` — zmiana markera = klient
-    pobiera nową wersję.
+- **customSkeletonMode = FlatOnly (default)**: piece z custom kośćmi NIE są
+  ukrywane, bo strippem STAJĄ SIĘ płaskie — rewriter przy serwowaniu scala
+  custom kości w najbliższy standardowy przodek (rigid, rest pose 1:1).
+  Dzięki temu zakładki twarzy (head/eyes/mouth/face_accessory — prawie
+  wszystkie mają custom kości) wypełniają się do limitu zamiast być puste.
+  Ukryte pozostają tylko piece, których rewriter nie naprawi (particles,
+  render controllers, texture binding, format cap, oversized bounds,
+  face-bone face_accessory).
+- Head-family re-parent na `head` działa TYLKO gdy włączony auto-repair i NIE
+  ma strip mode; subtree z rotacjami idzie ZAWSZE na rigid strip (rotacja
+  wokół złego pivota to było „całkowicie psuje geometrię").
+- **ANIMACJE: usuwane** — blok `animations` z geometrii, a pliki
+  `*.animation.json` dostają pusty payload
+  `{"format_version":"1.8.0","animations":{}}` (wpis w zipie zostaje,
+  manifest się nie sypie). Piece ryzykowne TYLKO przez animacje serwują się
+  statycznie.
+- ETagi z markerem `r3`/`r3-strip`/`r3-flat` — zmiana markera = klient
+  pobiera nową wersję.
 - „Kolory ze złych części ciała" na niektórych piece'ach: podejrzewamy
   bindowanie tekstur po stronie klienta (piece referencuje teksturę, którą
-  klient resolves do słota gracza) — NIE wynika z rewriteru (ten nie dotyka
+  klient resolves do skóra gracza) — NIE wynika z rewriteru (ten nie dotyka
   UV/tekstur). Do diagnozy na próbce, gdy wróci temat.
 
 ## 7. Skiny klasyczne i statyczne

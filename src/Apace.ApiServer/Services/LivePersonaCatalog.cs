@@ -590,12 +590,27 @@ public static class LivePersonaCatalog
 
     // ids of the pieces that have a servable binary on disk right now (volume
     // cache ∪ mojang-assets mirror), cached per (binaries dir stamp, mirror dir
-    // stamp) — both dirs only change when files land or are removed, so every
-    // request is a pair of stat calls, not a 12k-file scan. The volume cache
-    // dir grows while the warm-up runs; each landed file moves the stamp and
-    // the next snapshot picks the piece up.
+    // stamp, landed counter) — the dirs only change when files land or are
+    // removed, so every request is a pair of stat calls, not a 12k-file scan.
+    // The volume cache dir grows while the warm-up runs; each landed file moves
+    // the stamp and the next snapshot picks the piece up.
+    //
+    // The dir mtime ALONE proved useless as the change signal: on the field
+    // install (Docker volume) it never moved while the warm-up downloaded
+    // hundreds of binaries, so the offer cache froze at the pre-warm-up set
+    // (offer=257 while 759 files landed; the filler pool stayed at 255
+    // candidates; every face tab queried "matched no items"). MarkBinaryLanded
+    // — called by every path that writes a binary — is the reliable signal.
     private static long _binaryIdsStamp = -1;
     private static HashSet<string> _binaryIds = new(StringComparer.OrdinalIgnoreCase);
+    private static int _binaryLandedVersion;
+
+    /// <summary>Records that a piece binary just landed in the volume cache —
+    /// bumps the change counter BinaryIdsSnapshot consults, so the hidden-id
+    /// set (and with it the offer, the filler pool and every face tab) refresh
+    /// on the next request without waiting for a dir mtime that may never
+    /// move.</summary>
+    public static void MarkBinaryLanded() => Interlocked.Increment(ref _binaryLandedVersion);
 
     // Caller must hold StateLock.
     private static HashSet<string> BinaryIdsSnapshot()
@@ -614,7 +629,7 @@ public static class LivePersonaCatalog
         }
 
         Dictionary<string, string> local = GetLocalPersonaBinaries(); // stamp-cached itself
-        long combined = HashCode.Combine(stamp, _localPersonaStamp);
+        long combined = HashCode.Combine(stamp, _localPersonaStamp, Volatile.Read(ref _binaryLandedVersion));
         if (combined == _binaryIdsStamp)
         {
             return _binaryIds;
@@ -1137,6 +1152,7 @@ public static class LivePersonaCatalog
                         }
 
                         File.Move(partPath, path, overwrite: true);
+                        MarkBinaryLanded();
                         RecordProbe(itemId, "live", candidateUrl, "warmup", logger);
                         EnsureGeometryCompatCaptured(itemId, logger, path);
                         return true;
@@ -1715,6 +1731,7 @@ public static class LivePersonaCatalog
 
             Directory.CreateDirectory(BinariesDir);
             File.Copy(sourcePath, destPath, overwrite: true);
+            MarkBinaryLanded();
             logger.Debug("Live persona piece {Item} imported from {Source} into the binaries cache", itemId, sourcePath);
         }
         catch (Exception ex)
@@ -1749,6 +1766,7 @@ public static class LivePersonaCatalog
                 }
 
                 File.Move(partPath, destPath, overwrite: true);
+                MarkBinaryLanded();
                 return;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -2689,6 +2707,7 @@ public static class LivePersonaCatalog
                         }
 
                         File.Move(partPath, path, overwrite: true);
+                        MarkBinaryLanded();
                         return path;
                     }
                     finally

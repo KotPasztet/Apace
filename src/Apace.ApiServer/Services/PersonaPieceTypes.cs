@@ -294,11 +294,16 @@ public static class PersonaPieceTypes
         }
 
         // Flat-only mode (packs.json "customSkeletonMode"): pieces with ANY
-        // custom bone stay hidden so only "flat" cosmetics serve. Applied to
-        // every piece type — the user explicitly wants only flat things (hair
-        // included; the head-family exemption below is a bones-RISK scoping,
-        // not a flat-only exemption).
-        if (hideCustomSkeleton && hasNonstandardBones == true)
+        // custom bone stay hidden so only "flat" cosmetics serve — UNLESS the
+        // serve-time strip is active (allowRigRepair), because a stripped
+        // piece IS flat: the rewriter merges the custom bones into the
+        // nearest standard ancestor at serve time, so the piece renders
+        // rigidly on the standard rig and QUALIFIES. This is what fills the
+        // face tabs: nearly every head / eyes / mouth / face-accessory piece
+        // carries custom bones, and with the unconditional hide those
+        // categories listed NOTHING (the field report "nie pokazują się
+        // żadne kosmetyki twarzy"). Hair keeps its exemption below either way.
+        if (hideCustomSkeleton && hasNonstandardBones == true && !allowRigRepair)
         {
             return new CosmeticGateVerdict(false, "flat-only mode hides custom-skeleton pieces (packs.json customSkeletonMode)");
         }
