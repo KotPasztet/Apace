@@ -106,7 +106,9 @@ the server over Tailscale instead of port forwarding.
 - **Linux:** `hostname -I` or `ip addr show`
 - **macOS:** `ifconfig | grep inet`
 
-Your IP usually looks like `192.168.X.XXX`.
+Apace auto-detects your LAN IP on first start and prefills it (Server Options → Network →
+PC Ipv4 Address) — it usually looks like `192.168.X.XXX`. Docker installs can't detect the
+host's IP from inside the container, so set it there manually.
 
 ---
 

@@ -93,7 +93,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
                 <strong>Resource pack missing</strong><br />
-                <small>The vanilla resource pack (<code>staticdata/resourcepacks/vanilla.zip</code>) is served to game clients. The server can start without it, but clients will get no overrides.</small>
+                <small>The vanilla resource pack (<code>staticdata/resourcepacks/vanilla.zip</code>) is required before the server can start — Start All downloads it automatically, or use the button below.</small>
                 @if (!string.IsNullOrEmpty(_resourcePackError))
                 {
                     <br />
@@ -116,17 +116,20 @@
                 </button>
             </div>
         </div>
-        @if (_downloadingResourcePack)
-        {
-            <div class="progress mt-2" style="height: 8px;">
-                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                     style="width: @(_resourcePackDownloadProgress * 100)%"></div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-1">
-                <small class="text-muted">Downloading resource pack... @((_resourcePackDownloadProgress * 100).ToString("F0"))%</small>
-                <button type="button" class="btn btn-link btn-sm p-0" @onclick="CancelResourcePackDownload">Cancel</button>
-            </div>
-        }
+    </div>
+}
+
+@if (_downloadingResourcePack || _resourcePackDownloadRunning)
+{
+    <div class="alert alert-warning">
+        <div class="progress" style="height: 8px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                 style="width: @(_resourcePackDownloadProgress * 100)%"></div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-1">
+            <small class="text-muted">@(_downloadingResourcePack ? "Downloading resource pack" : "Waiting for the resource pack download")... @((_resourcePackDownloadProgress * 100).ToString("F0"))%</small>
+            <button type="button" class="btn btn-link btn-sm p-0" @onclick="CancelResourcePackDownload">Cancel</button>
+        </div>
     </div>
 }
 
@@ -218,6 +221,24 @@
                 <button class="btn btn-primary btn-sm" @onclick="GoToMarketplace">Take me there</button>
                 <button class="btn btn-outline-secondary btn-sm" @onclick="SuppressNoPacksPopupAndStart">Never show again</button>
                 <button class="btn btn-outline-secondary btn-sm" @onclick="CloseNoPacksPopupAndStart">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showMapKeyPopup)
+{
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+         style="background: rgba(0,0,0,.55); z-index: 2000;">
+        <div class="card shadow" style="max-width: 30rem; width: calc(100% - 2rem);">
+            <div class="card-header fw-bold">No map provider key</div>
+            <div class="card-body">
+                <p class="mb-0">@MapKeyPopupBody</p>
+            </div>
+            <div class="card-footer d-flex flex-wrap gap-2 justify-content-end">
+                <button class="btn btn-primary btn-sm" @onclick="GoToMapOptions">Take me there</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="StartAnywayWithMapKey">Start anyway</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="NeverShowMapKeyPopupAgainAndStart">Never show again</button>
             </div>
         </div>
     </div>
@@ -315,6 +336,19 @@
     private Timer? _statusRefreshTimer;
     private TimeZoneInfo? _userTimeZone;
 
+    // True while ANY resource pack download is running — the panel's Download
+    // button, the start flow's automatic download, or another browser tab.
+    // Synced from FileChecker by the 2 s poll below so the shared progress
+    // bar animates no matter who started the download.
+    private bool _resourcePackDownloadRunning;
+
+    // "No map provider key" popup (mirrors the no-packs popup): set when a
+    // start action was requested but the tile renderer would crash on start
+    // because the selected provider's credential is missing. The pending
+    // action runs on "Start anyway" / "Never show again".
+    private bool _showMapKeyPopup;
+    private Func<Task>? _pendingMapKeyStartAction;
+
     protected override async Task OnInitializedAsync()
     {
         // Refresh before anything else (and before the auth lookup): the page
@@ -333,18 +367,26 @@
         _eulaCheckTimer = new Timer(async _ =>
         {
             var pending = Apace.LauncherUI.FileChecker.EulaPending;
-            // The resource pack state is not synced while a download is running:
-            // the pack is written to a .part file and only moved into place when
-            // complete, and a finished download would hide the alert before the
-            // handler reports the result.
-            var resourcePackPending = _downloadingResourcePack
+
+            // Any running resource pack download (panel button, start flow,
+            // another tab) drives the same progress bar. The pack lands as a
+            // .part file and only moves into place when complete, so freeze
+            // the pending alert while a download is running instead of
+            // re-stating the file mid-download.
+            var downloadRunning = Apace.LauncherUI.FileChecker.IsResourcePackDownloading;
+            var downloadProgress = Apace.LauncherUI.FileChecker.ResourcePackDownloadProgress;
+            var resourcePackPending = (_downloadingResourcePack || downloadRunning)
                 ? _resourcePackPending
                 : Apace.LauncherUI.FileChecker.ResourcePackPending;
 
-            if (_eulaPending != pending || _resourcePackPending != resourcePackPending)
+            if (_eulaPending != pending || _resourcePackPending != resourcePackPending
+                || _resourcePackDownloadRunning != downloadRunning
+                || Math.Abs(_resourcePackDownloadProgress - downloadProgress) > 0.005f)
             {
                 _eulaPending = pending;
                 _resourcePackPending = resourcePackPending;
+                _resourcePackDownloadRunning = downloadRunning;
+                _resourcePackDownloadProgress = downloadProgress;
                 await InvokeAsync(StateHasChanged);
             }
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
@@ -441,7 +483,7 @@
             return;
         }
 
-        await ServerManager.Start();
+        await RunWithMapKeyGuard(() => ServerManager.Start());
     }
 
     private void GoToMarketplace()
@@ -455,20 +497,94 @@
         Settings.Instance.PersonaNoPacksPopupSuppressed = true;
         Settings.Instance.Save(Settings.DefaultPath);
         _showNoPacksPopup = false;
-        await ServerManager.Start();
+        await RunWithMapKeyGuard(() => ServerManager.Start());
     }
 
     private async Task CloseNoPacksPopupAndStart()
     {
         _showNoPacksPopup = false;
-        await ServerManager.Start();
+        await RunWithMapKeyGuard(() => ServerManager.Start());
+    }
+
+    // ── Map provider key guard (shared by every start entry point) ──
+    //
+    // When tile rendering is enabled and the selected tile data source's
+    // credential is missing, the Tile Renderer would crash right after start
+    // — so ask first. "Take me there" opens the map options tab (no start),
+    // "Start anyway" dismisses and runs the pending start action, "Never show
+    // again" remembers the choice and runs it.
+
+    private async Task RunWithMapKeyGuard(Func<Task> startAction)
+    {
+        if (ShouldShowMapKeyPopup())
+        {
+            _pendingMapKeyStartAction = startAction;
+            _showMapKeyPopup = true;
+            return;
+        }
+
+        await startAction();
+    }
+
+    private static bool ShouldShowMapKeyPopup()
+    {
+        var settings = Settings.Instance;
+
+        if (settings.MapKeyPopupSuppressed == true)
+        {
+            return false;
+        }
+
+        // Same condition the ServerManager uses to decide whether the Tile
+        // Renderer component starts at all (null = enabled by default).
+        if (settings.EnableTileRenderingLabel == false)
+        {
+            return false;
+        }
+
+        return (settings.TileDataSource ?? Settings.TileDataSourceE.MapTiler) switch
+        {
+            Settings.TileDataSourceE.MapTiler => string.IsNullOrWhiteSpace(settings.MapTilerApiKey),
+            Settings.TileDataSourceE.PostgreSQL => string.IsNullOrWhiteSpace(settings.TileDatabaseConnectionString),
+            _ => false,
+        };
+    }
+
+    private string MapKeyPopupBody
+        => (Settings.Instance.TileDataSource ?? Settings.TileDataSourceE.MapTiler) == Settings.TileDataSourceE.MapTiler
+            ? "Map tiles need a MapTiler API key (free at maptiler.com). Without it the tile renderer will crash on start."
+            : "Map tiles need a PostgreSQL tile database. Without a connection string the tile renderer will crash on start.";
+
+    private void GoToMapOptions()
+    {
+        _showMapKeyPopup = false;
+        _pendingMapKeyStartAction = null;
+        Navigation.NavigateTo("/Admin/ServerOptions?tab=map");
+    }
+
+    private async Task StartAnywayWithMapKey()
+    {
+        _showMapKeyPopup = false;
+        var startAction = _pendingMapKeyStartAction;
+        _pendingMapKeyStartAction = null;
+        if (startAction is not null)
+        {
+            await startAction();
+        }
+    }
+
+    private async Task NeverShowMapKeyPopupAgainAndStart()
+    {
+        Settings.Instance.MapKeyPopupSuppressed = true;
+        Settings.Instance.Save(Settings.DefaultPath);
+        await StartAnywayWithMapKey();
     }
 
     private async Task StopServer()
         => await ServerManager.Stop();
 
     private async Task RestartServer()
-        => await ServerManager.Restart();
+        => await RunWithMapKeyGuard(() => ServerManager.Restart());
 
     private async Task KillAll()
     {
@@ -541,7 +657,7 @@
     }
 
     private async Task StartComponent(string exeName)
-        => await ServerManager.EnsureComponentsOnline(exeName);
+        => await RunWithMapKeyGuard(() => ServerManager.StartComponents(exeName));
 
     private bool HasPermission(string permission)
         => _user?.HasPermission(permission) ?? false;

@@ -94,7 +94,7 @@ else
                     </div>
                     <div class="col-12">
                         <label class="form-label">PC Ipv4 Address or Hostname (without port)</label>
-                        <InputText @bind-Value="SettingsModel.IPv4" class="form-control" placeholder="192.168.x.x" />
+                        <InputText @bind-Value="SettingsModel.IPv4" class="form-control" placeholder="auto-detected LAN IP" />
                         <ValidationMessage For="@(() => SettingsModel.IPv4)" />
                     </div>
                     <div class="col-12 mt-3">
@@ -466,32 +466,33 @@ else
 
     private void HandleSave()
     {
-        var settings = new Settings()
-        {
-            ApiPort = (ushort)SettingsModel.ApiPort!,
-            EventBusPort = (ushort)SettingsModel.EventBusPort!,
-            ObjectStorePort = (ushort)SettingsModel.ObjectStorePort!,
-            BridgePort = (ushort)SettingsModel.BridgePort!,
-            IPv4 = SettingsModel.IPv4,
-            EarthDatabaseConnectionString = SettingsModel.EarthDatabaseConnectionString,
-            LiveDatabaseConnectionString = SettingsModel.LiveDatabaseConnectionString,
-            EnableTileRenderingLabel = SettingsModel.EnableTileRendering,
-            TileDataSource = SettingsModel.TileDataSource,
-            MapTilerApiKey = SettingsModel.MapTilerApiKey,
-            TileDatabaseConnectionString = SettingsModel.TileDatabaseConnectionString,
-            GeneratePreviewOnImport = SettingsModel.GeneratePreviewOnImport,
-            SkipFileChecks = SettingsModel.SkipFileChecks,
-            LivePersonaCatalog = SettingsModel.LivePersonaCatalog,
-            PersonaCatalogSyncIntervalHours = SettingsModel.PersonaCatalogSyncIntervalHours,
-            StaticDataPath = SettingsModel.StaticDataPath,
-            LauncherBuildplatePreview = SettingsModel.LauncherBuildplatePreview,
-            PlayableScale = SettingsModel.PlayableScale,
-            OnlyAllowLocalLogin = SettingsModel.OnlyAllowLocalLogin,
-        };
+        // Mutate the singleton in place (like every other settings editor in
+        // the panel) instead of constructing a fresh Settings object: a fresh
+        // object silently wiped every field this page does not show — the
+        // persona pack selection and the start-popup suppressions among them.
+        var settings = Settings.Instance;
 
-        Settings.Instance = settings;
+        settings.ApiPort = (ushort)SettingsModel.ApiPort!;
+        settings.EventBusPort = (ushort)SettingsModel.EventBusPort!;
+        settings.ObjectStorePort = (ushort)SettingsModel.ObjectStorePort!;
+        settings.BridgePort = (ushort)SettingsModel.BridgePort!;
+        settings.IPv4 = SettingsModel.IPv4;
+        settings.EarthDatabaseConnectionString = SettingsModel.EarthDatabaseConnectionString;
+        settings.LiveDatabaseConnectionString = SettingsModel.LiveDatabaseConnectionString;
+        settings.EnableTileRenderingLabel = SettingsModel.EnableTileRendering;
+        settings.TileDataSource = SettingsModel.TileDataSource;
+        settings.MapTilerApiKey = SettingsModel.MapTilerApiKey;
+        settings.TileDatabaseConnectionString = SettingsModel.TileDatabaseConnectionString;
+        settings.GeneratePreviewOnImport = SettingsModel.GeneratePreviewOnImport;
+        settings.SkipFileChecks = SettingsModel.SkipFileChecks;
+        settings.LivePersonaCatalog = SettingsModel.LivePersonaCatalog;
+        settings.PersonaCatalogSyncIntervalHours = SettingsModel.PersonaCatalogSyncIntervalHours;
+        settings.StaticDataPath = SettingsModel.StaticDataPath;
+        settings.LauncherBuildplatePreview = SettingsModel.LauncherBuildplatePreview;
+        settings.PlayableScale = SettingsModel.PlayableScale;
+        settings.OnlyAllowLocalLogin = SettingsModel.OnlyAllowLocalLogin;
 
-        Settings.Instance.Save(Settings.DefaultPath);
+        settings.Save(Settings.DefaultPath);
         Log.Information("Settings Saved Successfully!");
     }
 

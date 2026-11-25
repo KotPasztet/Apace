@@ -443,6 +443,35 @@ public sealed class ServerManager : IDisposable
         return false;
     }
 
+    /// <summary>
+    /// Per-component start for the panel's ▶ buttons: applies the same
+    /// resource pack gate as a full start (the server must not come up before
+    /// the pack has fully downloaded — cheap no-op once the pack is in place)
+    /// and then delegates to <see cref="EnsureComponentsOnline"/>. The
+    /// page-level initialization callers of EnsureComponentsOnline are
+    /// intentionally NOT gated: they only wake already-configured helper
+    /// components and must not trigger a 131 MB download on page open.
+    /// </summary>
+    public async Task<bool> StartComponents(string exeName)
+    {
+        try
+        {
+            await FileChecker.EnsureResourcePackReadyAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            Log.Logger.Warning("Component start cancelled while waiting for the resource pack.");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Log.Logger.Error(ex, "Resource pack is not ready — aborting component start");
+            return false;
+        }
+
+        return await EnsureComponentsOnline(exeName);
+    }
+
     public async Task<bool> EnsureComponentsOnline(params string[] exeNames)
     {
         if (exeNames is null || exeNames.Length == 0)
@@ -740,6 +769,25 @@ public sealed class ServerManager : IDisposable
                 Status = ServerStatus.Offline;
                 return;
             }
+        }
+
+        // Resource pack gate — kept outside FileChecker.CheckAsync on purpose
+        // so it also holds when Settings.SkipFileChecks is true: the server
+        // must not boot (and the EULA prompt must not appear) before the pack
+        // has fully downloaded. Cheap no-op once the pack is in place.
+        try
+        {
+            await FileChecker.EnsureResourcePackReadyAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Resource pack is not ready — aborting server start");
+            Status = ServerStatus.Offline;
+            return;
         }
 
         if (!await FileChecker.CheckAsync(settings, false, logger, cancellationToken))

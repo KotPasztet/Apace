@@ -30,13 +30,15 @@ internal static class FileChecker
 
     // Resource pack prompt mechanism — exposed to panel UI.
     //
-    // Unlike the EULA gate this never blocks startup: vanilla.zip is optional
-    // (game clients ship the pack embedded, this copy only serves overrides),
-    // so CheckAsync keeps its non-fatal semantics and merely arms the prompt.
+    // The pack itself is a hard start prerequisite (see
+    // EnsureResourcePackReadyAsync): the server never boots before it has
+    // fully downloaded. The pending state below only drives the panel's
+    // "Resource pack missing" alert while that happens.
     //
     // State machine:
-    //  - CheckAsync arms the prompt when the file is missing or undersized
-    //    (and re-arms a prompt dismissed earlier in this panel session).
+    //  - CheckAsync / EnsureResourcePackReadyAsync arm the prompt when the
+    //    file is missing or undersized (and re-arm a prompt dismissed earlier
+    //    in this panel session).
     //  - ResourcePackPending re-stats the file on every read, so the panel's
     //    2 s poll clears the alert as soon as the file becomes valid — whether
     //    it appeared by download or manual placement.
@@ -196,22 +198,23 @@ internal static class FileChecker
         logger.Debug("All static files exist");
 
         var resourcePackPath = GetResourcePackPath();
-        var resourcePack = new FileInfo(resourcePackPath);
-        if (!resourcePack.Exists)
+        try
         {
-            logger.Error($"Resourcepack file '{resourcePackPath}' does not exist");
-            FlagResourcePackProblem(resourcePackPath);
+            // Hard gate: the server must not boot (and must never reach the
+            // EULA prompt below) before the resource pack has fully
+            // downloaded. Cheap no-op when the pack already validates;
+            // otherwise waits for — or starts — the download.
+            await EnsureResourcePackReadyAsync(cancellationToken);
         }
-        else if (resourcePack.Length < MinResourcePackSize)
+        catch (OperationCanceledException)
         {
-            logger.Error($"Resourcepack file '{resourcePackPath}' is invalid, expected size: {ExpectedResourcePackSize}B, actual size: {resourcePack.Length}B");
-            FlagResourcePackProblem(resourcePackPath);
+            throw;
         }
-
-        if (_resourcePackIssueDetected)
+        catch (Exception ex)
         {
-            // Informational only — the pack is optional, so startup continues.
-            logger.Information("Resource pack is not downloaded automatically — use the panel prompt to download it or place the file manually");
+            logger.Error("Resource pack is not ready, server start aborted: {Message}", ex.Message);
+            FlagResourcePackProblem(resourcePackPath);
+            error = true;
         }
 
         if (checkImporter)
@@ -353,9 +356,8 @@ internal static class FileChecker
     }
 
     /// <summary>
-    /// Downloads vanilla.zip on demand (panel "Server Status" prompt).
-    /// Not critical — server runs without it. Clients have the resourcepack
-    /// embedded, this is only needed for overrides.
+    /// Downloads vanilla.zip on demand (panel "Server Status" prompt) — the
+    /// manual counterpart of <see cref="EnsureResourcePackReadyAsync"/>.
     /// Does not throw: the outcome (including the failure reason shown in the
     /// panel) is reported through <see cref="ResourcePackDownloadResult"/>.
     /// See <see cref="ResourcePackDownloader"/> for how the mirrors are picked.
@@ -363,8 +365,63 @@ internal static class FileChecker
     public static Task<ResourcePackDownloadResult> DownloadResourcePackAsync(IProgress<float>? progress = null)
         => ResourcePackDownloader.DownloadAsync(GetResourcePackPath(), Log.Logger, progress);
 
+    /// <summary>
+    /// Ensures a valid vanilla.zip is in place before the server starts:
+    /// returns immediately (cheap file check) when the pack already validates,
+    /// awaits a download that is already in flight (panel button, another
+    /// browser tab, another start attempt), or starts the download
+    /// automatically — the exact code path of the panel's Download button —
+    /// and waits for it to finish. Throws <see cref="InvalidOperationException"/>
+    /// with a short, user-readable message when the pack is still missing
+    /// afterwards, so the caller must abort the start.
+    /// </summary>
+    public static async Task EnsureResourcePackReadyAsync(CancellationToken cancellationToken = default)
+    {
+        var path = GetResourcePackPath();
+
+        // Cheap no-op: the pack is already there and passes validation.
+        if (ResourcePackFileIsValid())
+        {
+            return;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        FlagResourcePackProblem(path);
+        Log.Logger.Information("Resource pack is missing — the server will not start until it has fully downloaded ({Path})", path);
+
+        if (ResourcePackDownloader.IsDownloading)
+        {
+            // Another caller is already downloading the same file — wait for
+            // that session instead of starting a second one.
+            await ResourcePackDownloader.WaitForCurrentDownloadAsync();
+        }
+        else
+        {
+            // Nothing is downloading: start the download ourselves and wait
+            // for it. A concurrent starter can win the race (DownloadAsync
+            // then returns the friendly "already in progress" failure) — the
+            // wait below covers both cases.
+            await ResourcePackDownloader.DownloadAsync(path, Log.Logger, progress: null);
+            if (ResourcePackDownloader.IsDownloading)
+            {
+                await ResourcePackDownloader.WaitForCurrentDownloadAsync();
+            }
+        }
+
+        if (ResourcePackFileIsValid())
+        {
+            Log.Logger.Information("Resource pack is ready ({Path})", path);
+            return;
+        }
+
+        throw new InvalidOperationException("Resource pack download failed — check your connection and try again.");
+    }
+
     /// <summary>True while a resource pack download is running (possibly started from another tab).</summary>
     public static bool IsResourcePackDownloading => ResourcePackDownloader.IsDownloading;
+
+    /// <summary>Progress (0..1) of the current or most recent resource pack download, whoever started it.</summary>
+    public static float ResourcePackDownloadProgress => ResourcePackDownloader.CurrentProgress;
 
     /// <summary>Cancels a running resource pack download, if any.</summary>
     public static void CancelResourcePackDownload() => ResourcePackDownloader.Cancel();

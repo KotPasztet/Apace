@@ -41,9 +41,12 @@ public sealed record ResourcePackDownloadResult(bool Success, string? Error = nu
 // <see cref="ResourcePackDownloadResult"/> with the reason shown in the
 // panel, and the destination file is only replaced by a fully downloaded,
 // validated pack (a ZIP containing a "genoa.mcpack" entry). Only one
-// download can run at a time; concurrent callers get a friendly result
-// instead of queueing behind it. A download started from a browser tab
-// keeps running server side even if the tab is closed mid-way.
+// download can run at a time; concurrent DownloadAsync callers get a
+// friendly result instead of queueing behind it (the panel button wants
+// immediate feedback), while WaitForCurrentDownloadAsync lets the start
+// flow WAIT for an already-running session instead of starting a second
+// one for the same file. A download started from a browser tab keeps
+// running server side even if the tab is closed mid-way.
 internal static class ResourcePackDownloader
 {
     // The original Minecraft Earth CDN location of the vanilla resource pack.
@@ -63,6 +66,47 @@ internal static class ResourcePackDownloader
     private static CancellationTokenSource? _cancelSource;
 
     public static bool IsDownloading => _downloadLock.CurrentCount == 0;
+
+    // ---- In-flight session handle ----
+    //
+    // The task of the newest download session is published here while the
+    // semaphore is held, so callers that did not start the download (the
+    // server start flow, another browser tab) can await its completion via
+    // WaitForCurrentDownloadAsync() instead of launching a second download
+    // of the same file.
+    private static Task<ResourcePackDownloadResult> _lastSession =
+        Task.FromResult(new ResourcePackDownloadResult(false, "No download has been started."));
+
+    // Latest progress (0..1) of the current/last session, so UIs that did not
+    // start the download (the start flow) can still animate the progress bar.
+    private static float _sessionProgress;
+
+    /// <summary>Progress (0..1) of the current or most recent download session.</summary>
+    public static float CurrentProgress => Volatile.Read(ref _sessionProgress);
+
+    /// <summary>
+    /// Waits for the download session that is currently in flight (if any) to
+    /// finish. Returns immediately when nothing is downloading.
+    /// </summary>
+    public static async Task WaitForCurrentDownloadAsync()
+    {
+        while (IsDownloading)
+        {
+            Task<ResourcePackDownloadResult> current = Volatile.Read(ref _lastSession);
+            if (!current.IsCompleted)
+            {
+                await current;
+            }
+            else
+            {
+                // The semaphore is held but the published session already
+                // completed: a new session is inside its microscopic setup
+                // window (lock acquired, task not published yet). Give it a
+                // moment and re-check instead of hot-spinning.
+                await Task.Delay(TimeSpan.FromMilliseconds(10));
+            }
+        }
+    }
 
     public static void Cancel()
     {
@@ -95,8 +139,19 @@ internal static class ResourcePackDownloader
             return new ResourcePackDownloadResult(false, "A resource pack download is already in progress — it may have been started from another browser tab.");
         }
 
+        // We hold the lock: run the session and publish its task so that
+        // WaitForCurrentDownloadAsync can await it (start flow, other tabs).
+        Volatile.Write(ref _sessionProgress, 0f);
         var cancelSource = new CancellationTokenSource();
         _cancelSource = cancelSource;
+        Task<ResourcePackDownloadResult> session = RunSessionAsync(destPath, logger, progress, cancelSource);
+        Volatile.Write(ref _lastSession, session);
+        return await session;
+    }
+
+    private static async Task<ResourcePackDownloadResult> RunSessionAsync(
+        string destPath, ILogger logger, IProgress<float>? progress, CancellationTokenSource cancelSource)
+    {
         try
         {
             using var sessionCts = CancellationTokenSource.CreateLinkedTokenSource(cancelSource.Token);
@@ -464,14 +519,22 @@ internal static class ResourcePackDownloader
 
     private static void ReportProgress(IProgress<float>? progress, long total, long downloaded)
     {
-        if (progress is null || total <= 0)
+        if (total <= 0)
+        {
+            return;
+        }
+
+        float fraction = Math.Clamp((float)downloaded / total, 0f, 1f);
+        Volatile.Write(ref _sessionProgress, fraction);
+
+        if (progress is null)
         {
             return;
         }
 
         try
         {
-            progress.Report(Math.Clamp((float)downloaded / total, 0f, 1f));
+            progress.Report(fraction);
         }
         catch
         {

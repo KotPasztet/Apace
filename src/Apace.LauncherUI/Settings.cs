@@ -18,7 +18,9 @@ public sealed class Settings
         ApiPort = 1808,
         EventBusPort = 5532,
         ObjectStorePort = 5396,
-        IPv4 = "192.168.x.x",
+        // Fresh installs prefill the machine's real LAN IPv4 (never a fake
+        // placeholder); 127.0.0.1 only when no LAN address could be detected.
+        IPv4 = LanIp.DetectLanIPv4() ?? "127.0.0.1",
         EarthDatabaseConnectionString = Path.Combine(Program.DataDirRelative, "earth.db"),
         LiveDatabaseConnectionString = Path.Combine(Program.DataDirRelative, "live.db"),
         EnableTileRenderingLabel = true,
@@ -168,6 +170,15 @@ public sealed class Settings
     /// </summary>
     public bool? PersonaNoPacksPopupSuppressed { get; set; }
 
+    /// <summary>
+    /// Suppresses the "no map provider key" popup at server start (the
+    /// ServerStatus page's "Never show again" button). Null/false = the popup
+    /// shows whenever tile rendering is enabled but the selected tile data
+    /// source's credential (MapTiler key / tile database connection string)
+    /// is missing.
+    /// </summary>
+    public bool? MapKeyPopupSuppressed { get; set; }
+
     public enum TileDataSourceE
     {
         MapTiler,
@@ -233,6 +244,18 @@ public sealed class Settings
         {
             Log.Warning($"ObjectStore port is invalid, using default: '{Default.ObjectStorePort}'");
             settings.ObjectStorePort = Default.ObjectStorePort;
+        }
+
+        // Legacy placeholder upgrade: installs configured before LAN
+        // auto-detection carry the literal "192.168.x.x" placeholder (it
+        // passes hostname validation as a DNS name, so it survived every
+        // re-save). Replace it — and ONLY it — with the detected LAN address;
+        // any other value (a real user-set IP or hostname) is preserved
+        // verbatim, including on redeploys and self-updates.
+        if (settings.IPv4 == "192.168.x.x" && LanIp.DetectLanIPv4() is { } detectedLanIp)
+        {
+            Log.Information($"Replacing the legacy default IPv4 placeholder '192.168.x.x' with the detected LAN address: '{detectedLanIp}'");
+            settings.IPv4 = detectedLanIp;
         }
 
         UriHostNameType nameType = Uri.CheckHostName(settings.IPv4);
