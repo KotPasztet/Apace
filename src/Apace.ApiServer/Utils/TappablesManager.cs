@@ -100,6 +100,9 @@ public sealed class TappablesManager
     public Adventure[] GetAllPlayerAdventures(string playerId)
         => [.. GetAllAdventures().Where(adventure => IsAdventureOwnedByPlayer(adventure, playerId))];
 
+    public string[] GetPlayerAdventureIds(string playerId)
+        => [.. _adventureOwnersById.Where(entry => entry.Value == playerId).Select(entry => entry.Key)];
+
     private bool IsAdventureVisibleToPlayer(Adventure adventure, string playerId)
         => !_adventureOwnersById.TryGetValue(adventure.Id, out string? ownerId) || ownerId == playerId;
 

@@ -1,0 +1,47 @@
+	{
+  "minCount": 1,
+  "maxCount": 1,
+  "minSpawnDelayMs": 0,
+  "maxSpawnDelayMs": 30000,
+  "minDurationMs": 600000,
+  "maxDurationMs": 900000,
+  "chancePerSpawnCycle": 4,
+  "crystalTypes": [
+    {
+      "folder": "common",
+      "icon": "minecraft:adventure_crystal_common",
+      "rarity": "COMMON",
+      "pickWeight": 100
+    },
+    {
+      "folder": "uncommon",
+      "icon": "minecraft:adventure_crystal_uncommon",
+      "rarity": "UNCOMMON",
+      "pickWeight": 50
+    },
+    {
+      "folder": "rare",
+      "icon": "minecraft:adventure_crystal_rare",
+      "rarity": "RARE",
+      "pickWeight": 20
+    },
+    {
+      "folder": "epic",
+      "icon": "minecraft:adventure_crystal_epic",
+      "rarity": "EPIC",
+      "pickWeight": 8
+    },
+    {
+      "folder": "legendary",
+      "icon": "minecraft:adventure_crystal_legendary",
+      "rarity": "LEGENDARY",
+      "pickWeight": 2
+    },
+{
+  "folder": "trading_posts",
+  "icon": "minecraft:adventure_crystal_common",
+  "rarity": "COMMON",
+  "pickWeight": 0
+}
+  ]
+}

@@ -534,8 +534,8 @@ internal sealed class BuildplatesController : ApaceControllerBase
 
             string rarity = catalogItem.Rarity.ToString();
 
-            // the new crystal replaces the player's current adventure(s), remember which ones before PlacePlayerAdventure drops the recent one
-            string[] previousAdventureIds = [.. tappablesManager.GetAllPlayerAdventures(playerId).Select(adventure => adventure.Id)];
+            // the new crystal replaces the player's current adventure(s), remember which ones before PlacePlayerAdventure drops them from the map
+            string[] previousAdventureIds = tappablesManager.GetPlayerAdventureIds(playerId);
 
             TappablesManager.Adventure adventure = tappablesManager.PlacePlayerAdventure(
                 playerId,

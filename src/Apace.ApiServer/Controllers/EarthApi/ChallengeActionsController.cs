@@ -39,6 +39,22 @@ internal sealed class ChallengeActionsController : ApaceControllerBase
         ApiRewards? apiRewards = ChallengesController.GetSeasonChallengeRewards(challengeId);
         RedeemRewards rewards = ToRedeemRewards(apiRewards);
 
+        // log what the client sent (the same request may be used for more than selecting and claiming)
+        string requestBody = "";
+        try
+        {
+            using var bodyReader = new StreamReader(Request.Body);
+            requestBody = await bodyReader.ReadToEndAsync(cancellationToken);
+        }
+        catch (Exception)
+        {
+            // only used for the log line
+        }
+
+        bool claimedNow = false;
+        bool claimAllowed = true;
+        string? nextActiveChallengeId = null;
+
         EarthDB.Results results = await new EarthDB.Query(true)
             .Get("challenges", playerId, typeof(ChallengeProgressVersion))
             .Then(queryResults =>
@@ -47,10 +63,18 @@ internal sealed class ChallengeActionsController : ApaceControllerBase
                 progress.EnsureDate(now);
                 progress.ClaimedChallengeIds ??= [];
 
-                bool firstClaim = progress.ClaimedChallengeIds.Add(challengeId);
+                // a season challenge can only be claimed once it is unlocked and its task is done, anything else the client sends for it
+                // (for example selecting a challenge) just makes it the selected challenge when it is unlocked
+                var (isSeason, seasonUnlocked, seasonComplete) = ChallengesController.GetSeasonChallengeStatus(progress, challengeId);
+                claimAllowed = !isSeason || (seasonUnlocked && seasonComplete);
+
+                bool firstClaim = claimAllowed && progress.ClaimedChallengeIds.Add(challengeId);
                 progress.ActiveSeasonId = ChallengesController.ActiveSeasonId;
-                progress.ActiveSeasonChallengeId = ChallengesController.SelectActiveSeasonChallengeId(progress, progress.ActiveSeasonChallengeId);
+                string? requestedActiveId = !claimAllowed && seasonUnlocked ? challengeId : progress.ActiveSeasonChallengeId;
+                progress.ActiveSeasonChallengeId = ChallengesController.SelectActiveSeasonChallengeId(progress, requestedActiveId);
                 progress.UpdatedAt = now;
+                claimedNow = firstClaim;
+                nextActiveChallengeId = progress.ActiveSeasonChallengeId;
 
                 var query = new EarthDB.Query(true)
                     .Update("challenges", playerId, progress);
@@ -64,14 +88,16 @@ internal sealed class ChallengeActionsController : ApaceControllerBase
             })
             .ExecuteAsync(Program.DB, cancellationToken);
 
+        Serilog.Log.Information($"[challenges] player {playerId} modifyState for challenge {challengeId} (claim allowed = {claimAllowed}, first claim = {claimedNow}, rewards found = {apiRewards is not null}, active season challenge is now {nextActiveChallengeId}) request: {requestBody}");
+
         var updates = new EarthApiResponse.UpdatesResponse(results);
         updates.Map["challenges"] = (int)(now / 1000);
 
         return EarthJson(new Dictionary<string, object?>
         {
             ["challengeId"] = challengeId,
-            ["state"] = "Claimed",
-            ["rewards"] = apiRewards ?? rewards.ToApiResponse(),
+            ["state"] = claimAllowed ? "Claimed" : "Active",
+            ["rewards"] = claimAllowed ? apiRewards ?? rewards.ToApiResponse() : new RedeemRewards().ToApiResponse(),
             ["updates"] = new Dictionary<string, object>()
         }, updates);
     }

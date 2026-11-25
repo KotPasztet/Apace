@@ -126,7 +126,8 @@ internal static class Program
             connectorPluginJar,
             options.EventBusConnectionString,
             options.PublicAddress,
-            options.BridgePort
+            options.BridgePort,
+            eventBusClient
         );
 
         Log.Information($"Public bridge port: {options.BridgePort}");

@@ -8,25 +8,33 @@ public sealed class TappablesConfig
 {
     public readonly ImmutableArray<TappableConfig> Tappables;
 
-    internal TappablesConfig(string dir)
+    internal TappablesConfig(string dir, string? extrasDir = null)
     {
         try
         {
-            LinkedList<TappableConfig> tappables = [];
-            foreach (string file in Directory.EnumerateFiles(dir))
+            // load the base configs, then apply the extras overlay per file (a file present in the
+            // overlay replaces the base one with the same name; extras-only files are appended)
+            List<TappableConfig> tappables = [];
+            Dictionary<string, int> indexesByFileName = [];
+            foreach (string file in EnumerateJsonFiles(dir))
             {
-                if (Path.GetExtension(file) != ".json")
+                indexesByFileName.Add(Path.GetFileName(file), tappables.Count);
+                tappables.Add(LoadTappableConfig(file));
+            }
+
+            if (extrasDir is not null)
+            {
+                foreach (string file in EnumerateJsonFiles(extrasDir))
                 {
-                    continue;
-                }
-
-                using (var stream = File.OpenRead(file))
-                {
-                    var tappable = Json.Deserialize<TappableConfig>(stream);
-
-                    Debug.Assert(tappable is not null);
-
-                    tappables.AddLast(tappable);
+                    var tappable = LoadTappableConfig(file);
+                    if (indexesByFileName.TryGetValue(Path.GetFileName(file), out int index))
+                    {
+                        tappables[index] = tappable;
+                    }
+                    else
+                    {
+                        tappables.Add(tappable);
+                    }
                 }
             }
 
@@ -55,6 +63,21 @@ public sealed class TappablesConfig
         {
             throw new StaticDataException(null, exception);
         }
+    }
+
+    private static IEnumerable<string> EnumerateJsonFiles(string dir)
+        => Directory.Exists(dir)
+            ? Directory.EnumerateFiles(dir).Where(file => Path.GetExtension(file) == ".json")
+            : [];
+
+    private static TappableConfig LoadTappableConfig(string file)
+    {
+        using var stream = File.OpenRead(file);
+        var tappable = Json.Deserialize<TappableConfig>(stream);
+
+        Debug.Assert(tappable is not null);
+
+        return tappable!;
     }
 
     public record TappableConfig(

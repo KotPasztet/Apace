@@ -8,6 +8,7 @@ using Serilog;
 using Apace.Buildplate.Connector.Model;
 using Apace.Common;
 using Apace.Common.Utils;
+using Apace.EventBus.Client;
 
 namespace Apace.Buildplate.Launcher;
 
@@ -39,6 +40,16 @@ public sealed class PersistentProcessManager
 
     private readonly ILogger _javaLogger;
 
+    // used to tell the API server when a player finishes an adventure (read from the Fabric server console)
+    private const string ADVENTURE_COMPLETE_LOG_MARKER = "[apace-adventure-complete]";
+    private const string PLACED_CHICKEN_LOG_MARKER = "[apace-placed-chicken]";
+    private const string PLACED_COW_LOG_MARKER = "[apace-placed-cow]";
+    // generic marker: "[apace-event] <event name>", the API server decides which challenge (if any) the event counts for
+    private const string EVENT_LOG_MARKER = "[apace-event] ";
+    private readonly EventBusClient _eventBusClient;
+    private readonly SemaphoreSlim _adventurePublisherLock = new SemaphoreSlim(1, 1);
+    private Publisher? _adventurePublisher;
+
     private ConsoleProcess? _fabricProcess;
     private ConsoleProcess? _bridgeProcess;
     private bool _shuttingDown;
@@ -56,7 +67,8 @@ public sealed class PersistentProcessManager
         FileInfo connectorPluginJar,
         string eventBusConnectionString,
         string publicAddress,
-        int bridgePort
+        int bridgePort,
+        EventBusClient eventBusClient
     )
     {
         _javaCmd = javaCmd;
@@ -68,6 +80,7 @@ public sealed class PersistentProcessManager
         _eventBusConnectionString = eventBusConnectionString;
         _publicAddress = publicAddress;
         _bridgePort = bridgePort;
+        _eventBusClient = eventBusClient;
 
         _connectorPluginArgString = Json.Serialize(new ConnectorPluginArg(
             eventBusConnectionString,
@@ -192,6 +205,30 @@ public sealed class PersistentProcessManager
             {
                 _logger.Error("Could not create persistent server world regions directory");
                 return;
+            }
+
+            // Seed the world datapacks shipped in the server template (e.g. the
+            // raw_ore_sucks ore-loot datapack that supports the gold-ore season
+            // challenge). Only files that are not in the world yet are copied,
+            // so an operator removing one stays removed.
+            string templateDatapacksDir = Path.Combine(_serverTemplateDir.FullName, "datapacks");
+            if (Directory.Exists(templateDatapacksDir))
+            {
+                var worldDatapacksDir = new DirectoryInfo(Path.Combine(worldDir.FullName, "datapacks"));
+                if (!worldDatapacksDir.TryCreate())
+                {
+                    _logger.Error("Could not create persistent server world datapacks directory");
+                    return;
+                }
+
+                foreach (string datapack in Directory.EnumerateFiles(templateDatapacksDir))
+                {
+                    string targetPath = Path.Combine(worldDatapacksDir.FullName, Path.GetFileName(datapack));
+                    if (!File.Exists(targetPath))
+                    {
+                        CopyServerFile(new FileInfo(datapack), new FileInfo(targetPath), false);
+                    }
+                }
             }
 
             // The default overworld uses the fountain:empty (100% air) generator,
@@ -326,7 +363,124 @@ public sealed class PersistentProcessManager
         // Java log lines are already formatted (timestamp, level, logger
         // name), so they are passed through as-is at information level.
         _javaLogger.Information("[{Prefix}] {Line}", prefix, line.TrimEnd());
+
+        if (prefix == "Fabric")
+        {
+            TryHandleChallengeLine(line);
+        }
     }
+
+    /// <summary>
+    /// The datapack prints marker lines in the form "... [Not Secure] [&lt;player name&gt;] [marker]" that tell the launcher
+    /// about things that happened in the world: "[apace-adventure-complete]" once per rewarded player when an adventure
+    /// chest is broken, and "[apace-placed-chicken]" / "[apace-placed-cow]" now and then while such an animal stands near
+    /// a player. The player name on the persistent server is the player's PlayFab ID, which is the same ID the API server
+    /// uses. The API server decides whether the event actually counts for a challenge.
+    /// </summary>
+    private void TryHandleChallengeLine(string line)
+    {
+        string eventType;
+        string? mob = null;
+        string? eventName = null;
+        int markerIndex = line.IndexOf(ADVENTURE_COMPLETE_LOG_MARKER, StringComparison.Ordinal);
+        if (markerIndex >= 0)
+        {
+            eventType = "adventureCompleted";
+        }
+        else if ((markerIndex = line.IndexOf(PLACED_CHICKEN_LOG_MARKER, StringComparison.Ordinal)) >= 0)
+        {
+            eventType = "mobPlaced";
+            mob = "chicken";
+        }
+        else if ((markerIndex = line.IndexOf(PLACED_COW_LOG_MARKER, StringComparison.Ordinal)) >= 0)
+        {
+            eventType = "mobPlaced";
+            mob = "cow";
+        }
+        else if ((markerIndex = line.IndexOf(EVENT_LOG_MARKER, StringComparison.Ordinal)) >= 0)
+        {
+            eventType = "challengeEvent";
+            eventName = line[(markerIndex + EVENT_LOG_MARKER.Length)..].Trim();
+            if (eventName.Length == 0 || !eventName.All(c => c is (>= 'a' and <= 'z') or '_'))
+            {
+                return;
+            }
+        }
+        else
+        {
+            return;
+        }
+
+        string before = line[..markerIndex].TrimEnd();
+        int nameStart = before.LastIndexOf('[');
+        if (!before.EndsWith(']') || nameStart < 0)
+        {
+            return;
+        }
+
+        string playerId = before[(nameStart + 1)..^1];
+        if (string.IsNullOrWhiteSpace(playerId) || playerId.Any(char.IsWhiteSpace))
+        {
+            return;
+        }
+
+        if (eventName is not null)
+        {
+            _logger.Debug($"[challenges] event {eventName} seen for player {playerId}");
+            PublishChallengeEventAsync(eventType, playerId, Json.Serialize(new ChallengeEventNotification(playerId, eventName))).Forget();
+        }
+        else if (mob is null)
+        {
+            _logger.Information($"[challenges] adventure completed line seen for player {playerId}");
+            PublishChallengeEventAsync(eventType, playerId, Json.Serialize(new AdventureCompletedNotification("persistent", playerId))).Forget();
+        }
+        else
+        {
+            _logger.Debug($"[challenges] {mob} line seen for player {playerId}");
+            PublishChallengeEventAsync(eventType, playerId, Json.Serialize(new MobPlacedNotification(playerId, mob))).Forget();
+        }
+    }
+
+    private async Task PublishChallengeEventAsync(string eventType, string playerId, string data)
+    {
+        try
+        {
+            await _adventurePublisherLock.WaitAsync();
+            try
+            {
+                _adventurePublisher ??= await _eventBusClient.AddPublisherAsync();
+            }
+            finally
+            {
+                _adventurePublisherLock.Release();
+            }
+
+            bool published = await _adventurePublisher.PublishAsync("buildplates", eventType, data);
+            if (!published)
+            {
+                _logger.Error($"[challenges] could not report {eventType} of player {playerId} to the event bus");
+            }
+        }
+        catch (Exception exception)
+        {
+            _logger.Error(exception, $"[challenges] could not report {eventType} of player {playerId}");
+        }
+    }
+
+    private sealed record AdventureCompletedNotification(
+        string InstanceId,
+        string PlayerId
+    );
+
+    private sealed record ChallengeEventNotification(
+        string PlayerId,
+        string Event
+    );
+
+    private sealed record MobPlacedNotification(
+        string PlayerId,
+        string Mob
+    );
 
     /// <summary>
     /// Stops the persistent Fabric server gracefully: writes <c>stop</c> to its

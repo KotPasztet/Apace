@@ -146,6 +146,9 @@ public class Spawner
             SpawnTappablesForTile(tileX, tileY, spawnCycleTime - SPAWN_INTERVAL * (cyclesToSpawn - index - 1), tappables, encounters);
         }
 
+        // Trading posts are fixed per tile, so ask once per tile (not once per catch-up cycle)
+        encounters.AddRange(_encounterGenerator.GenerateTradingPost(tileX, tileY, spawnCycleTime));
+
         _lastSpawnCycleForTile[(tileX << 16) + tileY] = spawnCycleIndex;
     }
 

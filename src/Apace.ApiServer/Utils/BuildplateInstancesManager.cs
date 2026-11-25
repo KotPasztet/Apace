@@ -576,12 +576,147 @@ public sealed class BuildplateInstancesManager
                 }
 
                 break;
+            case "adventureCompleted":
+                {
+                    try
+                    {
+                        AdventureCompletedNotification? notification = Json.Deserialize<AdventureCompletedNotification>(@event.Data);
+                        if (notification is not null && !string.IsNullOrEmpty(notification.PlayerId))
+                        {
+                            Log.Information($"Adventure completed in instance {notification.InstanceId} by player {notification.PlayerId}");
+                            ChallengeEvents.RecordAdventureCompletedAsync(notification.PlayerId).Forget();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"Bad adventure completed notification: {ex}");
+                    }
+                }
+
+                break;
+            case "mobPlaced":
+                {
+                    try
+                    {
+                        MobPlacedNotification? notification = Json.Deserialize<MobPlacedNotification>(@event.Data);
+                        if (notification is not null && !string.IsNullOrEmpty(notification.PlayerId) && !string.IsNullOrEmpty(notification.Mob))
+                        {
+                            bool onOwnBuildplate;
+                            lock (_instances)
+                            {
+                                // only animals on the player's own buildplate count, not the ones that belong to adventures, trading posts or somebody else's buildplate
+                                onOwnBuildplate = _instances.Values.Any(instanceInfo => instanceInfo.PlayerId == notification.PlayerId && instanceInfo.Type is not InstanceType.ENCOUNTER and not InstanceType.PLAYER_ADVENTURE);
+                            }
+
+                            // an animal that was already counted is recognized from the player's saved progress, so a restarted season counts again
+                            if (onOwnBuildplate)
+                            {
+                                CountMobPlacedAsync(notification.PlayerId, notification.Mob).Forget();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"Bad mob placed notification: {ex}");
+                    }
+                }
+
+                break;
+            case "challengeEvent":
+                {
+                    try
+                    {
+                        ChallengeEventNotification? notification = Json.Deserialize<ChallengeEventNotification>(@event.Data);
+                        ChallengeEvents.EventRule? rule = notification is null ? null : ChallengeEvents.GetEventRule(notification.Event);
+                        if (notification is not null && rule is not null && !string.IsNullOrEmpty(notification.PlayerId))
+                        {
+                            bool skip = false;
+                            lock (_instances)
+                            {
+                                // some events only count on the player's own buildplate, not in adventures, trading posts or somebody else's buildplate
+                                // (an event that was already counted is recognized from the player's saved progress, so a restarted season counts again)
+                                if (rule.RequiresOwnBuildplate)
+                                {
+                                    skip = !_instances.Values.Any(instanceInfo => instanceInfo.PlayerId == notification.PlayerId && instanceInfo.Type is not InstanceType.ENCOUNTER and not InstanceType.PLAYER_ADVENTURE);
+                                }
+
+                                // other events only count while the player is inside an adventure (their own, or one they joined as a guest)
+                                if (!skip && rule.RequiresAdventure)
+                                {
+                                    skip = !IsPlayerInAdventure(notification.PlayerId);
+                                }
+                            }
+
+                            if (!skip)
+                            {
+                                CountChallengeEventAsync(notification.PlayerId, notification.Event, rule).Forget();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"Bad challenge event notification: {ex}");
+                    }
+                }
+
+                break;
             default:
                 break;
         }
 
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Whether the player is currently in an adventure instance, as its owner or as a guest. The caller must hold the <c>_instances</c> lock.
+    /// </summary>
+    private bool IsPlayerInAdventure(string playerId)
+    {
+        foreach (InstanceInfo instanceInfo in _instances.Values)
+        {
+            if (instanceInfo.Type is not (InstanceType.ENCOUNTER or InstanceType.PLAYER_ADVENTURE))
+            {
+                continue;
+            }
+
+            if (instanceInfo.PlayerId == playerId)
+            {
+                return true;
+            }
+
+            if (_guests.TryGetValue(playerId, out string? guestInstanceId) && guestInstanceId == instanceInfo.InstanceId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task CountMobPlacedAsync(string playerId, string mob)
+    {
+        await ChallengeEvents.RecordMobPlacedAsync(playerId, mob);
+    }
+
+    private async Task CountChallengeEventAsync(string playerId, string eventName, ChallengeEvents.EventRule rule)
+    {
+        await ChallengeEvents.RecordChallengeEventAsync(playerId, eventName, rule);
+    }
+
+    private sealed record ChallengeEventNotification(
+        string PlayerId,
+        string Event
+    );
+
+    private sealed record MobPlacedNotification(
+        string PlayerId,
+        string Mob
+    );
+
+    private sealed record AdventureCompletedNotification(
+        string InstanceId,
+        string PlayerId
+    );
 
     private sealed record StartRequest(
         string? PlayerId,

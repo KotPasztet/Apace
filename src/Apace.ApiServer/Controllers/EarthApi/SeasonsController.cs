@@ -19,18 +19,25 @@ internal sealed class SeasonsController : ApaceControllerBase
     [HttpGet("player/seasonpass")]
     [HttpGet("season")]
     [HttpGet("seasons")]
-    public ContentHttpResult GetSeason()
+    public async Task<Results<ContentHttpResult, BadRequest>> GetSeason(CancellationToken cancellationToken)
     {
+        string? playerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(playerId))
+        {
+            return TypedResults.BadRequest();
+        }
+
         long now = HttpContext.GetTimestamp();
-        DateTime endDate = DateTimeOffset.FromUnixTimeMilliseconds(now).UtcDateTime.Date.AddDays(30);
-        long endsAt = new DateTimeOffset(endDate, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        ChallengeProgressVersion progress = await ChallengesController.LoadProgressAsync(playerId, now, cancellationToken);
+        long startedAt = progress.SeasonStartedAt;
+        long endsAt = progress.GetSeasonEndsAt();
 
         return EarthJson(new Dictionary<string, object>
         {
             ["activeSeasonId"] = ChallengesController.ActiveSeasonId,
             ["seasonId"] = ChallengesController.ActiveSeasonId,
             ["title"] = "Season 17",
-            ["startTimeUtc"] = TimeFormatter.FormatTime(now - 24 * 60 * 60 * 1000),
+            ["startTimeUtc"] = TimeFormatter.FormatTime(startedAt),
             ["endTimeUtc"] = TimeFormatter.FormatTime(endsAt),
             ["premiumPassOwned"] = true,
             ["currentTier"] = 1,

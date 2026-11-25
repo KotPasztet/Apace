@@ -6,6 +6,17 @@
 - Store tab titles do not load
 - Tutorial — find the tokens for the first-time tutorial (daily login rewards already work)
 
+## `gia-extras` branch (Gia's gameplay extras port)
+
+Working: 14-day rolling per-player Super Season (graph solver, claim hardening, ruby rewards),
+tappable-loot challenge credit + continuous auto-redeem, adventure chests/rewards via the
+datapack grafted into the fountain jar, trading posts on every tile with 6-hour stock,
+gold nuggets in map chests, raw_ore_sucks world datapack seeding.
+Unfinished / to verify live: some season challenges still don't fire ("some work some don't" —
+per-challenge verification against a running instance is pending); season-17 item-id tables are
+hard-coded; fountain graft + datapack behavior unverified on a live server; see
+`docs/gia-extras.md`.
+
 ## Privacy & anti-abuse (next major update, in priority order)
 
 - Cloudflare Turnstile ("Enable CF") on the account creation page, plus rate limits on registration and login (per IP / per account)

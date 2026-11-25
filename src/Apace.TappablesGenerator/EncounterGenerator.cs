@@ -36,6 +36,11 @@ public class EncounterGenerator
 
     public Encounter[] GenerateEncounters(int tileX, int tileY, long currentTime)
     {
+        if (!ENABLE_RANDOM_ENCOUNTERS)
+        {
+            return [];
+        }
+
         if (_staticData.EncountersConfig.Encounters.Length == 0)
         {
             return [];
@@ -80,6 +85,103 @@ public class EncounterGenerator
 
         return [.. encounters];
     }
+
+    // ---- Trading posts: fixed, tile-seeded locations (no storage needed, stable across restarts) ----
+    private const int POST_TILE_ODDS = 1;                      // 1 in N tiles has a trading post
+    private const long POST_WINDOW_MS = 6L * 60 * 60 * 1000;    // stock rotates every 6 hours
+    private const string POST_ADVENTURE_GROUP = "trading_posts";
+    private const string POST_ICON = "genoa:adventure_generic_map";
+
+    // The original random per-tile encounters. Off: only trading posts spawn naturally.
+    private static readonly bool ENABLE_RANDOM_ENCOUNTERS = false;
+
+    private readonly Dictionary<(int, int), long> _lastPostWindow = [];
+
+    // DEBUG: pin one trading post ~20 m north of this spot so it can be tapped from home.
+    // Copy lat/lon from the "locations/{lat}/{lon}" request lines in the server log, e.g. (12.3456f, -78.9012f).
+    // Leave as null to turn it off.
+    private static readonly (float Lat, float Lon)? DEBUG_POST_LOCATION = null;
+
+    public Encounter[] GenerateTradingPost(int tileX, int tileY, long currentTime)
+    {
+        // Decide (deterministically) whether this tile has a post, and where in the tile it sits
+        var tileRng = new Random(Seed(tileX, tileY, 0, 1));
+
+        bool debugTile = DEBUG_POST_LOCATION is { } debugLocation
+            && LocationToTile(debugLocation.Lat, debugLocation.Lon) == (tileX, tileY);
+        if (!debugTile && tileRng.Next(POST_TILE_ODDS) != 0)
+        {
+            return [];
+        }
+
+        float lat;
+        float lon;
+        if (debugTile)
+        {
+            lat = DEBUG_POST_LOCATION!.Value.Lat + 0.0002f;
+            lon = DEBUG_POST_LOCATION!.Value.Lon;
+        }
+        else
+        {
+            Span<float> tileBounds = stackalloc float[4];
+            GetTileBounds(tileX, tileY, tileBounds);
+            lat = tileRng.NextSingle(tileBounds[1], tileBounds[0]);
+            lon = tileRng.NextSingle(tileBounds[2], tileBounds[3]);
+        }
+
+        // Per-tile offset so posts don't all rotate at the same moment
+        long offset = tileRng.NextInt64(POST_WINDOW_MS);
+        long window = (currentTime + offset) / POST_WINDOW_MS;
+        if (_lastPostWindow.TryGetValue((tileX, tileY), out long lastWindow) && lastWindow == window)
+        {
+            return [];
+        }
+
+        // Same tile + same window always picks the same buildplate, so stock is stable until the window rolls over
+        var windowRng = new Random(Seed(tileX, tileY, window, 2));
+        string? buildplateId = _staticData.AdventuresConfig.PickTemplateForFolder(POST_ADVENTURE_GROUP, windowRng);
+        if (buildplateId is null)
+        {
+            Log.Warning("Trading post adventure group {AdventureGroup} has no buildplates", POST_ADVENTURE_GROUP);
+            return [];
+        }
+
+        _lastPostWindow[(tileX, tileY)] = window;
+
+        if (debugTile)
+        {
+            Log.Information("DEBUG trading post placed at {Lat},{Lon} in tile {TileX},{TileY}", lat, lon, tileX, tileY);
+        }
+
+        long spawnTime = window * POST_WINDOW_MS - offset;
+        return
+        [
+            new Encounter(
+                U.RandomUuid().ToString(),
+                lat,
+                lon,
+                spawnTime,
+                POST_WINDOW_MS,
+                POST_ICON,
+                Encounter.RarityE.COMMON,
+                buildplateId
+            )
+        ];
+    }
+
+    // Same web-mercator tile maths as TappablesManager, so the debug spot lands in the right tile
+    private static (int X, int Y) LocationToTile(double lat, double lon)
+    {
+        double x = (1.0 + (lon * Math.PI / 180.0) / Math.PI) / 2.0;
+        double latRad = lat * Math.PI / 180.0;
+        double y = (1.0 - Math.Log(Math.Tan(latRad) + 1.0 / Math.Cos(latRad)) / Math.PI) / 2.0;
+        return ((int)Math.Floor(x * (1 << 16)), (int)Math.Floor(y * (1 << 16)));
+    }
+
+    // Plain arithmetic on purpose: HashCode.Combine / string.GetHashCode are randomized per process,
+    // which would move the posts every time the server restarts.
+    private static int Seed(int x, int y, long w, int salt)
+        => unchecked((int)(x * 73856093L ^ y * 19349663L ^ w * 83492791L ^ salt * 2654435761L));
 
     private EncountersConfig.EncounterConfig? PickEncounterConfig()
     {

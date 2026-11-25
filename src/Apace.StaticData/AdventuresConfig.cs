@@ -12,11 +12,11 @@ public sealed class AdventuresConfig
     public readonly AdventureSpawnConfig SpawnConfig;
     private readonly Dictionary<string, ImmutableArray<AdventureBuildplate>> _buildplatesByFolder = [];
 
-    internal AdventuresConfig(string dir)
+    internal AdventuresConfig(string dir, string? extrasDir = null)
     {
         try
         {
-            SpawnConfig = LoadSpawnConfig(dir);
+            SpawnConfig = LoadSpawnConfig(dir, extrasDir);
 
             HashSet<string> folders = [.. DefaultFolders];
             foreach (AdventureCrystalType crystalType in SpawnConfig.CrystalTypes)
@@ -26,7 +26,7 @@ public sealed class AdventuresConfig
 
             foreach (string folder in folders)
             {
-                string buildplatesFile = Path.Combine(dir, folder, $"{folder}-buildplates.json");
+                string buildplatesFile = StaticDataExtras.ResolveFile(dir, extrasDir, Path.Combine(folder, $"{folder}-buildplates.json"));
                 if (!File.Exists(buildplatesFile))
                 {
                     continue;
@@ -83,9 +83,9 @@ public sealed class AdventuresConfig
         return PickTemplateForFolder(folder, random);
     }
 
-    private static AdventureSpawnConfig LoadSpawnConfig(string dir)
+    private static AdventureSpawnConfig LoadSpawnConfig(string dir, string? extrasDir)
     {
-        string spawnConfigFile = Path.Combine(dir, "adventures-spawn.json");
+        string spawnConfigFile = StaticDataExtras.ResolveFile(dir, extrasDir, "adventures-spawn.json");
         if (!File.Exists(spawnConfigFile))
         {
             return AdventureSpawnConfig.Disabled;
