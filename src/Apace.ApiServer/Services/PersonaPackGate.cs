@@ -157,9 +157,10 @@ public static class PersonaPackGate
     /// </summary>
     public static bool ExperimentalAutoRepairRigs => _experimentalAutoRepairRigs;
 
-    /// <summary>The packs.json "customSkeletonMode" knob (default Off, see
-    /// <see cref="CustomSkeletonModes"/>). Hot-reloaded with the rest of the
-    /// config; unparsable values fall back to Off.</summary>
+    /// <summary>The packs.json "customSkeletonMode" knob (default
+    /// <see cref="DefaultCustomSkeletonMode"/>, i.e. FlatOnly). Hot-reloaded with
+    /// the rest of the config; unparsable values fall back to
+    /// <see cref="DefaultCustomSkeletonMode"/>.</summary>
     public static CustomSkeletonModes CustomSkeletonMode => _customSkeletonMode;
 
     /// <summary>True when a serve-time geometry transform is active at all —

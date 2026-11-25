@@ -210,7 +210,17 @@ public static class IpaProcessor
         if (options.RemoveDrm)
         {
             Log.Information("*****Pseudo-signing patched binaries (ldid)*****");
-            await PseudoSignPatchedBinaries(appDir, exePath, decodedDir);
+            if (!await PseudoSignPatchedBinaries(appDir, exePath, decodedDir))
+            {
+                // XAL aborts before it sends any request - and before any login page
+                // shows - when the binaries carry no keychain entitlements. Shipping
+                // an IPA in that state is exactly the "something went wrong during
+                // sign in" bug, so fail the job loudly instead of degrading silently.
+                Log.Fatal("The patched binaries carry NO Xbox sign-in keychain entitlements - an IPA in this state fails sign-in " +
+                    "before it opens a login page. Install ldid (or fix its download) and re-patch, or re-sign the output " +
+                    "yourself with the com.microsoft.xal / com.microsoft.adalcache keychain access groups.");
+                return false;
+            }
         }
 
         Log.Information("*****Building IPA*****");
@@ -275,9 +285,11 @@ public static class IpaProcessor
         if (Directory.Exists(decodedDir))
             Directory.Delete(decodedDir, true);
 
-        Log.Information("The patched IPA is ready to install: sideload it with Sideloadly or SideStore (works from any platform). " +
-            "The tool re-signs the app with your Apple ID and keeps the entitlements embedded in the binaries " +
-            "(the Xbox sign-in keychain groups), so no manual codesign script or provisioning profile work is needed.");
+        Log.Information("The patched IPA needs one signature from your Apple ID: sideload it with Sideloadly or SideStore. " +
+            "Make sure the tool carries the entitlements embedded in the binaries over the re-sign " +
+            "(in Sideloadly keep the 'keep original entitlements' behavior enabled); without the com.microsoft.xal / " +
+            "com.microsoft.adalcache keychain groups Xbox sign-in fails before any login page shows. " +
+            "Manual codesign workflows: prefix the group names in Payload/<app>/Entitlements.plist with your team id.");
 
         Log.Information("Finished");
         return true;
@@ -590,16 +602,15 @@ public static class IpaProcessor
     // fails before sending any request when the com.microsoft.xal / com.microsoft.adalcache keychain
     // groups are missing from the code signature. ldid re-embeds them into the binaries it signs, so
     // the sideload tools that re-sign the app pick the groups up and re-apply them with the signing
-    // team's prefix. Every failure here is non-fatal: the IPA still installs, it just degrades to the
-    // pre-ldid behavior (sign-in needs an entitlements-carrying re-sign).
-    private static async Task PseudoSignPatchedBinaries(string appDir, string exePath, string decodedDir)
+    // team's prefix. Any failure here fails the whole job (returns false): an IPA without the groups
+    // installs fine but hits exactly the "something went wrong during sign in" bug, so it must never
+    // leave the patcher silently.
+    private static async Task<bool> PseudoSignPatchedBinaries(string appDir, string exePath, string decodedDir)
     {
         if (!await Ldid.EnsureAsync())
         {
-            Log.Warning("ldid is not available, the patched binaries carry NO embedded entitlements. The IPA will still install, " +
-                "but Xbox sign-in then needs a re-sign that adds the keychain access groups <TEAMID>.com.microsoft.xal and " +
-                "<TEAMID>.com.microsoft.adalcache (Sideloadly/SideStore keep the entitlements embedded in the binaries when present).");
-            return;
+            Log.Warning("ldid is not available - the patched binaries would carry NO embedded entitlements.");
+            return false;
         }
 
         string entitlementsPath = Path.Combine(decodedDir, "ldid-entitlements.plist");
@@ -615,15 +626,16 @@ public static class IpaProcessor
 
         foreach (string target in targets)
         {
-            if (Ldid.PseudoSign(target, entitlementsPath))
+            if (!Ldid.PseudoSign(target, entitlementsPath))
             {
-                Log.Information($"Embedded the XAL keychain entitlements into {Path.GetFileName(target)} (ldid pseudo-sign)");
+                Log.Warning($"ldid could not pseudo-sign {Path.GetFileName(target)} - its XAL keychain entitlements would be missing.");
+                return false;
             }
-            else
-            {
-                Log.Warning($"ldid could not pseudo-sign {Path.GetFileName(target)} - Xbox sign-in may need a re-sign that adds the XAL keychain access groups.");
-            }
+
+            Log.Information($"Embedded the XAL keychain entitlements into {Path.GetFileName(target)} (ldid pseudo-sign)");
         }
+
+        return true;
     }
 
     private static string StripPort(string host)
@@ -885,7 +897,11 @@ public static class IpaProcessor
     }
 
     // stripping the code signature also strips its entitlements; XAL sign-in needs its
-    // keychain access groups back, so leave a plist for the re-signing step to use
+    // keychain access groups back, so leave a plist for the re-signing step to use.
+    // Plain group names, same as the ldid-embedded ones: a raw `codesign --entitlements`
+    // does NOT expand Xcode placeholders like $(AppIdentifierPrefix), so a placeholder
+    // here would embed an invalid literal group. Users re-signing manually prefix the
+    // names with their team id (the final job log message says so).
     private static void WriteXalEntitlements(string appDir)
     {
         string entitlements =
@@ -896,8 +912,8 @@ public static class IpaProcessor
             <dict>
                 <key>keychain-access-groups</key>
                 <array>
-                    <string>$(AppIdentifierPrefix)com.microsoft.xal</string>
-                    <string>$(AppIdentifierPrefix)com.microsoft.adalcache</string>
+                    <string>com.microsoft.xal</string>
+                    <string>com.microsoft.adalcache</string>
                 </array>
             </dict>
             </plist>

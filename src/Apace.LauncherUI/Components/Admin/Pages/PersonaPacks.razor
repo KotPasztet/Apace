@@ -67,7 +67,7 @@
             <div class="col-12 col-lg-5">
                 <label class="form-label small text-muted mb-1" for="skeleton-mode">
                     <strong>Experimental: extra skeleton handling</strong>
-                    <span class="text-muted small">— default off (experimental).</span>
+                    <span class="text-muted small">— default flat only (the server baseline). "Off" hides every piece with a custom skeleton — that is what empties the face categories.</span>
                 </label>
                 <select class="form-select form-select-sm" id="skeleton-mode" @bind="_skeletonMode">
                     <option value="off">Off — serve cosmetics as they are</option>
@@ -334,13 +334,16 @@
     // serve), skins and skin packs serve regardless.
     private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit, bool FillBlankSlots, bool ExperimentalAutoRepairRigs, string CustomSkeletonMode);
 
-    // the packs.json "customSkeletonMode" vocabulary — anything unknown is off
+    // the packs.json "customSkeletonMode" vocabulary — anything unknown or unset
+    // falls back to the server baseline (flatOnly), never to off: "off" hard-hides
+    // every custom-bone piece, which is what emptied the face categories
     private static string NormalizeSkeletonMode(string? value)
         => value?.Trim().ToLowerInvariant() switch
         {
             "strip" => "strip",
+            "off" => "off",
             "flatonly" or "flat-only" or "flat" => "flatOnly",
-            _ => "off",
+            _ => "flatOnly",
         };
 
     private readonly JsonSerializerOptions _jsonOptions = PersonaPackIndex.JsonWebOptions;
@@ -379,7 +382,7 @@
     private bool _onlySupported = true;
     private bool _fillBlankSlots = true;
     private bool _autoRepairRigs;
-    private string _skeletonMode = "off";
+    private string _skeletonMode = "flatOnly";
     private int _categoryLimit = 45;
     private HashSet<string> _defaults = [];
     private HashSet<string> _grants = [];

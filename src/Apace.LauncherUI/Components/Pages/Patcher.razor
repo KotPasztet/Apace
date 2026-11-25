@@ -83,9 +83,10 @@
             @if (platform == PatchPlatform.Ios)
             {
                 <p class="text-muted" style="font-size: 0.75rem;">
-                    The patched IPA is ready to install: sideload it with Sideloadly or SideStore - that is the only step.
-                    The tool re-signs the app with your Apple ID and keeps the embedded Xbox sign-in (XAL) keychain
-                    entitlements, so no Mac codesign script or manual provisioning profile work is needed.
+                    The output IPA needs one signature from your Apple ID: sideload it with Sideloadly or SideStore
+                    (one drag-and-drop). Make sure the tool carries the entitlements over the re-sign — the patcher
+                    embeds the Xbox sign-in (XAL) keychain groups into the binaries with ldid, and if the re-sign drops
+                    them, sign-in fails before any login page shows.
                 </p>
             }
             @if (uploadedPath is not null)
@@ -818,7 +819,7 @@
     private bool iosDisableSpeedLimit;
     private bool iosChangeAppName = true;
     private string iosAppName = "Apace";
-    private bool iosChangeBundleId = true;
+    private bool iosChangeBundleId = false;
     private string iosBundleId = "com.kotpasztet.apace";
     private bool iosChangeIcon = true;
     private bool iosRemoveDrm = true;

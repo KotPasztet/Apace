@@ -90,6 +90,7 @@ RUN apt-get update && apt-get install -y \
     openjdk-17-jre \
     aapt \
     zipalign \
+    ldid \
     curl \
     unzip \
     wget \
@@ -100,9 +101,14 @@ RUN apt-get update && apt-get install -y \
     # what the patcher's build falls back to (--aapt) when the aapt2 bundled
     # in apktool.jar fails its pre-flight probe (SIGILL on older ARM CPUs) -
     # hard-fail the image build here rather than discover a missing distro
-    # package at patch time.
+    # package at patch time. ldid (/usr/bin/ldid) pseudo-signs the patched iOS
+    # binaries so they carry the Xbox sign-in (XAL) keychain entitlements -
+    # without them the app fails sign-in before any login page shows, so its
+    # presence is hard-failed here too (MCEPatcher's Ldid prefers the distro
+    # binary and falls back to a pinned runtime download without it).
     && test -x /usr/bin/aapt \
-    && test -x /usr/bin/aapt2
+    && test -x /usr/bin/aapt2 \
+    && test -x /usr/bin/ldid
 
 # Docker CLI + compose v2 plugin, installed from the BASE DISTRO's own apt
 # repos (docker.io + docker-compose-v2; universe is already enabled in the

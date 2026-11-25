@@ -33,6 +33,10 @@ public static class Ldid
 
     public static readonly string FileName = OperatingSystem.IsWindows() ? "ldid.exe" : "ldid";
 
+    // Absolute path of a distro-installed ldid (found once, preferred over the
+    // runtime download); null when the pinned download is used instead.
+    private static string? _systemPath;
+
     private static (string Asset, string Sha256)? Download =>
         OperatingSystem.IsWindows()
             ? RuntimeInformation.OSArchitecture is Architecture.X64
@@ -52,13 +56,24 @@ public static class Ldid
                     : null;
 
     /// <summary>
-    /// Downloads ldid for the running platform (same runtime-download pattern as apktool /
-    /// uber-apk-signer / patchelf) and verifies its pinned sha256. Returns false when the
-    /// platform has no prebuilt binary or the download/verification fails - the IPA patcher
-    /// degrades gracefully in that case (see <see cref="IpaProcessor"/>).
+    /// Locates ldid for the running platform: a distro-installed binary first (the Apace
+    /// Docker image ships the apt "ldid" package, which works offline and needs no
+    /// runtime download), then the pinned runtime download as the fallback (same pattern
+    /// as apktool / uber-apk-signer / patchelf, sha256 verified). Returns false when
+    /// neither is available - the iOS patch job then fails loudly instead of producing
+    /// an IPA without the XAL keychain entitlements.
     /// </summary>
     public static async Task<bool> EnsureAsync(CancellationToken cancellationToken = default)
     {
+        string? system = FindSystemLdid();
+        if (system is not null)
+        {
+            _systemPath = system;
+            return true;
+        }
+
+        _systemPath = null;
+
         var download = Download;
         if (download is null)
         {
@@ -120,11 +135,14 @@ public static class Ldid
     /// <summary>
     /// Runs `ldid -S&lt;entitlements&gt; &lt;binary&gt;` - a pseudo-signature (no identity, like
     /// codesign -s -) whose only job is to carry the entitlements blob inside the binary.
-    /// Returns false when ldid failed; the caller logs and continues (the IPA stays installable).
+    /// Returns false when ldid failed; the caller fails the job (an IPA whose binaries
+    /// carry no entitlements is the "sign-in fails with no login page" bug).
     /// </summary>
     public static bool PseudoSign(string binaryPath, string entitlementsPath)
     {
-        var process = U.Run(Path.GetFullPath(FileName), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        string tool = _systemPath ?? Path.GetFullPath(FileName);
+
+        var process = U.Run(tool, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         [
             $"-S{entitlementsPath}",
             binaryPath,
@@ -148,5 +166,37 @@ public static class Ldid
         {
             // best-effort
         }
+    }
+
+    /// <summary>
+    /// Looks for a distro-installed ldid on the PATH (the apt package ships /usr/bin/ldid).
+    /// Windows is skipped: no distro package exists there, so the pinned download is used.
+    /// </summary>
+    private static string? FindSystemLdid()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        string pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
+        foreach (string dir in pathEnv.Split(Path.PathSeparator,
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            try
+            {
+                string candidate = Path.Combine(dir, "ldid");
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+            catch
+            {
+                // unreadable PATH entry - skip it
+            }
+        }
+
+        return null;
     }
 }
