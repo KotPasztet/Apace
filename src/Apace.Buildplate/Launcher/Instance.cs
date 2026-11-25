@@ -766,6 +766,15 @@ public sealed class Instance
             _shutdownTcs.TrySetResult();
         }).Forget();
 
+    /// <summary>
+    /// Ends this instance early (used when the API server replaces a player's adventure). Safe to call more than once.
+    /// </summary>
+    public void RequestShutdown()
+    {
+        _logger.Information("Early shutdown requested");
+        BeginShutdown();
+    }
+
     public async Task WaitForShutdownAsync()
     {
         while (_thread is null)

@@ -21,12 +21,18 @@ public sealed class InstanceManager
     private bool _shuttingDown;
     private readonly Lock _lock = new Lock();
     private readonly ConcurrentDictionary<string, Instance> _activeInstances = new();
-    // Guests that joined someone else's instance via a join code (playerId -> instanceId)
+    // Players whose playerLogin is routed to a specific instance instead of their
+    // newest own one: guests that joined someone else's instance via a join code,
+    // and players handed an already running instance of their own (routeLogin)
+    // (playerId -> instanceId)
     private readonly ConcurrentDictionary<string, string> _guestInstances = new();
 
     private sealed record AddGuestRequest(string PlayerId, string InstanceId);
 
     private sealed record RemoveGuestRequest(string PlayerId);
+
+    // Sent by the API server when a player's adventure is replaced (a second adventure crystal was used)
+    private sealed record StopInstanceRequest(string InstanceId);
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     private enum InstanceType
@@ -316,6 +322,62 @@ public sealed class InstanceManager
 
                     instanceManager._guestInstances.TryRemove(removeGuestRequest.PlayerId, out _);
                     Log.Information($"Player {removeGuestRequest.PlayerId} removed from guest routing");
+                    return Json.Serialize(true);
+                }
+                else if (request.Type is "routeLogin")
+                {
+                    // Sent by the API server when a player is handed an already running
+                    // instance of their own (reuse path): their playerLogin must be routed
+                    // to that instance instead of their newest one. Records routing like
+                    // addGuest does, but the API server does not treat the player as a
+                    // guest of the instance.
+                    AddGuestRequest? routeLoginRequest;
+                    try
+                    {
+                        routeLoginRequest = Json.Deserialize<AddGuestRequest>(request.Data);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Warning(exception, "Bad routeLogin request");
+                        return null;
+                    }
+                    if (routeLoginRequest is null || string.IsNullOrEmpty(routeLoginRequest.PlayerId) || !instanceManager._activeInstances.ContainsKey(routeLoginRequest.InstanceId))
+                    {
+                        return Json.Serialize(false);
+                    }
+
+                    instanceManager._guestInstances[routeLoginRequest.PlayerId] = routeLoginRequest.InstanceId;
+                    Log.Information($"Player {routeLoginRequest.PlayerId} login routed to instance {routeLoginRequest.InstanceId}");
+                    return Json.Serialize(true);
+                }
+                else if (request.Type is "stopInstance")
+                {
+                    // Sent by the API server when a player's adventure is replaced (a second
+                    // adventure crystal was used): end the old adventure's instance early
+                    // instead of letting it linger until its shutdown time.
+                    StopInstanceRequest? stopInstanceRequest;
+                    try
+                    {
+                        stopInstanceRequest = Json.Deserialize<StopInstanceRequest>(request.Data);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Warning(exception, "Bad stopInstance request");
+                        return null;
+                    }
+                    if (stopInstanceRequest is null || string.IsNullOrEmpty(stopInstanceRequest.InstanceId))
+                    {
+                        return Json.Serialize(false);
+                    }
+
+                    if (!instanceManager._activeInstances.TryGetValue(stopInstanceRequest.InstanceId, out Instance? instanceToStop))
+                    {
+                        Log.Information($"stopInstance: instance {stopInstanceRequest.InstanceId} is not active");
+                        return Json.Serialize(false);
+                    }
+
+                    Log.Information($"stopInstance: stopping instance {stopInstanceRequest.InstanceId}");
+                    instanceToStop.RequestShutdown();
                     return Json.Serialize(true);
                 }
                 else if (request.Type is "preview")

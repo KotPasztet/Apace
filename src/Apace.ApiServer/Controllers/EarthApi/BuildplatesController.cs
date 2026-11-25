@@ -28,6 +28,9 @@ namespace Apace.ApiServer.Controllers.EarthApi;
 [Route("1/api/v{version:apiVersion}")]
 internal sealed class BuildplatesController : ApaceControllerBase
 {
+    // Tapping a pin that is about to expire should not give a few seconds of play: every encounter instance lasts at least this long
+    private const long MinEncounterInstanceLifetimeMs = 30 * 60 * 1000;
+
     private static readonly SemaphoreSlim AdventureScrollLock = new(1, 1);
     private static EarthDB earthDB => Program.DB;
     private static BuildplateInstancesManager buildplateInstancesManager => Program.buildplateInstancesManager;
@@ -427,7 +430,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
 
         return encounterInstanceRequest is null
             ? TypedResults.BadRequest()
-            : await GetNewEncounterBuildplateInstanceResponse(encounterId, encounterInstanceRequest.TileId, tappablesManager, cancellationToken);
+            : await GetNewEncounterBuildplateInstanceResponse(playerId, encounterId, encounterInstanceRequest.TileId, tappablesManager, cancellationToken);
     }
 
     [HttpPost("multiplayer/adventures/{adventureId}/instances")]
@@ -530,6 +533,10 @@ internal sealed class BuildplatesController : ApaceControllerBase
             }
 
             string rarity = catalogItem.Rarity.ToString();
+
+            // the new crystal replaces the player's current adventure(s), remember which ones before PlacePlayerAdventure drops the recent one
+            string[] previousAdventureIds = [.. tappablesManager.GetAllPlayerAdventures(playerId).Select(adventure => adventure.Id)];
+
             TappablesManager.Adventure adventure = tappablesManager.PlacePlayerAdventure(
                 playerId,
                 lat,
@@ -539,6 +546,10 @@ internal sealed class BuildplatesController : ApaceControllerBase
                 AdventureMapIcons.ToClientMapIcon(catalogItem.Name, rarity),
                 Enum.Parse<TappablesManager.Adventure.RarityE>(rarity),
                 templateId);
+
+            // End the previous adventure's running instance too, otherwise it lingers until its hour is up
+            // and can even be handed back for the new adventure when both crystals roll the same template.
+            await buildplateInstancesManager.StopAdventureInstancesAsync(previousAdventureIds.Where(id => id != adventure.Id));
 
             PrewarmAdventureInstance(playerId, adventure);
 
@@ -562,7 +573,8 @@ internal sealed class BuildplatesController : ApaceControllerBase
                     adventure.AdventureBuildplateId,
                     BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE,
                     adventure.SpawnTime + adventure.ValidFor,
-                    false);
+                    false,
+                    reuseExisting: false);
             }
             catch (Exception exception)
             {
@@ -754,7 +766,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
         return EarthJson(buildplateInstance);
     }
 
-    private static async Task<Results<ContentHttpResult, NotFound, BadRequest, InternalServerError>> GetNewEncounterBuildplateInstanceResponse(string encounterId, string tileId, TappablesManager tappablesManager, CancellationToken cancellationToken)
+    private static async Task<Results<ContentHttpResult, NotFound, BadRequest, InternalServerError>> GetNewEncounterBuildplateInstanceResponse(string playerId, string encounterId, string tileId, TappablesManager tappablesManager, CancellationToken cancellationToken)
     {
         TappablesManager.Encounter? encounter = tappablesManager.GetEncounterWithId(encounterId, tileId);
         if (encounter is null)
@@ -762,7 +774,18 @@ internal sealed class BuildplatesController : ApaceControllerBase
             return TypedResults.NotFound();
         }
 
-        string? instanceId = await buildplateInstancesManager.RequestBuildplateInstance(null, encounterId, encounter.EncounterBuildplateId, BuildplateInstancesManager.InstanceType.ENCOUNTER, encounter.SpawnTime + encounter.ValidFor, false);
+        Log.Information("Trading post tapped: encounter {EncounterId} uses buildplate {BuildplateId}", encounterId, encounter.EncounterBuildplateId);
+
+        // Start the instance for the tapping player: the launcher's playerLogin lookup only
+        // matches instances owned by the connecting player, so an ownerless instance would
+        // get the player kicked (and routed into a different own instance when one exists).
+        string? instanceId = await buildplateInstancesManager.RequestBuildplateInstance(
+            playerId,
+            encounterId,
+            encounter.EncounterBuildplateId,
+            BuildplateInstancesManager.InstanceType.ENCOUNTER,
+            long.Max(encounter.SpawnTime + encounter.ValidFor, U.CurrentTimeMillis() + MinEncounterInstanceLifetimeMs),
+            false);
 
         if (instanceId is null)
         {

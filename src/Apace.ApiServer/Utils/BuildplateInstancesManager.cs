@@ -86,7 +86,10 @@ public sealed class BuildplateInstancesManager
         return buildplateInstancesManager;
     }
 
-    public async Task<string?> RequestBuildplateInstance(string? playerId, string? encounterId, string buildplateId, InstanceType type, long shutdownTime, bool night)
+    /// <summary>
+    /// <paramref name="reuseExisting"/>: when false, a new instance is always started, even if the player already has a running instance of the same type for this buildplate.
+    /// </summary>
+    public async Task<string?> RequestBuildplateInstance(string? playerId, string? encounterId, string buildplateId, InstanceType type, long shutdownTime, bool night, bool reuseExisting = true)
     {
         if (playerId is null && type is not InstanceType.ENCOUNTER and not InstanceType.PLAYER_ADVENTURE)
         {
@@ -126,10 +129,11 @@ public sealed class BuildplateInstancesManager
             Log.Information($"Finding buildplate instance for buildplate {buildplateId} type {type}");
         }
 
+        string? reusedInstanceId = null;
         lock (_instances)
         {
             HashSet<string>? instanceIds = _instancesByBuildplateId.GetOrDefault(buildplateId);
-            if (instanceIds is not null)
+            if (reuseExisting && instanceIds is not null)
             {
                 foreach (string loopInstanceId in instanceIds)
                 {
@@ -143,11 +147,26 @@ public sealed class BuildplateInstancesManager
                         )
                         {
                             Log.Information($"Found existing buildplate instance {loopInstanceId}");
-                            return loopInstanceId;
+                            reusedInstanceId = loopInstanceId;
+                            break;
                         }
                     }
                 }
             }
+        }
+
+        if (reusedInstanceId is not null)
+        {
+            // The launcher routes a playerLogin to the player's newest instance, and a reused
+            // instance is not necessarily the newest one (e.g. an older buildplate instance
+            // rejoined after playing an adventure), so tell the launcher which instance this
+            // player is about to join.
+            if (playerId is not null)
+            {
+                await RouteLoginAsync(reusedInstanceId, playerId);
+            }
+
+            return reusedInstanceId;
         }
 
         Log.Information("Did not find existing instance, starting new instance");
@@ -224,6 +243,115 @@ public sealed class BuildplateInstancesManager
         _requestSender = await _eventBusClient.AddRequestSenderAsync();
     }
 
+    /// <summary>
+    /// Ends the running instances of the given player adventures early (a second adventure crystal replaces the first adventure).
+    /// Matches on the adventure id the instance was started for, so trading post and buildplate instances are never touched.
+    /// </summary>
+    public async Task StopAdventureInstancesAsync(IEnumerable<string> adventureIds)
+    {
+        HashSet<string> ids = [.. adventureIds];
+        if (ids.Count == 0)
+        {
+            return;
+        }
+
+        List<string> instanceIds = [];
+        lock (_instances)
+        {
+            foreach (InstanceInfo instanceInfo in _instances.Values)
+            {
+                if (instanceInfo.Type is InstanceType.PLAYER_ADVENTURE &&
+                    !instanceInfo.ShuttingDown &&
+                    instanceInfo.EncounterId is not null &&
+                    ids.Contains(instanceInfo.EncounterId))
+                {
+                    instanceIds.Add(instanceInfo.InstanceId);
+                }
+            }
+        }
+
+        foreach (string instanceId in instanceIds)
+        {
+            Log.Information("Stopping adventure instance {InstanceId} because the player started a new adventure", instanceId);
+            await StopInstanceAsync(instanceId);
+        }
+    }
+
+    private async Task StopInstanceAsync(string instanceId)
+    {
+        await _requestSenderLock.WaitAsync();
+        try
+        {
+            Task<string?> responseTask = _requestSender.RequestAsync("buildplates", "stopInstance", Json.Serialize(new StopInstanceRequest(instanceId)));
+            Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(8));
+            if (await Task.WhenAny(responseTask, timeoutTask) != responseTask)
+            {
+                Log.Warning("stopInstance request timed out for instance {InstanceId}; resetting sender", instanceId);
+                await ResetRequestSenderAsync();
+                return;
+            }
+
+            string? response = await responseTask;
+            if (response is null || !Json.Deserialize<bool>(response))
+            {
+                Log.Warning("Launcher did not stop instance {InstanceId} (already stopped, or the launcher was not updated to handle stopInstance)", instanceId);
+                return;
+            }
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "Could not stop instance {InstanceId}", instanceId);
+            return;
+        }
+        finally
+        {
+            _requestSenderLock.Release();
+        }
+
+        // the launcher's shuttingDown event follows shortly, mark the instance now so nothing reuses it in the meantime
+        lock (_instances)
+        {
+            if (_instances.TryGetValue(instanceId, out InstanceInfo? instanceInfo))
+            {
+                _instances[instanceId] = instanceInfo with { ShuttingDown = true };
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tells the launcher which instance a player is about to join, so their login is routed there instead of to their newest instance.
+    /// Reuses the launcher's guest routing, but does not mark the player as a guest of the instance on this side. Never fails the caller.
+    /// </summary>
+    private async Task RouteLoginAsync(string instanceId, string playerId)
+    {
+        await _requestSenderLock.WaitAsync();
+        try
+        {
+            Task<string?> responseTask = _requestSender.RequestAsync("buildplates", "routeLogin", Json.Serialize(new RouteLoginRequest(instanceId, playerId)));
+            Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(8));
+            if (await Task.WhenAny(responseTask, timeoutTask) != responseTask)
+            {
+                Log.Warning("Could not route player {PlayerId} to instance {InstanceId}: request timed out; resetting sender", playerId, instanceId);
+                await ResetRequestSenderAsync();
+                return;
+            }
+
+            string? response = await responseTask;
+            if (response is null || !Json.Deserialize<bool>(response))
+            {
+                Log.Warning("Launcher did not accept routing player {PlayerId} to instance {InstanceId}", playerId, instanceId);
+            }
+        }
+        catch (Exception exception)
+        {
+            Log.Warning(exception, "Could not route player {PlayerId} to instance {InstanceId}", playerId, instanceId);
+        }
+        finally
+        {
+            _requestSenderLock.Release();
+        }
+    }
+
     public InstanceInfo? GetInstanceInfo(string instanceId)
     {
         lock (_instances)
@@ -280,9 +408,18 @@ public sealed class BuildplateInstancesManager
 
     private sealed record RemoveGuestRequest(string PlayerId);
 
+    private sealed record StopInstanceRequest(
+        string InstanceId
+    );
+
+    private sealed record RouteLoginRequest(
+        string InstanceId,
+        string PlayerId
+    );
+
     // Whether a player may see the status of an instance: the host, a guest
     // who joined with a join code, or anyone if the instance has no owner
-    // (encounters are shared world content and have no owning player).
+    // (encounters owned by a tapping player are covered by the host check).
     public bool IsParticipant(string playerId, string instanceId)
     {
         lock (_instances)
