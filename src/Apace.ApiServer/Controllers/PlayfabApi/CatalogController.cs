@@ -575,19 +575,20 @@ internal sealed class CatalogController : ApaceControllerBase
     // Blank-slot filler (packs.json "fillBlankSlotsWithRandomCosmetics", default on)
     // ---------------------------------------------------------------------------
 
-    // The deterministic filler candidate pool: every live accessory (non-skin
-    // persona piece) that has a binary on disk, belongs to a SELECTED bundle
-    // (theme tag inside the default pack set — binaries only download for the
-    // selected bundles, so the filler never pulls a pack nobody picked) and —
-    // while onlySupported is on — is compat-supported, sorted by item id so the
-    // SAME pieces fill the same slots every offer build. LiveOfferItemsFor
-    // appends the pool AFTER the pack-selected pieces and the grouped
-    // per-category limiter keeps the first N per group (staticdata pieces and
-    // customs count first, then pack-selected live pieces, then filler): every
-    // group fills up to the limit, pack pieces are never displaced, and with
-    // no packs selected the pool is empty (the mirror-first rule means an
-    // unselected accessory has no binary and could not serve anyway). Refreshed
-    // per (index stamp, packs.json stamp, hidden-set size).
+    // The deterministic filler candidate pool ("Fill blank slots with random
+    // cosmetics", packs.json fillBlankSlotsWithRandomCosmetics, default ON):
+    // every live accessory (non-skin persona piece) that has a binary on disk
+    // and — while onlySupported is on — is compat-supported, sorted by item id
+    // so the SAME pieces fill the same slots every offer build. The pool draws
+    // from the WHOLE mirrored catalog, not just the selected bundles — the
+    // warm-up mirrors every accessory while the knob is on (the binary-download
+    // scope follows the same switch), so blank slots fill with random cosmetics
+    // exactly as the option promises. With the knob OFF the pool is empty.
+    // LiveOfferItemsFor appends the pool AFTER the pack-selected pieces and the
+    // grouped per-category limiter keeps the first N per group (staticdata
+    // pieces and customs count first, then pack-selected live pieces, then
+    // filler): every group fills up to the limit, pack pieces are never
+    // displaced. Refreshed per (index stamp, packs.json stamp, hidden-set size).
     private static long _fillerStamp;
     private static Item[]? _fillerCandidates;
     private static IReadOnlySet<string> _fillerItemIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -614,11 +615,10 @@ internal sealed class CatalogController : ApaceControllerBase
 
         bool onlySupported = PersonaPackGate.OnlySupported;
         HashSet<string> dead = LivePersonaCatalog.GetHiddenItemIds();
-        IReadOnlySet<string> defaults = PersonaPackGate.DefaultPackUuids;
+        bool fillEnabled = PersonaPackGate.FillBlankSlots;
         LiveOfferCache live = LiveOffer;
         var candidates = new List<Item>(live.Items.Length);
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        string[][] themes = live.ThemeTags;
         for (int i = 0; i < live.Items.Length; i++)
         {
             Item item = live.Items[i];
@@ -631,15 +631,19 @@ internal sealed class CatalogController : ApaceControllerBase
 
             if (pieceType is not "persona_skin")
             {
-                if (defaults.Count == 0 || !themes[i].Any(defaults.Contains))
+                if (!fillEnabled)
                 {
-                    continue; // fill with the SELECTED bundles only — unselected accessories have no binary and refuse at the gate anyway
+                    continue; // the knob is off — nothing fills
                 }
 
                 if (dead.Contains(item.Id.ToString()))
                 {
                     continue; // no binary on disk — its download would hang the client, never fill with it
                 }
+            }
+            else
+            {
+                continue; // skins are not filler — they always serve via the pack-free lane already
             }
 
             if (onlySupported && !PersonaPieceTypes.EvaluateCosmetic(
@@ -664,8 +668,8 @@ internal sealed class CatalogController : ApaceControllerBase
         // were gate-refused there and always stubbed)
         PersonaPackGate.FillerExemptItemIds.Clear();
         PersonaPackGate.FillerExemptItemIds.UnionWith(ids);
-        Log.Information("Blank-slot filler pool rebuilt: {Count} candidate piece(s) from the selected bundles (index stamp {IndexStamp}, config stamp {ConfigStamp})",
-            _fillerCandidates.Length, LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp);
+        Log.Information("Blank-slot filler pool rebuilt: {Count} candidate piece(s) (filler {FillState}, index stamp {IndexStamp}, config stamp {ConfigStamp})",
+            _fillerCandidates.Length, fillEnabled ? "ON" : "OFF", LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp);
     }
 
     // The per-category size limit, counted per dressing-room GROUP (see
@@ -673,7 +677,7 @@ internal sealed class CatalogController : ApaceControllerBase
     // persona_outerwear + persona_hood, so the old per-piece-type cap let
     // grouped tabs show 2-3x the limit). Runs over the whole composed persona
     // offer in SearchAsync: staticdata persona pieces (Bold Rabbit Feet, the
-    // Apace capes, the legacy catalog when the live marketplace is off) count
+    // the legacy catalog when the live marketplace is off) count
     // first, live pieces fill their group up to the limit. Only persona pieces
     // are counted — the layout, store config and skin pack entries have no
     // piece type and must keep serving untouched; pieces with a missing/empty

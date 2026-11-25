@@ -250,9 +250,20 @@ public static class PersonaPieceTypes
             return new CosmeticGateVerdict(false, $"geometry format_version {formatVersion} — at or past the {maxGeometry} cap (worst of the piece's geometry variants)");
         }
 
+        // With a serve-time transform on, animations are no longer a hide
+        // reason: the rewriter blanks them out of the served binary (geometry
+        // "animations" blocks emptied, *.animation.json payloads replaced with
+        // an empty set) so the piece serves static. Without the transform the
+        // piece stays hidden exactly as before.
+        bool animationsRepairable = false;
         if (hasAnimations == true)
         {
-            return new CosmeticGateVerdict(false, "animations in the piece files");
+            if (!allowRigRepair)
+            {
+                return new CosmeticGateVerdict(false, "animations in the piece files");
+            }
+
+            animationsRepairable = true;
         }
 
         if (hasParticles == true)
@@ -336,6 +347,30 @@ public static class PersonaPieceTypes
                     "custom rig bones — the serve-time rewriter fixes them (packs.json experimentalAutoRepairRigs / customSkeletonMode)",
                     RepairedRig: true);
             }
+        }
+        else if (hasNonstandardBones == true && allowRigRepair && pieceType is not "persona_hair")
+        {
+            // Non-head pieces with custom bones used to serve RAW (the
+            // bones-hide branch above is head-family only) — the reported
+            // "sporo rzeczy jest glitchy": the unbindable bones left their
+            // cubes wherever the artist placed them and never followed any
+            // rig. With a transform on they become repair candidates: the
+            // rewriter strips the custom bones into the nearest standard
+            // ancestor (rigid hoist, rest pose preserved). Hair stays exempt
+            // — ponytail bones parent onto face bones the client binds and
+            // blanketing them rigid would break working hair.
+            return new CosmeticGateVerdict(
+                true,
+                "custom rig bones — the serve-time rewriter strips them rigid (packs.json experimentalAutoRepairRigs / customSkeletonMode)",
+                RepairedRig: true);
+        }
+
+        if (animationsRepairable)
+        {
+            return new CosmeticGateVerdict(
+                true,
+                "animations in the piece files — the serve-time rewriter blanks them (packs.json experimentalAutoRepairRigs / customSkeletonMode)",
+                RepairedRig: true);
         }
 
         return versionKnown

@@ -37,23 +37,11 @@ internal sealed class InventoryController : ApaceControllerBase
 {
     private const string ApaceContentKey = "s5s5ejuDru4uchuF2drUFuthaspAbepE";
 
-    // (piece pack ContentIdentity = the piece uuid, fixed arbitrary InstanceId) per Apace cape.
-    // The pack ContentIdentity IS the piece uuid now (the rebuilt containers use one uuid:
-    // manifest.header.uuid == contents.json header uuid == meta piece_id == catalog PieceId —
-    // the old separate pack uuids never matched the real-piece shape and the cape never applied).
-    private static readonly (string FriendlyId, string InstanceId)[] ApaceEntitlements =
-    [
-        ("3199377b-130a-4189-9b90-484ae751c54f", "7c1d2e4a-93b5-4f60-8a21-5c4d6e7f8a01"), // Apace Cape 128
-        ("a76970a2-33fe-48f6-b8fc-dd54679f5cdb", "8d2e3f5b-a4c6-4071-9b32-6d5e7f8a9b02"), // Apace Cape 256
-        ("5cae9ae7-bf1b-4ee2-8edd-9615743ea02c", "9e3f4a6c-b5d7-4182-ac43-7e6f8a9bac03"), // Apace Cape 512
-    ];
-
     private static string BuildReceiptToken(out int entitlementCount, out int customCount, out int liveCount)
     {
-        // custom cosmetics first, then the built-in Apace capes, then every
-        // live persona piece — the merge dedupes by FriendlyId (pack uuid)
-        // with the panel's custom entries taking precedence over a same-named
-        // built-in pack
+        // custom cosmetics first, then every live persona piece — the merge
+        // dedupes by FriendlyId (pack uuid) with the panel's custom entries
+        // taking precedence over a same-named built-in pack
         var entitlements = new Dictionary<string, (string ContentKey, string InstanceId)>(StringComparer.OrdinalIgnoreCase);
         foreach (var custom in CustomCosmetics.Entitlements)
         {
@@ -61,13 +49,6 @@ internal sealed class InventoryController : ApaceControllerBase
         }
 
         customCount = entitlements.Count;
-        foreach (var e in ApaceEntitlements)
-        {
-            if (!entitlements.ContainsKey(e.FriendlyId))
-            {
-                entitlements[e.FriendlyId] = (ApaceContentKey, e.InstanceId);
-            }
-        }
 
         // every live persona piece the offer can serve (stub OR real binary —
         // both encrypt contents.json with the same built-in Skin&Persona key)
@@ -76,7 +57,7 @@ internal sealed class InventoryController : ApaceControllerBase
         // loading contents.json — a pack uuid without a registered key leaves
         // the import await pending forever (download 200 OK → silence →
         // SetObjects never reached). This was exactly the difference between
-        // the working set (3 capes + customs = the receipted set) and every
+        // the working set (customs = the receipted set) and every
         // stubbed live piece.
         liveCount = 0;
         try

@@ -111,20 +111,32 @@ The background warm-up mirrors every piece the binary path can serve into the
 volume BEFORE the client asks: accessories whose theme tags sit inside the
 selected bundles (defaults ∪ grants), the filler pool (a subset of the same)
 and the skins — everything else is refused by the pack gate and is not fetched.
-Two-speed design:
+Two-speed design, STREAMING end to end:
 
 1. **Batch URL resolve** — `Catalog/GetItems` (the batch form of the per-item
    `GetItem`; `Search` never returns `Contents`) resolves 20 items per paced
    API call. The endpoint is all-or-nothing on unknown ids, so a failing batch
    bisects down to singles — worst case the old per-item pace, best case 20x
-   fewer API calls. ~10k candidates resolve in minutes.
-2. **Parallel downloads** — bounded (6 at a time) CDN GETs, no API pacer (the
-   content CDN is not the PlayFab API). A 404 on the download itself IS the
-   dead verdict — no separate HEAD probe on this path.
+   fewer API calls.
+2. **Parallel downloads, dispatched per chunk** — the pass resolves ONE chunk
+   and immediately dispatches its downloads (bounded — 6 CDN GETs at a time,
+   no API pacer; the content CDN is not the PlayFab API) before resolving the
+   next, so the first binaries land within a minute and the offer grows
+   continuously. A 404 on the download itself walks the alternate CDN shapes
+   (`AlternateCdnUrls`) before concluding dead — the resolved URL can point at
+   the dead xforge CDN while the same GUID lives on the content CDN.
 
 Downloads land in `binaries/<itemId>.zip`; verdicts persist in probe-state, so
 repeat passes only fetch what changed. The pass reruns whenever the index
 re-syncs or the pack selection changes.
+
+**How much is actually alive?** Measured 25.11 with a 300-item sample spread
+over the whole catalog: **48.3% download** — every one of them hosted on
+`content1/content2.prod.catalog.playfab.com` (newer republications); the
+xforge-hosted 2021 originals are dead on the primary AND on every alternate
+URL shape (0/155 revived). Thumbnails are separate: a lazy lane (recorded URL
+→ the Bedrock-Persona GitHub mirror → placeholder) still answers, which is why
+the dressing room can show a thumbnail for a piece whose binary is gone.
 
 ### Lazy probe (client-request fallback)
 
@@ -211,10 +223,10 @@ values, ~55% of pieces carry one). So:
   accessories serve** — skins still do. What always shows is the
   non-PersonaDurable staticdata (the built-in "Minecraft Default Skins" pack,
   the client's vanilla Standard pack scaffolding, layout/StoreConfig) plus
-  Bold Rabbit Feet and the custom cosmetics (non-Minecraft creators — the
-  Apace capes — are exempt from the gate); the legacy Minecraft-creator
-  staticdata accessories now drop at every serve path, live index or not
-  (staticdata carries no pack tags, so the gate can never allow them);
+  Bold Rabbit Feet and the custom cosmetics (never gated); the legacy
+  Minecraft-creator staticdata accessories now drop at every serve path, live
+  index or not (staticdata carries no pack tags, so the gate can never allow
+  them);
 - type-ish tags (the piece's own category restated as a tag, e.g. `tag.hair` on
   hair pieces) never form packs — excluded by the same piece-type-suffix rule
   on both sides (panel `PersonaPackIndex.ReadThemePacks`, ApiServer

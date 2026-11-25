@@ -850,13 +850,16 @@ public static class LivePersonaCatalog
         }
 
         // everything the binary path can actually serve — accessories with a
-        // theme tag inside the allowed pack set (the selected bundles), filler
-        // pieces (the defaults' mirrored pool, a subset of the same) and skins
-        // (gate-exempt). Anything else is refused by the pack gate before the
-        // pipeline runs. THE OFFER ONLY CONTAINS PIECES WITH A BINARY ON DISK,
-        // so this pass is what grows the dressing room: resolve URLs in batches
-        // (Catalog/GetItems — one call per 20 ids), then download in parallel.
+        // theme tag inside the allowed pack set (the selected bundles), skins
+        // (gate-exempt) and — while "Fill blank slots with random cosmetics"
+        // is ON — EVERY accessory (the filler draws from the whole mirrored
+        // catalog, so the download scope follows the same switch). Anything
+        // else is refused by the pack gate before the pipeline runs. THE OFFER
+        // ONLY CONTAINS PIECES WITH A BINARY ON DISK, so this pass is what
+        // grows the dressing room: resolve URLs in batches (Catalog/GetItems —
+        // one call per 20 ids), then download in parallel.
         IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(CancellationToken.None).ConfigureAwait(false);
+        bool fillAll = PersonaPackGate.FillBlankSlots;
         List<string> candidates = [];
         lock (StateLock)
         {
@@ -876,7 +879,7 @@ public static class LivePersonaCatalog
                 }
 
                 bool servable = entry.PieceType == "persona_skin"
-                    || PersonaPackGate.FillerExemptItemIds.Contains(itemId)
+                    || fillAll
                     || (allowed.Count > 0 && ThemeTagsOf(entry).Any(allowed.Contains));
                 if (!servable)
                 {
@@ -912,29 +915,31 @@ public static class LivePersonaCatalog
         logger.Information("Live persona binary warm-up starting: {Pieces} piece(s) + {Packs} skin pack(s) to mirror (index stamp {Stamp})",
             candidates.Count, packCandidates.Count, IndexStamp);
 
-        // 1. batch URL resolve — one GetItems call per 20 ids, paced like every
-        //    API call; a batch that fails (one stale republication id in the
-        //    set — GetItems is all-or-nothing) bisects down to singles, so the
-        //    worst case is the old per-item pace and the best case is 20x fewer
-        //    API calls. ~10k candidates resolve in minutes instead of hours.
-        var resolved = new Dictionary<string, string?>(candidates.Count, StringComparer.OrdinalIgnoreCase);
-        foreach (var (id, url) in await BatchResolveBinaryUrlsAsync(candidates, logger, CancellationToken.None).ConfigureAwait(false))
-        {
-            resolved[id] = url;
-        }
-
-        int noContents = resolved.Values.Count(url => url is null);
-        logger.Information("Live persona binary warm-up: {Resolved} URL(s) resolved, {NoContents} piece(s) without a personabinary — downloading in parallel",
-            resolved.Count - noContents, noContents);
-
-        // 2. parallel CDN downloads (bounded — the content CDN, not the API, so
-        //    no 2 req/s pace; 404 on the download itself IS the dead verdict,
-        //    no separate HEAD probe needed on the warm-up path)
+        // STREAMING pipeline: resolve one GetItems chunk (20 ids, paced like
+        // every API call; a batch that fails — one stale republication id in
+        // the set, the endpoint is all-or-nothing — bisects down to singles)
+        // and IMMEDIATELY dispatch its downloads before moving to the next
+        // chunk. The first resolve-all-then-download-all design delayed the
+        // FIRST binary by the whole resolve phase (minutes to hours with the
+        // paced singles fallback), which read as "why are so few binaries
+        // there" while the pass was still resolving. Here binaries start
+        // landing within the first minute and the offer grows continuously.
         int live = 0, dead = 0, processed = 0;
         var downloadGate = new SemaphoreSlim(6, 6);
-        var downloads = candidates.Select(async itemId =>
+        var downloads = new List<Task>(candidates.Count);
+        for (int offset = 0; offset < candidates.Count; offset += 20)
         {
-            string? url = resolved.GetValueOrDefault(itemId);
+            List<string> chunk = candidates.Skip(offset).Take(20).ToList();
+            foreach (var (itemId, url) in await BatchResolveBinaryUrlsAsync(chunk, logger, CancellationToken.None).ConfigureAwait(false))
+            {
+                downloads.Add(DownloadAndCountAsync(itemId, url));
+            }
+        }
+
+        await Task.WhenAll(downloads).ConfigureAwait(false);
+
+        async Task DownloadAndCountAsync(string itemId, string? url)
+        {
             bool ok;
             if (url is null)
             {
@@ -949,20 +954,20 @@ public static class LivePersonaCatalog
             await downloadGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
             try
             {
-                processed++;
+                int done = Interlocked.Increment(ref processed);
                 if (ok)
                 {
-                    live++;
+                    Interlocked.Increment(ref live);
                 }
                 else
                 {
-                    dead++;
+                    Interlocked.Increment(ref dead);
                 }
 
-                if (processed % 50 == 0)
+                if (done % 50 == 0)
                 {
                     logger.Information("Live persona binary warm-up: {Processed}/{Total} — {Live} mirrored, {Dead} dead",
-                        processed, candidates.Count, live, dead);
+                        done, candidates.Count, Interlocked.CompareExchange(ref live, 0, 0), Interlocked.CompareExchange(ref dead, 0, 0));
                     FlushProbeStates(logger);
                 }
             }
@@ -970,8 +975,7 @@ public static class LivePersonaCatalog
             {
                 downloadGate.Release();
             }
-        });
-        await Task.WhenAll(downloads).ConfigureAwait(false);
+        }
 
         foreach (string offerId in packCandidates)
         {
@@ -1106,24 +1110,41 @@ public static class LivePersonaCatalog
             {
                 try
                 {
-                    using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Gone)
+                    // the resolved URL can point at the DEAD xforge CDN while
+                    // the same GUID still lives on the PlayFab content CDN —
+                    // the lazy client path probes the alternates, so the
+                    // warm-up download must too (skipping them marked whole
+                    // swaths of the catalog dead that were actually alive —
+                    // the "why are there so few binaries" report)
+                    foreach (string candidateUrl in CandidateDownloadUrls(url))
                     {
-                        RecordProbe(itemId, "dead", url, $"warmup-{(int)response.StatusCode}", logger);
-                        return false;
+                        using var response = await HttpClient.GetAsync(candidateUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                        if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Gone)
+                        {
+                            continue; // try the next CDN shape before concluding dead
+                        }
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            lastError = new HttpRequestException($"HTTP {(int)response.StatusCode}");
+                            break;
+                        }
+
+                        await using (var content = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+                        await using (var fileStream = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                        {
+                            await content.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
+                        }
+
+                        File.Move(partPath, path, overwrite: true);
+                        RecordProbe(itemId, "live", candidateUrl, "warmup", logger);
+                        EnsureGeometryCompatCaptured(itemId, logger, path);
+                        return true;
                     }
 
-                    response.EnsureSuccessStatusCode();
-                    await using (var content = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
-                    await using (var fileStream = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
-                    {
-                        await content.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
-                    }
-
-                    File.Move(partPath, path, overwrite: true);
-                    RecordProbe(itemId, "live", url, "warmup", logger);
-                    EnsureGeometryCompatCaptured(itemId, logger, path);
-                    return true;
+                    // every CDN shape answered 404/410 — definitive, no retry
+                    RecordProbe(itemId, "dead", url, "warmup-404", logger);
+                    return false;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -1131,19 +1152,35 @@ public static class LivePersonaCatalog
                 }
                 catch (Exception ex)
                 {
+                    // transport-level failure — the verdict stays whatever it
+                    // is, so the piece retries on the next pass
                     lastError = ex;
                     await Task.Delay(TimeSpan.FromSeconds(2 * attempt), cancellationToken).ConfigureAwait(false);
                 }
             }
 
-            // transport-level failure after all retries — the verdict stays
-            // whatever it is, so the piece retries on the next pass
-            logger.Debug("Live persona warm-up download failed for {Item} from {Url}: {Reason}", itemId, url, lastError?.Message);
+            logger.Debug("Live persona warm-up download failed for {Item} from {Url} after all retries: {Reason}", itemId, url, lastError?.Message);
             return false;
         }
         finally
         {
             gate.Release();
+        }
+    }
+
+    // The resolved URL first, then the same payload re-hosted on the PlayFab
+    // content CDN (content1/content2 — the AlternateCdnUrls shapes the lazy
+    // probe walks). Deduplicated to skip a re-GET of the same address.
+    private static IEnumerable<string> CandidateDownloadUrls(string url)
+    {
+        yield return url;
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { url };
+        foreach (string alternate in AlternateCdnUrls(url))
+        {
+            if (seen.Add(alternate))
+            {
+                yield return alternate;
+            }
         }
     }
 

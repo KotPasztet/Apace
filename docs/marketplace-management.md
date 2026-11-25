@@ -80,7 +80,7 @@ tagless accessories never serve. With **no packs configured at all**, 0
 accessories serve (skins still do); the non-accessory staticdata still shows:
 the built-in "Minecraft Default Skins" pack (Steve/Alex and friends), the
 client's vanilla Standard pack scaffolding, the layout and StoreConfig — plus
-Bold Rabbit Feet, the Apace capes and the custom cosmetics, which are exempt
+Bold Rabbit Feet and the custom cosmetics, which are exempt
 from the gate. The legacy Minecraft-creator staticdata accessories no longer
 serve anywhere: staticdata carries no pack tags, so the gate can never allow
 them. **Skins are exempt**:
