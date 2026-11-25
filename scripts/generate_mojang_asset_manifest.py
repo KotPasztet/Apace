@@ -48,7 +48,7 @@ are not retried.
 
 Persona entries additionally carry "fallbackUrls": mirror locations the gate
 tries in order when the primary (xforge) URL answers with a non-200. The only
-mirror is the mojang-persona-mirror GitHub release (KotPasztet/Apace); the
+mirror is the mojang-persona-mirror GitHub release (ApaceProject/Apace); the
 release may not exist yet — the field is a retry path for the gate, not a
 guarantee, and unverified persona items still never block startup.
 
@@ -88,7 +88,7 @@ UA = "ApaceDataGen/1.0"
 # URLs when the primary xforge URL returns a non-200). The release is built
 # from the byte-identical copies of commit 043d7bb; it may not exist yet —
 # that is fine: unverified persona entries never block startup.
-PERSONA_MIRROR_BASE = "https://github.com/KotPasztet/Apace/releases/download/mojang-persona-mirror"
+PERSONA_MIRROR_BASE = "https://github.com/ApaceProject/Apace/releases/download/mojang-persona-mirror"
 
 # The catalog's old asset CDN (xforgeassets*.xboxlive.com) went dark for the
 # 231 persona binaries (22.11 probe: 0/231 alive). The PlayFab content CDN

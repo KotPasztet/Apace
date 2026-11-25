@@ -137,7 +137,7 @@ services:
       - NET_ADMIN
 
   apace:
-    image: ghcr.io/kotpasztet/apace:main
+    image: ghcr.io/apaceproject/apace:main
     network_mode: "service:tailscale"   # Apace shares the Tailscale network stack
 ```
 

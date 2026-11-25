@@ -48,7 +48,7 @@ public static class MojangSkinTextureFetcher
         {
             Timeout = TimeSpan.FromMinutes(10),
         };
-        _ = client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", $"KotPasztet/Apace/{Assembly.GetExecutingAssembly().GetName().Version}");
+        _ = client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", $"ApaceProject/Apace/{Assembly.GetExecutingAssembly().GetName().Version}");
         return client;
     }
 

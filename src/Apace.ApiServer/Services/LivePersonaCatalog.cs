@@ -1225,7 +1225,7 @@ public static class LivePersonaCatalog
         {
             Timeout = TimeSpan.FromMinutes(5),
         };
-        _ = client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "KotPasztet/Apace live-persona-catalog");
+        _ = client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "ApaceProject/Apace live-persona-catalog");
         return client;
     }
 

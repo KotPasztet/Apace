@@ -547,7 +547,7 @@ public static class LivePersonaCatalogSync
                 {
                     Timeout = TimeSpan.FromSeconds(40),
                 };
-                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "KotPasztet/Apace live-persona-catalog-sync");
+                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "ApaceProject/Apace live-persona-catalog-sync");
                 using var request = new HttpRequestMessage(HttpMethod.Post, $"https://20ca2.playfabapi.com{path}")
                 {
                     Content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/json"),

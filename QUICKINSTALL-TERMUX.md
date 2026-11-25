@@ -14,7 +14,7 @@ Apace in it, because the prebuilt Linux binaries need glibc and Android only off
 
 Inside Termux:
 ```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install-termux.sh | bash
+curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install-termux.sh | bash
 ```
 
 The installer installs `proot-distro` + a small Ubuntu with Java 17, downloads the newest

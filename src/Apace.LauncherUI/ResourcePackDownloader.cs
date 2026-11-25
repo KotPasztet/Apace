@@ -128,7 +128,7 @@ internal static class ResourcePackDownloader
             // client itself must never kill a healthy slow download.
             Timeout = Timeout.InfiniteTimeSpan,
         };
-        _ = client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", $"KotPasztet/Apace/{Assembly.GetExecutingAssembly().GetName().Version}");
+        _ = client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", $"ApaceProject/Apace/{Assembly.GetExecutingAssembly().GetName().Version}");
         return client;
     }
 

@@ -183,8 +183,8 @@ interval syncu, consent na Mojang assets.
 
 ## 10. Apace-Launcher (mobilne) — skrót
 
-Osobne repo `KotPasztet/Apace-Launcher` (push → `main` = CI buduje APK).
-Kanał „dev" porównuje wersję z obrazem `ghcr.io/kotpasztet/apace:dev`,
+Osobne repo `ApaceProject/Apace-Launcher` (push → `main` = CI buduje APK).
+Kanał „dev" porównuje wersję z obrazem `ghcr.io/apaceproject/apace:dev`,
 „main" z GitHub Releases. **Prompt update (od v1.1.15):** nowsza wersja +
 webserver OFF (STOPPED/ERROR) + brak aktywnego snooze → dialog **przy każdym
 otwarciu apki** (bez gate'u „raz na wersję"); przy działającym serwerze bez

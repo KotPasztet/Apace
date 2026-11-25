@@ -17,7 +17,7 @@ APACE_DIR="$HOME/apace"
 
 if [ ! -d "$APACE_DIR" ] || [ ! -f "$APACE_DIR/docker-compose.yml" ]; then
     echo -e "${RED}Apace is not installed. Run the installer first:${RST}"
-    echo "  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash"
+    echo "  curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash"
     exit 1
 fi
 

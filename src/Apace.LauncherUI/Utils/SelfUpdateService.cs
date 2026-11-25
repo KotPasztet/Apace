@@ -56,14 +56,14 @@ public sealed class SelfUpdateService
 
     private static readonly HttpClient httpClient = CreateHttpClient();
 
-    private const string ApiBase = "https://api.github.com/repos/KotPasztet/Apace";
+    private const string ApiBase = "https://api.github.com/repos/ApaceProject/Apace";
 
     private static HttpClient CreateHttpClient()
     {
         var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         // Per-call timeouts are enforced with linked cancellation tokens (the
         // body downloads need their own, longer budget than requests).
-        client.DefaultRequestHeaders.UserAgent.TryParseAdd($"KotPasztet/Apace/{typeof(SelfUpdateService).Assembly.GetName().Version}");
+        client.DefaultRequestHeaders.UserAgent.TryParseAdd($"ApaceProject/Apace/{typeof(SelfUpdateService).Assembly.GetName().Version}");
         return client;
     }
 

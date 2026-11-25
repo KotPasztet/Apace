@@ -5,7 +5,7 @@
 #   19132/udp single shared bridge Bedrock port (all instances)
 services:
   apace:
-    image: ghcr.io/kotpasztet/apace:dev
+    image: ghcr.io/apaceproject/apace:dev
     pull_policy: always
 
     restart: unless-stopped

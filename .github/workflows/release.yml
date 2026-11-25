@@ -210,12 +210,12 @@ jobs:
           $GENERATED_NOTES
 
           ---
-          ![Apace Banner](https://raw.githubusercontent.com/KotPasztet/Apace/main/images/Apace_Banner.png)"
+          ![Apace Banner](https://raw.githubusercontent.com/ApaceProject/Apace/main/images/Apace_Banner.png)"
           gh release create "$VERSION" artifacts/* \
             --title "$VERSION" \
             --notes "$RELEASE_BODY"
 
-  # Versioned container image (ghcr.io/kotpasztet/apace:vX.Y.Z) so update.sh can
+  # Versioned container image (ghcr.io/apaceproject/apace:vX.Y.Z) so update.sh can
   # pin an install to an exact release instead of the rolling :main tag.
   # Mirrors docker-image.yml: per-arch builds pushed as sha-<sha>-<arch>, merged
   # into a multi-arch manifest by tag.
@@ -247,7 +247,7 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          tags: ghcr.io/apaceproject/apace:sha-${{ github.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           build-args: |
             SOURCE_COMMIT=${{ github.sha }}
           cache-from: type=gha
@@ -266,9 +266,9 @@ jobs:
       - name: Merge per-arch images into the versioned tag
         run: |
           VERSION=${{ needs.prepare_version.outputs.next_tag }}
-          docker buildx imagetools create -t "ghcr.io/kotpasztet/apace:$VERSION" \
-            ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-amd64 \
-            ghcr.io/kotpasztet/apace:sha-${{ github.sha }}-arm64
+          docker buildx imagetools create -t "ghcr.io/apaceproject/apace:$VERSION" \
+            ghcr.io/apaceproject/apace:sha-${{ github.sha }}-amd64 \
+            ghcr.io/apaceproject/apace:sha-${{ github.sha }}-arm64
 
   cleanup:
     needs: release
