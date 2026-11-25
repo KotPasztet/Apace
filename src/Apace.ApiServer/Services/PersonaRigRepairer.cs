@@ -191,14 +191,21 @@ public static class PersonaRigRepairer
         // standard ancestor preserves the rest pose exactly and cannot apply
         // rotations around a wrong pivot — the safe transform for bodies,
         // limbs and accessories.
-        bool strip = PersonaPackGate.CustomSkeletonMode != PersonaPackGate.CustomSkeletonModes.Off
+        // FACE ACCESSORIES always take the rigid strip (with face bones
+        // strippable, below): the misplaced face rig bone (MCPE-165232) can
+        // never stay in the served geometry, and a re-parent cannot fix it —
+        // the bone itself is what the client cannot bind, so it must be
+        // removed/renamed, which is the strip's job.
+        bool stripFaceBones = pieceType is "persona_face_accessory";
+        bool strip = stripFaceBones
+            || PersonaPackGate.CustomSkeletonMode != PersonaPackGate.CustomSkeletonModes.Off
             || !PersonaPieceTypes.IsHeadFamilyPieceType(pieceType);
         var transformedBones = new List<string>();
         var strippedAnimations = new List<string>();
         byte[]? transformed = null;
         try
         {
-            transformed = RewriteLayer(original, fileKeys: null, firstNestedReadsOwnKeys: true, transformedBones, strippedAnimations, MaxLayers, strip);
+            transformed = RewriteLayer(original, fileKeys: null, firstNestedReadsOwnKeys: true, transformedBones, strippedAnimations, MaxLayers, strip, stripFaceBones);
         }
         catch (Exception ex)
         {
@@ -323,7 +330,7 @@ public static class PersonaRigRepairer
     /// new container bytes; throws only on structural zip failures (the caller
     /// catches and serves the original).
     /// </summary>
-    private static byte[] RewriteLayer(byte[] zipBytes, Dictionary<string, string>? fileKeys, bool firstNestedReadsOwnKeys, List<string> transformedBones, List<string> strippedAnimations, int depth, bool strip)
+    private static byte[] RewriteLayer(byte[] zipBytes, Dictionary<string, string>? fileKeys, bool firstNestedReadsOwnKeys, List<string> transformedBones, List<string> strippedAnimations, int depth, bool strip, bool stripFaceBones)
     {
         using var sourceStream = new MemoryStream(zipBytes);
         using var sourceArchive = new ZipArchive(sourceStream, ZipArchiveMode.Read, leaveOpen: false);
@@ -349,7 +356,7 @@ public static class PersonaRigRepairer
                             Dictionary<string, string>? childKeys = firstNestedReadsOwnKeys
                                 ? TryReadLayerKeys(originalBytes) ?? fileKeys
                                 : fileKeys;
-                            payload = RewriteLayer(originalBytes, childKeys, firstNestedReadsOwnKeys: false, transformedBones, strippedAnimations, depth - 1, strip);
+                            payload = RewriteLayer(originalBytes, childKeys, firstNestedReadsOwnKeys: false, transformedBones, strippedAnimations, depth - 1, strip, stripFaceBones);
                         }
                     }
                     else if (isAnimationFile)
@@ -365,7 +372,7 @@ public static class PersonaRigRepairer
                     }
                     else
                     {
-                        payload = PatchJsonEntry(originalBytes, fileKeys, entry, transformedBones, strippedAnimations, strip);
+                        payload = PatchJsonEntry(originalBytes, fileKeys, entry, transformedBones, strippedAnimations, strip, stripFaceBones);
                     }
                 }
 
@@ -424,7 +431,7 @@ public static class PersonaRigRepairer
     /// validating). Null = leave the entry byte-identical (not a geometry,
     /// nothing repairable, or the key did not decrypt — foreign/corrupt
     /// content is never rewritten).</summary>
-    private static byte[]? PatchJsonEntry(byte[] bytes, Dictionary<string, string>? fileKeys, ZipArchiveEntry entry, List<string> transformedBones, List<string> strippedAnimations, bool strip)
+    private static byte[]? PatchJsonEntry(byte[] bytes, Dictionary<string, string>? fileKeys, ZipArchiveEntry entry, List<string> transformedBones, List<string> strippedAnimations, bool strip, bool stripFaceBones)
     {
         string? fileKey = null;
         if (fileKeys is not null
@@ -440,7 +447,7 @@ public static class PersonaRigRepairer
         }
 
         byte[]? patched = strip
-            ? StripGeometry(bytes, transformedBones, strippedAnimations)
+            ? StripGeometry(bytes, transformedBones, strippedAnimations, stripFaceBones)
             : PatchGeometry(bytes, transformedBones, strippedAnimations);
         if (patched is null)
         {
@@ -538,8 +545,11 @@ public static class PersonaRigRepairer
             {
                 // a posed custom subtree would move when the client starts
                 // applying its rotations — strip it rigid instead (rest pose
-                // preserved, cubes follow the nearest bindable ancestor)
-                changed += StripBoneList(bones, repairedBones);
+                // preserved, cubes follow the nearest bindable ancestor).
+                // stripFaceBones is false here by construction: TryRepair
+                // forces the strip transform (which owns face-bone handling)
+                // for face accessories, so the re-parent path never sees one.
+                changed += StripBoneList(bones, repairedBones, stripFaceBones: false);
             }
             else
             {
@@ -593,12 +603,15 @@ public static class PersonaRigRepairer
                 continue;
             }
 
-            if (IsCustomBone(boneName, bone) || HasRotationProperty(bone))
+            // face bones are bindable here: the re-parent path never handles a
+            // face accessory (TryRepair forces the strip for them), so the
+            // face-attachment set keeps counting as bindable
+            if (IsCustomBone(boneName, bone, stripFaceBones: false) || HasRotationProperty(bone))
             {
                 string? parent = GetParentName(bone);
                 bool parentIsCustom = parent is not null
                     && byName.TryGetValue(parent, out JsonObject? parentBone)
-                    && IsCustomBone(parent, parentBone);
+                    && IsCustomBone(parent, parentBone, stripFaceBones: false);
                 if (parentIsCustom)
                 {
                     continue; // reached through its custom parent's check
@@ -738,6 +751,10 @@ public static class PersonaRigRepairer
     /// skeleton contains ONLY bones the frozen client binds and the piece
     /// renders rigidly (nothing can fly apart). Root-level "animations"
     /// blocks are removed too (ANIMATION BLANK — the served piece is static).
+    /// With <paramref name="stripFaceBones"/> (face-accessory pieces) the
+    /// "face" rig bone is strippable too — it is the bone the frozen client
+    /// misplaces (MCPE-165232), so it must leave the served skeleton exactly
+    /// like a custom bone; "hat"/"head" stay bindable (standard player bones).
     /// Returns null when the content is not a geometry structure and no
     /// animations were removed — the entry then stays byte-identical.
     ///
@@ -751,7 +768,7 @@ public static class PersonaRigRepairer
     /// it keeps its own cubes attached to itself when the bones list carries
     /// no bindable fallback bone at all — its custom children are still
     /// stripped and their cubes bubble up to it.</summary>
-    private static byte[]? StripGeometry(byte[] plainJson, List<string> strippedBones, List<string> strippedAnimations)
+    private static byte[]? StripGeometry(byte[] plainJson, List<string> strippedBones, List<string> strippedAnimations, bool stripFaceBones)
     {
         string text = Encoding.UTF8.GetString(plainJson);
         if (text.Length > 0 && text[0] == '\uFEFF')
@@ -778,7 +795,7 @@ public static class PersonaRigRepairer
         bool animationsRemoved = RemoveAnimations(root);
         foreach (JsonArray bones in BoneLists(root))
         {
-            changed += StripBoneList(bones, strippedBones);
+            changed += StripBoneList(bones, strippedBones, stripFaceBones);
         }
 
         if (changed == 0)
@@ -794,7 +811,7 @@ public static class PersonaRigRepairer
         return Encoding.UTF8.GetBytes(root.ToJsonString());
     }
 
-    private static int StripBoneList(JsonArray bones, List<string> strippedBones)
+    private static int StripBoneList(JsonArray bones, List<string> strippedBones, bool stripFaceBones)
     {
         // name → bone, so parent links resolve (first occurrence wins for
         // duplicate names)
@@ -823,7 +840,7 @@ public static class PersonaRigRepairer
             string? parentName = GetParentName(bone);
             bool parentIsCustom = parentName is not null
                 && byName.TryGetValue(parentName, out JsonObject? parentBone)
-                && IsCustomBone(parentName, parentBone);
+                && IsCustomBone(parentName, parentBone, stripFaceBones);
             if (parentIsCustom)
             {
                 continue; // reached through its custom parent's recursion
@@ -831,7 +848,7 @@ public static class PersonaRigRepairer
 
             // top of a subtree: recursion strips the custom descendants and
             // bubbles their cubes up; a null return means the bone stayed
-            List<JsonNode>? hoisted = ProcessBone(bone, bones, visited, strippedBones, ref changed);
+            List<JsonNode>? hoisted = ProcessBone(bone, bones, visited, strippedBones, ref changed, stripFaceBones);
 
             if (hoisted is { Count: > 0 })
             {
@@ -840,7 +857,7 @@ public static class PersonaRigRepairer
                 JsonObject? target = null;
                 if (parentName is not null
                     && byName.TryGetValue(parentName, out JsonObject? parent)
-                    && !IsCustomBone(parentName, parent))
+                    && !IsCustomBone(parentName, parent, stripFaceBones))
                 {
                     target = parent;
                 }
@@ -857,7 +874,24 @@ public static class PersonaRigRepairer
                     // (its custom children were still stripped and their cubes
                     // bubble up to it, which is the client's rest pose anyway)
                     AttachCubes(bone, hoisted);
-                    strippedBones.RemoveAll(candidate => string.Equals(candidate, boneName, StringComparison.Ordinal));
+                    bool faceBoneRenamed = stripFaceBones
+                        && !LivePersonaCatalog.StandardRigBoneNames.Contains(boneName)
+                        && LivePersonaCatalog.FaceBoneNames.Contains(boneName);
+                    if (faceBoneRenamed)
+                    {
+                        // a lone FACE bone cannot stay (its name is the exact
+                        // misplaced rig the gate hides, MCPE-165232) and there
+                        // is no bindable bone to merge it into — rename it onto
+                        // the standard head bone instead: cube origin/pivot are
+                        // absolute model-space, so the rest pose is untouched
+                        // and the piece now binds like the head-rigged pieces
+                        // the client provably renders (it shipped with hundreds)
+                        bone["name"] = RepairParentBone;
+                    }
+                    else
+                    {
+                        strippedBones.RemoveAll(candidate => string.Equals(candidate, boneName, StringComparison.Ordinal));
+                    }
                 }
             }
 
@@ -871,11 +905,11 @@ public static class PersonaRigRepairer
     // the nearest bindable ancestor when the bone itself was custom (null when
     // the bone stayed — its own cubes plus everything its stripped children
     // hoisted are re-attached in place).
-    private static List<JsonNode>? ProcessBone(JsonObject bone, JsonArray bones, HashSet<JsonObject> visited, List<string> strippedBones, ref int changed)
+    private static List<JsonNode>? ProcessBone(JsonObject bone, JsonArray bones, HashSet<JsonObject> visited, List<string> strippedBones, ref int changed, bool stripFaceBones)
     {
         visited.Add(bone);
         string boneName = GetBoneName(bone)!;
-        bool custom = IsCustomBone(boneName, bone);
+        bool custom = IsCustomBone(boneName, bone, stripFaceBones);
 
         List<JsonNode> hoist = [];
         List<JsonNode> own = DetachCubes(bone);
@@ -892,7 +926,7 @@ public static class PersonaRigRepairer
                 continue;
             }
 
-            List<JsonNode>? childHoist = ProcessBone(child, bones, visited, strippedBones, ref changed);
+            List<JsonNode>? childHoist = ProcessBone(child, bones, visited, strippedBones, ref changed, stripFaceBones);
             if (childHoist is not null)
             {
                 hoist.AddRange(childHoist);
@@ -922,10 +956,13 @@ public static class PersonaRigRepairer
     // custom bone = outside the standard player rig AND outside the
     // face-attachment set (hat/head bones the client renders fine) — the exact
     // sets the compat probe records bones with, so the strip never removes a
-    // bone the client binds
-    private static bool IsCustomBone(string boneName, JsonObject bone)
+    // bone the client binds. For FACE-ACCESSORY pieces (stripFaceBones) the
+    // "face" bone joins the strippable set: it is the face rig the frozen
+    // client misplaces (MCPE-165232 — the compat gate only serves such pieces
+    // rewritten), while "hat"/"head" stay bindable (standard player bones).
+    private static bool IsCustomBone(string boneName, JsonObject bone, bool stripFaceBones)
         => !LivePersonaCatalog.StandardRigBoneNames.Contains(boneName)
-            && !LivePersonaCatalog.FaceBoneNames.Contains(boneName);
+            && (stripFaceBones || !LivePersonaCatalog.FaceBoneNames.Contains(boneName));
 
     private static JsonObject? FindFallbackBone(JsonArray bones)
     {

@@ -27,12 +27,12 @@ namespace Apace.LauncherUI.Services;
 //              persona_face_accessory pieces: hats, hoods and helmets
 //              legitimately carry hat/head rig bones the frozen client renders
 //              fine, so other piece types never turn risky on them;
-//   auto-      custom rig bones on a head-family piece AND nothing else risky
-//   repairable AND the packs.json "experimentalAutoRepairRigs" toggle is on —
-//              the ApiServer's serve-time repairer re-parents the custom
-//              bones onto "head" so they render attached (oversized bounds
-//              or any other signal keeps the piece plain risky — the repair
-//              fixes bones only);
+//   auto-      custom rig bones or face bones (face-accessory) are the ONLY
+//   repairable breakage signal AND a serve-time transform is on (the
+//              "experimentalAutoRepairRigs" toggle or a "customSkeletonMode"
+//              strip mode) — the ApiServer's rewriter fixes the bones at serve
+//              time and the piece serves (oversized bounds or any other signal
+//              keeps the piece plain risky — the repair fixes bones only);
 //   unknown    no profile (nothing scanned or nothing parsable in the zip) —
 //              unknown pieces keep serving while the panel's "only supported"
 //              switch is on; the filter only ever hides risky pieces.
@@ -386,10 +386,24 @@ public static class CosmeticCompatIndex
         }
 
         // face bones mark the face-accessory rig (MCPE-165232) — risky only for
-        // face accessories; hats/hoods legitimately carry hat/head bones
+        // face accessories; hats/hoods legitimately carry hat/head bones.
+        // Repair-aware, in sync with the ApiServer gate (PersonaPieceTypes
+        // .EvaluateCosmetic): with a serve-time transform on (the auto-repair
+        // knob or a strip skeleton mode) the rewriter removes the face rig bone
+        // at serve time, so the piece badges auto-repairable instead of risky;
+        // any other effect signal still keeps it plain risky below.
+        bool repairableFaceBones = false;
+        bool stripMode = skeletonMode is "strip" or "flatOnly";
         if (facts.HasFaceBones == true && pieceType is "persona_face_accessory")
         {
-            effects.Add("face bones (face-accessory rig 1.19.50/1.20.10, MCPE-165232)");
+            if (autoRepairRigs || stripMode)
+            {
+                repairableFaceBones = true;
+            }
+            else
+            {
+                effects.Add("face bones (face-accessory rig 1.19.50/1.20.10, MCPE-165232)");
+            }
         }
 
         // custom rig bones + oversized bounds — displaced/stretched renders on
@@ -401,7 +415,6 @@ public static class CosmeticCompatIndex
         // auto-repairable below; oversized bounds or any other effect signal
         // still mean Risky (the repair fixes bones only).
         bool repairableBones = false;
-        bool stripMode = skeletonMode is "strip" or "flatOnly";
         if (pieceType is "persona_head" or "persona_eyes" or "persona_mouth" or "persona_face_accessory")
         {
             if (facts.HasNonstandardBones == true)
@@ -431,13 +444,19 @@ public static class CosmeticCompatIndex
                 $"{versionText} but uses {string.Join(", ", effects)}");
         }
 
-        if (repairableBones)
+        if (repairableBones || repairableFaceBones)
         {
+            string repairable = (repairableBones, repairableFaceBones) switch
+            {
+                (true, true) => "custom rig / face bones",
+                (false, true) => "face bones",
+                _ => "custom rig bones",
+            };
             return new CosmeticCompatInfo(
                 CosmeticCompatKind.AutoRepairable,
                 stripMode
-                    ? $"{versionText} — custom rig bones are the only breakage signal and the experimental skeleton strip removes them at serve time (packs.json customSkeletonMode)"
-                    : $"{versionText} — custom rig bones are the only breakage signal and the experimental auto-rig-repair re-parents them onto \"head\" at serve time");
+                    ? $"{versionText} — {repairable} are the only breakage signal and the experimental skeleton strip removes them at serve time (packs.json customSkeletonMode)"
+                    : $"{versionText} — {repairable} are the only breakage signal and the experimental serve-time rewriter fixes them (packs.json experimentalAutoRepairRigs)");
         }
 
         return new CosmeticCompatInfo(

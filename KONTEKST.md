@@ -127,15 +127,23 @@ dlatego „miniaturki są, a binarek nie ma": to dwie różne magistrale.
 
 - Bramka (`EvaluateCosmetic`): hide przy positive evidence — format_version
   ≥ cap, particles, render controllers, brakujące texture binding, face bones
-  (tylko face_accessory), oversized head bounds.
+  (tylko face_accessory — ALE repair-aware: przy aktywnym serve-time
+  transformie rewriter usuwa kość face, więc piece serwuje się zamiast być
+  ukryta; bez transformy hide bez zmian), oversized head bounds.
 - **customSkeletonMode = FlatOnly (default)**: piece z custom kośćmi NIE są
   ukrywane, bo strippem STAJĄ SIĘ płaskie — rewriter przy serwowaniu scala
   custom kości w najbliższy standardowy przodek (rigid, rest pose 1:1).
   Dzięki temu zakładki twarzy (head/eyes/mouth/face_accessory — prawie
   wszystkie mają custom kości) wypełniają się do limitu zamiast być puste.
   Ukryte pozostają tylko piece, których rewriter nie naprawi (particles,
-  render controllers, texture binding, format cap, oversized bounds,
-  face-bone face_accessory).
+  render controllers, texture binding, format cap, oversized bounds).
+- **Face accessories wypełniają się jak reszta**: kość face rigu (MCPE-165232
+  — klient jej nie binduje) nie blokuje już kategorii face_item: bramka
+  przepuszcza face_accessory przy aktywnym transformie (FlatOnly itd.),
+  a rewriter przy serwowaniu usuwa kość face (cubes → `head`/przodek;
+  samotna kość face jest RENAMOWANA na `head` — reszta pose 1:1, bo
+  origin/pivot cube'ów są absolutne). Bez transformy (skeleton mode `off`,
+  auto-repair off) te piece pozostają ukryte jak dawniej.
 - Head-family re-parent na `head` działa TYLKO gdy włączony auto-repair i NIE
   ma strip mode; subtree z rotacjami idzie ZAWSZE na rigid strip (rotacja
   wokół złego pivota to było „całkowicie psuje geometrię").

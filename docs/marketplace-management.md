@@ -24,16 +24,18 @@ no restart needed.
     the whole piece.
   - *risky* — geometry at or past the max (UV rotation, transform pivots) or
     below 1.12.0 (legacy), any animation/effect signal, or face bones (rig
-    1.19.50/1.20.10, MCPE-165232). Those render broken: floating parts,
-    missing meshes. Risky pieces are hidden from the marketplace and refused
-    on equip.
+    1.19.50/1.20.10, MCPE-165232) while no serve-time transform is on. Those
+    render broken: floating parts, missing meshes. Risky pieces are hidden
+    from the marketplace and refused on equip.
   - *auto-repairable* — shown instead of *risky* when the ONLY breakage
-    evidence is custom rig bones on a head-family piece and the
-    **Experimental: auto-repair broken 3D rigs** switch below is on: the
-    ApiServer re-parents the custom bones onto the standard `head` bone at
-    serve time (packs.json `experimentalAutoRepairRigs`), so the piece serves
-    and renders attached. Oversized bounds or any other signal keeps the
-    badge *risky* — the repair fixes bones only.
+    evidence is custom rig bones (or, on a face accessory, the face rig bone
+    itself) and a serve-time transform is on — the **Experimental: auto-repair
+    broken 3D rigs** switch or a **customSkeletonMode** strip mode below:
+    the ApiServer rewrites the bones at serve time (re-parent onto the
+    standard `head` bone, or a rigid strip — face accessories always take the
+    rigid strip, with the face bone removed/renamed onto `head`), so the
+    piece serves and renders attached. Oversized bounds or any other signal
+    keeps the badge *risky* — the repair fixes bones only.
   - *unknown* — no scan yet; unknown pieces keep serving (the filter only ever
     hides pieces with positive evidence of breakage). Turn the switch off to
     serve everything.
@@ -70,10 +72,11 @@ no restart needed.
   - `flatOnly` — the strip applies at serve time; pieces the strip CAN
     flatten (any custom-bone piece — the face tabs' head/eyes/mouth pieces
     almost all carry custom bones) count as FLAT and serve stripped, so every
-    dressing-room category fills to the limit with them. Only pieces the
-    rewriter cannot fix (particles, render controllers, missing texture
-    binding, format cap, oversized head bounds, face-bone face accessories)
-    stay hidden.
+    dressing-room category fills to the limit with them. This includes the
+    face accessories: their misplaced face rig bone (MCPE-165232) is removed
+    / renamed onto `head` by the same strip. Only pieces the rewriter cannot
+    fix (particles, render controllers, missing texture binding, format cap,
+    oversized head bounds) stay hidden.
   Rewritten binaries carry the mode marker (`r3-strip` / `r3-flat`) in their
   ETag; the strip covers every piece type (head-family re-parents ONLY when
   no strip mode is set — see the auto-repair knob; otherwise it strips rigid

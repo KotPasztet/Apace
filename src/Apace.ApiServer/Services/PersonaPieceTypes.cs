@@ -198,7 +198,13 @@ public static class PersonaPieceTypes
     /// rig (MCPE-165232) and is risky only for persona_face_accessory pieces —
     /// hats, hoods and helmets legitimately carry hat/head rig bones the frozen
     /// client renders fine (it shipped with hundreds of them), so other/unknown
-    /// piece types never block on face bones.
+    /// piece types never block on face bones. Like the custom-bone signal, the
+    /// face-bone signal yields to a serve-time transform: with
+    /// <paramref name="allowRigRepair"/> on the rewriter strips the face rig
+    /// bone rigid (PersonaRigRepairer scopes the strip to face-accessory pieces
+    /// and renames a lone face bone onto "head"), so the piece serves rewritten
+    /// instead of raw-displaced — this is what fills the Face tab; without the
+    /// transform the hide stands.
     /// <paramref name="allowRigRepair"/> is the packs.json
     /// "experimentalAutoRepairRigs" knob (default off): when true, a head-family
     /// piece whose ONLY risk signal is custom rig bones becomes servable — the
@@ -288,7 +294,16 @@ public static class PersonaPieceTypes
         // hat/head rig bones the frozen client renders fine, so an unknown or
         // non-accessory piece type never blocks here — the filter only hides
         // pieces with positive evidence of incompatibility.
-        if (hasFaceBones == true && pieceType is "persona_face_accessory")
+        // REPAIR-AWARE, like the custom-bone signal below: with a serve-time
+        // transform on (allowRigRepair — the experimental auto-rig repair OR a
+        // strip skeleton mode) the rewriter removes the face rig bone at serve
+        // time, so the face-accessory category fills like every other one;
+        // without the transform the piece would serve raw-displaced and stays
+        // hidden. The verdict with the transform active is returned in the
+        // head-family block below, AFTER the oversized-bounds check — the
+        // transform fixes bones only and cannot fix size.
+        bool faceBoneFaceAccessory = hasFaceBones == true && pieceType is "persona_face_accessory";
+        if (faceBoneFaceAccessory && !allowRigRepair)
         {
             return new CosmeticGateVerdict(false, "face bones in the piece geometry (MCPE-165232 — the face-accessory rig)");
         }
@@ -343,6 +358,14 @@ public static class PersonaPieceTypes
             if (maxVisibleBoundsWidth > 2.0f || maxVisibleBoundsHeight > 3.0f)
             {
                 return new CosmeticGateVerdict(false, $"oversized head geometry (visible bounds {maxVisibleBoundsWidth}x{maxVisibleBoundsHeight} — extends far beyond the head slot)");
+            }
+
+            if (faceBoneFaceAccessory)
+            {
+                return new CosmeticGateVerdict(
+                    true,
+                    "face bones — the serve-time rewriter strips them rigid (packs.json experimentalAutoRepairRigs / customSkeletonMode)",
+                    RepairedRig: true);
             }
 
             if (repairableBones)
