@@ -57,8 +57,9 @@ public static class Ldid
 
     /// <summary>
     /// Locates ldid for the running platform: a distro-installed binary first (the Apace
-    /// Docker image ships the apt "ldid" package, which works offline and needs no
-    /// runtime download), then the pinned runtime download as the fallback (same pattern
+    /// Docker image ships the pinned ldid binary on PATH (/usr/local/bin/ldid), which
+    /// works offline and needs no runtime download), then the pinned runtime download as
+    /// the fallback (same pattern
     /// as apktool / uber-apk-signer / patchelf, sha256 verified). Returns false when
     /// neither is available - the iOS patch job then fails loudly instead of producing
     /// an IPA without the XAL keychain entitlements.
@@ -169,7 +170,8 @@ public static class Ldid
     }
 
     /// <summary>
-    /// Looks for a distro-installed ldid on the PATH (the apt package ships /usr/bin/ldid).
+    /// Looks for a distro-installed ldid on the PATH (the Apace image ships
+    /// /usr/local/bin/ldid; Linux distro packages install it on PATH too).
     /// Windows is skipped: no distro package exists there, so the pinned download is used.
     /// </summary>
     private static string? FindSystemLdid()

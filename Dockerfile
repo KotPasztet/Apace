@@ -90,7 +90,6 @@ RUN apt-get update && apt-get install -y \
     openjdk-17-jre \
     aapt \
     zipalign \
-    ldid \
     curl \
     unzip \
     wget \
@@ -101,14 +100,32 @@ RUN apt-get update && apt-get install -y \
     # what the patcher's build falls back to (--aapt) when the aapt2 bundled
     # in apktool.jar fails its pre-flight probe (SIGILL on older ARM CPUs) -
     # hard-fail the image build here rather than discover a missing distro
-    # package at patch time. ldid (/usr/bin/ldid) pseudo-signs the patched iOS
-    # binaries so they carry the Xbox sign-in (XAL) keychain entitlements -
-    # without them the app fails sign-in before any login page shows, so its
-    # presence is hard-failed here too (MCEPatcher's Ldid prefers the distro
-    # binary and falls back to a pinned runtime download without it).
+    # package at patch time.
     && test -x /usr/bin/aapt \
-    && test -x /usr/bin/aapt2 \
-    && test -x /usr/bin/ldid
+    && test -x /usr/bin/aapt2
+
+# ldid (Link Identity Editor) pseudo-signs the patched iOS binaries so they
+# carry the Xbox sign-in (XAL) keychain entitlements - without them the app
+# fails sign-in before any login page shows, so its presence is hard-failed
+# at image build time. Ubuntu noble ships no apt package for ldid (the apt
+# install above broke the image build), so the same pinned ProcursusTeam
+# binary MCEPatcher's Ldid would download at runtime is baked into the image
+# instead - version and sha256 kept in sync with MCEPatcher.Core/Ldid.cs.
+# /usr/local/bin is on PATH, so the patcher's distro lookup finds it and no
+# runtime download is needed on player hosts (works offline).
+RUN set -eux; \
+    . /tmp/arch.env; \
+    case "$PWARCH" in \
+        x64)   LDID_ASSET=ldid_linux_x86_64;  LDID_SHA256=d7d8c8b06ec913b2778e3e2e0306b5383e83fafe994a3f8acf25f4a525e2a9e9 ;; \
+        arm64) LDID_ASSET=ldid_linux_aarch64; LDID_SHA256=8878c8fb918b4047df94e703346913ba92d5901054095e3d5b7dfa192f9a624e ;; \
+        *) echo "Unsupported arch for ldid: $PWARCH"; exit 1 ;; \
+    esac; \
+    curl -fsSL --http1.1 --retry 5 --retry-all-errors --retry-delay 3 \
+        -o /usr/local/bin/ldid \
+        "https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus8/${LDID_ASSET}" \
+    && echo "${LDID_SHA256}  /usr/local/bin/ldid" | sha256sum -c - \
+    && chmod 0755 /usr/local/bin/ldid \
+    && test -x /usr/local/bin/ldid
 
 # Docker CLI + compose v2 plugin, installed from the BASE DISTRO's own apt
 # repos (docker.io + docker-compose-v2; universe is already enabled in the
