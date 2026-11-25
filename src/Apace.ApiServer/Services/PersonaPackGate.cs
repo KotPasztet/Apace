@@ -178,6 +178,19 @@ public static class PersonaPackGate
         }
     }
 
+    /// <summary>The configured default pack uuids (packs.json "defaultPacks") —
+    /// the sync-readable "selected bundles" set. The filler pool keys on this
+    /// (binaries only download for the selected bundles, so the filler may only
+    /// draw from them); per-player grants serve through the pack gate instead.</summary>
+    public static IReadOnlySet<string> DefaultPackUuids
+    {
+        get
+        {
+            LoadConfig();
+            return _defaults;
+        }
+    }
+
     /// <summary>
     /// The auto-gating state (no DB access) — for pages that just show the
     /// state: gating restricts the live accessories for a player when at least

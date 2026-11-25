@@ -29,6 +29,14 @@ namespace Apace.ApiServer.Services;
 //     achievement lock tags stripped, price 0, purchasable true — mirroring what
 //     update_apace_items.py did for the legacy 231 items. The strip happens on
 //     the OUTPUT only; the raw cache keeps the live metadata verbatim.
+//   - MIRROR-FIRST OFFER: the offer contains ONLY pieces whose binary exists
+//     on disk (the volume cache or the mojang-assets mirror dir) — the client
+//     never sees a piece it cannot download, so nothing hangs on
+//     "wczytywanie…" and nothing renders empty. The BinaryWarmUp below feeds
+//     the disk: it resolves URLs in batches (Catalog/GetItems, one call per
+//     20 ids) and downloads in parallel, so the selected bundles' pieces
+//     mirror in minutes. A piece that is not mirrored (probe-dead, not yet
+//     reached, outside the selected packs) simply does not list.
 //   - Lazy probe: the client never sees a live CDN URL — the offer advertises
 //     /playfab/persona/<itemId>.zip (PersonaCdnController). On the first client
 //     request for a piece binary the controller resolves the real URL
@@ -36,7 +44,8 @@ namespace Apace.ApiServer.Services;
 //     (404 → the same GUID re-hosted on the new PlayFab content CDN
 //     content1/content2.prod.catalog.playfab.com → else dead), downloads the
 //     piece into <mojang-assets>/persona-catalog/binaries/ and serves it.
-//     Dead items leave the offer until they come back alive.
+//     That lazy pipeline stays as the fallback for pieces a warm-up pass has
+//     not reached yet (they are offer-hidden until their binary lands).
 //   - Thumbnails are resolved the same lazy way by MojangImagesCdnController
 //     (cache → live CDN URL → Bedrock-Persona mirror URL → 404).
 //
@@ -44,9 +53,10 @@ namespace Apace.ApiServer.Services;
 // is dying (2026-11-25 — a sampled dressing-room session lost 12/12 cold fetches
 // and direct probes confirmed 404 on the primary AND both alternate hosts, i.e.
 // the binaries are gone globally, not blocked per-IP). BinaryWarmUp below now
-// mirrors every servable piece into the volume in the background (paced, one at
-// a time) BEFORE the client asks; the lazy per-request pipeline stays as the
-// fallback for pieces a pass has not reached yet.
+// mirrors every servable piece into the volume in the background BEFORE the
+// client asks — batch URL resolve (Catalog/GetItems) + parallel CDN downloads,
+// so the selected bundles' pieces land in minutes; the lazy per-request
+// pipeline stays as the fallback for pieces a pass has not reached yet.
 public static class LivePersonaCatalog
 {
     public const string CatalogDirName = "persona-catalog";
@@ -262,6 +272,10 @@ public static class LivePersonaCatalog
     /// appears on, accessories need one of their tags in the allowed
     /// set (tagless accessories never serve; skins are exempt), and the
     /// filtering itself happens per request in the controllers.
+    /// MIRROR-FIRST: a piece only OFFERS once its binary exists on disk (the
+    /// warm-up mirrors the selected bundles' pieces into the volume; the panel's
+    /// mirror dir counts too). Pieces without a binary would hang the client on
+    /// "wczytywanie…" and then render nothing — they never enter the offer.
     /// </summary>
     public static LiveOffer GetOffer()
     {
@@ -271,14 +285,14 @@ public static class LivePersonaCatalog
             return new LiveOffer([], []);
         }
 
-        var dead = GetDeadItemIds();
+        var hidden = GetHiddenItemIds();
         var typeSuffixes = TypeTagSuffixes(index);
         var items = new List<CItem>(index.Items.Count);
         var themeTags = new List<IReadOnlyList<string>>(index.Items.Count);
         var seenPieces = new HashSet<Guid>();
         foreach (var entry in index.Items)
         {
-            if (entry.IsEmote || dead.Contains(entry.Id))
+            if (entry.IsEmote || hidden.Contains(entry.Id))
             {
                 continue;
             }
@@ -304,7 +318,7 @@ public static class LivePersonaCatalog
         }
 
         var entry = index.Items.FirstOrDefault(item => item.Id == itemId);
-        return entry is not null && !entry.IsEmote && !GetDeadItemIds().Contains(entry.Id) ? BuildOfferItem(entry) : null;
+        return entry is not null && !entry.IsEmote && !GetHiddenItemIds().Contains(entry.Id) ? BuildOfferItem(entry) : null;
     }
 
     /// <summary>The raw index entry for one piece id, or null when the id is not
@@ -574,23 +588,106 @@ public static class LivePersonaCatalog
     private static bool IsStaleDead(ProbeEntry entry)
         => entry.State == "dead" && entry.CheckedAt < (LastSyncAt ?? DateTimeOffset.UtcNow.AddDays(-1)) - TimeSpan.FromHours(24);
 
-    /// <summary>Item ids the offer and the catalog searches must hide (probed
-    /// dead, verdict still fresh — the offer drops them at build time and the
-    /// controllers skip them per request, so a freshly probed piece does not
-    /// keep listing until the next index re-sync).
-    /// A dead verdict never hides a piece whose binary exists in the mojang-assets
-    /// primary dir (<see cref="GetLocalPersonaBinaries"/>) — a locally mirrored file
-    /// overrides the verdict, whatever an earlier upstream probe concluded.</summary>
-    public static HashSet<string> GetDeadItemIds()
+    // ids of the pieces that have a servable binary on disk right now (volume
+    // cache ∪ mojang-assets mirror), cached per (binaries dir stamp, mirror dir
+    // stamp) — both dirs only change when files land or are removed, so every
+    // request is a pair of stat calls, not a 12k-file scan. The volume cache
+    // dir grows while the warm-up runs; each landed file moves the stamp and
+    // the next snapshot picks the piece up.
+    private static long _binaryIdsStamp = -1;
+    private static HashSet<string> _binaryIds = new(StringComparer.OrdinalIgnoreCase);
+
+    // Caller must hold StateLock.
+    private static HashSet<string> BinaryIdsSnapshot()
+    {
+        long stamp = 0;
+        try
+        {
+            if (Directory.Exists(BinariesDir))
+            {
+                stamp = Directory.GetLastWriteTimeUtc(BinariesDir).ToUniversalTime().Ticks;
+            }
+        }
+        catch (Exception)
+        {
+            stamp = 0;
+        }
+
+        Dictionary<string, string> local = GetLocalPersonaBinaries(); // stamp-cached itself
+        long combined = HashCode.Combine(stamp, _localPersonaStamp);
+        if (combined == _binaryIdsStamp)
+        {
+            return _binaryIds;
+        }
+
+        var ids = new HashSet<string>(local.Keys, StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            if (Directory.Exists(BinariesDir))
+            {
+                foreach (string file in Directory.EnumerateFiles(BinariesDir, "*.zip"))
+                {
+                    string itemId = Path.GetFileNameWithoutExtension(file);
+                    if (Guid.TryParse(itemId, out _))
+                    {
+                        ids.Add(itemId);
+                    }
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // unreadable dir — the mirror keys still count
+        }
+
+        _binaryIds = ids;
+        _binaryIdsStamp = combined;
+        return ids;
+    }
+
+    // The hidden-id set, cached per (index stamp, binary-disk stamp) — the
+    // dressing room fires many searches per page and each one checks ids
+    // against this set, so a rebuild happens only when the index re-syncs or
+    // a binary lands/leaves the disk, not per request.
+    private static long _hiddenStamp = -1;
+    private static HashSet<string> _hiddenIds = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Item ids the offer and the catalog searches must hide: every
+    /// live item WITHOUT a servable binary on disk — a fresh probe-dead verdict
+    /// (its binary 404s), a stale verdict and an item the warm-up has not
+    /// mirrored yet all behave the same for the client: the download would hang
+    /// on "wczytywanie…" and then render nothing, so none of them may list.
+    /// The controllers skip these ids per request, so a piece whose binary
+    /// lands (warm-up progress, a manual mirror) appears without waiting for
+    /// the next index re-sync. Treat the returned set as read-only — it is
+    /// shared between callers until the next stamp change.
+    /// A locally mirrored file in the mojang-assets primary dir (<see
+    /// cref="GetLocalPersonaBinaries"/>) makes the item servable whatever an
+    /// earlier upstream probe concluded.</summary>
+    public static HashSet<string> GetHiddenItemIds()
     {
         lock (StateLock)
         {
             LoadProbeStates();
-            Dictionary<string, string> local = GetLocalPersonaBinaries();
-            return ProbeStates
-                .Where(kv => kv.Value.State == "dead" && !IsStaleDead(kv.Value) && !local.ContainsKey(kv.Key))
-                .Select(kv => kv.Key)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> binaryIds = BinaryIdsSnapshot();
+            long stamp = HashCode.Combine(IndexStamp, _binaryIdsStamp);
+            if (stamp == _hiddenStamp)
+            {
+                return _hiddenIds;
+            }
+
+            var hidden = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in Index?.Items ?? [])
+            {
+                if (!binaryIds.Contains(entry.Id))
+                {
+                    hidden.Add(entry.Id);
+                }
+            }
+
+            _hiddenIds = hidden;
+            _hiddenStamp = stamp;
+            return hidden;
         }
     }
 
@@ -753,9 +850,12 @@ public static class LivePersonaCatalog
         }
 
         // everything the binary path can actually serve — accessories with a
-        // theme tag inside the allowed pack set, filler pieces (offered by the
-        // catalog regardless of the gate) and skins (gate-exempt). Anything
-        // else is refused by the pack gate before the pipeline runs.
+        // theme tag inside the allowed pack set (the selected bundles), filler
+        // pieces (the defaults' mirrored pool, a subset of the same) and skins
+        // (gate-exempt). Anything else is refused by the pack gate before the
+        // pipeline runs. THE OFFER ONLY CONTAINS PIECES WITH A BINARY ON DISK,
+        // so this pass is what grows the dressing room: resolve URLs in batches
+        // (Catalog/GetItems — one call per 20 ids), then download in parallel.
         IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(CancellationToken.None).ConfigureAwait(false);
         List<string> candidates = [];
         lock (StateLock)
@@ -783,17 +883,14 @@ public static class LivePersonaCatalog
                     continue;
                 }
 
-                if (ProbeStates.TryGetValue(itemId, out var state))
+                if (FileExistsNonEmpty(BinaryPath(itemId)))
                 {
-                    if (state.State == "live" && FileExistsNonEmpty(BinaryPath(itemId)))
-                    {
-                        continue; // mirrored during an earlier pass
-                    }
+                    continue; // mirrored during an earlier pass — the offer picks it up from disk
+                }
 
-                    if (state.State == "dead" && !IsStaleDead(state))
-                    {
-                        continue; // freshly probed dead — nothing to fetch
-                    }
+                if (ProbeStates.TryGetValue(itemId, out var state) && state.State == "dead" && !IsStaleDead(state))
+                {
+                    continue; // freshly probed dead — nothing to fetch
                 }
 
                 candidates.Add(itemId);
@@ -814,29 +911,67 @@ public static class LivePersonaCatalog
 
         logger.Information("Live persona binary warm-up starting: {Pieces} piece(s) + {Packs} skin pack(s) to mirror (index stamp {Stamp})",
             candidates.Count, packCandidates.Count, IndexStamp);
-        int live = 0, dead = 0, processed = 0;
-        foreach (string itemId in candidates)
+
+        // 1. batch URL resolve — one GetItems call per 20 ids, paced like every
+        //    API call; a batch that fails (one stale republication id in the
+        //    set — GetItems is all-or-nothing) bisects down to singles, so the
+        //    worst case is the old per-item pace and the best case is 20x fewer
+        //    API calls. ~10k candidates resolve in minutes instead of hours.
+        var resolved = new Dictionary<string, string?>(candidates.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var (id, url) in await BatchResolveBinaryUrlsAsync(candidates, logger, CancellationToken.None).ConfigureAwait(false))
         {
-            // the per-item gate serializes us behind any client request for the
-            // same piece — the client always wins the race
-            bool ok = await TryEnsureBinaryAsync(itemId, logger, CancellationToken.None).ConfigureAwait(false);
-            if (ok)
+            resolved[id] = url;
+        }
+
+        int noContents = resolved.Values.Count(url => url is null);
+        logger.Information("Live persona binary warm-up: {Resolved} URL(s) resolved, {NoContents} piece(s) without a personabinary — downloading in parallel",
+            resolved.Count - noContents, noContents);
+
+        // 2. parallel CDN downloads (bounded — the content CDN, not the API, so
+        //    no 2 req/s pace; 404 on the download itself IS the dead verdict,
+        //    no separate HEAD probe needed on the warm-up path)
+        int live = 0, dead = 0, processed = 0;
+        var downloadGate = new SemaphoreSlim(6, 6);
+        var downloads = candidates.Select(async itemId =>
+        {
+            string? url = resolved.GetValueOrDefault(itemId);
+            bool ok;
+            if (url is null)
             {
-                live++;
+                RecordProbe(itemId, "dead", null, "no-contents", logger);
+                ok = false;
             }
             else
             {
-                dead++;
+                ok = await WarmUpDownloadAsync(itemId, url, logger, CancellationToken.None).ConfigureAwait(false);
             }
 
-            processed++;
-            if (processed % 50 == 0)
+            await downloadGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+            try
             {
-                logger.Information("Live persona binary warm-up: {Processed}/{Total} — {Live} mirrored, {Dead} dead",
-                    processed, candidates.Count, live, dead);
-                FlushProbeStates(logger);
+                processed++;
+                if (ok)
+                {
+                    live++;
+                }
+                else
+                {
+                    dead++;
+                }
+
+                if (processed % 50 == 0)
+                {
+                    logger.Information("Live persona binary warm-up: {Processed}/{Total} — {Live} mirrored, {Dead} dead",
+                        processed, candidates.Count, live, dead);
+                    FlushProbeStates(logger);
+                }
             }
-        }
+            finally
+            {
+                downloadGate.Release();
+            }
+        });
+        await Task.WhenAll(downloads).ConfigureAwait(false);
 
         foreach (string offerId in packCandidates)
         {
@@ -854,6 +989,162 @@ public static class LivePersonaCatalog
         FlushProbeStates(logger);
         logger.Information("Live persona binary warm-up pass finished: {Processed} piece(s) + {Packs} pack(s) — {Live} mirrored, {Dead} dead/unavailable",
             processed, packCandidates.Count, live, dead);
+    }
+
+    /// <summary>Resolves personabinary URLs for many items at once via
+    /// Catalog/GetItems (Search never returns Contents; GetItems does — the
+    /// batch form of the per-item GetItem). Chunks of 20, one paced API call
+    /// each. GetItems is all-or-nothing on unknown ids, so a failing chunk
+    /// bisects recursively; a single-id chunk falls back to the retrying
+    /// per-item resolve. Returns (itemId → url or null for confirmed
+    /// no-contents) for every requested id.</summary>
+    private static async Task<IReadOnlyList<(string Id, string? Url)>> BatchResolveBinaryUrlsAsync(
+        IReadOnlyList<string> itemIds, ILogger logger, CancellationToken cancellationToken)
+    {
+        var results = new List<(string Id, string? Url)>(itemIds.Count);
+
+        async Task ResolveChunkAsync(IReadOnlyList<string> chunk)
+        {
+            if (chunk.Count == 1)
+            {
+                results.Add((chunk[0], await ResolveBinaryUrlAsync(chunk[0], logger, cancellationToken).ConfigureAwait(false)));
+                return;
+            }
+
+            try
+            {
+                string token = await GetMasterTokenAsync(logger, cancellationToken).ConfigureAwait(false);
+                await PaceRemoteAsync(cancellationToken).ConfigureAwait(false);
+                using var request = new HttpRequestMessage(HttpMethod.Post, $"{PlayFabApi}/Catalog/GetItems")
+                {
+                    Content = new StringContent(
+                        JsonSerializer.Serialize(new { Ids = chunk, Scid = Scid }),
+                        System.Text.Encoding.UTF8, "application/json"),
+                };
+                request.Headers.Add("X-EntityToken", token);
+                using var response = await HttpClient.SendAsync(request, cancellationToken);
+                if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+                {
+                    InvalidateMasterToken();
+                    throw new HttpRequestException($"auth rejected with HTTP {(int)response.StatusCode}");
+                }
+
+                response.EnsureSuccessStatusCode();
+                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+                var byId = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                if (doc.RootElement.TryGetProperty("data", out var data) && data.TryGetProperty("Items", out var items) && items.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in items.EnumerateArray())
+                    {
+                        string? id = item.TryGetProperty("Id", out var idProp) ? idProp.GetString() : null;
+                        string? url = null;
+                        if (item.TryGetProperty("Contents", out var contents) && contents.ValueKind == JsonValueKind.Array && contents.GetArrayLength() > 0)
+                        {
+                            url = contents[0].TryGetProperty("Url", out var urlProp) && urlProp.ValueKind == JsonValueKind.String ? urlProp.GetString() : null;
+                        }
+
+                        if (id is not null)
+                        {
+                            byId[id] = string.IsNullOrWhiteSpace(url) || !url.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? null : url;
+                        }
+                    }
+                }
+
+                foreach (string id in chunk)
+                {
+                    results.Add((id, byId.GetValueOrDefault(id)));
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // all-or-nothing: one unknown id fails the whole chunk — bisect
+                logger.Debug("Live persona batch resolve of {Count} item(s) failed ({Reason}) — bisecting", chunk.Count, ex.Message);
+                int mid = chunk.Count / 2;
+                await ResolveChunkAsync(chunk.Take(mid).ToList()).ConfigureAwait(false);
+                await ResolveChunkAsync(chunk.Skip(mid).ToList()).ConfigureAwait(false);
+            }
+        }
+
+        const int BatchSize = 20;
+        for (int offset = 0; offset < itemIds.Count; offset += BatchSize)
+        {
+            await ResolveChunkAsync(itemIds.Skip(offset).Take(BatchSize).ToList()).ConfigureAwait(false);
+        }
+
+        return results;
+    }
+
+    // The warm-up's download half: resolve is already done, so this just fetches
+    // the binary (no HEAD probe — the GET result IS the verdict) and records it.
+    // Runs under the per-item lock so a client request for the same piece never
+    // races this (the client's lazy pipeline wins the lock and serves it).
+    private static async Task<bool> WarmUpDownloadAsync(string itemId, string url, ILogger logger, CancellationToken cancellationToken)
+    {
+        var gate = GetItemLock(itemId);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            string path = BinaryPath(itemId);
+            if (FileExistsNonEmpty(path))
+            {
+                return true; // a client request or an earlier download got it first
+            }
+
+            if (!_binariesLayoutCreated)
+            {
+                Directory.CreateDirectory(BinariesDir);
+                _binariesLayoutCreated = true;
+            }
+
+            string partPath = path + ".part";
+            Exception? lastError = null;
+            for (int attempt = 1; attempt <= 3; attempt++)
+            {
+                try
+                {
+                    using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Gone)
+                    {
+                        RecordProbe(itemId, "dead", url, $"warmup-{(int)response.StatusCode}", logger);
+                        return false;
+                    }
+
+                    response.EnsureSuccessStatusCode();
+                    await using (var content = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+                    await using (var fileStream = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                    {
+                        await content.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    File.Move(partPath, path, overwrite: true);
+                    RecordProbe(itemId, "live", url, "warmup", logger);
+                    EnsureGeometryCompatCaptured(itemId, logger, path);
+                    return true;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    await Task.Delay(TimeSpan.FromSeconds(2 * attempt), cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            // transport-level failure after all retries — the verdict stays
+            // whatever it is, so the piece retries on the next pass
+            logger.Debug("Live persona warm-up download failed for {Item} from {Url}: {Reason}", itemId, url, lastError?.Message);
+            return false;
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     // ---------------------------------------------------------------------------

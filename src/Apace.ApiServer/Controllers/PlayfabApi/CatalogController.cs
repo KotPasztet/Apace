@@ -475,9 +475,10 @@ internal sealed class CatalogController : ApaceControllerBase
     //  - the supported-only gate (packs.json "onlySupported", default true):
     //    pieces whose compat verdict is risky drop out (see
     //    PersonaPieceTypes.IsSupportedCosmetic).
-    //  - probe-dead pieces skip the offer per request — their binaries 404, so
-    //    they must not wait for the next index re-sync to vanish from searches
-    //    (see LivePersonaCatalog.GetDeadItemIds).
+    //  - hidden pieces skip the offer per request — pieces without a binary on
+    //    disk (probed dead, stale verdicts, not yet mirrored) must not list:
+    //    the client would hang their download on "loading" and then render
+    //    nothing (see LivePersonaCatalog.GetHiddenItemIds).
     //
     // The per-category size limit is applied by the caller over the whole
     // composed offer (staticdata pieces count too — see ApplyGroupedCategoryLimit),
@@ -496,7 +497,7 @@ internal sealed class CatalogController : ApaceControllerBase
         bool onlySupported = PersonaPackGate.OnlySupported;
 
         string[][] themes = live.ThemeTags;
-        HashSet<string> dead = LivePersonaCatalog.GetDeadItemIds();
+        HashSet<string> dead = LivePersonaCatalog.GetHiddenItemIds();
         var filtered = new List<Item>(live.Items.Length);
         int passed = 0, dropped = 0, deadSkipped = 0, filled = 0;
         for (int i = 0; i < live.Items.Length; i++)
@@ -505,7 +506,7 @@ internal sealed class CatalogController : ApaceControllerBase
             if (dead.Contains(item.Id.ToString()))
             {
                 deadSkipped++;
-                continue; // probed dead — the binary 404s, so hide it from searches now instead of at the next index re-sync
+                continue; // no binary on disk (probed dead or not yet mirrored) — hide it from searches instead of hanging the client's download
             }
 
             if (item.DisplayProperties?.PieceType is not "persona_skin")
@@ -575,15 +576,18 @@ internal sealed class CatalogController : ApaceControllerBase
     // ---------------------------------------------------------------------------
 
     // The deterministic filler candidate pool: every live accessory (non-skin
-    // persona piece) that is alive and — while onlySupported is on —
-    // compat-supported, sorted by item id so the SAME pieces fill the same
-    // slots every offer build. LiveOfferItemsFor appends the pool AFTER the
-    // pack-selected pieces and the grouped per-category limiter keeps the
-    // composition's first N per group (staticdata pieces and customs count
-    // first, then pack-selected live pieces, then filler): every group fills
-    // up to the limit, pack pieces are never displaced, and with no packs
-    // selected every group fills completely. Refreshed per (index stamp,
-    // packs.json stamp, dead-set size).
+    // persona piece) that has a binary on disk, belongs to a SELECTED bundle
+    // (theme tag inside the default pack set — binaries only download for the
+    // selected bundles, so the filler never pulls a pack nobody picked) and —
+    // while onlySupported is on — is compat-supported, sorted by item id so the
+    // SAME pieces fill the same slots every offer build. LiveOfferItemsFor
+    // appends the pool AFTER the pack-selected pieces and the grouped
+    // per-category limiter keeps the first N per group (staticdata pieces and
+    // customs count first, then pack-selected live pieces, then filler): every
+    // group fills up to the limit, pack pieces are never displaced, and with
+    // no packs selected the pool is empty (the mirror-first rule means an
+    // unselected accessory has no binary and could not serve anyway). Refreshed
+    // per (index stamp, packs.json stamp, hidden-set size).
     private static long _fillerStamp;
     private static Item[]? _fillerCandidates;
     private static IReadOnlySet<string> _fillerItemIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -602,19 +606,22 @@ internal sealed class CatalogController : ApaceControllerBase
 
     private static void RefreshFiller()
     {
-        long stamp = HashCode.Combine(LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp, LivePersonaCatalog.GetDeadItemIds().Count);
+        long stamp = HashCode.Combine(LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp, LivePersonaCatalog.GetHiddenItemIds().Count);
         if (_fillerStamp == stamp && _fillerCandidates is not null)
         {
             return;
         }
 
         bool onlySupported = PersonaPackGate.OnlySupported;
-        HashSet<string> dead = LivePersonaCatalog.GetDeadItemIds();
+        HashSet<string> dead = LivePersonaCatalog.GetHiddenItemIds();
+        IReadOnlySet<string> defaults = PersonaPackGate.DefaultPackUuids;
         LiveOfferCache live = LiveOffer;
         var candidates = new List<Item>(live.Items.Length);
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (Item item in live.Items)
+        string[][] themes = live.ThemeTags;
+        for (int i = 0; i < live.Items.Length; i++)
         {
+            Item item = live.Items[i];
             string? pieceType = item.DisplayProperties?.PieceType;
             if (pieceType is not "persona_skin"
                 && (pieceType is null || !pieceType.StartsWith("persona_", StringComparison.Ordinal)))
@@ -622,14 +629,21 @@ internal sealed class CatalogController : ApaceControllerBase
                 continue; // skins serve regardless of gating; emotes/other content types are not dressing-room pieces
             }
 
-            string itemId = item.Id.ToString();
-            if (pieceType is not "persona_skin" && dead.Contains(itemId))
+            if (pieceType is not "persona_skin")
             {
-                continue; // probed dead — its binary would hang the client, never fill with it
+                if (defaults.Count == 0 || !themes[i].Any(defaults.Contains))
+                {
+                    continue; // fill with the SELECTED bundles only — unselected accessories have no binary and refuse at the gate anyway
+                }
+
+                if (dead.Contains(item.Id.ToString()))
+                {
+                    continue; // no binary on disk — its download would hang the client, never fill with it
+                }
             }
 
             if (onlySupported && !PersonaPieceTypes.EvaluateCosmetic(
-                    itemId, pieceType,
+                    item.Id.ToString(), pieceType,
                     allowRigRepair: PersonaPackGate.ServeTimeTransformActive,
                     hideCustomSkeleton: PersonaPackGate.FlatOnlyActive).Supported)
             {
@@ -637,7 +651,7 @@ internal sealed class CatalogController : ApaceControllerBase
             }
 
             candidates.Add(item);
-            ids.Add(itemId);
+            ids.Add(item.Id.ToString());
         }
 
         candidates.Sort((a, b) => string.CompareOrdinal(a.Id.ToString(), b.Id.ToString()));
@@ -650,7 +664,7 @@ internal sealed class CatalogController : ApaceControllerBase
         // were gate-refused there and always stubbed)
         PersonaPackGate.FillerExemptItemIds.Clear();
         PersonaPackGate.FillerExemptItemIds.UnionWith(ids);
-        Log.Information("Blank-slot filler pool rebuilt: {Count} candidate piece(s) (index stamp {IndexStamp}, config stamp {ConfigStamp})",
+        Log.Information("Blank-slot filler pool rebuilt: {Count} candidate piece(s) from the selected bundles (index stamp {IndexStamp}, config stamp {ConfigStamp})",
             _fillerCandidates.Length, LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp);
     }
 

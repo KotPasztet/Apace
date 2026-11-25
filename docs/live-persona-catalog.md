@@ -13,15 +13,24 @@ The legal frame is unchanged:
   JSON in the persistent data volume and never committed to the repo. The repo
   ships code only.
 - **Binaries = content.** Persona piece binaries and thumbnails are downloaded
-  **lazily, on the first client request** and stored in the volume. Nothing is
-  redistributed ahead of a player actually asking for it, and nothing lands in
-  the installation directory or the repo.
+  into the volume and served from it — never committed to the repo, never
+  redistributed ahead of a player asking for them. Pieces the dressing room
+  OFFERS are mirrored eagerly by the background warm-up (below), so the client
+  always downloads a piece from the local volume, instantly.
 - There is no asset gate: startup never blocks on the legacy persona assets
   (their download sources are dead and the live catalog replaces them). The one
   exception is the nine default skin textures for the built-in "Minecraft Default
   Skins" pack, which `MojangSkinTextureFetcher` fetches best-effort at panel start
   (never blocking) so `MojangSkinPackBuilder` can rebuild the pack zip — see
   `docs/custom-persona-items.md`.
+- **The legacy 231 Microsoft pieces are gone** (user decision 25.11): their
+  xforge URLs are all dead and their binaries are Microsoft-copyrighted
+  content — the item JSONs were removed from `staticdata-extras/playfab/items/`
+  (the built-in skin pack twins, the Apace capes, the store/manifest entries
+  stay) and the `persona` entries were stripped from
+  `mojang-assets.manifest.json`. Everything in the dressing room now comes from
+  the live marketplace (metadata for all of it, binaries for the selected
+  bundles) plus the Apace-original pieces and customs.
 
 ## Architecture
 
@@ -85,7 +94,39 @@ Verified against a real sample: the harness linking the actual
 items with zero lock fields, zero live-CDN URL leaks and zero emotes**
 (`scripts/verify_unlock_all_sample.py` + a /tmp C# harness; rerunnable).
 
-### Lazy probe (no mass probing)
+### Mirror-first offer (nothing lists without its binary)
+
+The offer and every catalog search contain **only pieces whose binary exists on
+disk** (the volume cache `binaries/<itemId>.zip` or the mojang-assets mirror
+dir). A piece the client would not be able to download — probed dead, stale
+verdict, not yet mirrored, outside the selected bundles — **never lists**, so
+the dressing room has no tap that hangs on "wczytywanie…" and then renders an
+empty piece. A piece whose binary lands (warm-up progress, a manual mirror)
+appears on the next search without waiting for a re-sync
+(`LivePersonaCatalog.GetHiddenItemIds`, cached per index + disk stamp).
+
+### The binary warm-up (selected bundles → volume, minutes)
+
+The background warm-up mirrors every piece the binary path can serve into the
+volume BEFORE the client asks: accessories whose theme tags sit inside the
+selected bundles (defaults ∪ grants), the filler pool (a subset of the same)
+and the skins — everything else is refused by the pack gate and is not fetched.
+Two-speed design:
+
+1. **Batch URL resolve** — `Catalog/GetItems` (the batch form of the per-item
+   `GetItem`; `Search` never returns `Contents`) resolves 20 items per paced
+   API call. The endpoint is all-or-nothing on unknown ids, so a failing batch
+   bisects down to singles — worst case the old per-item pace, best case 20x
+   fewer API calls. ~10k candidates resolve in minutes.
+2. **Parallel downloads** — bounded (6 at a time) CDN GETs, no API pacer (the
+   content CDN is not the PlayFab API). A 404 on the download itself IS the
+   dead verdict — no separate HEAD probe on this path.
+
+Downloads land in `binaries/<itemId>.zip`; verdicts persist in probe-state, so
+repeat passes only fetch what changed. The pass reruns whenever the index
+re-syncs or the pack selection changes.
+
+### Lazy probe (client-request fallback)
 
 The offer advertises `/playfab/persona/<itemId>.zip` — **the client never sees a
 live CDN URL**. `Catalog/Search` never returns `Contents` (verified on the live
@@ -96,7 +137,8 @@ same GUID re-hosted on the new PlayFab content CDN
 → else the item is marked **dead** and drops out of the offer and the catalog
 searches immediately until it revives
 (a dead verdict older than 24 h past the last sync re-probes on the next
-request). Everything is client-driven; there are **no bulk probe loops** — all
+request). This per-request pipeline is the fallback for pieces a warm-up pass
+has not reached yet (they are offer-hidden until their binary lands); all
 remote calls funnel through a shared ≤2 req/s pacer with 3-attempt
 retry/backoff, and probe-state writes are debounced.
 
@@ -196,8 +238,9 @@ values, ~55% of pieces carry one). So:
 | Operation | Limit |
 | --- | --- |
 | Panel sync pagination | ~1.4 req/s (700 ms between `Catalog/Search` pages), full catalog ≈ 400 pages, one pass per interval (default 24 h) |
+| Warm-up batch resolve | one `Catalog/GetItems` call per 20 ids through the same ≤2 req/s API pacer |
+| Warm-up downloads | parallel CDN GETs, 6 at a time (content CDN, not the API) |
 | ApiServer lazy probe / GetItem / binary+thumbnail downloads | shared ≤2 req/s pacer, 3-attempt retry with backoff |
-| Bulk probing | none — no bulk loops exist in the codebase; probing is strictly per-item on client request |
 
 ## E2E test steps (on a machine with a client)
 
@@ -215,6 +258,7 @@ values, ~55% of pieces carry one). So:
    content*.prod.catalog.playfab.com into the volume cache") and equips it.
 5. Re-check the panel counters (probed live/dead, binaries cached) and verify a
    dead item (probe 404 on all shapes) disappears from the dressing room.
-6. Release `mojang-persona-mirror` stays parked — deliberately not created
-   (user decision 22.11); the manifest's `fallbackUrls` records remain as
-   facts, and nothing gates on them.
+6. The legacy 231 Microsoft piece item JSONs are removed from
+   `staticdata-extras/playfab/items/` and the manifest carries no `persona`
+   entries; the `mojang-persona-mirror` release does not exist and nothing
+   references it.

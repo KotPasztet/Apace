@@ -205,9 +205,9 @@ honored (see the fallback note above); swap the `PieceId` to a real piece.
 
 ## Where to get valid PieceIds
 
-**Apace already ships 231 dressing room items** — see "Built-in dressing room items"
-below. They cover every category, so most servers do not need to hunt for PieceIds
-at all.
+The dressing room's pieces come from the **live marketplace sync** (see
+`docs/live-persona-catalog.md`) — the catalog covers every category, so most
+servers do not need to hunt for PieceIds at all.
 
 The MCE client ships its persona pieces in its resource pack
 (`staticdata/resourcepacks/vanilla.zip` -> `genoa.mcpack`, extracted to
@@ -226,7 +226,7 @@ Minecraft title: log in anonymously (`Client/LoginWithAndroidDeviceID`, TitleId
 `20ca2`), exchange the entity token for a `master_player_account` token
 (`Authentication/GetEntityToken`) and `Catalog/Search` with
 `(contentType eq 'PersonaDurable' and displayProperties/pieceType eq '<type>')` —
-that is where the built-in items below come from. Prefer free 1P items
+that is where the sync's index comes from. Prefer free 1P items
 (`creatorName` `Minecraft`) created before 2021: the MCE client froze in January
 2021 and does not know newer pieces.
 
@@ -237,41 +237,26 @@ wrap it in the nested `ppack0.zip` shape the real pieces use (see
 zip after the catalog ITEM id, drop it into `staticdata/playfab/persona/` and
 add the explicit `Contents` entry to the item JSON.
 
-## Built-in dressing room items
+## Built-in staticdata items
 
-`staticdata-extras/playfab/items/` contains 231 free character creator items
-(fetched from the live catalog with `scripts/generate_persona_items.py`), overlaid
-onto the staticdata submodule at publish time by `publish.ps1`:
+`staticdata-extras/playfab/items/` carries only what the live catalog cannot
+replace (the 231 Microsoft persona piece JSONs were removed — user decision
+25.11; their URLs are dead and the binaries are Microsoft-copyrighted content):
 
-- 41 hair, 31 eyes, 18 mouth, 22 top, 15 bottom, 20 outerwear, 13 feet, 34 head,
-  5 hand (incl. Hero's Gloves), 3 hood (incl. Blue Hoodie), 3 arms, 5 legs,
-  5 back, 10 face accessory, 7 base skins
-- includes the **Earth Hero set** (Hero's Top/Cowl/Cloak/Gloves/Boots) — the outfit
-  items made for MCE — and the whole 2019 launch set of default pieces
-  (Buzzcut, Blue Jeans, Work Boots, ...) that the real dressing room showed
-- every item is free (`price: 0`), 1P (`Minecraft`) and created before 2021 —
-  pieces the MCE client knows; `AssetFileName: null` for all of them
-- thumbnails ship in `src/Apace.ApiServer/wwwroot/playfab/images/` and are served
-  at `/playfab/images/<guid>.png`
+- the **Apace capes** (`Apace Cape`, `Apace Cape 256`, `Apace Cape 512`,
+  creator KotPasztet) with their real piece binaries in
+  `staticdata-extras/playfab/persona/` — see "The Apace Cape";
+- the **skin pack twins** (`Standard`, `Minecraft Default Skins`, `Apace Skins`)
+  and the infrastructure entries (`PersonaQueryManifest_V1.0` layout,
+  `StoreConfig_V1.1`), mirrored by code-defined fallback offers in
+  `CatalogController` when the deployed staticdata copy is missing or
+  defective;
+- the hardcoded **Bold Rabbit Feet** offer lives in `CatalogController`
+  (shop-required, not a JSON file).
 
-**Every built-in item also ships its real piece binary** (`Contents` entry of type
-`personabinary` pointing at `/playfab/persona/<item id>.zip`, file in
-`staticdata-extras/playfab/persona/`). This matters: the MCE client has **no**
-persona pieces compiled in — not even the Earth Hero set or the 2019 defaults —
-it downloads every piece it applies from the item's `personabinary` content
-(xforge `primary.zip` → `ppack0.zip`, signed and encrypted by Microsoft). Without
-the Contents entry the client waits for the piece download forever, which is why
-items in the dressing room used to spin on click. The binaries were fetched from
-the still-live xforge CDN (same bytes the real service served); a truly custom
-piece (the Apace Cape) rides on the same download path in a self-encrypted
-container whose key Apace delivers itself through the inventory receipt — see
-"The Apace Cape" section above.
-
-Removing or editing a built-in item: they are plain JSON files in
-`staticdata/playfab/items/` **inside the published output** (baked into the Docker
-image from `staticdata-extras/`). Edit or delete the file there and restart the Api
-server. Do not add a second file with the same item `Id` anywhere — duplicate ids
-crash the staticdata loader.
+Everything else in the dressing room — pieces, thumbnails, skin pack zips —
+serves from the live marketplace pipeline (sync → warm-up → mirror-first
+offer).
 
 ## Classic skins (Steve / Alex skin packs)
 
