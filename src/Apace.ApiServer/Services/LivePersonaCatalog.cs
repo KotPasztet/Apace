@@ -1036,8 +1036,13 @@ public static class LivePersonaCatalog
     /// URL (GetItem), probe it (404 → alternate CDN shapes → dead), download to
     /// the volume cache. Live accessories outside the selected packs are refused
     /// on the lazy path regardless of creator (skins exempt — see PersonaPackGate).
-    /// Returns false when the item is dead (the controller answers 404 and the
-    /// item leaves the offer).
+    /// Returns false when the item is dead, is refused by the pack gate, or the
+    /// pipeline failed after all retries — never throws (except on cancellation):
+    /// the controller answers the deterministic placeholder so the frozen client's
+    /// download retry loop terminates with an importable zip instead of an error
+    /// answer that keeps the piece stuck on "loading" forever. A pipeline failure
+    /// leaves the probe verdict untouched, so a transient CDN hiccup recovers on
+    /// the next request.
     /// </summary>
     public static async Task<bool> TryEnsureBinaryAsync(string itemId, ILogger logger, CancellationToken cancellationToken)
     {
@@ -1160,6 +1165,22 @@ public static class LivePersonaCatalog
             EnsureGeometryCompatCaptured(itemId, logger, path);
             return true;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw; // the caller (client / shutdown) walked away — nothing to serve or record
+        }
+        catch (Exception ex)
+        {
+            // all retries exhausted (GetItem resolve, binary download): degrade to
+            // "not ensured" — the controller serves the deterministic placeholder
+            // instead of an error answer, which would keep the frozen client stuck
+            // on "loading" (it retries a failed piece download until its own
+            // timeout). The probe verdict stays whatever it is — "live" without a
+            // file re-runs the pipeline on the next request, so a transient CDN
+            // hiccup still recovers.
+            logger.Warning(ex, "Live persona fetch failed for {Item} after all retries — the controller serves the placeholder piece instead of an error", itemId);
+            return false;
+        }
         finally
         {
             gate.Release();
@@ -1231,7 +1252,8 @@ public static class LivePersonaCatalog
         }
 
         // 3 attempts exhausted — the exception from the last attempt propagates
-        // to the controller, which answers 404; the probe verdict stays live so
+        // to TryEnsureBinaryAsync, which degrades to false so the controller
+        // answers the deterministic placeholder; the probe verdict stays live so
         // a transient CDN hiccup does not kill the item (the next request retries).
     }
 

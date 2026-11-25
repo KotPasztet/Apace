@@ -64,15 +64,28 @@ public class PersonaCdnController : ControllerBase
 
         // live persona marketplace: a miss on both dirs is the lazy probe + download
         // path for items the panel synced from the live marketplace
-        if (!System.IO.File.Exists(filePath) && isGuidName && LivePersonaCatalog.Enabled
-            && await CanServeLiveBinaryAsync(itemGuid, HttpContext.RequestAborted))
+        if (!System.IO.File.Exists(filePath) && isGuidName && LivePersonaCatalog.Enabled)
         {
             try
             {
-                if (await LivePersonaCatalog.TryEnsureBinaryAsync(itemId, Log.Logger, HttpContext.RequestAborted))
+                if (await CanServeLiveBinaryAsync(itemGuid, HttpContext.RequestAborted)
+                    && await LivePersonaCatalog.TryEnsureBinaryAsync(itemId, Log.Logger, HttpContext.RequestAborted))
                 {
                     filePath = LivePersonaCatalog.BinaryPath(itemId);
                 }
+            }
+            catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                throw; // the client walked away mid-fetch — nothing to serve
+            }
+            catch (Exception ex)
+            {
+                // belt-and-braces under the pipeline's own degrade-to-false: NO
+                // failure here may ever escape as a 500 — the frozen client
+                // retries a failed piece download until its own timeout, so an
+                // error answer strands the piece on "loading" forever. Fall
+                // through to the placeholder below.
+                Log.Warning(ex, "Live persona fetch failed unexpectedly for {Item} — serving the deterministic placeholder piece instead of an error", itemId);
             }
             finally
             {

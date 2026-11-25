@@ -99,16 +99,19 @@ internal sealed class CatalogController : ApaceControllerBase
     // The committed built-in skin pack offers (staticdata-extras/playfab/items:
     // Standard, Minecraft Default Skins, Apace Skins) as code-defined twins of
     // those item JSONs. staticdata stays the source of truth and serves
-    // verbatim whenever it carries the item; these fill in ONLY ids the
-    // deployed staticdata is missing — an operator edit/removal through the
-    // panel's file browser, or an install whose staticdata predates the item.
-    // The MCE client resolves a downloaded skin pack by searching
-    // MarketplaceDurableCatalog_V1.2 for its packIdentity uuid as a TAG (the
-    // Default Skins uuid acf11539-… is hardcoded in the client): an empty
-    // answer there strands the pack — it imports, but its skins cannot be
-    // selected or equipped (the 2026-11-25 "some cosmetics can't be equipped"
-    // session showed exactly that empty search right after the pack zip
-    // downloaded). Keep the uuids/tags in lockstep with
+    // verbatim whenever it carries a HEALTHY copy of the item; these fill in
+    // ids the deployed staticdata is missing AND ids it carries in a defective
+    // shape — an operator edit/removal through the panel's file browser, or an
+    // install whose staticdata predates the item. The MCE client resolves a
+    // downloaded skin pack by searching MarketplaceDurableCatalog_V1.2 for its
+    // packIdentity uuid as a TAG (the Default Skins uuid acf11539-… is
+    // hardcoded in the client): an empty answer there strands the pack — it
+    // imports, but its skins cannot be selected or equipped (the 2026-11-25
+    // "some cosmetics can't be equipped" session showed exactly that empty
+    // search right after the pack zip downloaded). A twin whose id exists but
+    // whose content type/packIdentity tag no longer match resolves nothing in
+    // that search just like a missing item — see
+    // IsHealthyBuiltinSkinPackTwin. Keep the uuids/tags in lockstep with
     // staticdata-extras/playfab/items/*.json and MojangSkinPackBuilder.
     private static readonly CItem[] BuiltinSkinPackItems =
     [
@@ -205,34 +208,113 @@ internal sealed class CatalogController : ApaceControllerBase
         );
     }
 
-    // The fallback view: built-in offers whose id the deployed staticdata does
-    // NOT carry, mapped once per run. Reads the staticdata dictionary — never
-    // itemData: this can run inside the CatalogController static constructor
+    // The fallback view: built-in offers the deployed staticdata does not serve
+    // correctly — the id is gone (an operator edit/removal, or an install whose
+    // staticdata predates the item) or the twin EXISTS but is defective (not a
+    // MarketplaceDurableCatalog_V1.2 entry, no packIdentity uuid tag, or
+    // displayProperties no longer advertising that packIdentity). The
+    // defective-twin case is the "present but wrong" gap the plain id-presence
+    // guard used to miss: the client's tag search resolved NOTHING because the
+    // broken copy matched no search, while the fallback was skipped — the
+    // "imports, but its skins cannot be selected or equipped" failure from the
+    // 2026-11-25 session. Defective twins are excluded from every serve path
+    // (BaseOfferItems, GetPublishedItem, SkinPackOfferIds — see
+    // DefectiveBuiltinSkinPackIds) and replaced by the code-defined offer.
+    // Mapped once per run; reads the staticdata dictionary — never itemData:
+    // this can run inside the CatalogController static constructor
     // (CIItemToItem → MergeSkinPackOffersIntoFeaturedQuery →
     // SkinPackOfferIds), while itemData is still being assigned. An active
-    // fallback is logged once per id: it means the staticdata item file was
-    // removed or edited on this install.
+    // fallback is logged once per id.
     private static Item[]? _builtinSkinPackFallbackItems;
+    private static IReadOnlySet<Guid>? _defectiveBuiltinSkinPackIds;
+
+    private static void EnsureBuiltinSkinPackFallbacks()
+    {
+        if (_builtinSkinPackFallbackItems is not null)
+        {
+            return;
+        }
+
+        List<Item> fallback = [];
+        HashSet<Guid> defective = [];
+        foreach (CItem builtin in BuiltinSkinPackItems)
+        {
+            bool missing = !StaticData.Playfab.Items.TryGetValue(builtin.Id, out CItem? twin);
+            if (missing || !IsHealthyBuiltinSkinPackTwin(twin!, builtin))
+            {
+                defective.Add(builtin.Id);
+                Log.Information(
+                    "Built-in skin pack offer {Id} ({Title}) is {State} in the deployed staticdata — serving the code-defined fallback offer so the client's skin pack search (pack uuid tag {Tag}) resolves",
+                    builtin.Id, builtin.Title, missing ? "missing" : "defective", builtin.Tags[1]);
+                fallback.Add(CIItemToItem(builtin));
+            }
+        }
+
+        _defectiveBuiltinSkinPackIds = defective;
+        _builtinSkinPackFallbackItems = [.. fallback];
+    }
 
     private static Item[] BuiltinSkinPackFallbackItems
     {
         get
         {
-            if (_builtinSkinPackFallbackItems is null)
+            EnsureBuiltinSkinPackFallbacks();
+            return _builtinSkinPackFallbackItems!;
+        }
+    }
+
+    // ids of the built-in skin pack offers the deployed staticdata carries in a
+    // defective shape (see BuiltinSkinPackFallbackItems) — those twins are
+    // replaced by the code-defined offer at every serve path
+    private static IReadOnlySet<Guid> DefectiveBuiltinSkinPackIds
+    {
+        get
+        {
+            EnsureBuiltinSkinPackFallbacks();
+            return _defectiveBuiltinSkinPackIds!;
+        }
+    }
+
+    // A staticdata twin of a built-in skin pack offer must still be the shape
+    // the client's pack search resolves: a MarketplaceDurableCatalog_V1.2 entry
+    // whose tags carry the packIdentity uuid (Tags[1] — every BuiltinSkinPackOffer
+    // puts the pack uuid tag at index 1, right after the item's own id tag) and
+    // whose displayProperties still advertise that same packIdentity uuid.
+    // Anything else matches no client search and strands the pack.
+    private static bool IsHealthyBuiltinSkinPackTwin(CItem twin, CItem builtin)
+    {
+        if (twin.Data is not CItem.ClientConfigData { ContentType: "MarketplaceDurableCatalog_V1.2" } config
+            || config.DisplayProperties.ValueKind != JsonValueKind.Object
+            || !twin.Tags.Contains(builtin.Tags[1]))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(config.DisplayProperties.GetRawText());
+            if (!document.RootElement.TryGetProperty("packIdentity", out JsonElement packIdentity)
+                || packIdentity.ValueKind != JsonValueKind.Array)
             {
-                _builtinSkinPackFallbackItems = BuiltinSkinPackItems
-                    .Where(builtin => !StaticData.Playfab.Items.ContainsKey(builtin.Id))
-                    .Select(builtin =>
-                    {
-                        Log.Information(
-                            "Built-in skin pack offer {Id} ({Title}) is missing from the deployed staticdata — serving the code-defined fallback offer so the client's Classic Skins pack search (pack uuid tag {Tag}) resolves",
-                            builtin.Id, builtin.Title, builtin.Tags.Skip(1).FirstOrDefault() ?? "?");
-                        return CIItemToItem(builtin);
-                    })
-                    .ToArray();
+                return false;
             }
 
-            return _builtinSkinPackFallbackItems;
+            foreach (JsonElement entry in packIdentity.EnumerateArray())
+            {
+                if (entry.ValueKind == JsonValueKind.Object
+                    && entry.TryGetProperty("uuid", out JsonElement uuid)
+                    && uuid.ValueKind == JsonValueKind.String
+                    && string.Equals(uuid.GetString(), builtin.Tags[1], StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (JsonException)
+        {
+            return false; // unparseable displayProperties — the client cannot resolve this twin
         }
     }
 
@@ -249,10 +331,14 @@ internal sealed class CatalogController : ApaceControllerBase
     {
         get
         {
+            // a defective built-in skin pack twin serves NOWHERE — the code-defined
+            // fallback offer replaces it in the composed search source below
+            IReadOnlySet<Guid> defectiveBuiltinTwins = DefectiveBuiltinSkinPackIds;
             return itemData.Where(item =>
-                item.ContentType != "PersonaDurable" ||
+                !defectiveBuiltinTwins.Contains(item.Id) &&
+                (item.ContentType != "PersonaDurable" ||
                 item.Id == BoldRabbitFeetItemId ||
-                item.DisplayProperties?.CreatorName is not "Minecraft");
+                item.DisplayProperties?.CreatorName is not "Minecraft"));
         }
     }
 
@@ -865,6 +951,21 @@ internal sealed class CatalogController : ApaceControllerBase
             ), jsonOptions), "application/json");
         }
 
+        // a defective built-in skin pack twin resolves as the code-defined offer —
+        // serving the broken staticdata shape here would strand the client's pack
+        // resolve exactly like the empty tag search does
+        if (DefectiveBuiltinSkinPackIds.Contains(itemId)
+            && BuiltinSkinPackFallbackItems.FirstOrDefault(candidate => candidate.Id == itemId) is { } repairedItem)
+        {
+            return TypedResults.Content(JsonSerializer.Serialize(new PlayfabOkResponse(
+                200,
+                "OK",
+                new GetPublishedItemResponse(
+                    WithSkinPackRow(ToResponse(repairedItem, Request), livePacks)
+                )
+            ), jsonOptions), "application/json");
+        }
+
         if (!StaticData.Playfab.Items.TryGetValue(itemId, out var cItem))
         {
             // last resolve lane: the code-defined built-in skin pack offers the
@@ -932,12 +1033,15 @@ internal sealed class CatalogController : ApaceControllerBase
     // "has_skinpack"; append their ids to every served skinPackFeaturedQuery so a new
     // pack is just another item JSON (deduped, ids already in the list are kept in place).
     private static IEnumerable<string> SkinPackOfferIds => StaticData.Playfab.Items.Values
-        .Where(item => item.Data is CItem.ClientConfigData { ContentType: "MarketplaceDurableCatalog_V1.2" }
+        // defective built-in twins are replaced by the code-defined fallback offers,
+        // whose ids the Concat below appends — never list the broken copy itself
+        .Where(item => !DefectiveBuiltinSkinPackIds.Contains(item.Id)
+            && item.Data is CItem.ClientConfigData { ContentType: "MarketplaceDurableCatalog_V1.2" }
             && item.Tags.Contains("has_skinpack"))
         .Select(item => item.Id.ToString())
         // the code-defined fallback offers (ids the deployed staticdata does
-        // not carry) join the featured row the same way — see
-        // BuiltinSkinPackFallbackItems; the merge below dedupes
+        // not carry or carries in a defective shape) join the featured row the
+        // same way — see BuiltinSkinPackFallbackItems; the merge below dedupes
         .Concat(BuiltinSkinPackFallbackItems.Select(item => item.Id.ToString()));
 
     private static JsonElement MergeSkinPackOffersIntoFeaturedQuery(JsonElement displayProperties)
