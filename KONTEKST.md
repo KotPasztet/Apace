@@ -3,8 +3,9 @@
 > Ten plik to jednorazowy przewodnik po całym projekcie: co jest gdzie, jak
 > działa pipeline kosmetyków, jakie decyzje zapadły i dlaczego. Szczegóły
 > techniczne żyją w `docs/*.md` — tu jest mapa i kontekst. Aktualizowany przy
-> dużych zmianach (ostatnio: 2026-11-26 — PR #4 iOS XAL keychain, „Cosmetics
-> sources").
+> dużych zmianach (ostatnio: 2026-11-26 — **face-cosmetics recovery**
+> (restore script, cache-proof landing, karta coverage), **fix-qr-permission-context**
+> w patcherze, PR #4 iOS XAL keychain, „Cosmetics sources").
 
 ## 1. Co to jest
 
@@ -190,7 +191,10 @@ serwuje twin certu.
 
 `/Admin/PersonaPacks` (marketplace management): karta **„Cosmetics sources”**
 („Enable legacy cosmetics” — packs.json, hot-reload; „Enable marketplace sync”
-— config.json, bramkuje crawl + oba „Sync now”, default ON), `PackPicker`,
+— config.json, bramkuje crawl + oba „Sync now”, default ON), karta
+**„Cosmetics coverage”** (per zakładka dressing roomu: index / on disk / in
+offer; czerwony badge = 0 w ofercie przy niezerowym indeksie — sygnatura
+pustych face tabów; liczy wyłącznie na „Refresh”), `PackPicker`,
 `Files` (przeglądarka wolumenu), `PlayerManagement`, `FabricLogs`,
 `ImportBuildplate`, `LinkedAccounts`. Start serwera gry czeka na resource pack,
 prompt o map key, autodetekcja LAN IP. Konfiguracja systemowa: live marketplace ON/OFF,
@@ -203,14 +207,24 @@ Kanał „dev" porównuje wersję z obrazem `ghcr.io/apaceproject/apace:dev`,
 „main" z GitHub Releases. **Prompt update (od v1.1.15):** nowsza wersja +
 webserver OFF (STOPPED/ERROR) + brak aktywnego snooze → dialog **przy każdym
 otwarciu apki** (bez gate'u „raz na wersję"); przy działającym serwerze bez
-dialogu. Auto-start czeka na decyzję („Update" → svcUpdate, „Later" → start).
+dialogu. Auto-start czeka na decyzję („Update” → svcUpdate, „Later” → start).
 APK aplikuje się z panelu (podpisane download URL-e).
+
+Patcher APK/IPA w tym repo (`src/Apace.LauncherUI/Patcher/` + łatek w
+`repos/Minecraft_Earth_Patcher/src/Core/Patches/*.patch`): łatka
+**fix-qr-permission-context** (Android, **default ON**, Advanced ma checkbox;
+Auto/Simple zawsze) naprawia crash skanera QR multiplayer — NPE na statycznym
+`MainActivity.mInstance` w `genoa.Permission` (fallback na
+`ActivityThread.currentApplication()`); zweryfikowana na urządzeniu (Android
+16, 26.11).
 
 ## 11. CI/CD
 
 - Apace: push → `dev` = Lint + **Docker image `:dev`** (na którym działa
   telefon kanałem dev); tagi/wersje = release.
 - Apace-Launcher: push → `main` = artifact `ApaceLauncher` (APK).
+- Stan (26.11, po face-recovery pushu): `dev` @ `52c7f67` — restore script,
+  cache-proof landing binarek, karta coverage, łatka QR w patcherze.
 
 ## 12. Skrypty (scripts/)
 
@@ -218,7 +232,9 @@ APK aplikuje się z panelu (podpisane download URL-e).
 `generate_mojang_asset_manifest.py` (manifest), `build_apace_piece.py`
 (kontenery ppack0), `extract-persona-pieces.py` (piece'y z resource packa
 klienta), `validate_theme_packs.py`, `smoke_live_catalog_sync.py`,
-`update.sh/ps1`, `tailscale-setup.sh`, `entrypoint.sh` (Docker).
+**`restore_persona_mirror.py`** (ratunek 234 binarek persona z historii git
+`8e0ec99^` → wolumen; `--list/--target/--tarball/--verify`; odmowa zapisu w
+worktree), `update.sh/ps1`, `tailscale-setup.sh`, `entrypoint.sh` (Docker).
 
 ## 13. Decyzje i pułapki (chronologicznie, najważniejsze)
 
@@ -238,12 +254,33 @@ klienta), `validate_theme_packs.py`, `smoke_live_catalog_sync.py`,
 8. **PR z zewnątrz**: tylko dev, squash-merge z konwencjonalnym tytułem;
    PR-y dotyczące Adventures/seasons/Challenges czekają (release-check).
    Release/tagów NIE robimy samodzielnie — tylko użytkownik.
+9. **Face-cosmetics recovery (26.11)**: jedyny źródło binarek twarzy (era
+   2019, CDN martwe globalnie) = 234 zipy z historii git (`8e0ec99^`); do
+   repo NIGDY nie wracają (copyright), lądują na wolumen przez
+   `scripts/restore_persona_mirror.py`. Cache oferty musi widzieć lądowanie
+   z KAŻDEGO procesu (content stamps + wymuszony rebuild co 60 s — dir-mtime
+   i licznik `MarkBinaryLanded` nie obejmują ręcznych/panelowych zapisów).
+   Binary-less listowanie twarzy pozostaje ZAKAZANE (equip wisi — b4dbde5).
+   Knob `deadRetryHours` (packs.json, default 24, hand-edit only).
 
 ## 14. Znane problemy / otwarte wątki
 
+- **Face cosmetics (eyes/mouth/face_accessory/hair) — mechanizm domknięty,
+  czeka na potwierdzenie w terenie** (26.11). Diagnoza: jedyny warunek
+  zerujący te zakładki to brak binarki na dysku (pack/compat gate ich w
+  ogóle nie dotyka); binarki 2019 martwe na CDN. Wgrane: restore script
+  (§12/§13.9), cache-proof landing (§13.9), histogramy oferty + karta
+  „Cosmetics coverage” (§9). **Do zrobienia na instalacji**: wypchnąć obraz
+  `:dev` z tym HEAD, lądować mirror (`--target` na hoście docker albo
+  `--tarball` + adb push + untar do `<data>/mojang-assets/playfab/persona/`),
+  restart ApiServer, sprawdzić kartę coverage i equip w grze. Pokrycie po
+  restore: hair 41/139, eyes 31/57, mouth 18/35, skin 7/37,
+  **facial_hair 0/39** (tab pusty bez nowego materiału — craft to jedyna
+  droga), face_accessory do pomiaru po restore. „Podstawowe” pozycje twarzy
+  (plain_eyes/plain_mouth/body) są wbudowane w klienta — nie od nas.
 - **Skin packs (Classic Skins row) masowo dead na CDN** — pack zipy z 2021
   404; vanilla Standard w kliencie działa, reszta czeka na cud.
-- Text binding „złe kolory" na części piece'ów — do diagnozy (sekcja 6).
+- Text binding „złe kolory” na części piece’ów — do diagnozy (sekcja 6).
 - Emotes: w indexie (~2.2k), ale layout klienta nie ma zakładki — nie oferowane.
 - Kanał dev: obraz musi zawierać HEAD commitu; launcher pilnuje
   `ciPending` i re-checkuje co 3 min.
