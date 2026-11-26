@@ -15,7 +15,8 @@ namespace Apace.ApiServer.Services;
 // packs.json (written by the panel next to the catalog index, hot-reloaded by
 // mtime) holds { defaultPacks, categoryLimit, onlySupported, fillBlankSlotsWithRandomCosmetics,
 // experimentalAutoRepairRigs, enableLegacyCosmetics } plus the compat
-// knob "maxGeometryFormatVersion" (optional — hand-edit only, the panel's Save
+// knob "maxGeometryFormatVersion" and the probe-retry knob "deadRetryHours"
+// (both optional — hand-edit only, the panel's Save
 // keeps only its own fields); old files may
 // still carry the deprecated "gating" flag — it is ignored (the deserializer
 // drops unknown members). Gating is implicit AUTO-GATING from the allowed set
@@ -33,6 +34,11 @@ namespace Apace.ApiServer.Services;
 public static class PersonaPackGate
 {
     public const int DefaultCategoryLimit = 45;
+
+    /// <summary>Hours a dead probe verdict stays trusted (packs.json
+    /// "deadRetryHours") — the default is exactly the behavior before the knob
+    /// existed. See <see cref="DeadRetryHours"/>.</summary>
+    public const int DefaultDeadRetryHours = 24;
 
     /// <summary>The baseline "customSkeletonMode" when packs.json omits the
     /// key: Flat only — the user's requested default (extra skeleton handling
@@ -60,7 +66,7 @@ public static class PersonaPackGate
 
     private sealed record PackConfig(List<string>? DefaultPacks, int? CategoryLimit, bool? OnlySupported,
         string? MaxGeometryFormatVersion, bool? FillBlankSlots, bool? ExperimentalAutoRepairRigs, string? CustomSkeletonMode,
-        bool? EnableLegacyCosmetics);
+        bool? EnableLegacyCosmetics, int? DeadRetryHours);
 
     // Documented default compat threshold (see PersonaPieceTypes.IsSupportedCosmetic):
     // geometry format_version at or past the max breaks on the frozen client
@@ -85,6 +91,7 @@ public static class PersonaPackGate
     private static CustomSkeletonModes _customSkeletonMode = DefaultCustomSkeletonMode;
     private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
     private static bool _legacyCosmetics = true;
+    private static int _deadRetryHours = DefaultDeadRetryHours;
     private static long _configStamp;
 
     // Item ids currently offered as blank-slot filler (CatalogController.RefreshFiller
@@ -190,6 +197,25 @@ public static class PersonaPackGate
         }
     }
 
+    /// <summary>How many hours a dead probe verdict stays trusted before it
+    /// falls back to unchecked and re-probes (packs.json "deadRetryHours",
+    /// default <see cref="DefaultDeadRetryHours"/> = the pre-knob behavior): a
+    /// piece the marketplace CDN answered 404 for drops from the offer, and this
+    /// many hours after its verdict — or after the sync that outdates it — the
+    /// next request re-probes it, so a CDN revival (or a manual mirror landing)
+    /// is picked up without an edit. 0 re-probes every dead piece on its next
+    /// request. Optional and hand-edit only like "maxGeometryFormatVersion" (the
+    /// panel's Save keeps only its own fields); consumed by
+    /// LivePersonaCatalog.IsStaleDead.</summary>
+    public static int DeadRetryHours
+    {
+        get
+        {
+            LoadConfig();
+            return _deadRetryHours;
+        }
+    }
+
     /// <summary>True when a serve-time geometry transform is active at all —
     /// the experimental auto-rig repair (re-parent) or the custom-skeleton
     /// stripper. The compat gate lets custom-bones-only head pieces through
@@ -261,6 +287,7 @@ public static class PersonaPackGate
                     _customSkeletonMode = DefaultCustomSkeletonMode;
                     _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
                     _legacyCosmetics = true;
+                    _deadRetryHours = DefaultDeadRetryHours;
                     Log.Information("Persona pack config gone from {Path} — no packs configured, the live marketplace serves nothing until packs are selected", ConfigPath);
                 }
 
@@ -282,8 +309,9 @@ public static class PersonaPackGate
             _customSkeletonMode = ParseCustomSkeletonMode(loaded?.CustomSkeletonMode);
             _maxGeometryFormatVersion = ParseVersion(loaded?.MaxGeometryFormatVersion, DefaultMaxGeometryFormatVersion);
             _legacyCosmetics = loaded?.EnableLegacyCosmetics ?? true;
+            _deadRetryHours = Math.Max(0, loaded?.DeadRetryHours ?? DefaultDeadRetryHours);
             _configStamp = stamp;
-            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}, experimental auto rig repair: {AutoRepairRigs}, custom skeleton mode: {CustomSkeletonMode}, legacy cosmetics: {LegacyCosmetics}",
+            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}, experimental auto rig repair: {AutoRepairRigs}, custom skeleton mode: {CustomSkeletonMode}, legacy cosmetics: {LegacyCosmetics}, dead retry hours: {DeadRetryHours}",
                 ConfigPath, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
                 _categoryLimit == 0 ? "none" : _categoryLimit.ToString(),
                 _onlySupported,
@@ -291,7 +319,8 @@ public static class PersonaPackGate
                 _maxGeometryFormatVersion.ToString(),
                 _experimentalAutoRepairRigs,
                 _customSkeletonMode,
-                _legacyCosmetics);
+                _legacyCosmetics,
+                _deadRetryHours);
         }
         catch (Exception ex)
         {

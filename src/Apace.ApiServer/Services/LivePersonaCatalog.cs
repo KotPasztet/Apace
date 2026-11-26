@@ -588,23 +588,35 @@ public static class LivePersonaCatalog
 
     // A dead verdict from BEFORE the last-but-one sync is not trusted forever — a
     // Mojang CDN migration can revive pieces, so stale dead entries (older than
-    // 24h) fall back to unchecked and get re-probed on the next client request.
+    // the "deadRetryHours" knob, packs.json, default 24h = the pre-knob behavior)
+    // fall back to unchecked and get re-probed on the next client request. The
+    // window is a parameter on the per-item overload: the knob getter stats
+    // packs.json on every read, so per-catalog loops (warm-up candidates, probe
+    // summary) resolve it once and pass it down.
     private static bool IsStaleDead(ProbeEntry entry)
-        => entry.State == "dead" && entry.CheckedAt < (LastSyncAt ?? DateTimeOffset.UtcNow.AddDays(-1)) - TimeSpan.FromHours(24);
+        => IsStaleDead(entry, TimeSpan.FromHours(PersonaPackGate.DeadRetryHours));
+
+    private static bool IsStaleDead(ProbeEntry entry, TimeSpan deadRetry)
+        => entry.State == "dead" && entry.CheckedAt < (LastSyncAt ?? DateTimeOffset.UtcNow.AddDays(-1)) - deadRetry;
 
     // ids of the pieces that have a servable binary on disk right now (volume
     // cache ∪ mojang-assets mirror), cached per (binaries dir stamp, mirror dir
-    // stamp, landed counter) — the dirs only change when files land or are
-    // removed, so every request is a pair of stat calls, not a 12k-file scan.
-    // The volume cache dir grows while the warm-up runs; each landed file moves
-    // the stamp and the next snapshot picks the piece up.
+    // stamp, legacy knob, landed counter, packs.json stamp, refresh window) —
+    // one dictionary hit per request until one of those moves.
     //
-    // The dir mtime ALONE proved useless as the change signal: on the field
-    // install (Docker volume) it never moved while the warm-up downloaded
-    // hundreds of binaries, so the offer cache froze at the pre-warm-up set
-    // (offer=257 while 759 files landed; the filler pool stayed at 255
-    // candidates; every face tab queried "matched no items"). MarkBinaryLanded
-    // — called by every path that writes a binary — is the reliable signal.
+    // The DIRECTORY mtime alone proved useless as the change signal: on the field
+    // install (Docker volume) it never moved while files landed — not during the
+    // warm-up's hundreds of downloads (offer=257 while 759 files landed; the
+    // filler pool stayed at 255 candidates; every face tab queried "matched no
+    // items"), and not when a zip landed OUTSIDE this process either (the panel's
+    // mirror import or a hand restore into playfab/persona/ — those cannot call
+    // MarkBinaryLanded). The dir stamps are therefore computed from the directory
+    // CONTENT (zip count, total size, newest file mtime — DirectoryContentStamp,
+    // TTL-cached so the per-request check stays one dictionary hit), which moves
+    // whatever process dropped the file; and because no future "creative" landing
+    // method can be trusted either, the refresh window (OfferRefreshBucket)
+    // rebuilds the snapshot UNCONDITIONALLY once per window — a missed change
+    // signal can delay a landed binary's offer entry by at most one window.
     private static long _binaryIdsStamp = -1;
     private static HashSet<string> _binaryIds = new(StringComparer.OrdinalIgnoreCase);
     private static int _binaryLandedVersion;
@@ -616,29 +628,86 @@ public static class LivePersonaCatalog
     /// move.</summary>
     public static void MarkBinaryLanded() => Interlocked.Increment(ref _binaryLandedVersion);
 
-    // Caller must hold StateLock.
-    private static HashSet<string> BinaryIdsSnapshot()
+    // Content stamp of a binary directory: HashCode.Combine over (zip file
+    // count, total size, newest file mtime). Unlike the directory mtime — dead
+    // on Docker volumes, see the snapshot comment above — this moves whenever a
+    // zip lands, leaves or is replaced, in THIS process or any other (panel
+    // import, manual mirror restore). The scan reads the whole directory (~1-2k
+    // files), so it is cached per dir for DirectoryStampTtl: within the window
+    // a stamp check is one dictionary hit, past it one scandir decides.
+    private static readonly TimeSpan DirectoryStampTtl = TimeSpan.FromSeconds(30);
+    private sealed record DirContentStamp(long Stamp, DateTimeOffset Expires);
+    private static readonly Dictionary<string, DirContentStamp> DirContentStamps = new(StringComparer.OrdinalIgnoreCase);
+
+    private static long DirectoryContentStamp(string dir)
     {
-        long stamp = 0;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        lock (DirContentStamps)
+        {
+            if (DirContentStamps.TryGetValue(dir, out var cached) && cached.Expires > now)
+            {
+                return cached.Stamp;
+            }
+        }
+
+        long stamp;
         try
         {
-            if (Directory.Exists(BinariesDir))
+            if (!Directory.Exists(dir))
             {
-                stamp = Directory.GetLastWriteTimeUtc(BinariesDir).ToUniversalTime().Ticks;
+                stamp = 0;
+            }
+            else
+            {
+                int count = 0;
+                long totalLength = 0, newestWrite = 0;
+                foreach (string file in Directory.EnumerateFiles(dir, "*.zip"))
+                {
+                    var info = new FileInfo(file);
+                    if (!info.Exists)
+                    {
+                        continue; // removed between enumeration and stat
+                    }
+
+                    count++;
+                    totalLength += info.Length;
+                    newestWrite = Math.Max(newestWrite, info.LastWriteTimeUtc.Ticks);
+                }
+
+                stamp = HashCode.Combine(count, totalLength, newestWrite);
             }
         }
         catch (Exception)
         {
-            stamp = 0;
+            stamp = 0; // unreadable dir — treated as empty this round
         }
 
+        lock (DirContentStamps)
+        {
+            DirContentStamps[dir] = new DirContentStamp(stamp, now + DirectoryStampTtl);
+        }
+
+        return stamp;
+    }
+
+    // The refresh window of the binary-id snapshots: an UNCONDITIONAL rebuild
+    // once per window (60 s), independent of every stamp — a change signal that
+    // fails to move (any future flavour of the dead-dir-mtime bug) can then
+    // delay a landed binary's offer entry by at most one window.
+    private static long OfferRefreshBucket => DateTime.UtcNow.Ticks / TimeSpan.FromSeconds(60).Ticks;
+
+    // Caller must hold StateLock.
+    private static HashSet<string> BinaryIdsSnapshot()
+    {
+        long binariesStamp = DirectoryContentStamp(BinariesDir);
         Dictionary<string, string> local = GetLocalPersonaBinaries(); // stamp-cached itself
         // PersonaPackGate.ConfigStamp (packs.json mtime) and the legacy knob state
         // are part of the change signal: any panel Save on the Marketplace
         // Management page — including the "Enable legacy cosmetics" switch —
         // refreshes the binary snapshot (and with it the offer) on the next
-        // request without a restart.
-        long combined = HashCode.Combine(stamp, _localPersonaStamp, _localPersonaEnabled, Volatile.Read(ref _binaryLandedVersion), PersonaPackGate.ConfigStamp);
+        // request without a restart. OfferRefreshBucket forces the same rebuild
+        // once per window regardless of the signals.
+        long combined = HashCode.Combine(binariesStamp, _localPersonaStamp, _localPersonaEnabled, Volatile.Read(ref _binaryLandedVersion), PersonaPackGate.ConfigStamp, OfferRefreshBucket);
         if (combined == _binaryIdsStamp)
         {
             return _binaryIds;
@@ -671,8 +740,9 @@ public static class LivePersonaCatalog
 
     // The hidden-id set, cached per (index stamp, binary-disk stamp) — the
     // dressing room fires many searches per page and each one checks ids
-    // against this set, so a rebuild happens only when the index re-syncs or
-    // a binary lands/leaves the disk, not per request.
+    // against this set, so a rebuild happens only when the index re-syncs, a
+    // binary lands/leaves the disk, or the refresh window elapses — never per
+    // request.
     private static long _hiddenStamp = -1;
     private static HashSet<string> _hiddenIds = new(StringComparer.OrdinalIgnoreCase);
 
@@ -724,10 +794,11 @@ public static class LivePersonaCatalog
         {
             LoadProbeStates();
             Dictionary<string, string> local = GetLocalPersonaBinaries();
+            TimeSpan deadRetry = TimeSpan.FromHours(PersonaPackGate.DeadRetryHours); // resolved once for the loop below
             int live = 0, dead = 0;
             foreach (var kv in ProbeStates)
             {
-                if (IsStaleDead(kv.Value))
+                if (IsStaleDead(kv.Value, deadRetry))
                 {
                     continue;
                 }
@@ -847,7 +918,18 @@ public static class LivePersonaCatalog
             {
                 long indexStamp = IndexStamp;
                 long gateStamp = PersonaPackGate.ConfigStamp;
-                if (IsAvailable && (indexStamp != _warmUpIndexStamp || gateStamp != _warmUpGateStamp))
+                if (!IsAvailable)
+                {
+                    logger.Information("Live persona binary warm-up skipped: the live catalog has no usable index yet (waiting for the panel's first sync)");
+                }
+                else if (indexStamp == _warmUpIndexStamp && gateStamp == _warmUpGateStamp)
+                {
+                    // the distinct skip reasons ("no stamp change" vs the pass's own
+                    // "nothing to do") make an idle loop telltale in the log: nothing
+                    // left to mirror, as opposed to a pass that could not start
+                    logger.Information("Live persona binary warm-up skipped: no stamp change (index {IndexStamp}, gate {GateStamp} unchanged) — the offer snapshots still rebuild on their refresh window", indexStamp, gateStamp);
+                }
+                else
                 {
                     _warmUpIndexStamp = indexStamp;
                     _warmUpGateStamp = gateStamp;
@@ -859,8 +941,9 @@ public static class LivePersonaCatalog
                 logger.Warning(ex, "Live persona binary warm-up pass failed — the loop keeps running");
             }
 
-            // 60 s cadence: the idle check is two long compares + (when the stamp
-            // moved) candidate enumeration, so a hot loop would buy nothing
+            // 60 s cadence: the idle check is two long compares + one skip line +
+            // (when the stamp moved) candidate enumeration, so a hot loop would buy
+            // nothing
             await Task.Delay(TimeSpan.FromMinutes(1)).ConfigureAwait(false);
         }
     }
@@ -872,6 +955,13 @@ public static class LivePersonaCatalog
         {
             return;
         }
+
+        // the pass-end report aggregates the dead verdicts of this window by
+        // shape; start every pass with a clean tally
+        ResetDeadVerdictTally();
+        // the knob getter stats packs.json on every read — resolve the retry
+        // window once for the candidate loop below
+        TimeSpan deadRetry = TimeSpan.FromHours(PersonaPackGate.DeadRetryHours);
 
         // everything the binary path can actually serve — accessories with a
         // theme tag inside the allowed pack set (the selected bundles), skins
@@ -916,7 +1006,7 @@ public static class LivePersonaCatalog
                     continue; // mirrored during an earlier pass — the offer picks it up from disk
                 }
 
-                if (ProbeStates.TryGetValue(itemId, out var state) && state.State == "dead" && !IsStaleDead(state))
+                if (ProbeStates.TryGetValue(itemId, out var state) && state.State == "dead" && !IsStaleDead(state, deadRetry))
                 {
                     continue; // freshly probed dead — nothing to fetch
                 }
@@ -933,7 +1023,9 @@ public static class LivePersonaCatalog
 
         if (candidates.Count == 0 && packCandidates.Count == 0)
         {
-            logger.Debug("Live persona binary warm-up: nothing to do ({Indexed} indexed piece(s) all fresh)", index.Items.Count);
+            // distinct from the loop's "no stamp change" skip: the pass RAN and
+            // found every candidate already mirrored or freshly probed
+            logger.Information("Live persona binary warm-up: nothing to do — all {Indexed} indexed piece(s) already mirrored or fresh", index.Items.Count);
             return;
         }
 
@@ -991,8 +1083,8 @@ public static class LivePersonaCatalog
 
                 if (done % 50 == 0)
                 {
-                    logger.Information("Live persona binary warm-up: {Processed}/{Total} — {Live} mirrored, {Dead} dead",
-                        done, candidates.Count, Interlocked.CompareExchange(ref live, 0, 0), Interlocked.CompareExchange(ref dead, 0, 0));
+                    logger.Information("Live persona binary warm-up: {Processed}/{Total} — {Live} mirrored, {Dead} dead ({DeadShapes})",
+                        done, candidates.Count, Interlocked.CompareExchange(ref live, 0, 0), Interlocked.CompareExchange(ref dead, 0, 0), DeadVerdictShapes());
                     FlushProbeStates(logger);
                 }
             }
@@ -1016,8 +1108,9 @@ public static class LivePersonaCatalog
         }
 
         FlushProbeStates(logger);
-        logger.Information("Live persona binary warm-up pass finished: {Processed} piece(s) + {Packs} pack(s) — {Live} mirrored, {Dead} dead/unavailable",
-            processed, packCandidates.Count, live, dead);
+        logger.Information("Live persona binary warm-up pass finished: {Processed} piece(s) + {Packs} pack(s) — {Live} mirrored, {Dead} dead/unavailable (dead by shape: {DeadShapes})",
+            processed, packCandidates.Count, live, dead, DeadVerdictShapes());
+        ResetDeadVerdictTally(); // verdicts after this point report with the next pass
     }
 
     /// <summary>Resolves personabinary URLs for many items at once via
@@ -1487,14 +1580,17 @@ public static class LivePersonaCatalog
     public static string LocalPersonaPath(string itemId) => Path.Combine(Program.MojangAssetsDir, "playfab", "persona", $"{itemId}.zip");
 
     // item id → file path of persona zips present in the mojang-assets primary
-    // dir. Recomputed only when the directory changes (one stat per check):
-    // binaries land there lazily (panel file management / mirror restores can
-    // happen long after any probe verdict), so this map is the dead→alive bridge.
+    // dir. Recomputed only when the directory CONTENT changes (zip count / total
+    // size / newest file mtime, TTL-cached — see DirectoryContentStamp): binaries
+    // land there lazily (panel file management / mirror restores can happen long
+    // after any probe verdict, in another process), so this map is the
+    // dead→alive bridge, and the OfferRefreshBucket folded into the consumer's
+    // stamp rebuilds it once per window even when a landing slips past the scan.
     // "Enable legacy cosmetics" OFF (packs.json, hot-reloaded) makes the map
     // EMPTY — every consumer (the offer's binary snapshot, the warm-up scope,
     // the dead→alive bridge, the probe summary) then behaves as if the dir were
     // empty; the knob state is cached with the stamp so a flip rebuilds even
-    // when the dir mtime does not move.
+    // when the directory scan would not move.
     private static long _localPersonaStamp = -1;
     private static bool _localPersonaEnabled = true;
     private static readonly Dictionary<string, string> LocalPersonaBinaries = new(StringComparer.OrdinalIgnoreCase);
@@ -1504,16 +1600,7 @@ public static class LivePersonaCatalog
     {
         bool legacyOn = PersonaPackGate.LegacyCosmetics;
         string dir = Path.Combine(Program.MojangAssetsDir, "playfab", "persona");
-        long stamp;
-        try
-        {
-            stamp = Directory.Exists(dir) ? Directory.GetLastWriteTimeUtc(dir).ToUniversalTime().Ticks : 0;
-        }
-        catch (Exception)
-        {
-            stamp = 0;
-        }
-
+        long stamp = DirectoryContentStamp(dir);
         if (legacyOn == _localPersonaEnabled && stamp == _localPersonaStamp)
         {
             return LocalPersonaBinaries;
@@ -1766,11 +1853,45 @@ public static class LivePersonaCatalog
         }
     }
 
+    // Dead verdicts of the current warm-up pass window, tallied by probe shape
+    // ("no-contents", "warmup-404", "probe-404", …): the pass aggregates them
+    // into one Information line per pass instead of one line per dead piece — a
+    // dying CDN produces thousands of verdicts per pass and per-item logging
+    // would flood the log. Reset at pass start (verdicts recorded between passes
+    // surface through the lazy path's own per-item logs). Mutated and read only
+    // under StateLock.
+    private static readonly Dictionary<string, int> DeadVerdictTally = new(StringComparer.OrdinalIgnoreCase);
+
+    // "no-contents: 12, warmup-404: 38" — the dead-verdict breakdown for the pass
+    // report; "none" when nothing died (keeps the log line's shape fixed).
+    private static string DeadVerdictShapes()
+    {
+        lock (StateLock)
+        {
+            return DeadVerdictTally.Count == 0
+                ? "none"
+                : string.Join(", ", DeadVerdictTally.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key}: {kv.Value}"));
+        }
+    }
+
+    private static void ResetDeadVerdictTally()
+    {
+        lock (StateLock)
+        {
+            DeadVerdictTally.Clear();
+        }
+    }
+
     private static void RecordProbe(string itemId, string state, string? resolvedUrl, string source, ILogger logger)
     {
         lock (StateLock)
         {
             ProbeStates[itemId] = new ProbeEntry(state, resolvedUrl, DateTimeOffset.UtcNow, source);
+            if (state == "dead")
+            {
+                DeadVerdictTally[source] = DeadVerdictTally.GetValueOrDefault(source) + 1;
+            }
+
             MarkProbeStateDirty(logger);
         }
     }
