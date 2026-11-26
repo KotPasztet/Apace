@@ -292,7 +292,15 @@ public static class LivePersonaCatalog
         var seenPieces = new HashSet<Guid>();
         foreach (var entry in index.Items)
         {
-            if (entry.IsEmote || hidden.Contains(entry.Id))
+            // face-craft pieces (eyes/hair/mouth/facial hair/face accessories/
+            // skins) are exempt from the hidden (= no-binary-on-disk) set: the
+            // 2019 character-creator launch pieces are baked into the client's
+            // own resource pack and apply by piece UUID with no server binary
+            // at all, while their marketplace-era binaries are dead GLOBALLY
+            // (primary + both alternate CDN hosts 404 since ~2025-11) — hiding
+            // on binary presence emptied every dressing-room face tab.
+            if (entry.IsEmote || (hidden.Contains(entry.Id)
+                && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(entry.PieceType)))
             {
                 continue;
             }
@@ -318,7 +326,10 @@ public static class LivePersonaCatalog
         }
 
         var entry = index.Items.FirstOrDefault(item => item.Id == itemId);
-        return entry is not null && !entry.IsEmote && !GetHiddenItemIds().Contains(entry.Id) ? BuildOfferItem(entry) : null;
+        return entry is not null && !entry.IsEmote
+            && (!GetHiddenItemIds().Contains(entry.Id)
+                || PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(entry.PieceType))
+            ? BuildOfferItem(entry) : null;
     }
 
     /// <summary>The raw index entry for one piece id, or null when the id is not

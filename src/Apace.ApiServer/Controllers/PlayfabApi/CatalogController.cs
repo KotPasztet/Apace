@@ -504,16 +504,21 @@ internal sealed class CatalogController : ApaceControllerBase
         for (int i = 0; i < live.Items.Length; i++)
         {
             Item item = live.Items[i];
-            if (dead.Contains(item.Id.ToString()))
+            // face-craft categories (eyes, hair, mouth, facial hair, face items,
+            // skins/skin colors) are always allowed — never gated by the pack
+            // theme selection, never by the supported-only gate below, and never
+            // by the no-binary-on-disk hiding: the 2019 character-creator launch
+            // pieces live in the client's own resource pack (applied by piece
+            // UUID — no server binary), their marketplace-era binaries are dead
+            // globally, so binary-presence hiding emptied the face tabs entirely.
+            bool faceCraft = PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(item.DisplayProperties?.PieceType);
+            if (dead.Contains(item.Id.ToString()) && !faceCraft)
             {
                 deadSkipped++;
                 continue; // no binary on disk (probed dead or not yet mirrored) — hide it from searches instead of hanging the client's download
             }
 
-            // face-craft categories (eyes, hair, mouth, facial hair, face items,
-            // skins/skin colors) are always allowed — never gated by the pack
-            // theme selection, exactly as never by the supported-only gate below
-            if (!PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(item.DisplayProperties?.PieceType))
+            if (!faceCraft)
             {
                 string[] tags = themes[i];
                 if (allowed.Count == 0 || !tags.Any(allowed.Contains))
@@ -524,7 +529,7 @@ internal sealed class CatalogController : ApaceControllerBase
             }
 
             passed++;
-            if (onlySupported && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(item.DisplayProperties?.PieceType))
+            if (onlySupported && !faceCraft)
             {
                 string itemId = item.Id.ToString();
                 PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(
@@ -640,9 +645,10 @@ internal sealed class CatalogController : ApaceControllerBase
                     continue; // the knob is off — nothing fills
                 }
 
-                if (dead.Contains(item.Id.ToString()))
+                if (dead.Contains(item.Id.ToString())
+                    && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(pieceType))
                 {
-                    continue; // no binary on disk — its download would hang the client, never fill with it
+                    continue; // no binary on disk — its download would hang the client, never fill with it (face-craft excepted: the client's own resource pack carries the launch pieces by UUID)
                 }
             }
             else
