@@ -15,25 +15,18 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 > **Actively developed.** The server is functional — maps, buildplates, **shared buildplate multiplayer**, daily rewards, crafting, the dressing room with marketplace pieces, and more are working; challenges, seasons and adventures are still in progress (see the feature table below).
 
 > [!TIP]
-> ### ✨ Unreleased on `dev`: Shared Buildplate Multiplayer
+> ### ✨ Shared Buildplate Multiplayer
 >
-> - **Join a friend's buildplate** — every buildplate session gets a join code; guests scan the host's QR code and build together on the shared `19132/udp` bridge (ported from the Apace-Rework multiplayer update).
-> - **See other players in AR** — remote players appear as floating nametags at eye height with their held item below (no full skins; the Genoa client crashes on player entities).
-> - **Clean exits** — closing a buildplate returns guests to the map with "The buildplate has been closed" instead of stranding them.
-> - **Offline QR scanning** — the patched client decodes QR codes with embedded ZXing, no Google services needed.
-> - Also from the port: child JVMs can no longer outlive the launcher on Windows, and patcher jobs work from non-ASCII install paths.
+> Every buildplate session gets a join code — guests scan the host's QR and build together on the shared Bedrock bridge, seeing each other as AR nametags. QR scanning works offline (embedded ZXing, no Google services).
 >
-> See the *Unreleased* section in [CHANGELOG.md](CHANGELOG.md) for details and known limitations.
+> Details and known limitations: [CHANGELOG.md](CHANGELOG.md).
 
 > [!TIP]
-> ### ✨ New on `dev`: iOS sign-in & marketplace management
+> ### ✨ iOS sign-in & marketplace management
 >
-> - **iOS sign-in is served** — the XAL sisu flow (device/title/user/XSTS auth, sisu authenticate/authorize/client/logout) is implemented server-side. The built-in patcher writes the IPA intact (fixes the corrupt-archive bug), redirects the iOS PlayFab title API and embeds the XAL keychain entitlements — the output IPA still needs signing.
-> - **Marketplace management** — the panel picks which bundles players see (panel defaults + per-player grants). Nothing selected = **zero** accessories beyond default skins, capes and custom cosmetics — enforced on the catalog, published items, saved profiles and the piece binaries.
-> - **The frozen 2021 staticdata catalog no longer leaks** when the live index is missing, and probe-dead marketplace pieces leave the searches immediately instead of rendering as broken tiles.
-> - **Per-search diagnostics** — one Debug line per catalog search shows the allowed set and served/dropped counts (`Live offer: caller=… defaults=N grants=M passed=… dropped=…`).
+> **iOS sign-in is served** (XAL sisu flow; the patcher produces a ready-to-sign IPA) and the **panel decides which marketplace bundles players see** — nothing selected means zero accessories beyond the defaults.
 >
-> Full list: [CHANGELOG.md](CHANGELOG.md) · dressing room details: [docs/live-persona-catalog.md](docs/live-persona-catalog.md) · panel guide: [docs/marketplace-management.md](docs/marketplace-management.md).
+> More: [docs/live-persona-catalog.md](docs/live-persona-catalog.md) · [docs/marketplace-management.md](docs/marketplace-management.md).
 
 ## Disclaimer
 
@@ -41,7 +34,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 
 * *Minecraft Earth™* is a trademark of Microsoft Corporation. All trademarks and registered trademarks are the property of their respective owners.
 * This project does not distribute, host, or provide access to original game assets, proprietary binaries, or resource packs. Users are responsible for providing their own legally obtained assets.
-* The panel syncs the still-live Minecraft marketplace (character creator pieces, dressing room thumbnails) into the persistent data volume at runtime — see [docs/live-persona-catalog.md](docs/live-persona-catalog.md). Legacy asset binaries are not shipped or gated on; the repo only carries a manifest of facts (source URLs, sha256), and startup never blocks on missing assets.
+* The panel syncs the still-live Minecraft marketplace (character creator pieces, thumbnails) at runtime — see [docs/live-persona-catalog.md](docs/live-persona-catalog.md). The repo ships no game assets or binaries, only a manifest of facts (source URLs, sha256).
 * This software is provided solely for educational, research, and archival purposes to restore functionality to a discontinued service.
 * This project is provided "as-is" without any warranty of any kind, express or implied. In no event shall the authors be held liable for any claim, damages, or other liability.
 
@@ -50,7 +43,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | Feature        | Status             | Notes                                                                                     |
 |----------------|--------------------|-------------------------------------------------------------------------------------------|
 | Map            | :white_check_mark: |                                                                                           |
-| Profile        | :white_check_mark: | Activity log/settings load; player statistics served (from the activity log, challenge progress and journal) |
+| Profile        | :white_check_mark: | Activity log, settings, player statistics                                                 |
 | Dressing Room  | :white_check_mark: | Pack-gated marketplace pieces, skin packs, custom cosmetics — [docs/marketplace-management.md](docs/marketplace-management.md) |
 | Journal        | :white_check_mark: |                                                                                           |
 | Activity Log   | :white_check_mark: |                                                                                           |
@@ -61,12 +54,12 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | Boost Minis    | :white_check_mark: | NFC minifig activation with Mattel tag decoding                                           |
 | Tappables      | :white_check_mark: |                                                                                           |
 | Buildplates    | :white_check_mark: |                                                                                           |
-| Multiplayer    | :white_check_mark: | Shared buildplates via QR join codes (dev); AR nametags — see CHANGELOG known limitations |
+| Multiplayer    | :white_check_mark: | Shared buildplates via QR join codes; remote players render as AR nametags                 |
 | Store          | :white_check_mark: | Tab titles do not load                                                                    |
-| iOS Sign-in    | :construction:     | XAL sisu flow served, patcher fixes pushed — awaiting on-device confirmation              |
-| Challenges     | :construction:     | Daily challenges (3 per player, deterministic rotation) with progress tracking, claims and rewards; encounter-based objectives do not progress yet |
-| Seasons        | :construction:     | Season endpoints served as a stub ("Season 17", single tier, no tier rewards); active-challenge selection persists |
-| Adventures     | :construction:     | Join responses, port reuse, instance lifecycle; encounters/state answers 200 since 26.11 (400 before the fix); no persistent encounter state, AR shared anchors not emulated |
+| iOS Sign-in    | :white_check_mark: | XAL sisu flow served; confirmed working on patched installs                                |
+| Challenges     | :construction:     | Daily challenges with progress, claims and rewards; encounter-based objectives not yet    |
+| Seasons        | :construction:     | Stub season endpoints (single tier, no rewards); active challenge selection persists      |
+| Adventures     | :construction:     | Join flows and instance lifecycle work; persistent encounter state and AR shared anchors not emulated |
 | Daily Rewards  | :white_check_mark: | Daily login rewards with streak tracking                                                  |
 | Tokens         | :white_check_mark: | Token claim/redeem system                                                                 |
 | Tutorial       | :x:                |                                                                                           |
@@ -115,7 +108,7 @@ To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Window
 
 ## Guides
 
-* **Updating** — one command keeps an existing install current; your data and `config.json` are preserved and backed up (newest 3 kept), and `--rollback` reverts if an update misbehaves:
+* **Updating** — one command keeps an existing install current (data preserved, backups rotated, `--rollback` on request):
 Linux (Bash):
   ```bash
   curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.sh | bash -s -- --yes
@@ -127,7 +120,7 @@ Linux (Bash):
   ```
 
   Flags, backup rotation and rollback details: [QUICKINSTALL.md → Updating](QUICKINSTALL.md#updating).
-* **Migrating from Solace** — one command detects your old Solace install, installs Apace if it is missing, stops both servers and carries your accounts (username + password), player progress, inventory and buildplates over; only active login sessions are lost. A dry-run plan is always shown first, and the Solace directory is never modified:
+* **Migrating from Solace** — one command carries your Solace accounts, progress, inventory and buildplates over; shows a dry-run plan first and never modifies the Solace directory:
 Linux (Bash):
   ```bash
   curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.sh | bash
