@@ -176,6 +176,20 @@ public static class IpaProcessor
             Log.Debug("Done");
         }
 
+        if (options.AddXalEntitlements)
+        {
+            string xalPath = Path.Combine(appDir, "Frameworks", "Xal.framework", "Xal");
+            if (!File.Exists(xalPath))
+            {
+                Log.Fatal($"Xal framework not found at '{xalPath}'");
+                return false;
+            }
+
+            Log.Information("Patching Xal keychain access group");
+            PatchXalKeychainAccessGroup(xalPath);
+            Log.Debug("Done");
+        }
+
         Log.Information("Patching ATS exceptions for redirected endpoints");
         PatchInfoPlistAts(appDir,
             options.Hostname?.Trim()?.ToLowerInvariant(),
@@ -340,6 +354,14 @@ public static class IpaProcessor
         (0x2B5E0, new byte[] { 0x48, 0x02, 0x00, 0x54 }, new byte[] { 0x4E, 0x02, 0x00, 0x54 }),
     };
 
+    // PopulateKeysOnKeychain: skip the kSecAttrAccessGroup pair so the device key goes in the app's default group
+    private static readonly (long Site, byte[] Original, byte[] Patched)[] XalKeychainAccessGroupSites =
+    {
+        (0x884A8, new byte[] { 0xE2, 0xE3, 0x01, 0x91 }, new byte[] { 0xE2, 0x03, 0x02, 0x91 }),
+        (0x884AC, new byte[] { 0xE3, 0xE3, 0x00, 0x91 }, new byte[] { 0xE3, 0x03, 0x01, 0x91 }),
+        (0x884B0, new byte[] { 0xE4, 0x03, 0x1D, 0x32 }, new byte[] { 0xE4, 0x00, 0x80, 0x52 }),
+    };
+
     private const long ForceInteractiveSignInAddress = 0x6F9314;
 
     private static readonly byte[] ForceInteractiveSignInOriginal = { 0x62, 0x02, 0x00, 0x34 };
@@ -435,6 +457,24 @@ public static class IpaProcessor
             if (!actual.SequenceEqual(original))
             {
                 throw new InvalidDataException($"Unexpected bytes at Xal web view dispatch site 0x{site:X} (found {Convert.ToHexString(actual)}, expected {Convert.ToHexString(original)}), the binary may be different from the supported version");
+            }
+            Array.Copy(patched, 0, data, site, 4);
+        }
+
+        File.WriteAllBytes(xalPath, data);
+    }
+
+    private static void PatchXalKeychainAccessGroup(string xalPath)
+    {
+        byte[] data = File.ReadAllBytes(xalPath);
+
+        foreach (var (site, original, patched) in XalKeychainAccessGroupSites)
+        {
+            byte[] actual = new byte[4];
+            Array.Copy(data, site, actual, 0, 4);
+            if (!actual.SequenceEqual(original))
+            {
+                throw new InvalidDataException($"Unexpected bytes at Xal keychain site 0x{site:X} (found {Convert.ToHexString(actual)}, expected {Convert.ToHexString(original)}), the binary may be different from the supported version");
             }
             Array.Copy(patched, 0, data, site, 4);
         }
