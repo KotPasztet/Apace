@@ -83,3 +83,42 @@
  .end method
  
  .method public checkLocationPermission()Z
+--- a/smali/com/mojang/minecraftpe/genoa/DeviceOrientation.smali
++++ b/smali/com/mojang/minecraftpe/genoa/DeviceOrientation.smali
+@@ -15,6 +15,16 @@
+     .line 11
+     sget-object v0, Lcom/mojang/minecraftpe/MainActivity;->mInstance:Lcom/mojang/minecraftpe/MainActivity;
+ 
++    if-eqz v0, :cond_mceqr_orfb
++
++    goto/16 :goto_mceqr_have_ctx
++
++    :cond_mceqr_orfb
++    invoke-static {}, Landroid/app/ActivityThread;->currentApplication()Landroid/app/Application;
++
++    move-result-object v0
++
++    :goto_mceqr_have_ctx
+     invoke-direct {p0, v0}, Landroid/view/OrientationEventListener;-><init>(Landroid/content/Context;)V
+ 
+     .line 8
+--- a/smali/com/mojang/minecraftpe/genoa/AndroidNFC.smali
++++ b/smali/com/mojang/minecraftpe/genoa/AndroidNFC.smali
+@@ -30,6 +30,8 @@
+ 
+     iput-object v0, p0, Lcom/mojang/minecraftpe/genoa/AndroidNFC;->mMinecraftActivity:Lcom/mojang/minecraftpe/MainActivity;
+ 
++    if-eqz v0, :cond_mceqr_nfcnoinst
++
+     .line 30
+     iget-object v0, p0, Lcom/mojang/minecraftpe/genoa/AndroidNFC;->mMinecraftActivity:Lcom/mojang/minecraftpe/MainActivity;
+ 
+@@ -79,6 +81,8 @@
+     iput-object v0, p0, Lcom/mojang/minecraftpe/genoa/AndroidNFC;->mPendingIntent:Landroid/app/PendingIntent;
+ 
+     .line 38
++
++    :cond_mceqr_nfcnoinst
+     invoke-direct {p0}, Lcom/mojang/minecraftpe/genoa/AndroidNFC;->updateNfcCapabilities()V
+ 
+     .line 39

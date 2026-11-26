@@ -42,7 +42,8 @@ public sealed record AndroidRequest
 
     /// <summary>
     /// Optional fix-qr-permission-context patch: QR permission calls crash with an NPE
-    /// when MainActivity.mInstance is null — fall back to ActivityThread.currentApplication().
+    /// when MainActivity.mInstance is null — fall back to ActivityThread.currentApplication();
+    /// also guards DeviceOrientation (context fallback) and AndroidNFC (skip activity-bound init).
     /// Default on.
     /// </summary>
     public required bool FixQrPermissionContext { get; init; }

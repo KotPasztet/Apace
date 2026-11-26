@@ -257,7 +257,7 @@
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="advFixQrPermission" @bind="fixQrPermission" />
-                            <label class="form-check-label" for="advFixQrPermission">Fix QR scanner permission crash (NPE on MainActivity.mInstance)</label>
+                            <label class="form-check-label" for="advFixQrPermission">Fix QR scanner permission crash (NPE on MainActivity.mInstance; NFC/DeviceOrientation guards)</label>
                             <p class="text-muted" style="font-size: 0.75rem;">
                                 Falls back to the application context when the activity instance is gone — fixes the QR scanner crash.
                             </p>
