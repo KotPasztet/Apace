@@ -100,6 +100,7 @@ internal sealed class EnvironmentSettingsController : ControllerBase
             ["maxannouncementscount"] = 0,
             ["removethislater"] = 23,
             ["crystalslotcap"] = 3,
+            ["crystaloobeduration"] = 10,
             ["crystaluncommonduration"] = 10,
             ["crystalrareduration"] = 10,
             ["crystalepicduration"] = 10,
