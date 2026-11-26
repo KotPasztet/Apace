@@ -45,6 +45,7 @@ public sealed class Settings
         MarketplaceSync = true,
         PersonaCatalogSyncIntervalHours = 24,
         PatcherRejectNonOriginalApk = true,
+        LogLines = 2500,
     };
 
     public static Settings Instance { get; set; } = Default;
@@ -224,6 +225,13 @@ public sealed class Settings
     /// who knowingly patch a different build.
     /// </summary>
     public bool? PatcherRejectNonOriginalApk { get; set; }
+
+    /// <summary>
+    /// "Log lines displayed" (Server Options): how many of the latest log
+    /// lines the ServerStatus log panel keeps and shows per component (the
+    /// LogsLogService ring buffer). 100..10000, default 2500.
+    /// </summary>
+    public int? LogLines { get; set; }
 
     public enum TileDataSourceE
     {
@@ -429,6 +437,12 @@ public sealed class Settings
         {
             Log.Warning($"PatcherRejectNonOriginalApk is invalid, using default: '{Default.PatcherRejectNonOriginalApk}'");
             settings.PatcherRejectNonOriginalApk = Default.PatcherRejectNonOriginalApk;
+        }
+
+        if (settings.LogLines is not (>= 100 and <= 10000))
+        {
+            Log.Warning($"LogLines is invalid, using default: '{Default.LogLines}'");
+            settings.LogLines = Default.LogLines;
         }
 
         Log.Information("Loaded settings");

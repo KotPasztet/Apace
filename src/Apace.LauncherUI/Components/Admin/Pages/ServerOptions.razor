@@ -97,6 +97,14 @@ else
                         <InputText @bind-Value="SettingsModel.IPv4" class="form-control" placeholder="auto-detected LAN IP" />
                         <ValidationMessage For="@(() => SettingsModel.IPv4)" />
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Log Lines Displayed</label>
+                        <InputNumber @bind-Value="SettingsModel.LogLines" class="form-control" />
+                        <div class="form-text text-white">
+                            How many of the latest log lines the Server Status log panel keeps and shows per component (100-10000, default 2500).
+                        </div>
+                        <ValidationMessage For="@(() => SettingsModel.LogLines)" />
+                    </div>
                     <div class="col-12 mt-3">
                         <div class="form-check form-switch">
                             <InputCheckbox @bind-Value="SettingsModel.OnlyAllowLocalLogin" class="form-check-input"
@@ -473,6 +481,7 @@ else
         SettingsModel.StaticDataPath = source.StaticDataPath;
         SettingsModel.LauncherBuildplatePreview = source.LauncherBuildplatePreview ?? false;
         SettingsModel.PlayableScale = source.PlayableScale ?? Settings.Default.PlayableScale;
+        SettingsModel.LogLines = source.LogLines ?? Settings.Default.LogLines;
         SettingsModel.OnlyAllowLocalLogin = source.OnlyAllowLocalLogin ?? false;
     }
 
@@ -503,6 +512,7 @@ else
         settings.StaticDataPath = SettingsModel.StaticDataPath;
         settings.LauncherBuildplatePreview = SettingsModel.LauncherBuildplatePreview;
         settings.PlayableScale = SettingsModel.PlayableScale;
+        settings.LogLines = SettingsModel.LogLines;
         settings.OnlyAllowLocalLogin = SettingsModel.OnlyAllowLocalLogin;
 
         settings.Save(Settings.DefaultPath);
@@ -580,6 +590,9 @@ else
 
         [Required, Range(1, 32, ErrorMessage = "PlayableScale must be between 1 and 32 blocks per meter.")]
         public int? PlayableScale { get; set; }
+
+        [Required, Range(100, 10000, ErrorMessage = "Log lines must be between 100 and 10000.")]
+        public int? LogLines { get; set; }
 
         public bool OnlyAllowLocalLogin { get; set; }
 

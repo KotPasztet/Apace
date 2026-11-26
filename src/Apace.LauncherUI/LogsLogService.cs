@@ -12,9 +12,11 @@ public class LogsLogService : ILogEventSink
 
     public event Action? OnLogReceived;
 
-    // 3× the original 500: the home page's log panel scrolls a much longer
-    // history before the ring buffer evicts old lines.
-    private const int MaxLogs = 1500;
+    // Ring buffer capacity per component — the "Log lines displayed" Server
+    // Option (config.json "LogLines", clamped to 100..10000 by Settings
+    // loading). Read live so a save in Server Options applies on the next
+    // log line without a restart; the fallback covers pre-load logging only.
+    private static int MaxLogs => Settings.Instance.LogLines ?? Settings.Default.LogLines ?? 2500;
 
     public void AddExternalLogs(params ReadOnlySpan<LogEvent> logs)
     {
