@@ -12,29 +12,14 @@
 Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
 
 > [!NOTE]
-> **Actively developed.** The server is functional — maps, buildplates, **shared buildplate multiplayer**, daily rewards, crafting, the dressing room with marketplace pieces, and more are working; challenges, seasons and adventures are still in progress (see the feature table below).
-
-> [!TIP]
-> ### ✨ Shared Buildplate Multiplayer
->
-> Every buildplate session gets a join code — guests scan the host's QR and build together on the shared Bedrock bridge, seeing each other as AR nametags. QR scanning works offline (embedded ZXing, no Google services).
->
-> Details and known limitations: [CHANGELOG.md](CHANGELOG.md).
-
-> [!TIP]
-> ### ✨ iOS sign-in & marketplace management
->
-> **iOS sign-in is served** (XAL sisu flow; the patcher produces a ready-to-sign IPA) and the **panel decides which marketplace bundles players see** — nothing selected means zero accessories beyond the defaults.
->
-> More: [docs/live-persona-catalog.md](docs/live-persona-catalog.md) · [docs/marketplace-management.md](docs/marketplace-management.md).
+> **Actively developed.** Per-feature status: the table below.
 
 ## Disclaimer
 
 **Apace** is an independent, community-driven project and is **not affiliated with, authorized, maintained, endorsed, or sponsored** by Microsoft Corporation, Mojang Studios, or any of their affiliates or subsidiaries.
 
 * *Minecraft Earth™* is a trademark of Microsoft Corporation. All trademarks and registered trademarks are the property of their respective owners.
-* This project does not distribute, host, or provide access to original game assets, proprietary binaries, or resource packs. Users are responsible for providing their own legally obtained assets.
-* The panel syncs the still-live Minecraft marketplace (character creator pieces, thumbnails) at runtime — see [docs/live-persona-catalog.md](docs/live-persona-catalog.md). The repo ships no game assets or binaries, only a manifest of facts (source URLs, sha256).
+* No game assets, proprietary binaries or resource packs are distributed here — users provide their own legally obtained assets. The panel syncs the still-live Minecraft marketplace (creator pieces, thumbnails) at runtime — see [docs/live-persona-catalog.md](docs/live-persona-catalog.md); the repo carries only a manifest of facts (source URLs, sha256).
 * This software is provided solely for educational, research, and archival purposes to restore functionality to a discontinued service.
 * This project is provided "as-is" without any warranty of any kind, express or implied. In no event shall the authors be held liable for any claim, damages, or other liability.
 
