@@ -68,7 +68,10 @@ internal sealed class CatalogController : ApaceControllerBase
                     ["Tags"] = Array.Empty<string>(),
                     ["Type"] = "personabinary",
                 }],
-                [new("e7314d2a-8097-48f0-b0e8-039084a22049", "Thumbnail", "Thumbnail", "/playfab/images/shoes_bold_striped_rabbit_thumbnail_0.png")],
+                // Mojang's own rabbit-feet thumbnail is not shipped in the repo
+                // (no Mojang assets committed — runtime fetch or placeholder);
+                // the dressing-room tile shows the repo's own placeholder art.
+                [new("e7314d2a-8097-48f0-b0e8-039084a22049", "Thumbnail", "Thumbnail", "/images/dummyItemPreview.png")],
                 [new(Guid.Parse("8eb22e2c-db50-4e30-a3d2-0c355e479e74"), 1)],
                 brfPrice,
                 brfPrice,
