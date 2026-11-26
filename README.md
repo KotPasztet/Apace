@@ -12,7 +12,7 @@
 Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
 
 > [!NOTE]
-> **Actively developed.** The server is functional — maps, buildplates, **shared buildplate multiplayer**, challenges, daily rewards, adventures, crafting, the dressing room with marketplace pieces, and more are working.
+> **Actively developed.** The server is functional — maps, buildplates, **shared buildplate multiplayer**, daily rewards, crafting, the dressing room with marketplace pieces, and more are working; challenges, seasons and adventures are still in progress (see the feature table below).
 
 > [!TIP]
 > ### ✨ Unreleased on `dev`: Shared Buildplate Multiplayer
@@ -50,7 +50,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | Feature        | Status             | Notes                                                                                     |
 |----------------|--------------------|-------------------------------------------------------------------------------------------|
 | Map            | :white_check_mark: |                                                                                           |
-| Profile        | :construction:     | Activity log/settings load; statistics not implemented                                    |
+| Profile        | :white_check_mark: | Activity log/settings load; player statistics served (from the activity log, challenge progress and journal) |
 | Dressing Room  | :white_check_mark: | Pack-gated marketplace pieces, skin packs, custom cosmetics — [docs/marketplace-management.md](docs/marketplace-management.md) |
 | Journal        | :white_check_mark: |                                                                                           |
 | Activity Log   | :white_check_mark: |                                                                                           |
@@ -64,9 +64,9 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 | Multiplayer    | :white_check_mark: | Shared buildplates via QR join codes (dev); AR nametags — see CHANGELOG known limitations |
 | Store          | :white_check_mark: | Tab titles do not load                                                                    |
 | iOS Sign-in    | :construction:     | XAL sisu flow served, patcher fixes pushed — awaiting on-device confirmation              |
-| Challenges     | :construction:     | Daily challenge system (3 per player, deterministic rotation, progress tracking)          |
-| Seasons        | :white_check_mark: | Seasonal content support                                                                  |
-| Adventures     | :white_check_mark: | Join responses, port reuse, instance lifecycle                                            |
+| Challenges     | :construction:     | Daily challenges (3 per player, deterministic rotation) with progress tracking, claims and rewards; encounter-based objectives do not progress yet |
+| Seasons        | :construction:     | Season endpoints served as a stub ("Season 17", single tier, no tier rewards); active-challenge selection persists |
+| Adventures     | :construction:     | Join responses, port reuse, instance lifecycle; encounters/state answers 200 since 26.11 (400 before the fix); no persistent encounter state, AR shared anchors not emulated |
 | Daily Rewards  | :white_check_mark: | Daily login rewards with streak tracking                                                  |
 | Tokens         | :white_check_mark: | Token claim/redeem system                                                                 |
 | Tutorial       | :x:                |                                                                                           |
@@ -74,6 +74,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 :white_check_mark: - Complete
 :construction: - Under Development
 :x: - Not Working
+:grey_question: - Unclear
 
 Remaining work lives in [TODO.md](TODO.md).
 
