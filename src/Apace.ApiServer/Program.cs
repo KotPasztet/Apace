@@ -154,6 +154,16 @@ public static class Program
             .MinimumLevel.Debug()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
+            // the framework's response-caching middleware (UseResponseCaching in
+            // Startup) logs two Information lines per request it does not serve
+            // from cache ("No cached response available for this request." /
+            // "The response could not be cached for this request.") — the normal
+            // outcome for this server, two lines of noise per request. They are
+            // framework events (LoggerExtensions 24/27) and cannot be demoted at
+            // the source, so the namespace override silences everything below
+            // Warning while real cache problems (Content-Length mismatch) stay
+            // visible.
+            .MinimumLevel.Override("Microsoft.AspNetCore.ResponseCaching", LogEventLevel.Warning)
             .MinimumLevel.Override("Apace.ApiServer.Authentication", LogEventLevel.Information);
         var log = loggerConfig.CreateLogger();
 

@@ -926,8 +926,14 @@ public static class LivePersonaCatalog
                 {
                     // the distinct skip reasons ("no stamp change" vs the pass's own
                     // "nothing to do") make an idle loop telltale in the log: nothing
-                    // left to mirror, as opposed to a pass that could not start
-                    logger.Information("Live persona binary warm-up skipped: no stamp change (index {IndexStamp}, gate {GateStamp} unchanged) — the offer snapshots still rebuild on their refresh window", indexStamp, gateStamp);
+                    // left to mirror, as opposed to a pass that could not start.
+                    // Debug — this fires on every 60 s tick of a settled index and
+                    // one Information line per tick drowned the log
+                    logger.Debug("Live persona binary warm-up skipped: no stamp change (index {IndexStamp}, gate {GateStamp} unchanged) — the offer snapshots still rebuild on their refresh window", indexStamp, gateStamp);
+                    // the idle tick is also the Information aggregate's heartbeat: the
+                    // client keeps re-probing dead pieces/packs between passes, and
+                    // this surfaces them once per tick instead of one line per probe
+                    ReportAndResetLazyDeadVerdicts(logger);
                 }
                 else
                 {
@@ -957,8 +963,10 @@ public static class LivePersonaCatalog
         }
 
         // the pass-end report aggregates the dead verdicts of this window by
-        // shape; start every pass with a clean tally
-        ResetDeadVerdictTally();
+        // shape; the verdicts the lazy pipeline recorded between passes surface
+        // here as one Information line first, then every pass starts with a
+        // clean tally
+        ReportAndResetLazyDeadVerdicts(logger);
         // the knob getter stats packs.json on every read — resolve the retry
         // window once for the candidate loop below
         TimeSpan deadRetry = TimeSpan.FromHours(PersonaPackGate.DeadRetryHours);
@@ -1094,23 +1102,26 @@ public static class LivePersonaCatalog
             }
         }
 
+        int packLive = 0, packDead = 0;
         foreach (string offerId in packCandidates)
         {
             bool ok = await TryEnsureSkinPackZipAsync(offerId, logger, CancellationToken.None).ConfigureAwait(false);
             if (ok)
             {
                 live++;
+                packLive++;
             }
             else
             {
                 dead++;
+                packDead++;
             }
         }
 
         FlushProbeStates(logger);
-        logger.Information("Live persona binary warm-up pass finished: {Processed} piece(s) + {Packs} pack(s) — {Live} mirrored, {Dead} dead/unavailable (dead by shape: {DeadShapes})",
-            processed, packCandidates.Count, live, dead, DeadVerdictShapes());
-        ResetDeadVerdictTally(); // verdicts after this point report with the next pass
+        logger.Information("Live persona binary warm-up pass finished: {Processed} piece(s) + {Packs} pack(s) — {Live} mirrored, {Dead} dead/unavailable (skin packs: {PackLive} mirrored, {PackDead} dead; dead by shape: {DeadShapes})",
+            processed, packCandidates.Count, live, dead, packLive, packDead, DeadVerdictShapes());
+        ResetDeadVerdictTally(); // verdicts after this point surface via ReportAndResetLazyDeadVerdicts
     }
 
     /// <summary>Resolves personabinary URLs for many items at once via
@@ -1792,7 +1803,11 @@ public static class LivePersonaCatalog
             if (status is not (200 or 206))
             {
                 RecordProbe(itemId, "dead", url, $"probe-{status ?? 0}", logger);
-                logger.Information("Live persona piece {Item} probed dead (primary {Primary}, alternates tried) — dropped from the offer until it revives",
+                // per-item verdict at Debug — a dying CDN makes the client re-probe dead
+                // pieces every couple of seconds and one Information line per probe
+                // drowned the log; the tally from RecordProbe surfaces as the
+                // Information aggregate (ReportAndResetLazyDeadVerdicts / pass report)
+                logger.Debug("Live persona piece {Item} probed dead (primary {Primary}, alternates tried) — dropped from the offer until it revives",
                     itemId, status ?? 0);
                 return false;
             }
@@ -1854,12 +1869,12 @@ public static class LivePersonaCatalog
     }
 
     // Dead verdicts of the current warm-up pass window, tallied by probe shape
-    // ("no-contents", "warmup-404", "probe-404", …): the pass aggregates them
-    // into one Information line per pass instead of one line per dead piece — a
-    // dying CDN produces thousands of verdicts per pass and per-item logging
-    // would flood the log. Reset at pass start (verdicts recorded between passes
-    // surface through the lazy path's own per-item logs). Mutated and read only
-    // under StateLock.
+    // ("no-contents", "warmup-404", "probe-404", "skinpack-probe-404", …): the
+    // pass aggregates them into one Information line per pass instead of one
+    // line per dead piece — a dying CDN produces thousands of verdicts per pass
+    // and per-item logging would flood the log. Verdicts recorded between passes
+    // (the lazy pipeline, all per-item logs at Debug) surface through
+    // ReportAndResetLazyDeadVerdicts. Mutated and read only under StateLock.
     private static readonly Dictionary<string, int> DeadVerdictTally = new(StringComparer.OrdinalIgnoreCase);
 
     // "no-contents: 12, warmup-404: 38" — the dead-verdict breakdown for the pass
@@ -1878,6 +1893,39 @@ public static class LivePersonaCatalog
     {
         lock (StateLock)
         {
+            DeadVerdictTally.Clear();
+        }
+    }
+
+    // One dead verdict outside the pass window (the lazy pipeline's per-item
+    // verdicts now log at Debug — skin packs have no probe state, so unlike the
+    // pieces they do not go through RecordProbe and need this separate tally;
+    // the "skinpack-" prefix keeps the pass report's shape breakdown split).
+    private static void TallyDeadVerdict(string shape)
+    {
+        lock (StateLock)
+        {
+            DeadVerdictTally[shape] = DeadVerdictTally.GetValueOrDefault(shape) + 1;
+        }
+    }
+
+    // The Information aggregate for the verdicts the lazy pipeline recorded since
+    // the last report (pass start, or an idle warm-up tick): one line per report
+    // instead of one line per dead probe, silent when nothing died. Called from
+    // the warm-up loop so a settled server still surfaces dead probes — the
+    // client keeps re-probing them — without the per-item flood.
+    private static void ReportAndResetLazyDeadVerdicts(ILogger logger)
+    {
+        lock (StateLock)
+        {
+            if (DeadVerdictTally.Count == 0)
+            {
+                return;
+            }
+
+            logger.Information("Live persona dead probes since the last report: {Dead} (by shape: {DeadShapes})",
+                DeadVerdictTally.Values.Sum(),
+                string.Join(", ", DeadVerdictTally.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key}: {kv.Value}")));
             DeadVerdictTally.Clear();
         }
     }
@@ -1989,7 +2037,10 @@ public static class LivePersonaCatalog
             string? url = await ResolveBinaryUrlAsync(offerId, logger, cancellationToken);
             if (url is null)
             {
-                logger.Information("Live skin pack {Pack} ({Title}) has no downloadable content upstream — the client cannot import it", offerId, pack.Title);
+                // per-item verdicts at Debug (see the probed-dead branch below) —
+                // the tally feeds the Information pass/between-pass aggregates
+                TallyDeadVerdict("skinpack-no-contents");
+                logger.Debug("Live skin pack {Pack} ({Title}) has no downloadable content upstream — the client cannot import it", offerId, pack.Title);
                 return false;
             }
 
@@ -2012,7 +2063,14 @@ public static class LivePersonaCatalog
 
             if (status is not (200 or 206))
             {
-                logger.Information("Live skin pack {Pack} ({Title}) probed dead (primary {Primary}, alternates tried) — the client cannot import it until a source revives",
+                // per-item verdict at Debug: a dead pack stays in the offer (no
+                // probe-state entry) so the client re-probes it every couple of
+                // seconds and one Information line per probe flooded the log —
+                // the tally surfaces as the Information aggregate (pass report /
+                // ReportAndResetLazyDeadVerdicts), prefixed so the shape breakdown
+                // separates pack deads from piece deads
+                TallyDeadVerdict($"skinpack-probe-{status ?? 0}");
+                logger.Debug("Live skin pack {Pack} ({Title}) probed dead (primary {Primary}, alternates tried) — the client cannot import it until a source revives",
                     offerId, pack.Title, status ?? 0);
                 return false;
             }

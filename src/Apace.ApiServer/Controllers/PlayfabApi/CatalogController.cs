@@ -875,6 +875,44 @@ internal sealed class CatalogController : ApaceControllerBase
         string Scid
     );
 
+    // Content types whose empty search result is the client's NORMAL state, not a
+    // missing-content symptom: the client probes them on every store surf, but the
+    // offer carries nothing under ResourcePackTreatment_V1.2, and the StoreConfig
+    // family is served verbatim outside Search (see ToResponse). Their failed/empty
+    // searches log at Debug so a browsing session does not drown the log; every
+    // other type (PersonaDurable, MarketplaceDurableCatalog_V1.2 — the actual
+    // offer content) keeps Warning/Information, because an empty or failed match
+    // there means real pieces are missing from the response.
+    private static readonly string[] BenignEmptyContentTypes =
+    [
+        "ResourcePackTreatment_V1.2",
+        "StoreConfig_V1.1",
+    ];
+
+    // matches the contentType selections inside a search filter
+    // ("contentType eq 'PersonaDurable' and …")
+    private static readonly System.Text.RegularExpressions.Regex ContentTypeInFilter = new(
+        "contentType eq '([^']+)'",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    // True when the filter selects ONLY known-benign content types (see
+    // BenignEmptyContentTypes); a filter without any contentType selection is
+    // never benign — it keeps the regular log level.
+    private static bool IsBenignEmptySearch(string filter)
+    {
+        bool anyType = false;
+        foreach (System.Text.RegularExpressions.Match match in ContentTypeInFilter.Matches(filter))
+        {
+            anyType = true;
+            if (!BenignEmptyContentTypes.Contains(match.Groups[1].Value, StringComparer.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return anyType;
+    }
+
     [HttpPost("Search")]
     public async Task<Results<ContentHttpResult, BadRequest>> SearchAsync()
     {
@@ -958,7 +996,18 @@ internal sealed class CatalogController : ApaceControllerBase
         }
         catch (Exception ex)
         {
-            Log.Warning(ex, "Catalog search failed, returning no items (filter: {Filter})", request.Filter);
+            // benign-empty content types fire on every store surf and would flood
+            // the log at Warning (see BenignEmptyContentTypes) — everything else
+            // keeps its diagnostic value
+            if (IsBenignEmptySearch(request.Filter))
+            {
+                Log.Debug(ex, "Catalog search failed, returning no items (filter: {Filter})", request.Filter);
+            }
+            else
+            {
+                Log.Warning(ex, "Catalog search failed, returning no items (filter: {Filter})", request.Filter);
+            }
+
             items = [];
         }
 
@@ -971,8 +1020,18 @@ internal sealed class CatalogController : ApaceControllerBase
 
         if (!items.Any())
         {
-            Log.Information("Catalog search matched no items: filter={Filter} select={Select} top={Top}",
-                request.Filter, request.Select, request.Top);
+            // same demotion as the failure log above: benign-empty content types are
+            // the client's normal probes, not a missing-offer symptom
+            if (IsBenignEmptySearch(request.Filter))
+            {
+                Log.Debug("Catalog search matched no items: filter={Filter} select={Select} top={Top}",
+                    request.Filter, request.Select, request.Top);
+            }
+            else
+            {
+                Log.Information("Catalog search matched no items: filter={Filter} select={Select} top={Top}",
+                    request.Filter, request.Select, request.Top);
+            }
         }
 
         response["Items"] = items;
