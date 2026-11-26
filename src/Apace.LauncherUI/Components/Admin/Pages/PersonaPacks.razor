@@ -37,6 +37,42 @@
 }
 
 <div class="card mb-4">
+    <div class="card-header">Cosmetics sources</div>
+    <div class="card-body">
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="legacy-cosmetics" @bind="_legacyCosmetics" />
+            <label class="form-check-label" for="legacy-cosmetics">
+                <strong>Enable legacy cosmetics</strong>
+                <span class="text-muted small">— pieces with a binary mirrored in the data volume (mojang-assets/playfab/persona/&lt;itemId&gt;.zip, e.g. the recovered original binaries) serve even when the marketplace CDN is dead.</span>
+            </label>
+            <div class="form-text small">
+                Off = the server ignores the legacy mirror entirely — pieces without a live-synced binary disappear from the dressing room (custom cosmetics and the built-in defaults are never affected). Default on.
+            </div>
+        </div>
+
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="marketplace-sync" @bind="_marketplaceSync" />
+            <label class="form-check-label" for="marketplace-sync">
+                <strong>Enable marketplace sync</strong>
+                <span class="text-muted small">— the periodic crawl of the still-live Bedrock marketplace refreshes the catalog cache; the "Sync now" buttons follow the same switch.</span>
+            </label>
+            <div class="form-text small">
+                Off = the crawl stops — already cached catalog and mirrored binaries keep serving. Default on.
+            </div>
+        </div>
+
+        <button class="btn btn-sm btn-outline-primary mt-3" @onclick="SaveSourcesAsync" disabled="@_savingSources">
+            @if (_savingSources)
+            {
+                <span class="spinner-border spinner-border-sm"></span>
+            }
+            Save
+        </button>
+        <div class="form-text small">Applies immediately — no server restart needed (the ApiServer hot-reloads packs.json).</div>
+    </div>
+</div>
+
+<div class="card mb-4">
     <div class="card-header">Availability (every player)</div>
     <div class="card-body">
         <div class="row g-3 align-items-end mb-3">
@@ -332,7 +368,7 @@
     // allowed pack set (default packs ∪ player grants) — accessories serve only
     // when one of their theme tags is in the set (tagless accessories never
     // serve), skins and skin packs serve regardless.
-    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit, bool FillBlankSlots, bool ExperimentalAutoRepairRigs, string CustomSkeletonMode);
+    private sealed record PacksConfig(bool OnlySupported, List<string> DefaultPacks, int CategoryLimit, bool FillBlankSlots, bool ExperimentalAutoRepairRigs, string CustomSkeletonMode, bool EnableLegacyCosmetics);
 
     // the packs.json "customSkeletonMode" vocabulary — anything unknown or unset
     // falls back to the server baseline (flatOnly), never to off: "off" hard-hides
@@ -384,6 +420,9 @@
     private bool _autoRepairRigs;
     private string _skeletonMode = "flatOnly";
     private int _categoryLimit = 45;
+    private bool _legacyCosmetics = true;
+    private bool _marketplaceSync = true;
+    private bool _savingSources;
     private HashSet<string> _defaults = [];
     private HashSet<string> _grants = [];
     private string? _selectedPlayerId;
@@ -435,6 +474,8 @@
         _autoRepairRigs = Settings.Instance.PersonaAutoRepairRigs ?? false;
         _skeletonMode = NormalizeSkeletonMode(Settings.Instance.PersonaSkeletonMode);
         _categoryLimit = Math.Max(0, Settings.Instance.PersonaCategoryLimit ?? PersonaPackIndex.DefaultCategoryLimit);
+        _legacyCosmetics = Settings.Instance.PersonaLegacyCosmetics ?? true;
+        _marketplaceSync = Settings.Instance.MarketplaceSync ?? true;
         _defaults = [.. Settings.Instance.PersonaDefaultPacks ?? []];
 
         Task packs = LoadPacksAsync();
@@ -558,7 +599,7 @@
             // non-empty set enforces tag filtering.
             string path = Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "packs.json");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots, _autoRepairRigs, NormalizeSkeletonMode(_skeletonMode)), _jsonOptions));
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new PacksConfig(_onlySupported, [.. _defaults], _categoryLimit, _fillBlankSlots, _autoRepairRigs, NormalizeSkeletonMode(_skeletonMode), _legacyCosmetics), _jsonOptions));
             _message = $"Saved — {_defaults.Count} default pack(s), max {_categoryLimit} piece(s) per category group, "
                 + (_onlySupported ? "only client-supported cosmetics. " : "client-compatibility filter off. ")
                 + (_autoRepairRigs ? "Experimental rig auto-repair on. " : "")
@@ -572,6 +613,50 @@
         finally
         {
             _savingDefaults = false;
+        }
+    }
+
+    // "Cosmetics sources" — "Enable legacy cosmetics" (packs.json knob, the
+    // ApiServer hot-reloads it and the offer refreshes on the next request) and
+    // "Enable marketplace sync" (config.json, gates the scheduled crawl and the
+    // "Sync now" buttons). packs.json is written as a read-modify-write so a
+    // save here never clobbers the Availability card's unsaved edits or
+    // hand-edited keys like "maxGeometryFormatVersion".
+    private async Task SaveSourcesAsync()
+    {
+        _savingSources = true;
+        _message = null;
+        try
+        {
+            Settings.Instance.PersonaLegacyCosmetics = _legacyCosmetics;
+            Settings.Instance.MarketplaceSync = _marketplaceSync;
+            Settings.Instance.Save(Settings.DefaultPath);
+
+            string path = Path.Combine(MojangAssetPaths.MojangAssetsDir, "persona-catalog", "packs.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            System.Text.Json.Nodes.JsonNode? root = File.Exists(path)
+                ? System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(path))
+                : null;
+            if (root is not System.Text.Json.Nodes.JsonObject obj)
+            {
+                root = obj = new System.Text.Json.Nodes.JsonObject();
+            }
+
+            obj["enableLegacyCosmetics"] = _legacyCosmetics;
+            await File.WriteAllTextAsync(path, root.ToJsonString(_jsonOptions));
+
+            _message = "Saved — "
+                + (_legacyCosmetics ? "legacy cosmetics on (the volume mirror serves)." : "legacy cosmetics off (the volume mirror is ignored). ")
+                + (_marketplaceSync ? "Marketplace sync on." : "Marketplace sync off — the crawl is disabled, cached content keeps serving.")
+                + " Applies immediately, no restart needed.";
+        }
+        catch (Exception ex)
+        {
+            _message = $"Saving the cosmetics sources failed: {ex.Message}";
+        }
+        finally
+        {
+            _savingSources = false;
         }
     }
 

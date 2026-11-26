@@ -41,6 +41,8 @@ public sealed class Settings
         OnlyAllowLocalLogin = false,
         BridgePort = 19132,
         LivePersonaCatalog = true,
+        PersonaLegacyCosmetics = true,
+        MarketplaceSync = true,
         PersonaCatalogSyncIntervalHours = 24,
         PatcherRejectNonOriginalApk = true,
     };
@@ -81,6 +83,32 @@ public sealed class Settings
     /// Default true.
     /// </summary>
     public bool? LivePersonaCatalog { get; set; }
+
+    /// <summary>
+    /// "Enable legacy cosmetics" (Marketplace Management page, "Cosmetics
+    /// sources"): when true (default), pieces whose binary is manually mirrored
+    /// in the data volume (<c>&lt;mojang-assets&gt;/playfab/persona/&lt;itemId&gt;.zip</c>
+    /// — the legacy mirror, e.g. the 234 recovered original binaries) serve
+    /// even when the marketplace CDN is dead: a mirrored binary makes the piece
+    /// alive again (the dead→alive bridge). When false, the server ignores the
+    /// legacy mirror entirely — only live-synced binaries, custom cosmetics and
+    /// the built-in defaults serve. The ApiServer reads it from packs.json
+    /// ("enableLegacyCosmetics", hot-reloaded — a panel Save applies on the next
+    /// request without a restart); this field is the panel-side mirror.
+    /// Treat null as true.
+    /// </summary>
+    public bool? PersonaLegacyCosmetics { get; set; }
+
+    /// <summary>
+    /// "Enable marketplace sync" (Marketplace Management page, "Cosmetics
+    /// sources"): when true (default), the panel periodically crawls the
+    /// still-live Bedrock marketplace (the scheduled sync and the "Sync now"
+    /// buttons work). When false, the crawl stops — the cached catalog and
+    /// already-mirrored binaries keep serving. Independent of
+    /// <see cref="LivePersonaCatalog"/> (the master live-marketplace switch,
+    /// which must stay on for the sync to run at all). Treat null as true.
+    /// </summary>
+    public bool? MarketplaceSync { get; set; }
 
     /// <summary>Hours between live persona catalog syncs (1..168). Default 24.</summary>
     public int? PersonaCatalogSyncIntervalHours { get; set; }
@@ -377,6 +405,18 @@ public sealed class Settings
         {
             Log.Warning($"LivePersonaCatalog is invalid, using default: '{Default.LivePersonaCatalog}'");
             settings.LivePersonaCatalog = Default.LivePersonaCatalog;
+        }
+
+        if (settings.PersonaLegacyCosmetics is null)
+        {
+            Log.Warning($"PersonaLegacyCosmetics is invalid, using default: '{Default.PersonaLegacyCosmetics}'");
+            settings.PersonaLegacyCosmetics = Default.PersonaLegacyCosmetics;
+        }
+
+        if (settings.MarketplaceSync is null)
+        {
+            Log.Warning($"MarketplaceSync is invalid, using default: '{Default.MarketplaceSync}'");
+            settings.MarketplaceSync = Default.MarketplaceSync;
         }
 
         if (settings.PersonaCatalogSyncIntervalHours is not (>= 1 and <= 168))

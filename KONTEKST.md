@@ -3,7 +3,8 @@
 > Ten plik to jednorazowy przewodnik po całym projekcie: co jest gdzie, jak
 > działa pipeline kosmetyków, jakie decyzje zapadły i dlaczego. Szczegóły
 > techniczne żyją w `docs/*.md` — tu jest mapa i kontekst. Aktualizowany przy
-> dużych zmianach (ostatnio: 2026-11-25).
+> dużych zmianach (ostatnio: 2026-11-26 — PR #4 iOS XAL keychain, „Cosmetics
+> sources").
 
 ## 1. Co to jest
 
@@ -67,6 +68,9 @@ Kluczowe pliki ApiServer (pipeline kosmetyków):
 - `persona-catalog/packs.json` — wybór packów i knob-y (hot-reload).
 - `playfab/persona/*.zip` — mirror w tle (pliki ręczne/legacy nadpisują
   verdicty), `playfab/skinpacks/`, `images/`, `skins/`.
+  **Knob „Enable legacy cosmetics”** (packs.json `enableLegacyCosmetics`,
+  default ON): OFF = ten katalog jest ignorowany w całości (oferta, warm-up,
+  dead→alive, serwowanie) — piece bez żywej binarki znikają z dressing roomu.
 
 ## 4. Pipeline kosmetyków (serce projektu)
 
@@ -100,9 +104,10 @@ dlatego „miniaturki są, a binarek nie ma": to dwie różne magistrale.
 
 - `packs.json` (`/Admin/PersonaPacks`): defaulty packów (theme tagi `tag.*`),
   granty per gracz, `categoryLimit`, `onlySupported`, `fillBlankSlotsWithRandomCosmetics`,
-  `experimentalAutoRepairRigs`, `customSkeletonMode`, `maxGeometryFormatVersion`.
+  `experimentalAutoRepairRigs`, `customSkeletonMode`, **`enableLegacyCosmetics`**
+  (włącz/wyłącz mirror legacy — patrz sekcja 3).
   **Baseline (defaulty): limit 45, onlySupported ON, fill ON, auto-repair OFF,
-  customSkeletonMode = FlatOnly.**
+  customSkeletonMode = FlatOnly, legacy cosmetics ON.**
 - Akcesoria serwują się TYLKO z wybranych pakietów (theme tag ∩ allowed);
   skiny (`persona_skin` + MarketplaceDurableCatalog packs) zawsze.
 - **Filler** („wypełnij puste sloty losowymi kosmetykami", default ON): pool =
@@ -183,10 +188,12 @@ serwuje twin certu.
 
 ## 9. Panel — strony
 
-`/Admin/PersonaPacks` (marketplace management), `PackPicker`, `Files`
-(przeglądarka wolumenu), `PlayerManagement`, `FabricLogs`, `ImportBuildplate`,
-`LinkedAccounts`. Start serwera gry czeka na resource pack, prompt o map key,
-autodetekcja LAN IP. Konfiguracja systemowa: live marketplace ON/OFF,
+`/Admin/PersonaPacks` (marketplace management): karta **„Cosmetics sources”**
+(„Enable legacy cosmetics” — packs.json, hot-reload; „Enable marketplace sync”
+— config.json, bramkuje crawl + oba „Sync now”, default ON), `PackPicker`,
+`Files` (przeglądarka wolumenu), `PlayerManagement`, `FabricLogs`,
+`ImportBuildplate`, `LinkedAccounts`. Start serwera gry czeka na resource pack,
+prompt o map key, autodetekcja LAN IP. Konfiguracja systemowa: live marketplace ON/OFF,
 interval syncu, consent na Mojang assets.
 
 ## 10. Apace-Launcher (mobilne) — skrót
@@ -228,6 +235,9 @@ klienta), `validate_theme_packs.py`, `smoke_live_catalog_sync.py`,
 6. Patcher przyjmuje TYLKO oryginalny APK/IPA (hash check, hard fail).
 7. Domyślne limity: ≤2 req/s do PlayFab API; CDN GET-y bez pacera (max 6
    równolegle w warm-upie).
+8. **PR z zewnątrz**: tylko dev, squash-merge z konwencjonalnym tytułem;
+   PR-y dotyczące Adventures/seasons/Challenges czekają (release-check).
+   Release/tagów NIE robimy samodzielnie — tylko użytkownik.
 
 ## 14. Znane problemy / otwarte wątki
 

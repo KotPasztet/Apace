@@ -633,7 +633,12 @@ public static class LivePersonaCatalog
         }
 
         Dictionary<string, string> local = GetLocalPersonaBinaries(); // stamp-cached itself
-        long combined = HashCode.Combine(stamp, _localPersonaStamp, Volatile.Read(ref _binaryLandedVersion));
+        // PersonaPackGate.ConfigStamp (packs.json mtime) and the legacy knob state
+        // are part of the change signal: any panel Save on the Marketplace
+        // Management page — including the "Enable legacy cosmetics" switch —
+        // refreshes the binary snapshot (and with it the offer) on the next
+        // request without a restart.
+        long combined = HashCode.Combine(stamp, _localPersonaStamp, _localPersonaEnabled, Volatile.Read(ref _binaryLandedVersion), PersonaPackGate.ConfigStamp);
         if (combined == _binaryIdsStamp)
         {
             return _binaryIds;
@@ -1485,12 +1490,19 @@ public static class LivePersonaCatalog
     // dir. Recomputed only when the directory changes (one stat per check):
     // binaries land there lazily (panel file management / mirror restores can
     // happen long after any probe verdict), so this map is the dead→alive bridge.
+    // "Enable legacy cosmetics" OFF (packs.json, hot-reloaded) makes the map
+    // EMPTY — every consumer (the offer's binary snapshot, the warm-up scope,
+    // the dead→alive bridge, the probe summary) then behaves as if the dir were
+    // empty; the knob state is cached with the stamp so a flip rebuilds even
+    // when the dir mtime does not move.
     private static long _localPersonaStamp = -1;
+    private static bool _localPersonaEnabled = true;
     private static readonly Dictionary<string, string> LocalPersonaBinaries = new(StringComparer.OrdinalIgnoreCase);
 
     // Caller must hold StateLock.
     private static Dictionary<string, string> GetLocalPersonaBinaries()
     {
+        bool legacyOn = PersonaPackGate.LegacyCosmetics;
         string dir = Path.Combine(Program.MojangAssetsDir, "playfab", "persona");
         long stamp;
         try
@@ -1502,13 +1514,19 @@ public static class LivePersonaCatalog
             stamp = 0;
         }
 
-        if (stamp == _localPersonaStamp)
+        if (legacyOn == _localPersonaEnabled && stamp == _localPersonaStamp)
         {
             return LocalPersonaBinaries;
         }
 
+        _localPersonaEnabled = legacyOn;
         _localPersonaStamp = stamp;
         LocalPersonaBinaries.Clear();
+        if (!legacyOn)
+        {
+            return LocalPersonaBinaries; // legacy cosmetics off — the mirror is invisible
+        }
+
         try
         {
             if (Directory.Exists(dir))

@@ -14,7 +14,7 @@ namespace Apace.ApiServer.Services;
 //
 // packs.json (written by the panel next to the catalog index, hot-reloaded by
 // mtime) holds { defaultPacks, categoryLimit, onlySupported, fillBlankSlotsWithRandomCosmetics,
-// experimentalAutoRepairRigs } plus the compat
+// experimentalAutoRepairRigs, enableLegacyCosmetics } plus the compat
 // knob "maxGeometryFormatVersion" (optional — hand-edit only, the panel's Save
 // keeps only its own fields); old files may
 // still carry the deprecated "gating" flag — it is ignored (the deserializer
@@ -59,7 +59,8 @@ public static class PersonaPackGate
     }
 
     private sealed record PackConfig(List<string>? DefaultPacks, int? CategoryLimit, bool? OnlySupported,
-        string? MaxGeometryFormatVersion, bool? FillBlankSlots, bool? ExperimentalAutoRepairRigs, string? CustomSkeletonMode);
+        string? MaxGeometryFormatVersion, bool? FillBlankSlots, bool? ExperimentalAutoRepairRigs, string? CustomSkeletonMode,
+        bool? EnableLegacyCosmetics);
 
     // Documented default compat threshold (see PersonaPieceTypes.IsSupportedCosmetic):
     // geometry format_version at or past the max breaks on the frozen client
@@ -83,6 +84,7 @@ public static class PersonaPackGate
     private static bool _experimentalAutoRepairRigs;
     private static CustomSkeletonModes _customSkeletonMode = DefaultCustomSkeletonMode;
     private static Version _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
+    private static bool _legacyCosmetics = true;
     private static long _configStamp;
 
     // Item ids currently offered as blank-slot filler (CatalogController.RefreshFiller
@@ -163,6 +165,31 @@ public static class PersonaPackGate
     /// <see cref="DefaultCustomSkeletonMode"/>.</summary>
     public static CustomSkeletonModes CustomSkeletonMode => _customSkeletonMode;
 
+    /// <summary>
+    /// "Enable legacy cosmetics" (packs.json "enableLegacyCosmetics", default
+    /// true when absent — the Marketplace Management page's "Cosmetics sources"
+    /// switch): pieces with a manually mirrored binary in the data volume
+    /// (<c>&lt;mojang-assets&gt;/playfab/persona/&lt;itemId&gt;.zip</c> — the legacy
+    /// mirror, e.g. the 234 recovered original binaries) serve even when the
+    /// marketplace CDN is dead: a mirrored binary makes the piece alive again
+    /// whatever an earlier upstream probe concluded (the dead→alive bridge).
+    /// When false, the legacy mirror is ignored ENTIRELY — the offer hides such
+    /// pieces (unless a live-synced binary exists in persona-catalog/binaries),
+    /// the warm-up and the dead→alive bridge skip them, and direct binary
+    /// requests fall through to the lazy pipeline/placeholder exactly as if the
+    /// files were missing. Custom cosmetics, the live volume cache and the
+    /// built-in defaults are never affected. Hot-reloaded with the rest of the
+    /// config; the offer refreshes on the next request after a panel save.
+    /// </summary>
+    public static bool LegacyCosmetics
+    {
+        get
+        {
+            LoadConfig();
+            return _legacyCosmetics;
+        }
+    }
+
     /// <summary>True when a serve-time geometry transform is active at all —
     /// the experimental auto-rig repair (re-parent) or the custom-skeleton
     /// stripper. The compat gate lets custom-bones-only head pieces through
@@ -233,6 +260,7 @@ public static class PersonaPackGate
                     _experimentalAutoRepairRigs = false;
                     _customSkeletonMode = DefaultCustomSkeletonMode;
                     _maxGeometryFormatVersion = DefaultMaxGeometryFormatVersion;
+                    _legacyCosmetics = true;
                     Log.Information("Persona pack config gone from {Path} — no packs configured, the live marketplace serves nothing until packs are selected", ConfigPath);
                 }
 
@@ -253,15 +281,17 @@ public static class PersonaPackGate
             _experimentalAutoRepairRigs = loaded?.ExperimentalAutoRepairRigs ?? false;
             _customSkeletonMode = ParseCustomSkeletonMode(loaded?.CustomSkeletonMode);
             _maxGeometryFormatVersion = ParseVersion(loaded?.MaxGeometryFormatVersion, DefaultMaxGeometryFormatVersion);
+            _legacyCosmetics = loaded?.EnableLegacyCosmetics ?? true;
             _configStamp = stamp;
-            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}, experimental auto rig repair: {AutoRepairRigs}, custom skeleton mode: {CustomSkeletonMode}",
+            Log.Information("Persona pack config loaded from {Path} — configured packs: {Packs}, category limit: {Limit}, onlySupported: {OnlySupported}, fill blank slots: {FillBlankSlots}, max geometry version: {GeometryVersion}, experimental auto rig repair: {AutoRepairRigs}, custom skeleton mode: {CustomSkeletonMode}, legacy cosmetics: {LegacyCosmetics}",
                 ConfigPath, _defaults.Count == 0 ? "(none)" : string.Join(", ", _defaults),
                 _categoryLimit == 0 ? "none" : _categoryLimit.ToString(),
                 _onlySupported,
                 _fillBlankSlots,
                 _maxGeometryFormatVersion.ToString(),
                 _experimentalAutoRepairRigs,
-                _customSkeletonMode);
+                _customSkeletonMode,
+                _legacyCosmetics);
         }
         catch (Exception ex)
         {

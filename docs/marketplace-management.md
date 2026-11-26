@@ -1,11 +1,40 @@
 # Marketplace management (admin panel)
 
 The **Marketplace Management** tab (`/Admin/PersonaPacks`) controls what the
-dressing-room marketplace serves: the per-category size limit, the
-client-compatibility filter, the default packs, per-player grants and custom
-uploaded pieces. The Availability card's Save button writes
+dressing-room marketplace serves: the cosmetics sources, the per-category size
+limit, the client-compatibility filter, the default packs, per-player grants
+and custom uploaded pieces. The Availability card's Save button writes
 `<mojang-assets>/persona-catalog/packs.json`, which the ApiServer hot-reloads —
 no restart needed.
+
+## Cosmetics sources
+
+Two separate checkboxes, both **default ON**, each gating one source of
+cosmetics:
+
+- **Enable legacy cosmetics** (packs.json `enableLegacyCosmetics`,
+  hot-reloaded — a Save applies on the next client request, no restart):
+  ON = pieces with a binary mirrored in the data volume
+  (`<mojang-assets>/playfab/persona/<itemId>.zip` — e.g. the recovered
+  original binaries) serve even when the marketplace CDN is dead: a mirrored
+  binary makes the piece alive again whatever an earlier probe concluded
+  (the dead→alive bridge). OFF = the server ignores the legacy mirror
+  ENTIRELY — pieces without a live-synced binary disappear from the dressing
+  room, the warm-up and the lazy pipeline skip them, and direct binary
+  requests fall through to the placeholder. Custom cosmetics, the live volume
+  cache and the built-in defaults are never affected.
+- **Enable marketplace sync** (config.json `marketplaceSync`): ON = the
+  periodic crawl of the still-live Bedrock marketplace refreshes the catalog
+  cache; the header's "Sync now" button and the System Configuration one
+  follow the same switch. OFF = the crawl stops (the scheduled start skips,
+  "Sync now" refuses with a clear message) — already cached catalog and
+  mirrored binaries keep serving. Independent of the System Configuration
+  "Live persona marketplace" master switch, which must stay on for the sync
+  to run at all.
+
+The card's Save writes packs.json as a read-modify-write (it never clobbers
+the Availability card's unsaved edits or hand-edited keys like
+`maxGeometryFormatVersion`) and mirrors both values into config.json.
 
 ## Availability (every player)
 

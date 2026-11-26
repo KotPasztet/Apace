@@ -50,8 +50,15 @@ public class PersonaCdnController : ControllerBase
         // already seen 404 on equip (stale client caches, a pack since
         // deselected, a piece the limit later cut) — every one of those was a
         // stuck "loading" screen.
+        //
+        // "Enable legacy cosmetics" OFF (packs.json, hot-reloaded): the volume
+        // mirror is skipped for GUID-named persona binaries — the request falls
+        // through to the staticdata fallback / lazy pipeline / placeholder
+        // exactly as if the file were missing (the offer already hides such
+        // pieces). Non-GUID panel-managed file names are never affected.
         string filePath = Path.Combine(Program.MojangAssetsDir, "playfab", "persona", fileName);
-        if (!System.IO.File.Exists(filePath))
+        bool legacyMirrorIgnored = isGuidName && LivePersonaCatalog.Enabled && !PersonaPackGate.LegacyCosmetics;
+        if (!System.IO.File.Exists(filePath) || legacyMirrorIgnored)
         {
             string directory = Path.GetFullPath(Path.Combine(Program.staticData.Directory, "playfab", "persona"));
             filePath = Path.Combine(directory, fileName);

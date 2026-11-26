@@ -204,6 +204,12 @@ public static class LivePersonaCatalogSync
             return; // toggle off — the live marketplace is disabled
         }
 
+        if (settings.MarketplaceSync is false)
+        {
+            logger.Debug("Marketplace sync disabled ('Enable marketplace sync' off, Marketplace Management) — the cached catalog keeps serving");
+            return; // "Enable marketplace sync" off — the crawl is disabled
+        }
+
         if (IsSyncing)
         {
             return;
@@ -248,6 +254,17 @@ public static class LivePersonaCatalogSync
     /// <summary>Full catalog sync: anonymous login → skip/top pagination → volume cache. Never throws.</summary>
     public static async Task<bool> SyncNowAsync(ILogger logger, CancellationToken cancellationToken)
     {
+        // "Enable marketplace sync" off (Marketplace Management, "Cosmetics
+        // sources") — every crawl entry point lands here, so a single check
+        // covers the scheduled start and both "Sync now" buttons. The cached
+        // catalog and mirrored binaries keep serving; only the crawl stops.
+        if (Settings.Instance.MarketplaceSync is false)
+        {
+            LastError = "Marketplace sync is disabled — enable it in Marketplace Management → Cosmetics sources";
+            logger.Warning("Live persona catalog sync skipped: 'Enable marketplace sync' is off (Marketplace Management)");
+            return false;
+        }
+
         if (IsSyncing)
         {
             logger.Warning("A live persona catalog sync is already in progress");
