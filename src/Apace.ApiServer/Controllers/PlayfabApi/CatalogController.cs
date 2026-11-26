@@ -509,18 +509,17 @@ internal sealed class CatalogController : ApaceControllerBase
             Item item = live.Items[i];
             // face-craft categories (eyes, hair, mouth, facial hair, face items,
             // skins/skin colors) are always allowed — never gated by the pack
-            // theme selection, never by the supported-only gate below, and never
-            // by the no-binary-on-disk hiding: the 2019 character-creator launch
-            // pieces live in the client's own resource pack (applied by piece
-            // UUID — no server binary), their marketplace-era binaries are dead
-            // globally, so binary-presence hiding emptied the face tabs entirely.
-            bool faceCraft = PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(item.DisplayProperties?.PieceType);
-            if (dead.Contains(item.Id.ToString()) && !faceCraft)
+            // theme selection, exactly as never by the supported-only gate below.
+            // The dead-binary hiding applies to them like to everything else
+            // (user's order: a binary-less face piece lists but its equip hangs
+            // the client's import — hide it, the tab shows only working pieces).
+            if (dead.Contains(item.Id.ToString()))
             {
                 deadSkipped++;
                 continue; // no binary on disk (probed dead or not yet mirrored) — hide it from searches instead of hanging the client's download
             }
 
+            bool faceCraft = PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(item.DisplayProperties?.PieceType);
             if (!faceCraft)
             {
                 string[] tags = themes[i];
@@ -648,10 +647,9 @@ internal sealed class CatalogController : ApaceControllerBase
                     continue; // the knob is off — nothing fills
                 }
 
-                if (dead.Contains(item.Id.ToString())
-                    && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(pieceType))
+                if (dead.Contains(item.Id.ToString()))
                 {
-                    continue; // no binary on disk — its download would hang the client, never fill with it (face-craft excepted: the client's own resource pack carries the launch pieces by UUID)
+                    continue; // no binary on disk — its download would hang the client, never fill with it
                 }
             }
             else
