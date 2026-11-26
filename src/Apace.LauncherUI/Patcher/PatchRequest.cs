@@ -48,6 +48,14 @@ public sealed record AndroidRequest
     /// </summary>
     public required bool FixQrPermissionContext { get; init; }
 
+    /// <summary>
+    /// Optional fix-arcore-session-race patch: native hex-patch of libgenoa.so — make
+    /// NativeARSession::destroy synchronous in AndroidAR::stop() (mov w1, wzr -> mov w1, #1)
+    /// so the old session is torn down inline (under the recursive_mutex) before the new one
+    /// is constructed; fixes the create-vs-delete race crash (#2). Default on.
+    /// </summary>
+    public required bool FixArcoreSessionRace { get; init; }
+
     public required bool ChangeAppName { get; init; }
     public required string AppName { get; init; }
     public required string AppNameShort { get; init; }

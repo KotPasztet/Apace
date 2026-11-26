@@ -262,6 +262,13 @@
                                 Falls back to the application context when the activity instance is gone — fixes the QR scanner crash.
                             </p>
                         </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="advFixArcoreSessionRace" @bind="fixArcoreSessionRace" />
+                            <label class="form-check-label" for="advFixArcoreSessionRace">Fix ARCore session create/delete race (native libgenoa.so hex-patch)</label>
+                            <p class="text-muted" style="font-size: 0.75rem;">
+                                Makes NativeARSession::destroy synchronous in AndroidAR::stop() — fixes native crash #2 (AR start after stop).
+                            </p>
+                        </div>
                     </div>
 
                     <div class="adv-section">
@@ -802,6 +809,7 @@
     private bool disableTelemetry = true;
     private bool disableMsaSig = true;
     private bool fixQrPermission = true;
+    private bool fixArcoreSessionRace = true;
     private bool changeAppName = true;
     private string appName = "Apace";
     private string appNameShort = "Apace";
@@ -1240,6 +1248,7 @@
             DisableTelemetry = true,
             DisableMsaLoginSignatureValidation = true,
             FixQrPermissionContext = true,
+            FixArcoreSessionRace = true,
             ChangeAppName = true,
             AppName = appName,
             AppNameShort = appNameShort,
@@ -1278,6 +1287,7 @@
             DisableTelemetry = disableTelemetry,
             DisableMsaLoginSignatureValidation = disableMsaSig,
             FixQrPermissionContext = fixQrPermission,
+            FixArcoreSessionRace = fixArcoreSessionRace,
             ChangeAppName = changeAppName,
             AppName = appName,
             AppNameShort = appNameShort,
