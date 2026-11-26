@@ -212,19 +212,28 @@ APK aplikuje się z panelu (podpisane download URL-e).
 
 Patcher APK/IPA w tym repo (`src/Apace.LauncherUI/Patcher/` + łatek w
 `repos/Minecraft_Earth_Patcher/src/Core/Patches/*.patch`): łatka
-**fix-qr-permission-context** (Android, **default ON**, Advanced ma checkbox;
-Auto/Simple zawsze) naprawia crash skanera QR multiplayer — NPE na statycznym
-`MainActivity.mInstance` w `genoa.Permission` (fallback na
-`ActivityThread.currentApplication()`); zweryfikowana na urządzeniu (Android
-16, 26.11).
+**fix-qr-permission-context** (Android, **default ON**) naprawia crash
+skanera QR multiplayer — NPE na statycznym `MainActivity.mInstance` w
+`genoa.Permission` (fallback na `ActivityThread.currentApplication()`) +
+guardy `DeviceOrientation`/`AndroidNFC` (konstruktory budowane przez genoa
+JNI bez ExceptionCheck; NFC degraduje do „unavailable"); zweryfikowana na
+urządzeniu (Android 16, 26.11). Łatka **fix-arcore-session-race**
+(default ON) — hex-patch 4 bajtów w libgenoa.so @ 0x10158E8:
+`AndroidAR::stop()` niszczy sesję AR SYNCHRONICZNIE (był jedyny asynchroniczny
+call-site → wyścig `ArSession_create` z trwającym `ArSession_destroy`
+w ARCore 1.50 Dynamite → SIGSEGV/Breakpad przy ponownym wejściu na ekrany AR
+skanera). Standalone patcher z P1–P7: `~/mce-qr-patcher/patch_mce_qr.py`
+(poza repo), APK terenowe QRfix3.
 
 ## 11. CI/CD
 
 - Apace: push → `dev` = Lint + **Docker image `:dev`** (na którym działa
   telefon kanałem dev); tagi/wersje = release.
 - Apace-Launcher: push → `main` = artifact `ApaceLauncher` (APK).
-- Stan (26.11, po face-recovery pushu): `dev` @ `52c7f67` — restore script,
-  cache-proof landing binarek, karta coverage, łatka QR w patcherze.
+- Stan (26.11, po face-recovery pushu): `dev` @ `6e92d63` — restore script,
+  cache-proof landing binarek, karta coverage, łatki QR w patcherze
+  (permission-context + arcore-session-race), fix multiplayer
+  encounters/state, cisze w logach marketplace.
 
 ## 12. Skrypty (scripts/)
 
@@ -265,6 +274,19 @@ worktree), `update.sh/ps1`, `tailscale-setup.sh`, `entrypoint.sh` (Docker).
 
 ## 14. Znane problemy / otwarte wątki
 
+- **Crash #2 — drugi guzik skanera QR (ekrany AR)**: root-caused w
+  disassembly (asynchroniczny destroy w `AndroidAR::stop()` → wyścig z
+  `ArSession_create`; SIGSEGV łapany przez Breakpad — crash-buffer pusty,
+  minidumpy na urządzeniu `/data/user/0/com.kotpasztet.apace/files/error/minidump/new/*.dmp`,
+  pull wymaga roota). Fix = łatka `fix-arcore-session-race` (default ON) +
+  QRfix3 w terenie; **potwierdzenie w terenie oczekiwane** — jak crash wróci,
+  wyciągnąć .dmp (root) i wrócić do hipotezy P4 (mutex w `_tryInitialize`).
+- **Multiplayer „Couldn't connect" po skanie QR** — naprawione (26.11):
+  `encounters/state` odpowiadał 400 na każdy poprawny request (JsonElement
+  boxing); teraz 200 + Pristine. Reszta flow (join/instances, partitions)
+  działała. Po HTTP gość łączy się przez bridge Bedrock (UDP 19132) — jak
+  „timed out" wróci mimo fixa, podejrzeniem jest routing bridge/launchera,
+  nie EarthApi.
 - **Face cosmetics (eyes/mouth/face_accessory/hair) — mechanizm domknięty,
   czeka na potwierdzenie w terenie** (26.11). Diagnoza: jedyny warunek
   zerujący te zakładki to brak binarki na dysku (pack/compat gate ich w
