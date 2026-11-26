@@ -20,13 +20,23 @@ RUN set -eux; \
     esac; \
     echo "RID=$RID PWARCH=$PWARCH" > /tmp/arch.env
 
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    wget \
-    unzip \
-    openjdk-17-jre \
-    && rm -rf /var/lib/apt/lists/*
+# apt can fail transiently (Ubuntu mirror hiccups, e.g. Err: fetching
+# libasound2 from security.ubuntu.com -> apt exit 100) - retry before giving up.
+RUN set -eux; \
+    ok=0; \
+    for attempt in 1 2 3; do \
+        if apt-get update && apt-get install -y \
+            git \
+            curl \
+            wget \
+            unzip \
+            openjdk-17-jre \
+; then ok=1; break; fi; \
+        echo "apt attempt ${attempt} failed - retrying in 10s"; \
+        sleep 10; \
+    done; \
+    [ "$ok" = 1 ] || { echo "apt-get failed after 3 attempts"; exit 100; }; \
+    rm -rf /var/lib/apt/lists/*
 
 # Install PowerShell for the target architecture
 RUN set -eux; \
@@ -86,14 +96,24 @@ RUN set -eux; \
     esac; \
     echo "RID=$RID PWARCH=$PWARCH" > /tmp/arch.env
 
-RUN apt-get update && apt-get install -y \
-    openjdk-17-jre \
-    aapt \
-    zipalign \
-    curl \
-    unzip \
-    wget \
-    && rm -rf /var/lib/apt/lists/* \
+# apt can fail transiently (Ubuntu mirror hiccups, e.g. Err: fetching
+# libasound2 from security.ubuntu.com -> apt exit 100) - retry before giving up.
+RUN set -eux; \
+    ok=0; \
+    for attempt in 1 2 3; do \
+        if apt-get update && apt-get install -y \
+            openjdk-17-jre \
+            aapt \
+            zipalign \
+            curl \
+            unzip \
+            wget \
+; then ok=1; break; fi; \
+        echo "apt attempt ${attempt} failed - retrying in 10s"; \
+        sleep 10; \
+    done; \
+    [ "$ok" = 1 ] || { echo "apt-get failed after 3 attempts"; exit 100; }; \
+    rm -rf /var/lib/apt/lists/* \
     # aapt ships /usr/bin/aapt AND /usr/bin/aapt2 for both image arches (the
     # base aspnet:10.0 image is Ubuntu, package built from
     # android-platform-frameworks-base for amd64 + arm64). /usr/bin/aapt2 is
