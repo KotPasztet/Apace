@@ -893,7 +893,8 @@ public static class LivePersonaCatalog
                     continue; // mirrored binary present — alive with no upstream access
                 }
 
-                bool servable = entry.PieceType == "persona_skin"
+                bool servable = PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(entry.PieceType)
+                    || entry.PieceType == "persona_skin"
                     || fillAll
                     || (allowed.Count > 0 && ThemeTagsOf(entry).Any(allowed.Contains));
                 if (!servable)
@@ -1610,9 +1611,12 @@ public static class LivePersonaCatalog
             // tags intersect the allowed set (defaults ∪ every player's grants) —
             // an empty set or no matching tag refuses, tagless accessories included
             // and creatorless entries gated like any other accessory. Skins
-            // (persona_skin) are exempt.
+            // (persona_skin) are exempt — and so is every face-craft category
+            // (eyes, hair, mouth, facial hair, face items): always allowed, never
+            // gated (PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType).
             if (GetIndexEntry(itemId) is { } entry
-                && entry.PieceType is not "persona_skin")
+                && entry.PieceType is not "persona_skin"
+                && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(entry.PieceType))
             {
                 IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(cancellationToken);
                 // filler pieces were OFFERED to the player (CatalogController

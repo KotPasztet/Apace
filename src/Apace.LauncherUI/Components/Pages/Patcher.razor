@@ -205,13 +205,19 @@
             }
             else if (mode == PatchMode.Advanced)
             {
+                @* Required-option legend: the starred switches are the ones the game
+                   cannot work without (login routing, sunset bypass, license/DRM).
+                   They stay toggleable — turning one off is an informed choice. *@
+                <p class="text-muted" style="font-size: 0.75rem;">
+                    <span class="req-star">*</span> Required for the game to work — leave these on unless you know what you are doing.
+                </p>
                 @if (platform == PatchPlatform.Android)
                 {
                     <div class="adv-section">
                         <h3>Locator (game API)</h3>
                         <div class="mb-2 form-check form-switch">
                             <input type="checkbox" class="form-check-input" id="advChangeLocator" @bind="changeLocator" />
-                            <label class="form-check-label" for="advChangeLocator">Redirect locator address</label>
+                            <label class="form-check-label" for="advChangeLocator">Redirect locator address <span class="req-star">*</span></label>
                         </div>
                         @if (changeLocator)
                         {
@@ -235,11 +241,11 @@
                         <h3>Behavior</h3>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="advSunset" @bind="disableSunset" />
-                            <label class="form-check-label" for="advSunset">Disable sunset time check</label>
+                            <label class="form-check-label" for="advSunset">Disable sunset time check <span class="req-star">*</span></label>
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="advLicense" @bind="disableLicense" />
-                            <label class="form-check-label" for="advLicense">Disable license check</label>
+                            <label class="form-check-label" for="advLicense">Disable license check <span class="req-star">*</span></label>
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="advTelemetry" @bind="disableTelemetry" />
@@ -247,7 +253,7 @@
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="advMsaSig" @bind="disableMsaSig" />
-                            <label class="form-check-label" for="advMsaSig">Disable MSA login signature validation</label>
+                            <label class="form-check-label" for="advMsaSig">Disable MSA login signature validation <span class="req-star">*</span></label>
                         </div>
                     </div>
 
@@ -293,7 +299,7 @@
                         <h3>Login server</h3>
                         <div class="mb-2 form-check form-switch">
                             <input type="checkbox" class="form-check-input" id="advSingleDomain" @bind="singleDomain" />
-                            <label class="form-check-label" for="advSingleDomain">Single-domain mode (all login services on one address)</label>
+                            <label class="form-check-label" for="advSingleDomain">Single-domain mode (all login services on one address) <span class="req-star">*</span></label>
                         </div>
                         @if (singleDomain)
                         {
@@ -313,19 +319,19 @@
                             <div class="mt-2">
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="advChangeMsa" @bind="changeMsa" />
-                                    <label class="form-check-label" for="advChangeMsa">Redirect MSA login (live.com)</label>
+                                    <label class="form-check-label" for="advChangeMsa">Redirect MSA login (live.com) <span class="req-star">*</span></label>
                                 </div>
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="advChangePlayfab" @bind="changePlayfab" />
-                                    <label class="form-check-label" for="advChangePlayfab">Redirect PlayFab API</label>
+                                    <label class="form-check-label" for="advChangePlayfab">Redirect PlayFab API <span class="req-star">*</span></label>
                                 </div>
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="advChangeXboxAb" @bind="changeXboxAb" />
-                                    <label class="form-check-label" for="advChangeXboxAb">Redirect XboxAB</label>
+                                    <label class="form-check-label" for="advChangeXboxAb">Redirect XboxAB <span class="req-star">*</span></label>
                                 </div>
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="advChangeXboxLive" @bind="changeXboxLive" />
-                                    <label class="form-check-label" for="advChangeXboxLive">Redirect Xbox Live</label>
+                                    <label class="form-check-label" for="advChangeXboxLive">Redirect Xbox Live <span class="req-star">*</span></label>
                                 </div>
                             </div>
                         }
@@ -414,7 +420,7 @@
                         <h3>Locator (game API)</h3>
                         <div class="mb-2 form-check form-switch">
                             <input type="checkbox" class="form-check-input" id="iosChangeLocator" @bind="iosChangeLocator" />
-                            <label class="form-check-label" for="iosChangeLocator">Redirect locator address</label>
+                            <label class="form-check-label" for="iosChangeLocator">Redirect locator address <span class="req-star">*</span></label>
                         </div>
                         @if (iosChangeLocator)
                         {
@@ -438,7 +444,7 @@
                         <h3>Behavior &amp; identity</h3>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="iosSunset" @bind="iosDisableSunset" />
-                            <label class="form-check-label" for="iosSunset">Disable sunset time check</label>
+                            <label class="form-check-label" for="iosSunset">Disable sunset time check <span class="req-star">*</span></label>
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="iosSpeed" @bind="iosDisableSpeedLimit" />
@@ -446,7 +452,7 @@
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="iosDrm" @bind="iosRemoveDrm" />
-                            <label class="form-check-label" for="iosDrm">Remove DRM</label>
+                            <label class="form-check-label" for="iosDrm">Remove DRM <span class="req-star">*</span></label>
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="iosInteractive" @bind="iosForceInteractive" />
@@ -488,25 +494,25 @@
                         <h3>Login server</h3>
                         <div class="mb-2 form-check form-switch">
                             <input type="checkbox" class="form-check-input" id="iosUseCustomAuth" @bind="iosUseCustomAuth" />
-                            <label class="form-check-label" for="iosUseCustomAuth">Redirect login services to a custom server</label>
+                            <label class="form-check-label" for="iosUseCustomAuth">Redirect login services to a custom server <span class="req-star">*</span></label>
                         </div>
                         @if (iosUseCustomAuth)
                         {
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="iosChangeXal" @bind="iosChangeXal" />
-                                <label class="form-check-label" for="iosChangeXal">Redirect XAL auth</label>
+                                <label class="form-check-label" for="iosChangeXal">Redirect XAL auth <span class="req-star">*</span></label>
                             </div>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="iosChangePlayfab" @bind="iosChangePlayfab" />
-                                <label class="form-check-label" for="iosChangePlayfab">Redirect PlayFab API</label>
+                                <label class="form-check-label" for="iosChangePlayfab">Redirect PlayFab API <span class="req-star">*</span></label>
                             </div>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="iosChangeXboxAb" @bind="iosChangeXboxAb" />
-                                <label class="form-check-label" for="iosChangeXboxAb">Redirect XboxAB</label>
+                                <label class="form-check-label" for="iosChangeXboxAb">Redirect XboxAB <span class="req-star">*</span></label>
                             </div>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="iosChangeXboxLive" @bind="iosChangeXboxLive" />
-                                <label class="form-check-label" for="iosChangeXboxLive">Redirect Xbox Live</label>
+                                <label class="form-check-label" for="iosChangeXboxLive">Redirect Xbox Live <span class="req-star">*</span></label>
                             </div>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="iosWebView" @bind="iosForceWebView" />
@@ -797,16 +803,16 @@
     private bool singleDomain = true;
     private PatchProtocol authProtocol = PatchProtocol.Http;
     private string authHostname = string.Empty;
-    private bool changeMsa;
+    private bool changeMsa = true;
     private PatchProtocol msaProtocol = PatchProtocol.Https;
     private string msaHostname = "live.com";
-    private bool changePlayfab;
+    private bool changePlayfab = true;
     private PatchProtocol playfabProtocol = PatchProtocol.Https;
     private string playfabHostname = "playfabapi.com";
-    private bool changeXboxAb;
+    private bool changeXboxAb = true;
     private PatchProtocol xboxAbProtocol = PatchProtocol.Https;
     private string xboxAbHostname = "xboxab.com";
-    private bool changeXboxLive;
+    private bool changeXboxLive = true;
     private PatchProtocol xboxLiveProtocol = PatchProtocol.Https;
     private string xboxLiveHostname = "xboxlive.com";
 

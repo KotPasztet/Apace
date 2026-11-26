@@ -223,8 +223,36 @@ public class Startup
         });
 
         app.UseStaticFiles();
-        
+
         //app.UseHttpsRedirection();
+
+        // Patched clients can send PlayFab title API requests to
+        // /<titleId>.playfabapi.com/<path> — whatever title id the client's
+        // build carries (11509, 1712756451, 20CA2, ... or anything the next
+        // patcher config dreams up) — so serve every one of them from the same
+        // routes as /<path> instead of 404-ing on the unknown prefixes. The
+        // controllers keep their explicit per-title routes; this rewriter
+        // just makes the title prefix a don't-care (the same trick as the
+        // client redirect rewrites, one middleware, no route changes).
+        app.Use(async (context, next) =>
+        {
+            string? path = context.Request.Path.Value;
+            if (path is { Length: > 1 })
+            {
+                int end = path.IndexOf('/', 1);
+                if (end < 0)
+                {
+                    end = path.Length;
+                }
+
+                if (path.AsSpan(1, end - 1).EndsWith(".playfabapi.com", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Request.Path = end < path.Length ? path[end..] : "/";
+                }
+            }
+
+            await next();
+        });
 
         app.UseRouting();
 

@@ -510,7 +510,10 @@ internal sealed class CatalogController : ApaceControllerBase
                 continue; // no binary on disk (probed dead or not yet mirrored) — hide it from searches instead of hanging the client's download
             }
 
-            if (item.DisplayProperties?.PieceType is not "persona_skin")
+            // face-craft categories (eyes, hair, mouth, facial hair, face items,
+            // skins/skin colors) are always allowed — never gated by the pack
+            // theme selection, exactly as never by the supported-only gate below
+            if (!PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(item.DisplayProperties?.PieceType))
             {
                 string[] tags = themes[i];
                 if (allowed.Count == 0 || !tags.Any(allowed.Contains))
@@ -521,7 +524,7 @@ internal sealed class CatalogController : ApaceControllerBase
             }
 
             passed++;
-            if (onlySupported)
+            if (onlySupported && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(item.DisplayProperties?.PieceType))
             {
                 string itemId = item.Id.ToString();
                 PersonaPieceTypes.CosmeticGateVerdict compat = PersonaPieceTypes.EvaluateCosmetic(
@@ -647,12 +650,13 @@ internal sealed class CatalogController : ApaceControllerBase
                 continue; // skins are not filler — they always serve via the pack-free lane already
             }
 
-            if (onlySupported && !PersonaPieceTypes.EvaluateCosmetic(
+            if (onlySupported && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(pieceType)
+                && !PersonaPieceTypes.EvaluateCosmetic(
                     item.Id.ToString(), pieceType,
                     allowRigRepair: PersonaPackGate.ServeTimeTransformActive,
                     hideCustomSkeleton: PersonaPackGate.FlatOnlyActive).Supported)
             {
-                continue; // the supported-only gate applies to filler exactly like to pack-selected pieces
+                continue; // the supported-only gate applies to filler exactly like to pack-selected pieces — face-craft categories excepted (always allowed)
             }
 
             candidates.Add(item);

@@ -190,6 +190,23 @@ public static class PersonaPieceTypes
         => pieceType is "persona_head" or "persona_eyes" or "persona_mouth" or "persona_face_accessory";
 
     /// <summary>
+    /// The character creator's core face-craft categories (dressing-room tabs
+    /// hair, eyes, mouth, facial hair — beards &amp; mustaches — face items
+    /// and base/skin colors). These pieces are the avatar-building essentials
+    /// every profile needs, so they never gate through the pack theme
+    /// selection or the client-compat gate — every one of them is treated as
+    /// allowed ("assume all are allowed"; the packs gate keeps curating the
+    /// clothing categories). Only the physical availability check stays in
+    /// effect (a piece with no mirrored binary cannot download) and the
+    /// grouped category limit still caps how many the frozen client renders.
+    /// Shared by every enforcement point — offer, filler, warm-up, lazy
+    /// binary fetch and the CDN serve — so the exemption cannot drift.
+    /// </summary>
+    public static bool IsAlwaysAllowedFaceCraftPieceType(string? pieceType)
+        => pieceType is "persona_skin" or "persona_eyes" or "persona_hair"
+            or "persona_mouth" or "persona_facial_hair" or "persona_face_accessory";
+
+    /// <summary>
     /// The full compat verdict behind <see cref="IsSupportedCosmetic"/> — same
     /// precedence, plus the reason the enforcement points log (once per item
     /// per run, see <see cref="LogCompatVerdictOnce"/>). <paramref name="pieceType"/>

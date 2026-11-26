@@ -164,16 +164,18 @@ public class PersonaCdnController : ControllerBase
     // Entitlement for a LIVE fetch: the piece must be covered by a pack
     // selection (defaults ∪ every player's grants — this endpoint has no caller
     // identity) or by the blank-slot filler pool, or not be a gated accessory
-    // at all (skins, emotes, unknown ids serve as they always did). Staticdata
-    // Minecraft accessories carry no pack tags — no selection ever covers them,
-    // so their mirror dirs are the only source and a missing file gets the
-    // placeholder.
+    // at all (skins, the face-craft categories, emotes and unknown ids serve as
+    // they always did). Staticdata Minecraft accessories carry no pack tags — no
+    // selection ever covers them, so their mirror dirs are the only source and
+    // a missing file gets the placeholder (face-craft types excepted: they are
+    // always allowed and may fetch live).
     private static async Task<bool> CanServeLiveBinaryAsync(Guid itemGuid, CancellationToken cancellationToken)
     {
         if (Program.staticData.Playfab.Items.TryGetValue(itemGuid, out CItem? staticItem)
             && staticItem.Data is CItem.PersonaData staticPersona
             && staticPersona.CreatorName is null or "Minecraft"
-            && staticPersona.PieceType is not "persona_skin")
+            && staticPersona.PieceType is not "persona_skin"
+            && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(staticPersona.PieceType))
         {
             return false;
         }
@@ -185,6 +187,7 @@ public class PersonaCdnController : ControllerBase
 
         if (LivePersonaCatalog.GetIndexEntry(itemGuid.ToString()) is { } entry
             && entry.PieceType is not "persona_skin"
+            && !PersonaPieceTypes.IsAlwaysAllowedFaceCraftPieceType(entry.PieceType)
             && entry.PieceType.StartsWith("persona_", StringComparison.Ordinal))
         {
             IReadOnlySet<string> allowed = await PersonaPackGate.AllAllowedPackUuidsAsync(cancellationToken);
