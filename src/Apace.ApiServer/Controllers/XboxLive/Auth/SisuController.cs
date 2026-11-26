@@ -67,6 +67,12 @@ internal sealed class SisuController : ApaceControllerBase
     [HttpPost("authenticate")]
     public Results<ContentHttpResult, UnauthorizedHttpResult, BadRequest> Authenticate([FromBody] AuthenticateRequest request)
     {
+        // null members (a malformed XAL body) must answer 400, never an NRE-500
+        if (request.DeviceToken is null || request.RedirectUri is null || request.AppId is null)
+        {
+            return TypedResults.BadRequest();
+        }
+
         if (JwtUtils.Verify<Tokens.Xbox.AuthToken>(request.DeviceToken, config.XboxLive.AuthTokenSecretBytes)?.Data is not Tokens.Xbox.DeviceToken)
         {
             return TypedResults.Unauthorized();
@@ -96,8 +102,14 @@ internal sealed class SisuController : ApaceControllerBase
     }
 
     [HttpPost("authorize")]
-    public Results<ContentHttpResult, UnauthorizedHttpResult> Authorize([FromBody] AuthorizeRequest request)
+    public Results<ContentHttpResult, UnauthorizedHttpResult, BadRequest> Authorize([FromBody] AuthorizeRequest request)
     {
+        // null members (a malformed XAL body) must answer 400, never an NRE-500
+        if (request.DeviceToken is null || request.AccessToken is null || request.AppId is null)
+        {
+            return TypedResults.BadRequest();
+        }
+
         if (JwtUtils.Verify<Tokens.Xbox.AuthToken>(request.DeviceToken, config.XboxLive.AuthTokenSecretBytes)?.Data is not Tokens.Xbox.DeviceToken)
         {
             return TypedResults.Unauthorized();

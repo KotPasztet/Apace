@@ -43,7 +43,7 @@ internal sealed partial class LoginController : ApaceControllerBase
 
         var request = await Request.Body.AsJsonAsync<LoginWithCustomIDRequest>(cancellationToken);
 
-        if (request is null || !GetTitleIdRegex().IsMatch(request.TitleId))
+        if (request is null || request.TitleId is null || !GetTitleIdRegex().IsMatch(request.TitleId))
         {
             return TypedResults.BadRequest();
         }
@@ -73,7 +73,7 @@ internal sealed partial class LoginController : ApaceControllerBase
 
         var request = await Request.Body.AsJsonAsync<LoginWithXboxRequest>(cancellationToken);
 
-        if (request is null || !GetTitleIdRegex().IsMatch(request.TitleId))
+        if (request is null || request.TitleId is null || !GetTitleIdRegex().IsMatch(request.TitleId))
         {
             return TypedResults.BadRequest();
         }

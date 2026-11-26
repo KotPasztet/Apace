@@ -36,7 +36,8 @@ internal sealed class XstsController : ApaceControllerBase
     [HttpPost]
     public Results<ContentHttpResult, UnauthorizedHttpResult, BadRequest> Authenticate([FromBody] AuthenticateRequest request)
     {
-        if (request.Properties.UserTokens.Length is not 1)
+        // null members (a malformed XAL body) must answer 400, never an NRE-500
+        if (request.Properties?.UserTokens is not { Length: 1 } || request.RelyingParty is null)
         {
             return TypedResults.BadRequest();
         }

@@ -128,5 +128,18 @@ internal static class JwtUtils
             Log.Debug($"JWT data deserialization failed: {ex.Message}");
             return null;
         }
+        // Malformed tokens (not three segments, bad base64, unparsable payload) surface as
+        // ArgumentException/FormatException from the handler's own parsing, and some validation
+        // edge cases as InvalidOperationException. A token is UNTRUSTED INPUT: verification
+        // must never leak an unhandled exception to the caller — before this catch set a
+        // garbage token (e.g. a client replaying a cached-but-corrupt code at
+        // login.live.com/oauth20_token.srf) killed the endpoint with an EMPTY 500 instead
+        // of the 400 invalid_grant the OAuth contract promises, which XAL surfaces as a hard
+        // sign-in failure instead of a clean re-auth.
+        catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException)
+        {
+            Log.Debug($"JWT verification failed (malformed token): {ex.GetType().Name}: {ex.Message}");
+            return null;
+        }
     }
 }

@@ -38,7 +38,7 @@ internal sealed partial class ClientController : ApaceControllerBase
 
         var request = await Request.Body.AsJsonAsync<GetUserPublisherDataRequest>(cancellationToken);
 
-        if (request is null)
+        if (request is null || request.Entity is null)
         {
             return TypedResults.BadRequest();
         }

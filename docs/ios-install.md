@@ -51,3 +51,40 @@ patcher (locator, XAL/SISU sign-in, Xbox Live and PlayFab). Nothing else needs t
 be configured on the server; the login mode shown on the panel's home page applies
 to Android and iOS alike. When testing sign-in problems, set `APACE_LOG_AUTH_BODIES=1`
 on the ApiServer to log the full auth traffic (tokens are redacted).
+
+## The "Uh oh" screen — how to capture what actually failed
+
+The client shows the "Uh oh!" screen whenever ANY call of the startup handshake
+fails, and the screen carries no detail. The server-side iOS chain is verified
+end-to-end (device auth -> SISU authenticate -> login page -> oauth20_token ->
+SISU authorize -> XSTS authorize (PlayFab relying party) -> Client/LoginWithXbox
+title 11509 -> game signin -> player bootstrap; see `scripts/` smoke notes), so a
+persistent "Uh oh" on a fresh dev build means one of:
+
+1. **the IPA was patched with settings that do not match the server** — the most
+   common trap: an https:// login protocol while the server terminates plain http
+   only, or a per-domain patch (Advanced) where the hostnames do not resolve.
+   Patch with Simple mode and the same address the panel home page shows.
+2. **stale cached XAL state on the device** — XAL replays cached tokens on launch;
+   after the server's secrets rotate the first exchange can fail. Reinstalling
+   the app (or LiveContainer's "clear data") forces a clean flow.
+3. **a server-side 5xx** — every auth endpoint now answers 4xx on bad input
+   (malformed tokens included); if you still see a 500, it is a code bug.
+
+To capture the exact failing call on a real device, enable the auth traffic log
+in the docker deployment:
+
+```yaml
+# docker-compose.override.yml on the host
+services:
+  apace:
+    environment:
+      - APACE_LOG_AUTH_BODIES=1
+```
+
+then `docker compose up -d` (restart the container), reproduce the "Uh oh" on
+the device and read the `AUTHDEBUG`/`AUTHDEBUG-RESPONSE` lines in the ApiServer
+log (`/opt/apace-persistent/logs`). JWTs are masked; form posts with passwords
+are redacted, so the log is safe to paste. The FIRST line whose response is not
+2xx/3xx in the log is the failing call — send that line pair when reporting the
+problem. Disable the env var again afterwards (the log is verbose).

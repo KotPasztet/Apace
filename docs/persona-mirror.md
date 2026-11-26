@@ -1,0 +1,54 @@
+# The persona mirror: reviving the character-creator tabs
+
+The dressing room lists ONLY pieces whose binary is on disk (mirror-first:
+without a binary the equip hangs the client on "wczytywanie…"). The 2019
+character-creator launch pieces (hair/eyes/mouth/skin tones) have dead binaries
+everywhere upstream — xforge is gone (0/231 on every URL shape, re-probed
+22.11), the content1/2 re-publications never migrated the old GUIDs, and the
+Internet Archive has nothing. That is why the hair/eyes/mouth tabs were empty
+while newer marketplace pieces (republished on the live CDN) filled the other
+tabs.
+
+## The one remaining copy of the real binaries
+
+The 234 original `personabinary` zips (one `ppack0.zip` container per piece)
+still exist in the repository's **git history** (the state before commit
+8e0ec99 "remove Mojang persona binaries and thumbnails"). They can be
+extracted and placed on the server volume:
+
+```
+git -C <repo> show '8e0ec99^:staticdata-extras/playfab/persona/<itemId>.zip' \
+    > <volume>/mojang-assets/playfab/persona/<itemId>.zip
+```
+
+On the docker host that target dir is
+`/opt/apace-persistent/data/mojang-assets/playfab/persona/`
+(the compose maps `/opt/apace-persistent/data` to `/app/data`, and the
+ApiServer reads `<data>/mojang-assets/playfab/persona/<itemId>.zip`).
+
+## What happens when the files land there (no restart needed)
+
+- `GetLocalPersonaBinaries` enumerates the dir on every stamp check — the dir
+  mtime change is the signal; the very next catalog request rebuilds the
+  hidden-id set, and a locally mirrored file flips a dead probe verdict to
+  "live" (the dead→alive bridge in `TryEnsureBinaryAsync`).
+- The offer, the blank-slot filler and every face tab pick the pieces up
+  immediately; `PersonaCdnController` serves the mirror file for the
+  `/playfab/persona/<id>.zip` contents URL of the offered item.
+- `GetPublishedItem` resolves the item and the CDN proxy hands out the same
+  bytes, so the client imports the REAL geometry/textures — equipping works
+  and renders correctly.
+
+Coverage after landing the history set (measured against the live
+marketplace, 26.11): hair 41/139, eyes 31/57, mouth 18/35, skin 7/37,
+plus 34 head, 22 top, 20 outerwear, 15 bottom, 12 feet and the rest of the
+234. **Facial hair stays empty: 0 of its 39 marketplace pieces have a
+recoverable binary anywhere** (not in history, not re-published, not
+archived) — that tab cannot be filled without new source material.
+
+## Licensing
+
+The zips are Mojang/Microsoft Marketplace assets. They must never be
+committed back into the public tree (that is exactly what commit 8e0ec99
+removed) — the mirror dir is a private server-side volume, like the
+mirrored catalog itself.
