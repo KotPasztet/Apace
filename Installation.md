@@ -100,6 +100,18 @@ the server over Tailscale instead of port forwarding.
 
 ---
 
+## Playing with friends over the internet
+
+A guest joining your buildplate from the internet needs two things: **Server Options →
+PC Ipv4 Address or Hostname** set to an address the *guest* can reach (your public host
+behind a router UDP forward, or your Tailscale address) — restart **Buildplate Launcher**
+after changing it, since the advertised address is read only at startup — and **UDP 19132**
+(or your bridge port) reachable from the guest to the server. A refused **TCP** connection
+on 19132 from outside is normal: the bridge is UDP-only (RakNet). Details, including how to
+verify with a RakNet unconnected ping: [docs/tailscale.md](docs/tailscale.md#multiplayer-guests-over-the-internet).
+
+---
+
 ## Finding Your IP Address
 
 - **Windows:** `ipconfig` → look for `IPv4 Address` under your network adapter

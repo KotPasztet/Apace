@@ -841,6 +841,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
     {
         BuildplateInstancesManager.InstanceInfo? instanceInfo;
         int waitCount = 0;
+        bool loggedJoinWait = false;
         do
         {
             instanceInfo = buildplateInstancesManager.GetInstanceInfo(instanceId);
@@ -851,6 +852,15 @@ internal sealed class BuildplatesController : ApaceControllerBase
 
             if (!instanceInfo.Ready)
             {
+                // WHY: guests dial the bridge at this address over RakNet/UDP; if it is
+                // not reachable from their network the client just shows "connection
+                // timed out", so make the expected address visible once per join wait.
+                if (!loggedJoinWait)
+                {
+                    loggedJoinWait = true;
+                    Log.Information($"Instance join wait started — bridge must be reachable at {instanceInfo.Address}:{instanceInfo.Port} (guests dial this)");
+                }
+
                 await Task.Delay(1000, cancellationToken);
                 waitCount++;
             }
@@ -1005,10 +1015,15 @@ internal sealed class BuildplatesController : ApaceControllerBase
                 throw new UnreachableException();
         }
 
+        // WHY: the client dials IpV4Address:Port directly (RakNet/UDP) and ignores the
+        // fqdn, but reporting the hardcoded Vienna-era placeholder "67e.duckdns.org"
+        // made the API lie about where the system is reachable. The launcher reports
+        // its --publicAddress (the launcher settings' IPv4) as instanceInfo.Address,
+        // so mirror that here; keep the legacy string only if no address was reported.
         return new BuildplateInstance(
             instanceInfo.InstanceId,
             "00000000-0000-0000-0000-000000000000",
-            "67e.duckdns.org",
+            instanceInfo.Address is { Length: > 0 } ? instanceInfo.Address : "67e.duckdns.org",
             instanceInfo.Address,
             instanceInfo.Port,
             instanceInfo.Ready,

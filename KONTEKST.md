@@ -287,6 +287,14 @@ worktree), `update.sh/ps1`, `tailscale-setup.sh`, `entrypoint.sh` (Docker).
   działała. Po HTTP gość łączy się przez bridge Bedrock (UDP 19132) — jak
   „timed out" wróci mimo fixa, podejrzeniem jest routing bridge/launchera,
   nie EarthApi.
+  Root cause „timed out" u gości z internetu (26.11): klient wybiera
+  `ipV4Address` z odpowiedzi instancji, a mobile launcher ma default
+  `settings.IPv4 = 127.0.0.1` (Settings.cs) — adres nieosiągalny z sieci, do
+  tego UDP 19132 musi być osiągalny od gościa. Fix = konfiguracja: Server
+  Options → IPv4 na adres publicznie osiągalny dla gości + restart „Buildplate
+  Launcher" (publicAddress czytany tylko przy starcie) + forward UDP 19132 /
+  Tailscale; TCP 19132 refused z zewnątrz jest NORMALNE — bridge jest UDP-only
+  (RakNet). Fix `encounters/state` (26.11) wymaga obrazu `:dev` na telefonie.
 - **Face cosmetics (eyes/mouth/face_accessory/hair) — mechanizm domknięty,
   czeka na potwierdzenie w terenie** (26.11). Diagnoza: jedyny warunek
   zerujący te zakładki to brak binarki na dysku (pack/compat gate ich w

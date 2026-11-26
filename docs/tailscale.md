@@ -145,6 +145,22 @@ With `network_mode: "service:tailscale"` the port mappings move to the Tailscale
 container (drop them from `apace`), and the server is reachable at the sidecar's
 Tailscale name on the same ports. Note the auth key is a secret — keep it out of git.
 
+## Multiplayer guests over the internet
+
+A guest joining your buildplate from the internet needs two things, whether you use
+Tailscale or port forwarding:
+
+1. **Server Options → PC Ipv4 Address or Hostname** must be set to an address *the guest*
+   can reach — the Tailscale name/IP when playing over Tailscale, otherwise your public
+   host/IP behind a router port-forward. Restart the **Buildplate Launcher** component
+   after changing it: the address it advertises to joining clients is read only at startup.
+2. **UDP 19132** (or your **Buildplate Bridge Port**) must be reachable from the guest to
+   your server — a router UDP forward, or Tailscale membership.
+
+A refused **TCP** connection on 19132 from outside is normal — the bridge is UDP-only
+(RakNet), nothing listens on TCP there. To verify from the guest's side, send a RakNet
+unconnected ping to `<host>:19132` — it must come back with a pong.
+
 ## Troubleshooting
 
 | Problem | Fix |
