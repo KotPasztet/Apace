@@ -12,7 +12,14 @@
 #   - 19132/udp the SINGLE shared bridge Bedrock port (all instances connect here)
 services:
   apace:
-    image: ghcr.io/apaceproject/apace:main
+    # Only the dev channel is actively published: docker-image-dev.yml builds
+    # ghcr.io/apaceproject/apace:dev on every push to dev, while a :main image
+    # only ever appears from one-off tag pushes and immediately goes stale
+    # (missing the iOS login routes, cosmetics, etc.). Default to the image
+    # that actually exists and receives the fixes; installs that want to pin
+    # the main channel can set APACE_CHANNEL=main in the .env next to this
+    # file (the panel's self-update writes that var).
+    image: ghcr.io/apaceproject/apace:${APACE_CHANNEL:-dev}
     pull_policy: always
 
     restart: unless-stopped
@@ -53,7 +60,7 @@ services:
       - DOTNET_GCHeapHardLimit=536870912
       - ASPNETCORE_URLS=http://0.0.0.0:5000
       - APACE_LOG_CLIENT_REQUESTS=1
-      - APACE_CHANNEL=main
+      - APACE_CHANNEL=${APACE_CHANNEL:-dev}
       # Host bridge port mapping, mirrored into the container so the panel's
       # in-place self-update re-publishes the same port (SelfUpdateService).
       - BRIDGE_PORT=${BRIDGE_PORT:-19132}

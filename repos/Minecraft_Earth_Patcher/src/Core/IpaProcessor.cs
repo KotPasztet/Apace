@@ -92,6 +92,10 @@ public static class IpaProcessor
             Log.Debug("Done");
         }
 
+        Log.Information("Aligning symbol string table");
+        AlignSymbolStringTable(exePath);
+        Log.Debug("Done");
+
         if (options.RemoveDrm)
         {
             Log.Information("Removing DRM and code signature");
@@ -374,6 +378,50 @@ public static class IpaProcessor
         Array.Copy(ForceInteractiveSignInPatched, 0, data, ForceInteractiveSignInAddress, 4);
 
         File.WriteAllBytes(exePath, data);
+    }
+
+    private const uint LcSymtab = 0x2;
+
+    // iOS 27 refuses to dlopen a binary whose string table isn't 8-byte aligned, which breaks
+    // LiveContainer (it dlopens the app binary). Mojang's binary puts the table right after the
+    // 4-byte indirect symbol entries, so it lands on a 4-byte boundary. There are 4 zero bytes
+    // between the end of the table and the code signature: move the table into them and bump
+    // stroff. Symbol names are stored as offsets from the start of the table, so nothing else
+    // changes. Must run before ldid pseudo-signing. Ported from Earth-Restored PR #6 by Kesku.
+    private static void AlignSymbolStringTable(string exePath)
+    {
+        byte[] data = File.ReadAllBytes(exePath);
+
+        int ncmds = BitConverter.ToInt32(data, 16);
+        int cmdOffset = 32;
+        for (int i = 0; i < ncmds; i++)
+        {
+            uint cmd = BitConverter.ToUInt32(data, cmdOffset);
+            if (cmd == LcSymtab)
+            {
+                int strOff = BitConverter.ToInt32(data, cmdOffset + 16);
+                int strSize = BitConverter.ToInt32(data, cmdOffset + 20);
+                int pad = -strOff & 7;
+                if (pad == 0)
+                    return;
+
+                if (data.AsSpan(strOff + strSize, pad).ContainsAnyExcept((byte)0))
+                {
+                    throw new InvalidDataException("No free space after the symbol string table, the binary may be different from the supported version");
+                }
+
+                Array.Copy(data, strOff, data, strOff + pad, strSize);
+                Array.Clear(data, strOff, pad);
+                BitConverter.TryWriteBytes(data.AsSpan(cmdOffset + 16), strOff + pad);
+
+                File.WriteAllBytes(exePath, data);
+                return;
+            }
+
+            cmdOffset += BitConverter.ToInt32(data, cmdOffset + 4);
+        }
+
+        throw new InvalidDataException("LC_SYMTAB not found in the main executable");
     }
 
     private static void PatchXalWebViewPresentation(string xalPath)
