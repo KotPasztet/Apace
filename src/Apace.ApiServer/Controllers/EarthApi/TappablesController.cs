@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Claims;
@@ -349,30 +350,32 @@ internal sealed class TappablesController : ApaceControllerBase
     [HttpPost("multiplayer/player/adventures/state")]
     public async Task<Results<ContentHttpResult, BadRequest>> EncountersState(CancellationToken cancellationToken)
     {
-        var requestedIds = await Request.Body.AsJsonAsync<Dictionary<string, object>>(cancellationToken);
+        // The client posts { "<encounter/adventure id>": "<tile id>", ... } and
+        // expects the same keys mapped to their current state. The values must be
+        // bound as strings: System.Text.Json boxes `object` values as JsonElement,
+        // so a Dictionary<string, object> body failed the old `value is not string`
+        // check for every valid request and always answered 400 — which made the
+        // client show "Couldn't connect to server" right after a multiplayer scan.
+        // A non-string value (e.g. a number) throws a JsonException, which
+        // AsJsonAsync turns into null and lands in the same 400 branch below.
+        var requestedIds = await Request.Body.AsJsonAsync<Dictionary<string, string>>(cancellationToken);
 
         if (requestedIds is null)
         {
+            Log.Information("EncountersState: rejecting body that is not an id -> tileId map");
             return TypedResults.BadRequest();
         }
 
-        foreach (var entry in requestedIds)
-        {
-            if (entry.Value is not string)
-            {
-                return TypedResults.BadRequest();
-            }
-        }
-
-        // TODO
-
-        var encounterStates = new Dictionary<string, EncounterState>();
-#pragma warning disable IDE0059 // Unnecessary assignment of a value
-        foreach (var (encounterId, tileId) in requestedIds)
+        // There is no persistent per-encounter multiplayer state on a private
+        // server, so every requested encounter is reported Pristine (untouched):
+        // the correct empty state that lets the client proceed with joining.
+        var encounterStates = new Dictionary<string, EncounterState>(requestedIds.Count);
+        foreach (var encounterId in requestedIds.Keys)
         {
             encounterStates[encounterId] = new EncounterState(EncounterState.ActiveEncounterStateE.PRISTINE);
         }
-#pragma warning restore IDE0059 // Unnecessary assignment of a value
+
+        Log.Debug("EncountersState: reported {Count} encounter(s) as Pristine", encounterStates.Count);
 
         return EarthJson(encounterStates);
     }
