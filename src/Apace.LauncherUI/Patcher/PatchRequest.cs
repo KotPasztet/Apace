@@ -40,6 +40,13 @@ public sealed record AndroidRequest
     public required bool DisableTelemetry { get; init; }
     public required bool DisableMsaLoginSignatureValidation { get; init; }
 
+    /// <summary>
+    /// Optional fix-qr-permission-context patch: QR permission calls crash with an NPE
+    /// when MainActivity.mInstance is null — fall back to ActivityThread.currentApplication().
+    /// Default on.
+    /// </summary>
+    public required bool FixQrPermissionContext { get; init; }
+
     public required bool ChangeAppName { get; init; }
     public required string AppName { get; init; }
     public required string AppNameShort { get; init; }

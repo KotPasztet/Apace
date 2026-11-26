@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased (dev) — the QR-scanner permission crash joins the Apace patcher (fix-qr-permission-context, Android, default on)
+
+> The multiplayer QR scanner crashed the game (SIGABRT) on the field Android install: genoa's JNI permission check dereferences the static `MainActivity.mInstance` with NO null guard — the field is set only at the end of `onCreate` and nulled in `onDestroy`, so opening the scan while the activity instance is gone throws an NPE on top of a pending exception and ART aborts the process. The exact fix shipped first as a standalone smali patch and was installed on a real Android 16 phone — the scanner works (user-confirmed 26.11). It now ships in the Apace patcher as a selectable Android patch, CHECKED BY DEFAULT (Auto and Simple modes always apply it; Advanced exposes the checkbox).
+
+### 📱 fix-qr-permission-context (patcher, Android, default on)
+
+- `Permission.smali#checkPermission()Z`: null-guard on `MainActivity.mInstance` with a fallback to `ActivityThread.currentApplication()` (light-greylist, callable at targetSdk 29) and a deny-return `false` when even that is null — the QR camera flow KEEPS working, because the real context resolves the already-granted permissions instead of a blind denial.
+- `Permission.smali#requestPermission()V`: silent `return-void` when the instance is gone (the system dialog needs an Activity; substituting the Application would ClassCastException — and OOBE grants the permissions anyway).
+- `AndroidPermissions.smali#checkLocationEnabled()Z`: the same application-context fallback, `false` when null — "location off" instead of a crash.
+- Engine-verified: MCEPatcher.Core's own `Patcher.Patch` over a decoded tree produces smali BYTE-IDENTICAL to the device-verified patched files. The patch file matches the `fix-qr-scanner.patch` conventions (3-line contexts, blank context lines as a single space — the DiffParser skips fully-empty lines). Both patchers decode with the same apktool 3.0.3, so line numbers line up, and the APK hash check gates any drift.
+
 ## Unreleased (dev) — the face-cosmetics recovery: the git-history mirror restore becomes a script, binary landing hardens against frozen caches, per-piece-type offer diagnostics
 
 > The "0 facial cosmetics besides the basic ones" field report, traced end to end. The dressing-room face tabs (eyes/mouth/face_accessory/hair) can only fill from binaries on disk (mirror-first), and every upstream copy of the 2019 character-creator binaries is dead — the ONLY surviving source is this repository's own git history (234 zips before commit 8e0ec99). The rescue existed only as a hand-typed `git show` loop in `docs/persona-mirror.md`, and hand-landing files was exactly the write path the offer cache could not see (the frozen-cache bug from the previous section lives on for any path that does not call `MarkBinaryLanded`). This push makes the rescue a first-class script, hardens the offer cache against ANY file landing route, and adds the per-category observability that was missing ("is this tab empty because no binary, or hidden by a gate?").

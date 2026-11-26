@@ -255,6 +255,13 @@
                             <input type="checkbox" class="form-check-input" id="advMsaSig" @bind="disableMsaSig" />
                             <label class="form-check-label" for="advMsaSig">Disable MSA login signature validation <span class="req-star">*</span></label>
                         </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="advFixQrPermission" @bind="fixQrPermission" />
+                            <label class="form-check-label" for="advFixQrPermission">Fix QR scanner permission crash (NPE on MainActivity.mInstance)</label>
+                            <p class="text-muted" style="font-size: 0.75rem;">
+                                Falls back to the application context when the activity instance is gone — fixes the QR scanner crash.
+                            </p>
+                        </div>
                     </div>
 
                     <div class="adv-section">
@@ -794,6 +801,7 @@
     private bool disableLicense = true;
     private bool disableTelemetry = true;
     private bool disableMsaSig = true;
+    private bool fixQrPermission = true;
     private bool changeAppName = true;
     private string appName = "Apace";
     private string appNameShort = "Apace";
@@ -1231,6 +1239,7 @@
             DisableLicenseCheck = true,
             DisableTelemetry = true,
             DisableMsaLoginSignatureValidation = true,
+            FixQrPermissionContext = true,
             ChangeAppName = true,
             AppName = appName,
             AppNameShort = appNameShort,
@@ -1268,6 +1277,7 @@
             DisableLicenseCheck = disableLicense,
             DisableTelemetry = disableTelemetry,
             DisableMsaLoginSignatureValidation = disableMsaSig,
+            FixQrPermissionContext = fixQrPermission,
             ChangeAppName = changeAppName,
             AppName = appName,
             AppNameShort = appNameShort,

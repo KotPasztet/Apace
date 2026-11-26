@@ -1,0 +1,85 @@
+--- a/smali/com/mojang/minecraftpe/genoa/Permission.smali
++++ b/smali/com/mojang/minecraftpe/genoa/Permission.smali
+@@ -38,6 +38,18 @@
+     .line 28
+     sget-object v0, Lcom/mojang/minecraftpe/MainActivity;->mInstance:Lcom/mojang/minecraftpe/MainActivity;
+ 
++    if-eqz v0, :cond_mceqr_appfb
++
++    goto/16 :goto_mceqr_have_ctx
++
++    :cond_mceqr_appfb
++    invoke-static {}, Landroid/app/ActivityThread;->currentApplication()Landroid/app/Application;
++
++    move-result-object v0
++
++    if-eqz v0, :cond_mceqr_deny
++
++    :goto_mceqr_have_ctx
+     iget-object v1, p0, Lcom/mojang/minecraftpe/genoa/Permission;->mPermissionName:Ljava/lang/String;
+ 
+     invoke-static {v0, v1}, Landroid/support/v4/content/ContextCompat;->checkSelfPermission(Landroid/content/Context;Ljava/lang/String;)I
+@@ -55,6 +67,11 @@
+     const/4 v0, 0x0
+ 
+     goto :goto_0
++
++    :cond_mceqr_deny
++    const/4 v0, 0x0
++
++    return v0
+ .end method
+ 
+ .method public getPermissionName()Ljava/lang/String;
+@@ -84,6 +101,8 @@
+     .line 32
+     sget-object v0, Lcom/mojang/minecraftpe/MainActivity;->mInstance:Lcom/mojang/minecraftpe/MainActivity;
+ 
++    if-eqz v0, :cond_mceqr_skipreq
++
+     const/4 v1, 0x1
+ 
+     new-array v1, v1, [Ljava/lang/String;
+@@ -100,4 +119,7 @@
+ 
+     .line 33
+     return-void
++
++    :cond_mceqr_skipreq
++    return-void
+ .end method
+--- a/smali/com/mojang/minecraftpe/genoa/AndroidPermissions.smali
++++ b/smali/com/mojang/minecraftpe/genoa/AndroidPermissions.smali
+@@ -78,7 +78,19 @@
+     .line 45
+     sget-object v1, Lcom/mojang/minecraftpe/MainActivity;->mInstance:Lcom/mojang/minecraftpe/MainActivity;
+ 
+-    invoke-virtual {v1}, Lcom/mojang/minecraftpe/MainActivity;->getApplicationContext()Landroid/content/Context;
++    if-eqz v1, :cond_mceqr_locfb
++
++    goto/16 :goto_mceqr_have_inst
++
++    :cond_mceqr_locfb
++    invoke-static {}, Landroid/app/ActivityThread;->currentApplication()Landroid/app/Application;
++
++    move-result-object v1
++
++    if-eqz v1, :cond_mceqr_locdeny
++
++    :goto_mceqr_have_inst
++    invoke-virtual {v1}, Landroid/content/Context;->getApplicationContext()Landroid/content/Context;
+ 
+     move-result-object v1
+ 
+@@ -118,6 +130,11 @@
+     const/4 v1, 0x0
+ 
+     goto :goto_0
++
++    :cond_mceqr_locdeny
++    const/4 v1, 0x0
++
++    return v1
+ .end method
+ 
+ .method public checkLocationPermission()Z

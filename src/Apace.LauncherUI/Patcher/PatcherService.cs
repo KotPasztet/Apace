@@ -506,6 +506,7 @@ public sealed class PatcherService
     {
         yield return "fix-official-msa-login-after-signature-change";
         yield return "fix-qr-scanner";
+        if (a.FixQrPermissionContext) yield return "fix-qr-permission-context";
         if (a.DisableSunsetTimeCheck) yield return "disable-sunset-time-check";
         if (a.DisableLicenseCheck) yield return "disable-license-check";
         if (a.DisableTelemetry) yield return "disable-telemetry";
