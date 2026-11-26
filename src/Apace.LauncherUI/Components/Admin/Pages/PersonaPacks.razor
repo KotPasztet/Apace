@@ -150,6 +150,69 @@
 </div>
 
 <div class="card mb-4">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span>Cosmetics coverage</span>
+        <button class="btn btn-sm btn-outline-primary" @onclick="RefreshCoverageAsync" disabled="@_loadingCoverage">
+            <i class="bi bi-arrow-repeat me-1"></i>@(_loadingCoverage ? "Counting…" : "Refresh")
+        </button>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Per dressing-room tab: pieces in the synced marketplace index, pieces with a binary mirrored on the
+            volume and pieces that would serve with the saved default packs (per-player grants add more; the
+            per-category limit and the blank-slot filler are not counted). Counted on demand — Refresh is the only
+            thing that reads the catalog, nothing runs while you edit the page.
+        </p>
+
+        @if (_coverageError is not null)
+        {
+            <div class="alert alert-warning py-2 px-3">@_coverageError</div>
+        }
+
+        @if (_coverage is not null)
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-2">
+                    <thead>
+                        <tr>
+                            <th>Tab</th>
+                            <th>Index</th>
+                            <th>On disk</th>
+                            <th>In offer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tab in _coverage.Tabs)
+                        {
+                            <tr @key="tab.Tab">
+                                <td class="fw-bold">@tab.Tab</td>
+                                <td>@tab.IndexItems</td>
+                                <td>
+                                    <span class="badge @CoverageBadgeClass(tab.IndexItems, tab.WithBinaryOnDisk) fw-normal"
+                                          title="@tab.WithBinaryOnDisk of @tab.IndexItems indexed piece(s) mirrored on the volume">
+                                        @tab.WithBinaryOnDisk
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge @CoverageBadgeClass(tab.WithBinaryOnDisk, tab.OfferedNow) fw-normal"
+                                          title="@tab.OfferedNow of @tab.WithBinaryOnDisk mirrored piece(s) serving with the saved default packs">
+                                        @tab.OfferedNow
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (_coverage.EmoteItems > 0)
+            {
+                <p class="text-muted small mb-0">@_coverage.EmoteItems emote piece(s) not listed — the dressing room has no emote tab.</p>
+            }
+        }
+    </div>
+</div>
+
+<div class="card mb-4">
     <div class="card-header">Per-player grants (extra packs beyond the defaults)</div>
     <div class="card-body">
         <div class="row g-3">
@@ -459,6 +522,14 @@
     // file) — re-read with the custom items, never per rendered row.
     private Dictionary<string, CosmeticCompatIndex.CosmeticCompatInfo> _compatMap = [];
 
+    // Cosmetics coverage (per-tab index/disk/offer funnel) — computed STRICTLY
+    // on the Refresh button click (never on init, no timer): the first read
+    // parses the whole megabyte-scale catalog index, which must never sit on
+    // the page-load path.
+    private PersonaCosmeticsCoverage.CoverageSnapshot? _coverage;
+    private string? _coverageError;
+    private bool _loadingCoverage;
+
     private string LastSyncText => LivePersonaCatalogSync.GetLastVolumeSync()?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "never";
 
     protected override async Task OnInitializedAsync()
@@ -510,6 +581,38 @@
             await InvokeAsync(StateHasChanged);
         }
     }
+
+    // "Cosmetics coverage" — on-demand per-tab funnel (index / on disk / in
+    // offer). Runs on the thread pool like the other staged loaders; the
+    // result is stamp-cached inside PersonaCosmeticsCoverage, so repeated
+    // clicks while nothing changed are free.
+    private async Task RefreshCoverageAsync()
+    {
+        _loadingCoverage = true;
+        _coverageError = null;
+        try
+        {
+            (_coverage, _coverageError) = await Task.Run(() =>
+            {
+                PersonaCosmeticsCoverage.CoverageSnapshot snapshot = PersonaCosmeticsCoverage.Read();
+                return (snapshot, snapshot.Error);
+            });
+        }
+        finally
+        {
+            _loadingCoverage = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    // Green = the lower stage kept everything; red = nothing survived
+    // (the empty-face-tabs signature: index > 0, on disk 0); yellow =
+    // a partial gap (gating or a partially mirrored category).
+    private string CoverageBadgeClass(int expected, int actual)
+        => expected == 0 && actual == 0 ? "text-bg-secondary"
+        : actual >= expected ? "text-bg-success"
+        : actual == 0 ? "text-bg-danger"
+        : "text-bg-warning";
 
     private async Task SyncNowAsync()
     {

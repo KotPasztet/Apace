@@ -446,6 +446,18 @@ internal sealed class CatalogController : ApaceControllerBase
                 _liveOfferStamp = stamp;
                 Log.Information("Live persona offer rebuilt: {Count} item(s) (index stamp {Stamp})", items.Length, stamp);
 
+                // Per-category observability for the "empty dressing-room tabs"
+                // class of problems: with the per-piece-type counts right next
+                // to the total, an empty face tab is immediately visible as a
+                // missing "persona_eyes=…" line (or a suspiciously low count)
+                // instead of a single aggregate number. Fires once per index
+                // stamp — never per request.
+                string histogram = FormatPieceTypeHistogram(items);
+                if (histogram.Length > 0)
+                {
+                    Log.Information("Live persona offer per piece type: {Histogram}", histogram);
+                }
+
                 // Diagnostic for "cosmetic cannot be equipped": a piece type the
                 // committed dressing-room layout does not query has NO tab that
                 // would show it, so it can never be browsed or equipped (the
@@ -682,7 +694,119 @@ internal sealed class CatalogController : ApaceControllerBase
         PersonaPackGate.FillerExemptItemIds.UnionWith(ids);
         Log.Information("Blank-slot filler pool rebuilt: {Count} candidate piece(s) (filler {FillState}, index stamp {IndexStamp}, config stamp {ConfigStamp})",
             _fillerCandidates.Length, fillEnabled ? "ON" : "OFF", LivePersonaCatalog.IndexStamp, PersonaPackGate.ConfigStamp);
+        string fillerHistogram = FormatPieceTypeHistogram(_fillerCandidates);
+        if (fillerHistogram.Length > 0)
+        {
+            Log.Information("Blank-slot filler pool per piece type: {Histogram}", fillerHistogram);
+        }
     }
+
+    // Per-piece-type histogram for the rebuild diagnostics ("persona_skin=37,
+    // persona_eyes=31, …"): only types with a count > 0, counts descending
+    // (ties by type name, so the line is deterministic per index stamp). Used
+    // at the live-offer and filler-pool rebuilds — both run once per stamp,
+    // never per request.
+    private static string FormatPieceTypeHistogram(IEnumerable<Item> items)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (Item item in items)
+        {
+            string? pieceType = item.DisplayProperties?.PieceType;
+            if (string.IsNullOrWhiteSpace(pieceType))
+            {
+                continue; // layout/store/skin-pack entries have no piece type — not dressing-room pieces
+            }
+
+            counts[pieceType] = counts.TryGetValue(pieceType, out int count) ? count + 1 : 1;
+        }
+
+        return string.Join(", ", counts
+            .Where(kv => kv.Value > 0)
+            .OrderByDescending(kv => kv.Value)
+            .ThenBy(kv => kv.Key, StringComparer.Ordinal)
+            .Select(kv => $"{kv.Key}={kv.Value}"));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Cosmetics coverage (on-demand diagnostics — the per-category funnel)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>One piece type's funnel: how many pieces the synced live index
+    /// holds (<see cref="IndexItems"/>), how many of those have a servable
+    /// binary on disk (<see cref="WithBinaryOnDisk"/>) and how many are in the
+    /// live offer right now (<see cref="OfferedNow"/>). Emotes are excluded
+    /// everywhere (the dressing room has no emote tab); the per-player gates,
+    /// the grouped category limit and the filler are not applied — this is the
+    /// shared offer BEFORE those per-request levers. Sorted by index count
+    /// descending, so the emptiest categories surface first.</summary>
+    public sealed record PersonaCoverageRow(string PieceType, int IndexItems, int WithBinaryOnDisk, int OfferedNow);
+
+    private static long _coverageStamp = -1;
+    private static IReadOnlyList<PersonaCoverageRow>? _coverageCache;
+
+    /// <summary>Per-piece-type coverage snapshot, built ONLY from the public
+    /// LivePersonaCatalog structures: the offer (LiveOffer) for the disk and
+    /// offer counts — an offered piece always has its binary mirrored — and
+    /// the hidden-set snapshot (GetHiddenItemIds) to reconstruct the rest of
+    /// the index, typed per id via GetIndexEntry. ON DEMAND: that per-id
+    /// typing is a linear scan over the index, so the first call over a full
+    /// ~12k index can take a moment; stamp-cached after that and never called
+    /// on any request path. The panel's "Cosmetics coverage" card computes
+    /// its own volume-side snapshot (LauncherUI is a separate process).</summary>
+    public static IReadOnlyList<PersonaCoverageRow> GetLivePersonaCoverage()
+    {
+        HashSet<string> hidden = LivePersonaCatalog.GetHiddenItemIds();
+        long stamp = HashCode.Combine(LivePersonaCatalog.IndexStamp, hidden.Count);
+        if (_coverageStamp == stamp && _coverageCache is not null)
+        {
+            return _coverageCache;
+        }
+
+        LiveOfferCache live = LiveOffer;
+        var index = new Dictionary<string, int>(StringComparer.Ordinal);
+        var disk = new Dictionary<string, int>(StringComparer.Ordinal);
+        var offered = new Dictionary<string, int>(StringComparer.Ordinal);
+        var offeredIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (Item item in live.Items)
+        {
+            string? pieceType = item.DisplayProperties?.PieceType;
+            if (string.IsNullOrWhiteSpace(pieceType))
+            {
+                continue; // layout/store/skin-pack entries have no piece type — not dressing-room pieces
+            }
+
+            offeredIds.Add(item.Id.ToString());
+            BumpCoverage(index, pieceType);
+            BumpCoverage(disk, pieceType); // GetOffer hides exactly the binary-less pieces — offered implies on disk
+            BumpCoverage(offered, pieceType);
+        }
+
+        foreach (string hiddenId in hidden)
+        {
+            // offer pieces are counted above; unknown ids (gone from the index)
+            // and emotes (no dressing-room tab) have no row
+            if (offeredIds.Contains(hiddenId)
+                || LivePersonaCatalog.GetIndexEntry(hiddenId) is not { } entry
+                || entry.IsEmote)
+            {
+                continue;
+            }
+
+            BumpCoverage(index, entry.PieceType);
+        }
+
+        _coverageCache = [.. index.Keys
+            .OrderByDescending(type => index.GetValueOrDefault(type))
+            .ThenBy(type => type, StringComparer.Ordinal)
+            .Select(type => new PersonaCoverageRow(
+                type, index.GetValueOrDefault(type), disk.GetValueOrDefault(type), offered.GetValueOrDefault(type)))];
+        _coverageStamp = stamp;
+        return _coverageCache;
+    }
+
+    private static void BumpCoverage(Dictionary<string, int> map, string pieceType)
+        => map[pieceType] = map.TryGetValue(pieceType, out int count) ? count + 1 : 1;
 
     // The per-category size limit, counted per dressing-room GROUP (see
     // PersonaPieceTypes — the client renders one tab per group, e.g. outerwear =
