@@ -3,7 +3,7 @@ set -e
 
 # Apace — Minecraft Earth replacement server
 # Quick installer for Android (Termux). No Docker, no flags needed.
-# Usage: curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install-termux.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install-termux.sh | bash
 #
 # Android cannot run the prebuilt Linux binaries natively (they are glibc builds,
 # Android uses Bionic), so this installer sets up a minimal Ubuntu inside
@@ -28,7 +28,7 @@ echo ""
 if [ -z "${TERMUX_VERSION:-}" ] || ! command -v pkg &>/dev/null; then
     echo -e "${RED}This is not a Termux environment.${RST}"
     echo "On a normal Linux/macOS machine use the regular installer instead:"
-    echo "  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash"
+    echo "  curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash"
     exit 1
 fi
 
@@ -78,7 +78,7 @@ echo "Downloading latest Apace release..."
 mkdir -p "$APACE_DIR"
 cd "$APACE_DIR"
 
-RELEASES_JSON=$(curl -sS https://api.github.com/repos/KotPasztet/Apace/releases/latest)
+RELEASES_JSON=$(curl -sS https://api.github.com/repos/ApaceProject/Apace/releases/latest)
 # Newer releases ship a dedicated Apace-termux-<arch>.zip (same glibc build as the
 # linux- one, named for visibility); older ones only have Apace-linux-<arch>.zip.
 RELEASE_URL=$(echo "$RELEASES_JSON" | grep "browser_download_url.*termux-$DISTRO_ARCH" | head -1 | cut -d'"' -f4)

@@ -12,12 +12,12 @@ Apace is a self-hosted Minecraft Earth replacement server. Fastest way to run it
 
 **Linux / macOS:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash
 ```
 
 **Windows (PowerShell as Administrator):**
 ```powershell
-iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
+iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex
 ```
 
 The installer installs Docker if it's missing, downloads `docker-compose.yml` into `~/apace`,
@@ -41,12 +41,12 @@ To start Apace again later, run `run.sh` / `run.ps1` from `~/apace`.
 
 **Linux / macOS:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash
+curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.sh | bash
 ```
 
 **Windows (PowerShell as Administrator):**
 ```powershell
-irm https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1 | iex
+irm https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.ps1 | iex
 ```
 
 The updater repairs older installs, backs the persistent data up to `/opt/apace-persistent-backups`
@@ -56,7 +56,7 @@ files are never touched). Flags: `--dir <path>`, `--tag <main|dev>`, `--backup-o
 `--rollback [--restore-backup <file|latest>]` (PowerShell spells them `-Dir`, `-Tag`, `-BackupOnly`, `-NoBackup`,
 `-Yes`, `-Rollback [-RestoreBackup <file|latest>]`). If an update misbehaves, run it again with `--rollback` / `-Rollback`
 (add `--restore-backup latest` / `-RestoreBackup latest` to also restore the pre-update data). Flagged runs need the
-script on disk first: `iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1 -OutFile update.ps1`,
+script on disk first: `iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.ps1 -OutFile update.ps1`,
 then `.\update.ps1 -Tag dev` (if scripts are blocked: `powershell -ExecutionPolicy Bypass -File .\update.ps1`).
 
 ## Ports (Docker)

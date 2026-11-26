@@ -16,13 +16,13 @@ confirmation:
 **Linux / macOS / Termux / VPS:**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash
+curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.sh | bash
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 | iex
+iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.ps1 | iex
 ```
 
 What the wrapper does:
@@ -52,12 +52,12 @@ with flags on Windows):
 Example — a VPS where Solace lives in a custom place:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash -s -- \
+curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.sh | bash -s -- \
     --solace-dir /home/me/solace/solace-server --target /opt/apace-persistent
 ```
 
 ```powershell
-iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 -OutFile migrate-from-solace.ps1
+iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.ps1 -OutFile migrate-from-solace.ps1
 .\migrate-from-solace.ps1 -SolaceDir "$env:USERPROFILE\solace\solace-server" -Target C:\apace-persistent
 ```
 

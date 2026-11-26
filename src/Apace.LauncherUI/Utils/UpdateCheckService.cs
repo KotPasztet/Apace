@@ -31,7 +31,7 @@ public sealed class UpdateCheckService : IDisposable
 
     private static readonly HttpClient httpClient = new() { Timeout = TimeSpan.FromSeconds(10) };
 
-    private const string ApiBase = "https://api.github.com/repos/KotPasztet/Apace";
+    private const string ApiBase = "https://api.github.com/repos/ApaceProject/Apace";
     private const string CommitEnvVar = "APACE_COMMIT";
     private const string ChannelEnvVar = "APACE_CHANNEL";
     private const int MinShaLength = 7;

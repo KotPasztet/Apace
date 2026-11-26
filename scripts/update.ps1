@@ -16,11 +16,11 @@
 #
 # Update channels (default -Tag):
 #   - the newest GitHub RELEASE: release.yml publishes a matching versioned
-#     image (ghcr.io/kotpasztet/apace:vX.Y.Z) and a matching Apace-win-<arch>.zip
+#     image (ghcr.io/apaceproject/apace:vX.Y.Z) and a matching Apace-win-<arch>.zip
 #   - dev installs (compose image :dev) STAY ON DEV unless -Tag is explicit
 #   - -Tag main|dev|latest|vX.Y.Z overrides the default
 #
-# Usage: irm https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.ps1 | iex
 #        .\update.ps1 -Rollback
 #        .\update.ps1 -BackupOnly
 #        .\update.ps1 -Help
@@ -43,10 +43,10 @@ param(
 # Constants and state
 # ---------------------------------------------------------------------------
 
-$script:RepoRaw = "https://raw.githubusercontent.com/KotPasztet/Apace"
-$script:RepoApi = "https://api.github.com/repos/KotPasztet/Apace"
+$script:RepoRaw = "https://raw.githubusercontent.com/ApaceProject/Apace"
+$script:RepoApi = "https://api.github.com/repos/ApaceProject/Apace"
 $script:SelfUpdateUrl = "$script:RepoRaw/main/scripts/update.ps1"
-$script:RequestUserAgent = "KotPasztet/Apace-update.ps1"
+$script:RequestUserAgent = "ApaceProject/Apace-update.ps1"
 
 $script:ApaceDir = $Dir
 $script:PersistentArg = $PersistentRoot

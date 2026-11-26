@@ -9,8 +9,8 @@ set -euo pipefail
 # both servers, runs the converter's dry run, asks once, then migrates.
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash
-#   curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash -s -- --dry-run
+#   curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.sh | bash
+#   curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.sh | bash -s -- --dry-run
 #   ./scripts/migrate-from-solace.sh --solace-dir ~/solace/solace-server --target /opt/apace-persistent
 #
 # The DB conversion itself lives in scripts/migrate-from-solace.py — this
@@ -18,7 +18,7 @@ set -euo pipefail
 # and never touches the data itself. Nothing in the Solace directory is ever
 # modified or deleted; the converter backs up the Apace target first.
 
-RAW_BASE="https://raw.githubusercontent.com/KotPasztet/Apace/main"
+RAW_BASE="https://raw.githubusercontent.com/ApaceProject/Apace/main"
 CONVERTER_URL="$RAW_BASE/scripts/migrate-from-solace.py"
 
 RED='\033[1;31m'

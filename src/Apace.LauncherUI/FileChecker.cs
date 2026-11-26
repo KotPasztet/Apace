@@ -105,7 +105,7 @@ internal static class FileChecker
 
     static FileChecker()
     {
-        bool added = httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", $"KotPasztet/Apace/{Assembly.GetExecutingAssembly().GetName().Version}");
+        bool added = httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", $"ApaceProject/Apace/{Assembly.GetExecutingAssembly().GetName().Version}");
         Debug.Assert(added);
     }
 

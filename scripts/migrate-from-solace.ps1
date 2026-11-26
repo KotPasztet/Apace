@@ -5,10 +5,10 @@
 # both servers, runs the converter's dry run, asks once, then migrates.
 #
 # Usage:
-#   iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 | iex
+#   iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.ps1 | iex
 #
 #   With options, download it first (recommended):
-#     iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 -OutFile migrate-from-solace.ps1
+#     iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.ps1 -OutFile migrate-from-solace.ps1
 #     .\migrate-from-solace.ps1 -DryRun
 #     .\migrate-from-solace.ps1 -SolaceDir "$env:USERPROFILE\solace\solace-server" -Target C:\apace-persistent
 #
@@ -28,7 +28,7 @@ param(
     [switch]$Help
 )
 
-$RawBase = "https://raw.githubusercontent.com/KotPasztet/Apace/main"
+$RawBase = "https://raw.githubusercontent.com/ApaceProject/Apace/main"
 $ConverterUrl = "$RawBase/scripts/migrate-from-solace.py"
 $ApaceDir = "$env:USERPROFILE\apace"
 

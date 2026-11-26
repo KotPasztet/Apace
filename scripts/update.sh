@@ -15,11 +15,11 @@ set -euo pipefail
 #
 # Update channels (default --tag):
 #   - the newest GitHub RELEASE: release.yml publishes a matching versioned
-#     image (ghcr.io/kotpasztet/apace:vX.Y.Z), resolved via the GitHub API
+#     image (ghcr.io/apaceproject/apace:vX.Y.Z), resolved via the GitHub API
 #   - dev installs (compose image :dev) STAY ON DEV unless --tag is explicit
 #   - --tag main|dev|latest|vX.Y.Z overrides the default
 #
-# Usage: curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.sh | bash
 #        bash update.sh --rollback
 #        bash update.sh --backup-only
 #        bash update.sh --help
@@ -39,8 +39,8 @@ ASSUME_YES=0
 REFRESH_COMPOSE=0   # --refresh-compose
 NO_SELF_UPDATE=0    # --no-self-update (also appended internally when re-execing)
 
-APACE_REPO_RAW="https://raw.githubusercontent.com/KotPasztet/Apace"
-APACE_REPO_API="https://api.github.com/repos/KotPasztet/Apace"
+APACE_REPO_RAW="https://raw.githubusercontent.com/ApaceProject/Apace"
+APACE_REPO_API="https://api.github.com/repos/ApaceProject/Apace"
 SELF_UPDATE_URL="$APACE_REPO_RAW/main/scripts/update.sh"
 
 STATE_FILE=""       # <dir>/.apace-update.json, set once the install dir is known
@@ -195,7 +195,7 @@ for cand in "$APACE_DIR/docker-compose.yml" "$APACE_DIR/docker-compose.yaml" "$A
     if [ -f "$cand" ]; then COMPOSE_FILE="$cand"; break; fi
 done
 if [ -z "$COMPOSE_FILE" ]; then
-    die "no docker-compose.yml in $APACE_DIR — (re)run install.sh first: curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash"
+    die "no docker-compose.yml in $APACE_DIR — (re)run install.sh first: curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash"
 fi
 STATE_FILE="$APACE_DIR/.apace-update.json"
 

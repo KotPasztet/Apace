@@ -3,8 +3,8 @@ set -e
 
 # Apace — Minecraft Earth replacement server
 # Auto-installer for Linux and macOS
-# Usage: curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash          (Docker, recommended)
-#        curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker  (direct download)
+# Usage: curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash          (Docker, recommended)
+#        curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash -s -- --no-docker  (direct download)
 
 RED='\033[1;31m'
 GRN='\033[1;32m'
@@ -39,10 +39,10 @@ if [ "$MODE" = "--no-docker" ]; then
     cd "$APACE_DIR"
 
     # Get latest release download URL
-    RELEASE_URL=$(curl -sS https://api.github.com/repos/KotPasztet/Apace/releases/latest | grep "browser_download_url.*$OS-$ARCH" | head -1 | cut -d'"' -f4)
+    RELEASE_URL=$(curl -sS https://api.github.com/repos/ApaceProject/Apace/releases/latest | grep "browser_download_url.*$OS-$ARCH" | head -1 | cut -d'"' -f4)
     if [ -z "$RELEASE_URL" ]; then
         echo -e "${RED}No release found for $OS-$ARCH. Try Docker mode instead:${RST}"
-        echo "  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash"
+        echo "  curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash"
         exit 1
     fi
 
@@ -108,7 +108,7 @@ else
     mkdir -p "$APACE_DIR"
     cd "$APACE_DIR"
 
-    curl -sSLO https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml
+    curl -sSLO https://raw.githubusercontent.com/ApaceProject/Apace/main/docker-compose.yml
 
     # Detect architecture and inject platform into docker-compose.yml
     HOST_ARCH=$(uname -m)

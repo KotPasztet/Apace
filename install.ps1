@@ -1,7 +1,7 @@
 # Apace — Minecraft Earth replacement server
 # Windows PowerShell installer
-# Usage: iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex                (Docker, recommended)
-#        iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex -args '--no-docker'  (direct download)
+# Usage: iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex                (Docker, recommended)
+#        iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex -args '--no-docker'  (direct download)
 
 param([string]$Mode = "docker")
 
@@ -29,11 +29,11 @@ if ($Mode -eq "--no-docker") {
     New-Item -ItemType Directory -Force -Path $APACE_DIR | Out-Null
     Set-Location $APACE_DIR
 
-    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/KotPasztet/Apace/releases/latest"
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/ApaceProject/Apace/releases/latest"
     $asset = $release.assets | Where-Object { $_.name -like "*win-$arch*" } | Select-Object -First 1
     if (-not $asset) {
         Write-Host "No Windows release found for win-$arch. Try Docker mode instead." -ForegroundColor Red
-        Write-Host "  iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex"
+        Write-Host "  iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex"
         exit 1
     }
 
@@ -99,7 +99,7 @@ if ($Mode -eq "--no-docker") {
     Set-Location $APACE_DIR
 
     Write-Host "Downloading docker-compose.yml..."
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/KotPasztet/Apace/main/docker-compose.yml" -OutFile "docker-compose.yml"
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ApaceProject/Apace/main/docker-compose.yml" -OutFile "docker-compose.yml"
 
     # Detect architecture and inject platform
     $hostArch = (Get-CimInstance Win32_Processor).Architecture

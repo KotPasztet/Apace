@@ -10,7 +10,7 @@ $APACE_DIR = "$env:USERPROFILE\apace"
 
 if (-not (Test-Path "$APACE_DIR\docker-compose.yml")) {
     Write-Host "Apace is not installed. Run the installer first:" -ForegroundColor Red
-    Write-Host "  iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex"
+    Write-Host "  iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex"
     exit 1
 }
 

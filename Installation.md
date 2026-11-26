@@ -14,10 +14,10 @@ The easiest way to run Apace. Works on Windows, Linux, and macOS.
 
 ```bash
 # Linux/macOS
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash
 
 # Windows (PowerShell as Administrator)
-iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
+iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex
 ```
 
 After install: open http://localhost:5000, create an account, set your IP in Server Options, click Start.
@@ -28,7 +28,7 @@ After install: open http://localhost:5000, create an account, set your IP in Ser
 
 Pre-built binaries for each platform. Requires [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) and Java 17.
 
-1. Go to [GitHub Releases](https://github.com/KotPasztet/Apace/releases/latest)
+1. Go to [GitHub Releases](https://github.com/ApaceProject/Apace/releases/latest)
 2. Download the zip for your platform:
    - `Apace-win-x64.zip` — Windows 64-bit
    - `Apace-linux-x64.zip` — Linux 64-bit
@@ -44,7 +44,7 @@ Pre-built binaries for each platform. Requires [.NET 10 Runtime](https://dotnet.
 One command, fully automatic:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash
 ```
 
 This script: installs Docker if needed, downloads the compose file, creates directories, and starts Apace.
@@ -57,7 +57,7 @@ You need: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), Java
 
 ```bash
 # 1. Clone the repo
-git clone --recurse-submodules https://github.com/KotPasztet/Apace.git
+git clone --recurse-submodules https://github.com/ApaceProject/Apace.git
 cd Apace
 
 # 2. Build

@@ -176,7 +176,7 @@
                 </p>
 
                 <div class="mt-4 text-center">
-                    <a href="https://github.com/KotPasztet/Apace/issues/new/choose" target="_blank"
+                    <a href="https://github.com/ApaceProject/Apace/issues/new/choose" target="_blank"
                        class="btn btn-danger">
                         🐞 Report Bug / Request Feature
                     </a>
@@ -273,7 +273,7 @@
         => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
     private const string WindowsUpdateScriptUrl
-        = "https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1";
+        = "https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.ps1";
 
     private string DockerUpdateCommand
     {
@@ -287,8 +287,8 @@
             }
 
             return UpdateCheck.Channel == "dev"
-                ? "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes --tag dev"
-                : "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes";
+                ? "curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.sh | bash -s -- --yes --tag dev"
+                : "curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.sh | bash -s -- --yes";
         }
     }
 
@@ -301,12 +301,12 @@
                 return $"irm {WindowsUpdateScriptUrl} | iex";
             }
 
-            return "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash -s -- --no-docker";
+            return "curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash -s -- --no-docker";
         }
     }
 
     private string TermuxUpdateCommand
-        => "curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install-termux.sh | bash";
+        => "curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install-termux.sh | bash";
 
     // The button lives as long as no run is in progress or has finished — a
     // finished run either replaced this panel (docker) or demands a restart

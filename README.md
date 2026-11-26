@@ -4,8 +4,8 @@
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"></a>
-  <img src="https://img.shields.io/github/stars/KotPasztet/Apace?style=flat-square" alt="GitHub Stars">
-  <img src="https://img.shields.io/github/downloads/KotPasztet/Apace/total?style=flat-square" alt="GitHub Downloads">
+  <img src="https://img.shields.io/github/stars/ApaceProject/Apace?style=flat-square" alt="GitHub Stars">
+  <img src="https://img.shields.io/github/downloads/ApaceProject/Apace/total?style=flat-square" alt="GitHub Downloads">
   <a href="https://discord.gg/5K8HJukMSX"><img src="https://img.shields.io/badge/Discord-join_us-5865F2?logo=discord&logoColor=white&style=flat-square" alt="Discord"></a>
 </p>
 
@@ -19,7 +19,7 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 >
 > - **Apace** — the project is now called Apace everywhere (namespaces, panel, branding), with upstream [Solace](https://github.com/Earth-Restored/Solace) attribution preserved.
 > - **No more forced logouts** — expired login tokens are handled with a proper reauthenticate flow, login secrets are randomized per install, and `api_config.json` survives container updates.
-> - **One-click self-update** from the panel (Docker and bare metal), with **versioned release images** (`ghcr.io/kotpasztet/apace:vX.Y.Z`) and a self-updating `update.sh` with backup and rollback.
+> - **One-click self-update** from the panel (Docker and bare metal), with **versioned release images** (`ghcr.io/apaceproject/apace:vX.Y.Z`) and a self-updating `update.sh` with backup and rollback.
 > - **File browser in the panel** — browse the Java server, server data and panel files, and safely edit `config.json`, `server.properties` and more, with automatic `.bak` backups.
 > - **Steadier buildplates** — ObjectStore concurrency raised to 256, cached map tiles with `304` responses, user `server.properties` preserved, and persistent Fabric data kept on the volume.
 > - **Runs on your phone** — Termux quick install without Docker, plus a **one-command migration from Solace** that carries accounts, progress and buildplates over.
@@ -79,12 +79,12 @@ Really fast replacement server for Minecraft Earth™, based on [Solace](https:/
 
 **Linux/macOS:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh | bash
 ```
 
 **Windows (PowerShell as Administrator):**
 ```powershell
-iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/install.ps1 | iex
+iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex
 ```
 
 Then:
@@ -101,30 +101,30 @@ To start the server again later, run `run.sh` (Linux/macOS) or `run.ps1` (Window
 * **Updating** — one command keeps an existing install current; your data and `config.json` are preserved and backed up (newest 3 kept), and `--rollback` reverts if an update misbehaves:
 Linux (Bash):
   ```bash
-  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.sh | bash -s -- --yes
+  curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.sh | bash -s -- --yes
   ```
 
   Windows (PowerShell):
   ```powershell
-  irm https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/update.ps1 | iex
+  irm https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/update.ps1 | iex
   ```
 
   Flags, backup rotation and rollback details: [QUICKINSTALL.md → Updating](QUICKINSTALL.md#updating).
 * **Migrating from Solace** — one command detects your old Solace install, installs Apace if it is missing, stops both servers and carries your accounts (username + password), player progress, inventory and buildplates over; only active login sessions are lost. A dry-run plan is always shown first, and the Solace directory is never modified:
 Linux (Bash):
   ```bash
-  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.sh | bash
+  curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.sh | bash
   ```
 
   Windows (PowerShell):
   ```powershell
-  iwr https://raw.githubusercontent.com/KotPasztet/Apace/main/scripts/migrate-from-solace.ps1 | iex
+  iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.ps1 | iex
   ```
   Flags and the manual converter: [docs/solace-migration.md](docs/solace-migration.md).
 * **Termux (Android)** — host the server on an Android phone straight from [Termux](https://f-droid.org/packages/com.termux/); no Docker needed, the installer sets up a minimal Ubuntu via proot-distro:
 
   ```bash
-  curl -sSL https://raw.githubusercontent.com/KotPasztet/Apace/main/install-termux.sh | bash
+  curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install-termux.sh | bash
   ```
 
   Requirements and first run: [QUICKINSTALL-TERMUX.md](QUICKINSTALL-TERMUX.md).
