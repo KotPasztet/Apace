@@ -109,6 +109,10 @@ else
     cd "$APACE_DIR"
 
     curl -sSLO https://raw.githubusercontent.com/ApaceProject/Apace/main/docker-compose.yml
+    # The quick-launcher the docs point at ("run run.sh ... from ~/apace").
+    # -f: without it curl stores a 404 page as run.sh and the chmod below makes it executable.
+    curl -sSfLO https://raw.githubusercontent.com/ApaceProject/Apace/main/run.sh
+    chmod +x run.sh
 
     # Detect architecture and inject platform into docker-compose.yml
     HOST_ARCH=$(uname -m)
@@ -119,7 +123,9 @@ else
     esac
     if [ -n "$DOCKER_PLATFORM" ]; then
         echo -e "  Detected platform: ${BLD}$DOCKER_PLATFORM${RST}"
-        sed -i "/^    image:/a\    platform: $DOCKER_PLATFORM" docker-compose.yml
+        # BSD sed (macOS) has no GNU `sed -i` / one-line `a\ text`; awk is portable.
+        awk -v plat="$DOCKER_PLATFORM" '{print} /^    image:/{print "    platform: " plat}' \
+            docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
     fi
 
     PERSISTENT="/opt/apace-persistent"

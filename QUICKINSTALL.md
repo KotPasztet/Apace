@@ -20,7 +20,7 @@ curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh |
 iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex
 ```
 
-The installer installs Docker if it's missing, downloads `docker-compose.yml` into `~/apace`,
+The installer installs Docker if it's missing, downloads `docker-compose.yml` and the `run.sh` / `run.ps1` quick-launcher into `~/apace`,
 creates the persistent volumes under `/opt/apace-persistent` (`C:\apace-persistent` on Windows:
 worlds, accounts, logs), writes a default `config.json` with the API port already set to 1808,
 and starts the container. The ApiServer's own config (`api_config.json`, which holds the JWT

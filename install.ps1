@@ -1,7 +1,8 @@
 # Apace — Minecraft Earth replacement server
 # Windows PowerShell installer
 # Usage: iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex                (Docker, recommended)
-#        iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex -args '--no-docker'  (direct download)
+#        & ([scriptblock]::Create((iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1).Content)) -Mode '--no-docker'  (direct download)
+#        (Invoke-Expression has no -args parameter, so piping cannot pass arguments; the scriptblock form binds -Mode)
 
 param([string]$Mode = "docker")
 
@@ -100,6 +101,8 @@ if ($Mode -eq "--no-docker") {
 
     Write-Host "Downloading docker-compose.yml..."
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ApaceProject/Apace/main/docker-compose.yml" -OutFile "docker-compose.yml"
+    # The quick-launcher the docs point at ("run run.ps1 from ~/apace")
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ApaceProject/Apace/main/run.ps1" -OutFile "run.ps1"
 
     # Detect architecture and inject platform
     $hostArch = (Get-CimInstance Win32_Processor).Architecture

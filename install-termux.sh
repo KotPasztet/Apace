@@ -69,10 +69,33 @@ proot-distro login "$DISTRO" -- /bin/bash -e -c '
     # aapt: /usr/bin/aapt2 is the fallback the patcher build switches to when
     # the aapt2 bundled in apktool.jar cannot run on this CPU (SIGILL) - the
     # distro build targets the generic ARMv8-A baseline, so it works here.
-    apt-get install -y -qq ca-certificates curl unzip libicu-dev libstdc++6 aapt >/dev/null
+    apt-get install -y -qq ca-certificates curl unzip libicu-dev libstdc++6 aapt zipalign >/dev/null
     apt-get install -y -qq openjdk-17-jre-headless >/dev/null \
         || apt-get install -y -qq openjdk-21-jre-headless >/dev/null
     java -version 2>&1 | head -1
+
+    # apktool 3.x bundles its own framework (1.apk), but its resources table
+    # is rejected by the distro aapt2 during the link step - the same defect
+    # the Docker image sidesteps by shipping Google android.jar as
+    # /opt/android-framework/1.apk (same artifact, same URL). Build it here
+    # too; run-inside.sh only exports APKTOOL_FRAMEWORK_DIR once it exists.
+    if [ ! -f /opt/android-framework/1.apk ]; then
+        echo "Downloading Android framework (platform-29 android.jar)..."
+        rm -rf /opt/android-framework
+        mkdir -p /opt/android-framework
+        if ! (
+            curl -fsSL --http1.1 --retry 5 --retry-all-errors --retry-delay 3 -o /tmp/platform-29.zip https://dl.google.com/android/repository/platform-29_r05.zip \
+                && unzip -j /tmp/platform-29.zip android-10/android.jar -d /opt/android-framework \
+                && mv /opt/android-framework/android.jar /opt/android-framework/1.apk \
+                && rm -f /tmp/platform-29.zip
+        ); then
+            rm -f /tmp/platform-29.zip
+            rm -rf /opt/android-framework
+            echo "Framework download failed - install-termux cannot continue without it." >&2
+            exit 1
+        fi
+        echo "Android framework ready."
+    fi
 '
 echo -e "${GRN}Ubuntu packages ready.${RST}"
 
@@ -132,13 +155,29 @@ set -e
 APACE_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
 # Same environment the Docker image uses (512 MB managed-heap cap keeps .NET
-# small enough for a phone)
+# small enough for a phone), plus the patcher build tools it exports:
+# APKTOOL_FRAMEWORK_DIR (Google android.jar as /opt/android-framework/1.apk,
+# built by install-termux.sh) and ZIPALIGN_PATH (the distro zipalign - the
+# one bundled in apktool.jar is x86-64 only). AAPT2_PATH is deliberately
+# NOT set: in Docker it points at a wrapper filtering flags unknown to the
+# distro aapt2, and the patcher code generates exactly such a wrapper itself
+# when the bundled aapt2 fails its pre-flight probe.
 export ASPNETCORE_URLS="http://0.0.0.0:5000"
 export DOTNET_SYSTEM_NET_DISABLEIPV6=1
 export COMPlus_gcServer=0
 export COMPlus_gcConcurrent=1
 export DOTNET_GCHeapHardLimit=536870912
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
+
+# Guarded so installs from before the framework step keep their current
+# behaviour: the patcher reads these env vars and falls back to its bundled
+# tools when they are unset.
+if [ -f /opt/android-framework/1.apk ]; then
+    export APKTOOL_FRAMEWORK_DIR=/opt/android-framework
+fi
+if [ -f /usr/bin/zipalign ]; then
+    export ZIPALIGN_PATH=/usr/bin/zipalign
+fi
 
 # JavaLocator checks JAVA_HOME/bin/java first, then falls back to "java" on PATH
 if command -v java >/dev/null 2>&1; then
