@@ -714,6 +714,8 @@ internal sealed class BuildplatesController : ApaceControllerBase
             return TypedResults.NotFound();
         }
 
+        await EndPlayerAdventuresAsync(playerId, cancellationToken);
+
         string? instanceId = await buildplateInstancesManager.RequestBuildplateInstance(playerId, null, buildplateId, type, 0, buildplate.Night);
         if (instanceId is null)
         {
@@ -735,6 +737,26 @@ internal sealed class BuildplatesController : ApaceControllerBase
         }
 
         return EarthJson(buildplateInstance);
+    }
+
+    private static async Task EndPlayerAdventuresAsync(string playerId, CancellationToken cancellationToken)
+    {
+        string[] endedAdventureIds;
+        await AdventureScrollLock.WaitAsync(cancellationToken);
+        try
+        {
+            endedAdventureIds = tappablesManager.RemovePlayerAdventures(playerId);
+        }
+        finally
+        {
+            AdventureScrollLock.Release();
+        }
+
+        if (endedAdventureIds.Length > 0)
+        {
+            Log.Information("Player {PlayerId} opened their buildplate, ending adventures {AdventureIds}", playerId, endedAdventureIds);
+            await buildplateInstancesManager.StopAdventureInstancesAsync(endedAdventureIds);
+        }
     }
 
     private static async Task<Results<ContentHttpResult, NotFound, BadRequest, InternalServerError>> GetNewSharedBuildplateInstanceResponse(string playerId, string sharedBuildplateId, BuildplateInstancesManager.InstanceType type, CancellationToken cancellationToken)

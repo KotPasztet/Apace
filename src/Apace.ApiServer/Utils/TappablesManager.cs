@@ -283,6 +283,23 @@ public sealed class TappablesManager
         return (dx * dx + dy * dy) <= 0.25;
     }
 
+    public string[] RemovePlayerAdventures(string playerId)
+    {
+        string[] adventureIds = [.. _adventureOwnersById.Where(entry => entry.Value == playerId).Select(entry => entry.Key)];
+        foreach (string adventureId in adventureIds)
+        {
+            foreach (var tileAdventures in _adventures.Values)
+            {
+                tileAdventures.Remove(adventureId);
+            }
+
+            _adventureOwnersById.Remove(adventureId);
+        }
+
+        _recentAdventureIdsByPlayer.Remove(playerId);
+        return adventureIds;
+    }
+
     private void RemoveRecentPlayerAdventure(string playerId)
     {
         if (!_recentAdventureIdsByPlayer.TryGetValue(playerId, out string? adventureId))
