@@ -8,6 +8,7 @@ using Serilog;
 using Apace.Buildplate.Connector.Model;
 using Apace.Common;
 using Apace.Common.Utils;
+using Apace.EventBus.Client;
 
 namespace Apace.Buildplate.Launcher;
 
@@ -39,6 +40,13 @@ public sealed class PersistentProcessManager
 
     private readonly ILogger _javaLogger;
 
+    private const string PLACED_CHICKEN_LOG_MARKER = "[apace-placed-chicken]";
+    private const string PLACED_COW_LOG_MARKER = "[apace-placed-cow]";
+    private const string EVENT_LOG_MARKER = "[apace-event] ";
+    private readonly EventBusClient _eventBusClient;
+    private readonly SemaphoreSlim _challengePublisherLock = new SemaphoreSlim(1, 1);
+    private Publisher? _challengePublisher;
+
     private ConsoleProcess? _fabricProcess;
     private ConsoleProcess? _bridgeProcess;
     private bool _shuttingDown;
@@ -56,7 +64,8 @@ public sealed class PersistentProcessManager
         FileInfo connectorPluginJar,
         string eventBusConnectionString,
         string publicAddress,
-        int bridgePort
+        int bridgePort,
+        EventBusClient eventBusClient
     )
     {
         _javaCmd = javaCmd;
@@ -68,6 +77,7 @@ public sealed class PersistentProcessManager
         _eventBusConnectionString = eventBusConnectionString;
         _publicAddress = publicAddress;
         _bridgePort = bridgePort;
+        _eventBusClient = eventBusClient;
 
         _connectorPluginArgString = Json.Serialize(new ConnectorPluginArg(
             eventBusConnectionString,
@@ -200,6 +210,15 @@ public sealed class PersistentProcessManager
             // Delete the stale overworld chunk data so the empty world takes
             // effect. Instance dimension data (world/dimensions/fountain) and
             // player data are preserved.
+            try
+            {
+                SeedWorldDatapacks(new DirectoryInfo(Path.Combine(_serverTemplateDir.FullName, "datapacks")), new DirectoryInfo(Path.Combine(worldDir.FullName, "datapacks")));
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                _logger.Error(exception, "Could not copy the world datapacks from the server template directory");
+            }
+
             DeleteStaleOverworldChunks(worldDir);
 
             TagCompound levelDatTag = CreateLevelDat();
@@ -326,7 +345,104 @@ public sealed class PersistentProcessManager
         // Java log lines are already formatted (timestamp, level, logger
         // name), so they are passed through as-is at information level.
         _javaLogger.Information("[{Prefix}] {Line}", prefix, line.TrimEnd());
+
+        if (prefix == "Fabric")
+        {
+            ChallengeLine? challengeLine = ParseChallengeLine(line);
+            if (challengeLine is not null)
+            {
+                _logger.Debug($"[challenges] {challengeLine.EventType} line seen for player {challengeLine.PlayerId}");
+                PublishChallengeEventAsync(challengeLine).Forget();
+            }
+        }
     }
+
+    internal sealed record ChallengeLine(string EventType, string PlayerId, string Data);
+
+    internal static ChallengeLine? ParseChallengeLine(string line)
+    {
+        string eventType;
+        string? mob = null;
+        string? eventName = null;
+        int markerIndex;
+        if ((markerIndex = line.IndexOf(PLACED_CHICKEN_LOG_MARKER, StringComparison.Ordinal)) >= 0)
+        {
+            eventType = "mobPlaced";
+            mob = "chicken";
+        }
+        else if ((markerIndex = line.IndexOf(PLACED_COW_LOG_MARKER, StringComparison.Ordinal)) >= 0)
+        {
+            eventType = "mobPlaced";
+            mob = "cow";
+        }
+        else if ((markerIndex = line.IndexOf(EVENT_LOG_MARKER, StringComparison.Ordinal)) >= 0)
+        {
+            eventType = "challengeEvent";
+            eventName = line[(markerIndex + EVENT_LOG_MARKER.Length)..].Trim();
+            if (eventName.Length == 0 || !eventName.All(c => c is (>= 'a' and <= 'z') or '_'))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            return null;
+        }
+
+        string before = line[..markerIndex].TrimEnd();
+        int nameStart = before.LastIndexOf('[');
+        if (!before.EndsWith(']') || nameStart < 0 || before[..nameStart].Contains('<', StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        string playerId = before[(nameStart + 1)..^1];
+        if (playerId.Length == 0 || !playerId.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-'))
+        {
+            return null;
+        }
+
+        string data = eventName is not null
+            ? Json.Serialize(new ChallengeEventNotification(playerId, eventName))
+            : Json.Serialize(new MobPlacedNotification(playerId, mob!));
+
+        return new ChallengeLine(eventType, playerId, data);
+    }
+
+    private async Task PublishChallengeEventAsync(ChallengeLine challengeLine)
+    {
+        try
+        {
+            await _challengePublisherLock.WaitAsync();
+            try
+            {
+                _challengePublisher ??= await _eventBusClient.AddPublisherAsync();
+            }
+            finally
+            {
+                _challengePublisherLock.Release();
+            }
+
+            if (!await _challengePublisher.PublishAsync("buildplates", challengeLine.EventType, challengeLine.Data))
+            {
+                _logger.Error($"[challenges] could not report {challengeLine.EventType} of player {challengeLine.PlayerId} to the event bus");
+            }
+        }
+        catch (Exception exception)
+        {
+            _logger.Error(exception, $"[challenges] could not report {challengeLine.EventType} of player {challengeLine.PlayerId}");
+        }
+    }
+
+    private sealed record ChallengeEventNotification(
+        string PlayerId,
+        string Event
+    );
+
+    private sealed record MobPlacedNotification(
+        string PlayerId,
+        string Mob
+    );
 
     /// <summary>
     /// Stops the persistent Fabric server gracefully: writes <c>stop</c> to its
@@ -427,6 +543,47 @@ public sealed class PersistentProcessManager
 
     private void BeginShutdown()
         => StopAllAsync().Forget();
+
+    internal static void SeedWorldDatapacks(DirectoryInfo templateDatapacksDir, DirectoryInfo worldDatapacksDir)
+    {
+        if (!templateDatapacksDir.Exists)
+        {
+            return;
+        }
+
+        worldDatapacksDir.Create();
+
+        foreach (FileInfo datapack in templateDatapacksDir.EnumerateFiles())
+        {
+            datapack.CopyTo(Path.Combine(worldDatapacksDir.FullName, datapack.Name), true);
+        }
+
+        foreach (DirectoryInfo datapack in templateDatapacksDir.EnumerateDirectories())
+        {
+            var target = new DirectoryInfo(Path.Combine(worldDatapacksDir.FullName, datapack.Name));
+            if (target.Exists)
+            {
+                target.Delete(true);
+            }
+
+            CopyDirectory(datapack, target);
+        }
+    }
+
+    private static void CopyDirectory(DirectoryInfo source, DirectoryInfo target)
+    {
+        target.Create();
+
+        foreach (FileInfo file in source.EnumerateFiles())
+        {
+            file.CopyTo(Path.Combine(target.FullName, file.Name), true);
+        }
+
+        foreach (DirectoryInfo directory in source.EnumerateDirectories())
+        {
+            CopyDirectory(directory, new DirectoryInfo(Path.Combine(target.FullName, directory.Name)));
+        }
+    }
 
     private static bool CopyServerFile(FileSystemInfo src, FileSystemInfo dst, bool directory)
     {

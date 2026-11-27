@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using Apace.ApiServer.Exceptions;
 using Apace.ApiServer.Types.Common;
 using Apace.ApiServer.Types.Tappables;
@@ -27,7 +28,6 @@ internal sealed class TappablesController : ApaceControllerBase
     private static EarthDB earthDB => Program.DB;
     private static StaticData.StaticData staticData => Program.staticData;
     private const int DailyChallengeCount = 3;
-    private const string DailyGroupId = "29ebe650-072f-4f70-996f-4ffdda93ed1f";
     private const string TreasureHuntId = "2b64c950-9b12-4ef3-99a0-cd59c9e1c8d4";
     private const string TreasureHuntReferenceId = "2b64c950-f80b-4491-b81d-bf90cee88db1";
     private const string BestDefenseReferenceId = "06eb0e50-b18d-43e8-9aad-422203ffdf28";
@@ -40,6 +40,14 @@ internal sealed class TappablesController : ApaceControllerBase
     private const string ZooKeeperReferenceId = "61e55110-e206-4752-95a3-aeb2b98ad6ad";
     private const string Season17CommonMobPettingZooReferenceId = "ccc1836f-ccda-4f33-8a4d-c42d8d366255";
     private const string Season17BaaaReferenceId = "91d23ab8-7a63-4d6d-8b4b-6ae462a51067";
+    private const string Season17CollectMobsReferenceId = "d58c96b5-6962-4a97-a4e1-45d635e8cef2";
+    private const string Season17TerracottaReferenceId = "2a599738-efe0-45bf-8fec-1ff73b25f374";
+    private const string Season17RabbitsReferenceId = "537fec4e-fed5-4618-b7b5-c171434111ad";
+    private const string Season17DarkOakSlabsReferenceId = "857ba971-9a35-4119-b674-9cb12bfd0693";
+    private const string DarkOakSlabItemId = "393d90c3-4968-72ab-22c9-dff5d0ec3861";
+    private const string Season17CollectRareMobReferenceId = "65ec2dbb-c665-4173-81b2-56816576262f";
+    private const string Season17UncommonCowsReferenceId = "520f09c2-7a83-49f3-b579-654ca2944adb";
+    private const string Season17CollectUncommonMobReferenceId = "606e21fb-6781-4773-87f6-158a20729f04";
     private const string TappablesReferenceId = "6b0655aa-cc63-4876-a1e1-afb319403c1c";
     private const string PettingZooReferenceId = "6d01c0d0-2ac9-4549-be82-acd7f5631950";
     private const string TappableChestReferenceId = "d5cbfe47-504a-4e8a-a7b8-481de901c20f";
@@ -82,6 +90,87 @@ internal sealed class TappablesController : ApaceControllerBase
     [
         new(Season17CommonMobPettingZooReferenceId, Season17CommonMobPettingZooReferenceId, 5),
         new(Season17BaaaReferenceId, Season17BaaaReferenceId, 1),
+    ];
+
+    private static readonly HashSet<string> RabbitMobItemIds =
+    [
+        "bae634b3-6b3d-4ca0-8e1e-f223b6760727",
+        "e5853d38-a541-353e-bfd9-75c64e67af09",
+        "1bb789e2-c02e-c630-016a-9757d1bb26d2",
+        "ea2d68a2-fc49-0674-7422-2a546526476a",
+        "97bffc08-41f7-8520-0b36-21ba29b320a3",
+        "34ac8c9e-57d2-55f6-a909-9dc35d09dac8",
+        "f4b8464c-6664-bbcd-0151-effce8347419"
+    ];
+
+    private static readonly HashSet<string> RareMobItemIds =
+    [
+        "038c8034-1d98-96ca-8278-bc69f592549f",
+        "6a105892-0863-3dcf-7482-7c7720597caa",
+        "426a7914-f259-12f6-e2fa-cca7d6759915",
+        "86d00291-74cf-d564-f4a6-a9f1d6b19713",
+        "85a279d4-d403-4487-d96d-17a91604e638",
+        "52692846-f1bd-a9ee-554a-913f9cb1dc27",
+        "c2e5a2eb-7888-e2cb-c641-951f93f5937b",
+        "88f06490-d30e-fd23-d515-261d9cde4879",
+        "660c0f43-72f6-3735-1af3-38c987259ab6",
+        "b8d149e4-5fee-f34d-bf56-24ec03e446b8",
+        "6b9dca6b-7515-a83a-f4d2-d5a464247963",
+        "0561d711-4266-92fe-4297-56de144a16a4",
+        "e83cae16-1460-7487-202c-ff7000120c8d",
+        "68486cd0-d9ce-4414-73e0-ecdb33824d9f"
+    ];
+
+    private static readonly HashSet<string> UncommonCowItemIds =
+    [
+        "214103ec-f98b-4d7a-3dea-a69b696cefc2",
+        "2b76a637-a7e6-12b8-8d9d-58d3f1f8ed56",
+        "67d3d739-00fe-4e4b-4d6f-ccf2dac8bc06",
+        "1ba6f2e8-a746-8597-3445-090a2d1cd732",
+        "8e7cf221-0472-eb6c-4488-d4d5b0ee576e",
+        "9e416506-5853-1b50-2484-97fa03553694",
+        "ad24ee10-2f92-4ae8-4b5c-894aece9f834",
+        "c6939411-4ca4-7982-5d9c-e9291179dce0",
+        "99c19bda-f20c-7fb4-926a-c21f760be4a3"
+    ];
+
+    private static readonly HashSet<string> UncommonMobItemIds =
+    [
+        "e5853d38-a541-353e-bfd9-75c64e67af09",
+        "214103ec-f98b-4d7a-3dea-a69b696cefc2",
+        "179b96c5-7627-406d-e42b-838a29ab0291",
+        "20519eb8-6256-4fdd-a598-a2a20de10e1c",
+        "2b76a637-a7e6-12b8-8d9d-58d3f1f8ed56",
+        "67d3d739-00fe-4e4b-4d6f-ccf2dac8bc06",
+        "1ba6f2e8-a746-8597-3445-090a2d1cd732",
+        "8e7cf221-0472-eb6c-4488-d4d5b0ee576e",
+        "9e416506-5853-1b50-2484-97fa03553694",
+        "ad24ee10-2f92-4ae8-4b5c-894aece9f834",
+        "c6939411-4ca4-7982-5d9c-e9291179dce0",
+        "cdc029f4-c70f-7158-eb95-95c8f3b28669",
+        "3098f079-453a-5309-fb14-8067a199f01f",
+        "df11aab9-cc2d-a914-9653-434def8d52c3",
+        "f67bd319-db40-32cf-0891-73227e96e983",
+        "fc218694-57ed-3712-27f4-85ac79ba86ca",
+        "0cbe1f29-f0e7-880e-0862-41a20eec024a",
+        "ba6b6909-b76c-8034-fec8-059a7a18ead9",
+        "e4b00fc1-9143-00ed-e930-8c1c09c35d63",
+        "7535d81e-c960-28f2-d3ca-d1fd7b813c34",
+        "576df436-a542-5692-458d-a60f69cc4a04",
+        "a0741c98-1bd7-b21e-998e-5adc57fd245d",
+        "41cceca7-90f0-1e8f-fa69-c468ab49eec2",
+        "99c19bda-f20c-7fb4-926a-c21f760be4a3",
+        "caf00a9c-b1f9-c37a-0f75-c8c7659becb0",
+        "2e8e0fd5-d3b8-70be-b36a-31bd0caeafa8",
+        "9dde0e4e-8104-f807-b714-2a5fa7ead5b9",
+        "f6629c5b-11bf-e128-a465-b875d4ff7d1b",
+        "69840d34-5fde-64f1-0710-d8f9a34e3e5e",
+        "7a20d9c5-5c61-9b59-2114-a535f269cfd3",
+        "1bb789e2-c02e-c630-016a-9757d1bb26d2",
+        "ea2d68a2-fc49-0674-7422-2a546526476a",
+        "97bffc08-41f7-8520-0b36-21ba29b320a3",
+        "34ac8c9e-57d2-55f6-a909-9dc35d09dac8",
+        "f4b8464c-6664-bbcd-0151-effce8347419"
     ];
 
     [HttpGet("locations/{lat}/{lon}")]
@@ -299,7 +388,7 @@ internal sealed class TappablesController : ApaceControllerBase
                     }
 
                     challengeProgress.RecordTappable(requestStartedOn);
-                    AddDailyObjectiveProgress(challengeProgress, tappable, collectedItemIds, requestStartedOn);
+                    AddDailyObjectiveProgress(challengeProgress, tokens, tappable, collectedItemIds, requestStartedOn);
                     AddChallengeNotificationTokens(tokens, selectedChallenges, progressBefore, challengeProgress);
                     AddChallengeNotificationTokens(tokens, ContinuousChallengePool, progressBefore, challengeProgress);
                     AddChallengeNotificationTokens(tokens, Season17TimedChallengePool, progressBefore, challengeProgress);
@@ -385,7 +474,7 @@ internal sealed class TappablesController : ApaceControllerBase
         Coordinate PlayerCoordinate
     );
 
-    private static void AddDailyObjectiveProgress(ChallengeProgressVersion challengeProgress, TappablesManager.Tappable tappable, HashSet<string> collectedItemIds, long requestStartedOn)
+    private static void AddDailyObjectiveProgress(ChallengeProgressVersion challengeProgress, Tokens tokens, TappablesManager.Tappable tappable, HashSet<string> collectedItemIds, long requestStartedOn)
     {
         string icon = tappable.Icon.ToString();
         bool isChest = icon.Contains("chest", StringComparison.OrdinalIgnoreCase);
@@ -412,6 +501,41 @@ internal sealed class TappablesController : ApaceControllerBase
             challengeProgress.AddObjectiveProgress(requestStartedOn, ZooKeeperReferenceId);
             challengeProgress.AddObjectiveProgress(requestStartedOn, PettingZooReferenceId);
             challengeProgress.AddObjectiveProgress(requestStartedOn, Season17CommonMobPettingZooReferenceId);
+            ChallengeEvents.CountSeasonReference(challengeProgress, tokens, requestStartedOn, Season17CollectMobsReferenceId);
+        }
+
+        foreach (string collectedItemId in collectedItemIds)
+        {
+            string? terracottaEvent = ChallengeEvents.GetTerracottaEventName(collectedItemId);
+            if (terracottaEvent is not null)
+            {
+                ChallengeEvents.CountSeasonReference(challengeProgress, tokens, requestStartedOn, Season17TerracottaReferenceId, $"event:{terracottaEvent}");
+            }
+        }
+
+        if (collectedItemIds.Any(RabbitMobItemIds.Contains) || icon.Contains("rabbit", StringComparison.OrdinalIgnoreCase))
+        {
+            ChallengeEvents.CountSeasonReference(challengeProgress, tokens, requestStartedOn, Season17RabbitsReferenceId);
+        }
+
+        foreach (string collectedItemId in collectedItemIds.Where(id => id == DarkOakSlabItemId))
+        {
+            ChallengeEvents.CountSeasonReference(challengeProgress, tokens, requestStartedOn, Season17DarkOakSlabsReferenceId);
+        }
+
+        foreach (string collectedItemId in collectedItemIds.Where(UncommonCowItemIds.Contains))
+        {
+            ChallengeEvents.CountSeasonReference(challengeProgress, tokens, requestStartedOn, Season17UncommonCowsReferenceId);
+        }
+
+        if (collectedItemIds.Any(RareMobItemIds.Contains))
+        {
+            ChallengeEvents.CountSeasonReference(challengeProgress, tokens, requestStartedOn, Season17CollectRareMobReferenceId);
+        }
+
+        if (collectedItemIds.Any(UncommonMobItemIds.Contains))
+        {
+            ChallengeEvents.CountSeasonReference(challengeProgress, tokens, requestStartedOn, Season17CollectUncommonMobReferenceId);
         }
 
         if (isCow)
@@ -464,28 +588,6 @@ internal sealed class TappablesController : ApaceControllerBase
         }
     }
 
-    private static void AddSeasonChallengeNotificationToken(Tokens tokens, string activeSeasonChallengeId, string? activeSeasonReferenceId, Dictionary<string, int> progressBefore, ChallengeProgressVersion challengeProgress)
-    {
-        if (string.IsNullOrEmpty(activeSeasonReferenceId) ||
-            challengeProgress.ClaimedChallengeIds?.Contains(activeSeasonChallengeId) == true)
-        {
-            return;
-        }
-
-        int threshold = ChallengesController.GetSeasonChallengeThreshold(activeSeasonChallengeId);
-        int before = Math.Min(progressBefore.GetValueOrDefault(activeSeasonReferenceId), threshold);
-        int after = Math.Min(challengeProgress.GetObjectiveProgress(activeSeasonReferenceId), threshold);
-        if (after <= before)
-        {
-            return;
-        }
-
-        Tokens.Token token = after >= threshold
-            ? new Tokens.ChallengeCompletedToken(activeSeasonChallengeId, activeSeasonReferenceId)
-            : new Tokens.ChallengeProgressToken(activeSeasonChallengeId, activeSeasonReferenceId);
-        tokens.AddToken(U.RandomUuid().ToString(), token);
-    }
-
     private static void AddCompletedDailyChallengeRewards(EarthDB.Query query, string playerId, TokenClaims tokenClaims, ChallengeProgressVersion challengeProgress, Utils.Rewards rewards, long requestStartedOn)
     {
         string today = DateTimeOffset.FromUnixTimeMilliseconds(requestStartedOn).UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -517,12 +619,29 @@ internal sealed class TappablesController : ApaceControllerBase
             }
         }
 
-        string dailyGroupRewardKey = $"{today}:{DailyGroupId}";
+        foreach (DailyChallengeDefinition challenge in ContinuousChallengePool)
+        {
+            if (challengeProgress.GetObjectiveProgress(challenge.ReferenceId) < challenge.Threshold ||
+                challengeProgress.RemovedContinuousChallengeIds?.Contains(challenge.Key) == true)
+            {
+                continue;
+            }
+
+            if (tokenClaims.RedeemedChallengeRewardKeys.Add($"{today}:{challenge.Key}"))
+            {
+                rewards.AddExperiencePoints(10);
+                challengeProgress.ClaimedChallengeIds ??= [];
+                challengeProgress.ClaimedChallengeIds.Add(challenge.Key);
+                shouldReward = true;
+            }
+        }
+
+        string dailyGroupRewardKey = $"{today}:{ChallengesController.DailyBonusChallengeId}";
         if (completedDailyChallenges >= DailyChallengeCount && tokenClaims.RedeemedChallengeRewardKeys.Add(dailyGroupRewardKey))
         {
             rewards.AddExperiencePoints(25).AddItem(CommonAdventureCrystalId, 1);
             challengeProgress.ClaimedChallengeIds ??= [];
-            challengeProgress.ClaimedChallengeIds.Add(DailyGroupId);
+            challengeProgress.ClaimedChallengeIds.Add(ChallengesController.DailyBonusChallengeId);
             shouldReward = true;
         }
 

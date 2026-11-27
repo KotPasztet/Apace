@@ -233,12 +233,7 @@ public static class TokenUtils
                     getQuery.Then(results =>
                     {
                         ChallengeProgressVersion progress = results.Get<ChallengeProgressVersion>("challenges");
-                        progress.EnsureDate(currentTime);
-                        progress.ClaimedChallengeIds ??= [];
-                        bool firstClaim = progress.ClaimedChallengeIds.Add(completedToken.ChallengeId);
-                        progress.ActiveSeasonId = ChallengesController.ActiveSeasonId;
-                        progress.ActiveSeasonChallengeId = ChallengesController.SelectActiveSeasonChallengeId(progress, progress.ActiveSeasonChallengeId);
-                        progress.UpdatedAt = currentTime;
+                        bool firstClaim = ClaimCompletedChallenge(progress, completedToken.ChallengeId, currentTime);
 
                         var updateQuery = new EarthDB.Query(true)
                             .Update("challenges", playerId, progress);
@@ -262,6 +257,18 @@ public static class TokenUtils
         getQuery.Extra("token", token);
 
         return getQuery;
+    }
+
+    internal static bool ClaimCompletedChallenge(ChallengeProgressVersion progress, string challengeId, long currentTime)
+    {
+        progress.EnsureDate(currentTime);
+        progress.ClaimedChallengeIds ??= [];
+        var (isSeason, unlocked, complete) = ChallengesController.GetSeasonChallengeStatus(progress, challengeId);
+        bool firstClaim = (!isSeason || (unlocked && complete)) && progress.ClaimedChallengeIds.Add(challengeId);
+        progress.ActiveSeasonId = ChallengesController.ActiveSeasonId;
+        progress.ActiveSeasonChallengeId = ChallengesController.SelectActiveSeasonChallengeId(progress, progress.ActiveSeasonChallengeId);
+        progress.UpdatedAt = currentTime;
+        return firstClaim;
     }
 
     private static Rewards ToRedeemRewards(Types.Common.Rewards rewards)

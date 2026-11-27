@@ -18,7 +18,6 @@ namespace Apace.ApiServer.Controllers.EarthApi;
 [Route("1/api/v{version:apiVersion}/player/tokens")]
 internal sealed class TokensController : ApaceControllerBase
 {
-    private const string DailyGroupId = "29ebe650-072f-4f70-996f-4ffdda93ed1f";
     private const string DailyReferenceId = "2619913d-6504-4c74-9fc9-e03649a70efc";
     private static EarthDB earthDB => Program.DB;
     private static StaticData.StaticData staticData => Program.staticData;
@@ -123,7 +122,7 @@ internal sealed class TokensController : ApaceControllerBase
             case Tokens.DailyLoginToken dailyLogin:
                 properties["date"] = dailyLogin.Date;
                 properties["login_count"] = "7";
-                properties["challengeid"] = DailyGroupId;
+                properties["challengeid"] = ChallengesController.DailyBonusChallengeId;
                 properties["challengereferenceid"] = DailyReferenceId;
                 break;
             case Tokens.OobeAdventureCrystalToken oobeAdventureCrystal:

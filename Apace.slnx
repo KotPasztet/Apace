@@ -32,5 +32,6 @@
   <Project Path="src/Apace.StaticData/Apace.StaticData.csproj" />
   <Project Path="src/Apace.TappablesGenerator/Apace.TappablesGenerator.csproj">
   </Project>
+  <Project Path="src/Apace.Tests/Apace.Tests.csproj" />
   <Project Path="src/Apace.TileRenderer/Apace.TileRenderer.csproj" />
 </Solution>

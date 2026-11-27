@@ -29,6 +29,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Apace.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="registry\biomes_bedrock.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

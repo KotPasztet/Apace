@@ -1,0 +1,44 @@
+{
+  "values": [
+    {
+      "id": "minecraft:llama",
+      "required": false
+    },
+    {
+      "id": "minecraft:wolf",
+      "required": false
+    },
+    {
+      "id": "minecraft:iron_golem",
+      "required": false
+    },
+    {
+      "id": "genoa:wooly_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:rainbow_sheep",
+      "required": false
+    },
+    {
+      "id": "genoa:tropical_slime",
+      "required": false
+    },
+    {
+      "id": "minecraft:husk",
+      "required": false
+    },
+    {
+      "id": "minecraft:drowned",
+      "required": false
+    },
+    {
+      "id": "minecraft:zombie_villager",
+      "required": false
+    },
+    {
+      "id": "minecraft:cave_spider",
+      "required": false
+    }
+  ]
+}

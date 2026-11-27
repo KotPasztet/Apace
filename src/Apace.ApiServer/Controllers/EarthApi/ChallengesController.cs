@@ -1,4 +1,4 @@
-using Asp.Versioning;
+﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -25,8 +25,8 @@ internal sealed class ChallengesController : ControllerBase
 {
     private const int DailyChallengeCount = 3;
     private const string DailyGroupId = "c1a1beef-0d01-4b1a-8d1e-000000000001";
+    internal const string DailyBonusChallengeId = "c1a1beef-0d01-4b1a-8d1e-000000000002";
     private const string DailyLoginGroupId = "d4111000-0000-4000-8000-000000000000";
-    private const string DailyReferenceId = "2619913d-6504-4c74-9fc9-e03649a70efc";
     private const string TreasureHuntReferenceId = "2b64c950-f80b-4491-b81d-bf90cee88db1";
     private const string BestDefenseReferenceId = "06eb0e50-b18d-43e8-9aad-422203ffdf28";
     private const string ChopChopReferenceId = "bd9d3fd7-12ef-49e0-91fa-c971795f8e35";
@@ -37,6 +37,8 @@ internal sealed class ChallengesController : ControllerBase
     private const string LegacySeasonPersonaReward2Id = "00000000-0000-0000-0000-000000000002";
     private const string CommonAdventureCrystalId = "4f16a053-4929-263a-c91a-29663e29df76";
     internal const string ActiveSeasonId = "season_17";
+    internal static readonly TimeSpan SeasonLength = TimeSpan.FromDays(14);
+    private const string FinalSeasonChallengeReferenceId = "1e4899f5-039e-48f0-a1cc-bd1bda871e96";
     internal const string DefaultActiveSeasonChallengeId = "f0532069-a70a-4a01-8611-f770bb46d9cd";
 
     private static readonly string[] DailyLoginChallengeIds =
@@ -94,12 +96,51 @@ internal sealed class ChallengesController : ControllerBase
         new("e7b9715a-6c27-4708-bab6-ca4c80397625", "e7b9715a-6c27-4708-bab6-ca4c80397625", 3),
     ];
 
+    internal static IEnumerable<string> DailyChallengeKeys => DailyChallengePool.Select(challenge => challenge.Key);
+
     private static readonly DailyChallengeDefinition[] ContinuousChallengePool =
     [
         new("b8fa3840-43f2-4c87-9d69-f51d77a1a001", TappablesReferenceId, 10),
         new("b8fa3840-43f2-4c87-9d69-f51d77a1a002", TappableChestReferenceId, 3),
         new("b8fa3840-43f2-4c87-9d69-f51d77a1a003", MobReferenceId, 5),
     ];
+
+    internal static IEnumerable<string> ContinuousChallengeKeys => ContinuousChallengePool.Select(challenge => challenge.Key);
+
+    internal static IEnumerable<string> TimedSeasonListChallengeIds()
+        => (Json.Deserialize<Dictionary<string, ChallengeRecord>>(Season17ChallengesJson) ?? [])
+            .Where(entry => entry.Value.Duration == "PersonalTimed")
+            .Select(entry => entry.Key);
+
+    internal static IEnumerable<string> SeasonChallengeIds()
+        => (Json.Deserialize<Dictionary<string, ChallengeRecord>>(Season17ChallengesJson) ?? [])
+            .Where(entry => IsSeasonChallenge(entry.Value))
+            .Select(entry => entry.Key);
+
+    internal static async Task<ChallengeProgressVersion> LoadProgressAsync(string playerId, long now, CancellationToken cancellationToken)
+    {
+        EarthDB.Results results = await new EarthDB.Query(false)
+            .Get("challenges", playerId, typeof(ChallengeProgressVersion))
+            .ExecuteAsync(Program.DB, cancellationToken);
+
+        ChallengeProgressVersion progress = results.Get<ChallengeProgressVersion>("challenges");
+        long seasonStartBefore = progress.SeasonStartedAt;
+        progress.EnsureDate(now);
+        await SaveIfSeasonChangedAsync(playerId, progress, seasonStartBefore, cancellationToken);
+        return progress;
+    }
+
+    internal static async Task SaveIfSeasonChangedAsync(string playerId, ChallengeProgressVersion progress, long seasonStartBefore, CancellationToken cancellationToken)
+    {
+        if (progress.SeasonStartedAt == seasonStartBefore)
+        {
+            return;
+        }
+
+        await new EarthDB.Query(true)
+            .Update("challenges", playerId, progress)
+            .ExecuteAsync(Program.DB, cancellationToken);
+    }
 
     private static DailyChallengeDefinition[] OrderedDailyChallenges(string playerId, string dailyDateUtc)
         => [.. DailyChallengePool
@@ -136,79 +177,19 @@ internal sealed class ChallengesController : ControllerBase
         return BitConverter.ToUInt64(hash, 0);
     }
 
-    [HttpGet]
-    public async Task<Results<ContentHttpResult, BadRequest>> Get(CancellationToken cancellationToken)
+    internal sealed record ChallengeListing(Dictionary<string, object> Challenges, string ActiveChallengeId, string ActiveSeasonChallengeId);
+
+    internal static long EndOfUtcDay(DateTimeOffset now)
+        => new DateTimeOffset(now.UtcDateTime.Date.AddDays(1), TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+    internal static ChallengeListing BuildChallengeListing(string playerId, ChallengeProgressVersion progress, TokenClaims tokenClaims, long now, string dailyEndTime, string seasonEndTime)
     {
-        string? playerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(playerId))
-        {
-            return TypedResults.BadRequest();
-        }
-
-        long endOfToday = DateTimeOffset.UtcNow.Date.AddDays(1).ToUnixTimeMilliseconds();
-        string dailyEndTime = TimeFormatter.FormatTime(endOfToday);
-        string seasonEndTime = TimeFormatter.FormatTime(endOfToday + 14 * 24 * 60 * 60 * 1000);
-        long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-        // keeps today's daily login token alive so the sign-in challenges can be claimed from this list
-        await TokenUtils.EnsureDailyLoginToken(playerId, cancellationToken);
-
-        ChallengeProgressVersion progress;
-        TokenClaims tokenClaims;
-        try
-        {
-            EarthDB.Results results = await new EarthDB.Query(false)
-                .Get("challenges", playerId, typeof(ChallengeProgressVersion))
-                .Get("tokenClaims", playerId, typeof(TokenClaims))
-                .ExecuteAsync(Program.DB, cancellationToken);
-
-            progress = results.Get<ChallengeProgressVersion>("challenges");
-            progress.EnsureDate(now);
-            tokenClaims = results.Get<TokenClaims>("tokenClaims");
-        }
-        catch (EarthDB.DatabaseException ex)
-        {
-            throw new ServerErrorException(ex);
-        }
-
         DailyChallengeDefinition[] dailyChallenges = SelectDailyChallenges(playerId, progress.DailyDateUtc!);
-        int dailyCount = dailyChallenges.Count(challenge => progress.GetObjectiveProgress(challenge.ReferenceId) >= challenge.Threshold);
-        bool dailyComplete = dailyCount >= DailyChallengeCount;
-        bool dailyClaimed = progress.ClaimedChallengeIds?.Contains(DailyGroupId) == true;
-        string dailyState = dailyClaimed ? "Claimed" : dailyComplete ? "Completed" : "Active";
-        int dailyPercent = dailyCount * 100 / DailyChallengeCount;
-
-        Response.Headers.CacheControl = "no-store";
-        Response.Headers.ETag = $"\"challenges-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}\"";
 
         string activeSeasonChallengeId = SelectActiveSeasonChallengeId(progress, progress.ActiveSeasonChallengeId);
 
-        var challenges = BuildSeasonChallenges(seasonEndTime, progress, activeSeasonChallengeId);
+        Dictionary<string, object> challenges = BuildSeasonChallenges(seasonEndTime, dailyEndTime, progress, activeSeasonChallengeId);
         AddDailyLoginChallenges(challenges, dailyEndTime, tokenClaims, now);
-        if (!dailyClaimed)
-        {
-            challenges[DailyGroupId] = new ChallengeRecord(
-                DailyReferenceId,
-                null,
-                DailyGroupId,
-                "PersonalTimed",
-                "Regular",
-                "retention",
-                null,
-                0,
-                dailyEndTime,
-                dailyState,
-                dailyComplete,
-                dailyPercent,
-                dailyCount,
-                DailyChallengeCount,
-                [],
-                "And",
-                new Rewards(0, 25, null, [new Rewards.Item(CommonAdventureCrystalId, 1)], [], [], [], []),
-                new object()
-            );
-        }
-
         for (int index = 0; index < dailyChallenges.Length; index++)
         {
             DailyChallengeDefinition challenge = dailyChallenges[index];
@@ -289,11 +270,57 @@ internal sealed class ChallengesController : ControllerBase
                 progress.ClaimedChallengeIds?.Contains(challenge.Key) != true)
             ?.Key ?? DailyGroupId;
 
+        return new ChallengeListing(challenges, activeChallengeId, activeSeasonChallengeId);
+    }
+
+    [HttpGet]
+    public async Task<Results<ContentHttpResult, BadRequest>> Get(CancellationToken cancellationToken)
+    {
+        string? playerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(playerId))
+        {
+            return TypedResults.BadRequest();
+        }
+
+        long endOfToday = EndOfUtcDay(DateTimeOffset.UtcNow);
+        string dailyEndTime = TimeFormatter.FormatTime(endOfToday);
+        long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        // keeps today's daily login token alive so the sign-in challenges can be claimed from this list
+        await TokenUtils.EnsureDailyLoginToken(playerId, cancellationToken);
+
+        ChallengeProgressVersion progress;
+        TokenClaims tokenClaims;
+        try
+        {
+            EarthDB.Results results = await new EarthDB.Query(false)
+                .Get("challenges", playerId, typeof(ChallengeProgressVersion))
+                .Get("tokenClaims", playerId, typeof(TokenClaims))
+                .ExecuteAsync(Program.DB, cancellationToken);
+
+            progress = results.Get<ChallengeProgressVersion>("challenges");
+            long seasonStartBefore = progress.SeasonStartedAt;
+            progress.EnsureDate(now);
+            await SaveIfSeasonChangedAsync(playerId, progress, seasonStartBefore, cancellationToken);
+            tokenClaims = results.Get<TokenClaims>("tokenClaims");
+        }
+        catch (EarthDB.DatabaseException ex)
+        {
+            throw new ServerErrorException(ex);
+        }
+
+        string seasonEndTime = TimeFormatter.FormatTime(progress.GetSeasonEndsAt());
+
+        Response.Headers.CacheControl = "no-store";
+        Response.Headers.ETag = $"\"challenges-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}\"";
+
+        ChallengeListing listing = BuildChallengeListing(playerId, progress, tokenClaims, now, dailyEndTime, seasonEndTime);
+
         string resp = Json.Serialize(new EarthApiResponse(new Dictionary<string, object>()
         {
-            { "challenges", challenges },
-            { "activeChallengeId", activeChallengeId },
-            { "activeSeasonChallenge", activeSeasonChallengeId },
+            { "challenges", listing.Challenges },
+            { "activeChallengeId", listing.ActiveChallengeId },
+            { "activeSeasonChallenge", listing.ActiveSeasonChallengeId },
             { "activeSeasonId", ActiveSeasonId },
         }));
         return TypedResults.Content(resp, "application/json");
@@ -348,27 +375,35 @@ internal sealed class ChallengesController : ControllerBase
     private static DBRewards DailyLoginRewards()
         => new(0, 25, null, new Dictionary<string, int?> { [CommonAdventureCrystalId] = 1 }, [], []);
 
-    private static Dictionary<string, object> BuildSeasonChallenges(string seasonEndTime, ChallengeProgressVersion progress, string activeSeasonChallengeId)
+    private static Dictionary<string, object> BuildSeasonChallenges(string seasonEndTime, string dailyEndTime, ChallengeProgressVersion progress, string activeSeasonChallengeId)
     {
         var templates = Json.Deserialize<Dictionary<string, ChallengeRecord>>(Season17ChallengesJson) ?? [];
+        HashSet<string> unlocked = ComputeSeasonGraph(templates, progress).Unlocked;
         return templates.ToDictionary(
             entry => entry.Key,
-            entry => (object)ApplyProgress(entry.Key, entry.Value with { EndTimeUtc = seasonEndTime }, progress, activeSeasonChallengeId));
+            entry => (object)ApplyProgress(entry.Key, entry.Value with { EndTimeUtc = entry.Value.Duration == "PersonalTimed" ? dailyEndTime : seasonEndTime }, progress, activeSeasonChallengeId, unlocked));
     }
 
-    private static ChallengeRecord ApplyProgress(string challengeId, ChallengeRecord challenge, ChallengeProgressVersion progress, string activeSeasonChallengeId)
+    private static ChallengeRecord ApplyProgress(string challengeId, ChallengeRecord challenge, ChallengeProgressVersion progress, string activeSeasonChallengeId, HashSet<string> unlocked)
     {
-        int objectiveCount = progress.GetObjectiveProgress(challenge.ReferenceId);
+        int objectiveCount = challenge.ReferenceId == FinalSeasonChallengeReferenceId
+            ? Math.Max(1, challenge.TotalThreshold)
+            : GetChallengeProgress(challengeId, challenge, progress);
         bool isClaimed = progress.ClaimedChallengeIds?.Contains(challengeId) == true;
         if (challenge.IsComplete)
         {
             return challenge with { State = isClaimed ? "Claimed" : challenge.State };
         }
 
+        if (IsSeasonChallenge(challenge) && !isClaimed && !unlocked.Contains(challengeId))
+        {
+            return challenge;
+        }
+
         int threshold = Math.Max(1, challenge.TotalThreshold);
-        int currentCount = Math.Min(objectiveCount, threshold);
+        int currentCount = isClaimed ? threshold : Math.Min(objectiveCount, threshold);
         bool isComplete = currentCount >= threshold;
-        string state = isClaimed ? "Claimed" : isComplete ? "Completed" : challengeId == activeSeasonChallengeId ? "Active" : challenge.State;
+        string state = isClaimed ? "Claimed" : isComplete ? "Completed" : challenge.State == "Locked" || challengeId == activeSeasonChallengeId ? "Active" : challenge.State;
 
         return challenge with
         {
@@ -379,6 +414,71 @@ internal sealed class ChallengesController : ControllerBase
         };
     }
 
+    private static bool IsSeasonChallenge(ChallengeRecord challenge)
+        => challenge.Duration == "Season" && challenge.Category == ActiveSeasonId;
+
+    internal static (bool IsSeason, bool Unlocked, bool Complete) GetSeasonChallengeStatus(ChallengeProgressVersion progress, string challengeId)
+    {
+        var templates = Json.Deserialize<Dictionary<string, ChallengeRecord>>(Season17ChallengesJson) ?? [];
+        if (!templates.TryGetValue(challengeId, out ChallengeRecord? challenge) || !IsSeasonChallenge(challenge))
+        {
+            return (false, false, false);
+        }
+
+        HashSet<string> unlocked = ComputeSeasonGraph(templates, progress).Unlocked;
+        return (true, unlocked.Contains(challengeId), IsComplete(challengeId, challenge, progress));
+    }
+
+    private static (HashSet<string> Unlocked, HashSet<string> Done) ComputeSeasonGraph(Dictionary<string, ChallengeRecord> templates, ChallengeProgressVersion progress)
+    {
+        HashSet<string> unlocked = [];
+        HashSet<string> done = [];
+
+        foreach (var (challengeId, challenge) in templates)
+        {
+            if (IsSeasonChallenge(challenge) && challenge.State != "Locked")
+            {
+                unlocked.Add(challengeId);
+            }
+        }
+
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+            foreach (var (challengeId, challenge) in templates)
+            {
+                if (!IsSeasonChallenge(challenge))
+                {
+                    continue;
+                }
+
+                if (!done.Contains(challengeId) &&
+                    unlocked.Contains(challengeId) &&
+                    (progress.ClaimedChallengeIds?.Contains(challengeId) == true || IsComplete(challengeId, challenge, progress)))
+                {
+                    done.Add(challengeId);
+                    changed = true;
+                }
+
+                if (!unlocked.Contains(challengeId))
+                {
+                    bool met = challenge.PrerequisiteIds.Length == 0 ||
+                        (challenge.PrerequisiteLogicalCondition == "Or"
+                            ? challenge.PrerequisiteIds.Any(done.Contains)
+                            : challenge.PrerequisiteIds.All(done.Contains));
+                    if (met)
+                    {
+                        unlocked.Add(challengeId);
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        return (unlocked, done);
+    }
+
     internal static string SelectActiveSeasonChallengeId(ChallengeProgressVersion progress, string? requestedChallengeId = null)
     {
         var templates = Json.Deserialize<Dictionary<string, ChallengeRecord>>(Season17ChallengesJson) ?? [];
@@ -386,8 +486,11 @@ internal sealed class ChallengesController : ControllerBase
             ? DefaultActiveSeasonChallengeId
             : requestedChallengeId;
 
+        HashSet<string> unlocked = ComputeSeasonGraph(templates, progress).Unlocked;
+
         if (templates.ContainsKey(preferredChallengeId) &&
-            progress.ClaimedChallengeIds?.Contains(preferredChallengeId) != true)
+            progress.ClaimedChallengeIds?.Contains(preferredChallengeId) != true &&
+            (preferredChallengeId == DefaultActiveSeasonChallengeId || unlocked.Contains(preferredChallengeId)))
         {
             return preferredChallengeId;
         }
@@ -395,9 +498,8 @@ internal sealed class ChallengesController : ControllerBase
         int preferredOrder = templates.TryGetValue(preferredChallengeId, out ChallengeRecord? preferred)
             ? preferred.Order
             : -1;
-
         string? nextChallengeId = templates
-            .Where(entry => IsSelectableActiveSeasonChallenge(entry.Key, entry.Value, templates, progress))
+            .Where(entry => IsSelectableActiveSeasonChallenge(entry.Key, entry.Value, unlocked, progress))
             .OrderBy(entry => entry.Value.Order <= preferredOrder ? 1 : 0)
             .ThenBy(entry => entry.Value.Order)
             .Select(entry => entry.Key)
@@ -409,46 +511,38 @@ internal sealed class ChallengesController : ControllerBase
     private static bool IsSelectableActiveSeasonChallenge(
         string challengeId,
         ChallengeRecord challenge,
-        Dictionary<string, ChallengeRecord> templates,
+        HashSet<string> unlocked,
         ChallengeProgressVersion progress)
+        => IsSeasonChallenge(challenge) &&
+            challengeId != challenge.GroupId &&
+            progress.ClaimedChallengeIds?.Contains(challengeId) != true &&
+            unlocked.Contains(challengeId);
+
+    private const string HostileGoldPickaxeChallengeId = "fb13127e-d19d-48bd-a977-f830eecff180";
+    private const string SuperPrizesChallengeId = "96593763-a8a6-41f8-986a-8d6df0470c57";
+
+    private static int GetChallengeProgress(string challengeId, ChallengeRecord challenge, ChallengeProgressVersion progress)
     {
-        if (challenge.Duration != "Season" ||
-            challenge.Category != ActiveSeasonId ||
-            challengeId == challenge.GroupId ||
-            progress.ClaimedChallengeIds?.Contains(challengeId) == true)
+        if (!IsSeasonChallenge(challenge))
         {
-            return false;
+            return progress.GetObjectiveProgress(challenge.ReferenceId);
         }
 
-        if (challenge.State != "Locked")
-        {
-            return true;
-        }
-
-        if (challenge.PrerequisiteIds.Length == 0)
-        {
-            return true;
-        }
-
-        bool IsSatisfied(string prerequisiteId)
-            => progress.ClaimedChallengeIds?.Contains(prerequisiteId) == true ||
-               (templates.TryGetValue(prerequisiteId, out ChallengeRecord? prerequisite) &&
-                IsComplete(prerequisite, progress));
-
-        return challenge.PrerequisiteLogicalCondition == "Or"
-            ? challenge.PrerequisiteIds.Any(IsSatisfied)
-            : challenge.PrerequisiteIds.All(IsSatisfied);
+        int count = progress.GetSeasonChallengeProgress(challengeId);
+        return challengeId == SuperPrizesChallengeId && progress.ClaimedChallengeIds?.Contains(HostileGoldPickaxeChallengeId) == true
+            ? Math.Max(count, 1)
+            : count;
     }
 
-    private static bool IsComplete(ChallengeRecord challenge, ChallengeProgressVersion progress)
+    private static bool IsComplete(string challengeId, ChallengeRecord challenge, ChallengeProgressVersion progress)
     {
-        if (challenge.IsComplete)
+        if (challenge.IsComplete || challenge.ReferenceId == FinalSeasonChallengeReferenceId)
         {
             return true;
         }
 
         int threshold = Math.Max(1, challenge.TotalThreshold);
-        return progress.GetObjectiveProgress(challenge.ReferenceId) >= threshold;
+        return GetChallengeProgress(challengeId, challenge, progress) >= threshold;
     }
 
     internal static string? GetSeasonChallengeReferenceId(string? challengeId)

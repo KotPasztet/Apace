@@ -626,12 +626,88 @@ public sealed class BuildplateInstancesManager
                 }
 
                 break;
+            case "mobPlaced":
+                {
+                    try
+                    {
+                        MobPlacedNotification? notification = Json.Deserialize<MobPlacedNotification>(@event.Data);
+                        if (notification is not null && !string.IsNullOrEmpty(notification.PlayerId) && !string.IsNullOrEmpty(notification.Mob))
+                        {
+                            bool onOwnBuildplate;
+                            lock (_instances)
+                            {
+                                onOwnBuildplate = IsOnOwnBuildplate(_instances.Values, notification.PlayerId);
+                            }
+
+                            if (onOwnBuildplate)
+                            {
+                                ChallengeEvents.RecordMobPlacedAsync(notification.PlayerId, notification.Mob).Forget();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"Bad mob placed notification: {ex}");
+                    }
+                }
+
+                break;
+            case "challengeEvent":
+                {
+                    try
+                    {
+                        ChallengeEventNotification? notification = Json.Deserialize<ChallengeEventNotification>(@event.Data);
+                        ChallengeEvents.EventRule? rule = notification is null ? null : ChallengeEvents.GetEventRule(notification.Event);
+                        if (notification is not null && rule is not null && !string.IsNullOrEmpty(notification.PlayerId))
+                        {
+                            bool counts;
+                            lock (_instances)
+                            {
+                                counts = ShouldCountChallengeEvent(_instances.Values, notification.PlayerId, rule);
+                            }
+
+                            if (counts)
+                            {
+                                ChallengeEvents.RecordChallengeEventAsync(notification.PlayerId, notification.Event, rule).Forget();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning($"Bad challenge event notification: {ex}");
+                    }
+                }
+
+                break;
             default:
                 break;
         }
 
         return Task.CompletedTask;
     }
+
+    internal static bool IsOnOwnBuildplate(IEnumerable<InstanceInfo> instances, string playerId)
+        => instances.Any(instanceInfo => instanceInfo.PlayerId == playerId && instanceInfo.Type is not InstanceType.ENCOUNTER and not InstanceType.PLAYER_ADVENTURE);
+
+    internal static bool IsInAdventure(IEnumerable<InstanceInfo> instances, string playerId)
+        => instances.Any(instanceInfo => instanceInfo.PlayerId == playerId && instanceInfo.Type is InstanceType.ENCOUNTER or InstanceType.PLAYER_ADVENTURE);
+
+    internal static bool ShouldCountChallengeEvent(IEnumerable<InstanceInfo> instances, string playerId, ChallengeEvents.EventRule rule)
+    {
+        List<InstanceInfo> snapshot = [.. instances];
+        return (!rule.RequiresOwnBuildplate || IsOnOwnBuildplate(snapshot, playerId)) &&
+            (!rule.RequiresAdventure || IsInAdventure(snapshot, playerId));
+    }
+
+    private sealed record ChallengeEventNotification(
+        string PlayerId,
+        string Event
+    );
+
+    private sealed record MobPlacedNotification(
+        string PlayerId,
+        string Mob
+    );
 
     private sealed record StartRequest(
         string? PlayerId,

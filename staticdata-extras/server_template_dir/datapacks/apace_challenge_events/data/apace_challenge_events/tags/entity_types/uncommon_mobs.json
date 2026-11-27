@@ -1,0 +1,132 @@
+{
+  "values": [
+    {
+      "id": "genoa:amber_chicken",
+      "required": false
+    },
+    {
+      "id": "genoa:bronzed_chicken",
+      "required": false
+    },
+    {
+      "id": "genoa:gold_crested_chicken",
+      "required": false
+    },
+    {
+      "id": "genoa:midnight_chicken",
+      "required": false
+    },
+    {
+      "id": "genoa:skewbald_chicken",
+      "required": false
+    },
+    {
+      "id": "genoa:stormy_chicken",
+      "required": false
+    },
+    {
+      "id": "genoa:albino_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:ashen_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:cookie_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:cream_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:dairy_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:pinto_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:sunset_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:umbra_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:mottled_pig",
+      "required": false
+    },
+    {
+      "id": "genoa:pale_pig",
+      "required": false
+    },
+    {
+      "id": "genoa:piebald_pig",
+      "required": false
+    },
+    {
+      "id": "genoa:pink_footed_pig",
+      "required": false
+    },
+    {
+      "id": "genoa:sooty_pig",
+      "required": false
+    },
+    {
+      "id": "genoa:spotted_pig",
+      "required": false
+    },
+    {
+      "id": "genoa:bold_striped_rabbit",
+      "required": false
+    },
+    {
+      "id": "genoa:freckled_rabbit",
+      "required": false
+    },
+    {
+      "id": "genoa:harelequin_rabbit",
+      "required": false
+    },
+    {
+      "id": "genoa:muddy_foot_rabbit",
+      "required": false
+    },
+    {
+      "id": "genoa:vested_rabbit",
+      "required": false
+    },
+    {
+      "id": "genoa:flecked_sheep",
+      "required": false
+    },
+    {
+      "id": "genoa:inky_sheep",
+      "required": false
+    },
+    {
+      "id": "genoa:long_nosed_sheep",
+      "required": false
+    },
+    {
+      "id": "genoa:patched_sheep",
+      "required": false
+    },
+    {
+      "id": "genoa:rocky_sheep",
+      "required": false
+    },
+    {
+      "id": "genoa:wooly_cow",
+      "required": false
+    },
+    {
+      "id": "genoa:rainbow_sheep",
+      "required": false
+    }
+  ]
+}

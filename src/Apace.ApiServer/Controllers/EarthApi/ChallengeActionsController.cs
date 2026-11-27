@@ -44,18 +44,13 @@ internal sealed class ChallengeActionsController : ApaceControllerBase
             .Then(queryResults =>
             {
                 ChallengeProgressVersion progress = queryResults.Get<ChallengeProgressVersion>("challenges");
-                progress.EnsureDate(now);
-                progress.ClaimedChallengeIds ??= [];
-
-                bool firstClaim = progress.ClaimedChallengeIds.Add(challengeId);
-                progress.ActiveSeasonId = ChallengesController.ActiveSeasonId;
-                progress.ActiveSeasonChallengeId = ChallengesController.SelectActiveSeasonChallengeId(progress, progress.ActiveSeasonChallengeId);
-                progress.UpdatedAt = now;
+                ModifyStateOutcome outcome = ApplyModifyState(progress, challengeId, now);
 
                 var query = new EarthDB.Query(true)
-                    .Update("challenges", playerId, progress);
+                    .Update("challenges", playerId, progress)
+                    .Extra("claimAllowed", outcome.ClaimAllowed);
 
-                if (firstClaim && apiRewards is not null)
+                if (outcome.FirstClaim && apiRewards is not null)
                 {
                     query.Then(rewards.ToRedeemQuery(playerId, now, Program.staticData), false);
                 }
@@ -64,16 +59,36 @@ internal sealed class ChallengeActionsController : ApaceControllerBase
             })
             .ExecuteAsync(Program.DB, cancellationToken);
 
+        bool claimAllowed = (bool)results.GetExtra("claimAllowed");
         var updates = new EarthApiResponse.UpdatesResponse(results);
         updates.Map["challenges"] = (int)(now / 1000);
 
         return EarthJson(new Dictionary<string, object?>
         {
             ["challengeId"] = challengeId,
-            ["state"] = "Claimed",
-            ["rewards"] = apiRewards ?? rewards.ToApiResponse(),
+            ["state"] = claimAllowed ? "Claimed" : "Active",
+            ["rewards"] = claimAllowed ? apiRewards ?? rewards.ToApiResponse() : new RedeemRewards().ToApiResponse(),
             ["updates"] = new Dictionary<string, object>()
         }, updates);
+    }
+
+    internal sealed record ModifyStateOutcome(bool ClaimAllowed, bool FirstClaim);
+
+    internal static ModifyStateOutcome ApplyModifyState(ChallengeProgressVersion progress, string challengeId, long now)
+    {
+        progress.EnsureDate(now);
+        progress.ClaimedChallengeIds ??= [];
+
+        var (isSeason, unlocked, complete) = ChallengesController.GetSeasonChallengeStatus(progress, challengeId);
+        bool claimAllowed = !isSeason || (unlocked && complete);
+
+        bool firstClaim = claimAllowed && progress.ClaimedChallengeIds.Add(challengeId);
+        progress.ActiveSeasonId = ChallengesController.ActiveSeasonId;
+        string? requestedActiveId = !claimAllowed && unlocked ? challengeId : progress.ActiveSeasonChallengeId;
+        progress.ActiveSeasonChallengeId = ChallengesController.SelectActiveSeasonChallengeId(progress, requestedActiveId);
+        progress.UpdatedAt = now;
+
+        return new ModifyStateOutcome(claimAllowed, firstClaim);
     }
 
     private static async Task<Results<ContentHttpResult, BadRequest>> ClaimDailyLoginChallenge(
