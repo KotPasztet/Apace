@@ -220,7 +220,7 @@ public sealed class BuildplateInstanceRequestHandler
 
     private async Task<BuildplateLoadResponse?> HandleLoad(string playerId, string buildplateId)
     {
-        Log.Information("HandleLoad: loading buildplate {BuildplateId} for player {PlayerId}", playerId, buildplateId);
+        Log.Information("HandleLoad: loading buildplate {BuildplateId} for player {PlayerId}", buildplateId, playerId);
 
         EarthDB.Results results = await new EarthDB.Query(false)
             .Get("buildplates", playerId, typeof(Buildplates))
