@@ -229,21 +229,31 @@ public partial class Program
 
             // WHY: self-heal for installs stuck with "account exists, no admin" (the old
             // empty-table pre-check could leave the first account without the owner role).
-            // Runs once at startup, before the app accepts requests: if any user exists
-            // but the owner role has zero members, promote the first user (by Id).
+            // Identity Id is a random GUID, so "first user by Id" promoted a RANDOM account
+            // on installs with several accounts — grant at startup only when exactly one
+            // account exists (unambiguous); with more, the first successful sign-in decides
+            // (see OwnerBootstrap.EnsureOwnerForUserAsync in the login pages).
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            var firstUser = await userManager.Users.OrderBy(u => u.Id).FirstOrDefaultAsync();
-            if (firstUser is not null && !(await userManager.GetUsersInRoleAsync(ApplicationRole.Owner)).Any())
+            var userCount = await userManager.Users.CountAsync();
+            if (!(await userManager.GetUsersInRoleAsync(ApplicationRole.Owner)).Any())
             {
-                var add = await userManager.AddToRoleAsync(firstUser, ApplicationRole.Owner);
-                if (add.Succeeded)
+                if (userCount == 1)
                 {
-                    Log.Information("Owner bootstrap: granted owner to the only existing user '{Name}' (no admin existed after update)", firstUser.UserName);
+                    var onlyUser = await userManager.Users.SingleAsync();
+                    var add = await userManager.AddToRoleAsync(onlyUser, ApplicationRole.Owner);
+                    if (add.Succeeded)
+                    {
+                        Log.Information("Owner bootstrap: granted owner to the only existing user '{Name}'", onlyUser.UserName);
+                    }
+                    else
+                    {
+                        Log.Warning("Owner bootstrap: failed to grant owner to the only existing user '{Name}': {Errors}",
+                            onlyUser.UserName, string.Join(", ", add.Errors.Select(e => e.Description)));
+                    }
                 }
-                else
+                else if (userCount > 1)
                 {
-                    Log.Warning("Owner bootstrap: failed to grant owner to the only existing user '{Name}': {Errors}",
-                        firstUser.UserName, string.Join(", ", add.Errors.Select(e => e.Description)));
+                    Log.Warning("Panel has {N} users but no Owner — the first successful sign-in will be granted Owner", userCount);
                 }
             }
         }

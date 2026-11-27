@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using Apace.LauncherUI.Data
+@using Apace.LauncherUI.Utils
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
@@ -106,6 +107,7 @@
         }
 
         SignInResult result;
+        var isPasswordSignIn = false;
         if (!string.IsNullOrEmpty(Input.Passkey?.CredentialJson))
         {
             // When performing passkey sign-in, don't perform form validation.
@@ -113,6 +115,8 @@
         }
         else
         {
+            isPasswordSignIn = true;
+
             // If doing a password sign-in, validate the form.
             if (!editContext.Validate())
             {
@@ -126,6 +130,18 @@
 
         if (result.Succeeded)
         {
+            // WHY: Identity Id is a random GUID, so the startup self-heal cannot tell
+            // WHICH account should own a multi-user install — the first successful
+            // sign-in is the unambiguous bootstrap signal (no-op if an owner exists).
+            if (isPasswordSignIn)
+            {
+                var user = await UserManager.FindByEmailAsync(Input.Email);
+                if (user is not null)
+                {
+                    await OwnerBootstrap.EnsureOwnerForUserAsync(UserManager, user, Logger);
+                }
+            }
+
             Logger.LogInformation("User logged in.");
             RedirectManager.RedirectTo(ReturnUrl);
         }

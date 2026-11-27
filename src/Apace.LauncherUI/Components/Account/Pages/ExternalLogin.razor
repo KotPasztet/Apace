@@ -122,6 +122,18 @@
                 "{Name} logged in with {LoginProvider} provider.",
                 externalLoginInfo.Principal.Identity?.Name,
                 externalLoginInfo.LoginProvider);
+
+            // WHY: same grant as password login — the startup self-heal cannot tell WHICH
+            // account to promote on a multi-user install (random GUID Id), so the first
+            // successful sign-in (external included) is the bootstrap signal (no-op if an
+            // owner exists). This login just matched, so FindByLoginAsync is exact.
+            var signedInUser = await UserManager.FindByLoginAsync(
+                externalLoginInfo.LoginProvider, externalLoginInfo.ProviderKey);
+            if (signedInUser is not null)
+            {
+                await OwnerBootstrap.EnsureOwnerForUserAsync(UserManager, signedInUser, Logger);
+            }
+
             RedirectManager.RedirectTo(ReturnUrl);
             return;
         }
