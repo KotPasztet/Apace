@@ -156,6 +156,14 @@
             Logger.LogWarning("User account locked out.");
             RedirectManager.RedirectTo("Account/Lockout");
         }
+        else if (result.IsNotAllowed)
+        {
+            // WHY: with RequireConfirmedAccount=true, SignInManager returns IsNotAllowed
+            // for unconfirmed e-mail addresses; the generic "Invalid login attempt"
+            // message gave the user no hint that they must open the confirmation link
+            // from registration (or request a new one) before signing in.
+            errorMessage = "Error: Your account has not been confirmed. Open the confirmation link from registration (/Account/RegisterConfirmation), or resend it via Account/ResendEmailConfirmation.";
+        }
         else
         {
             errorMessage = "Error: Invalid login attempt.";

@@ -162,6 +162,15 @@ public partial class Program
 
         app.UseAntiforgery();
 
+        // WHY: cookie sessions survive panel restarts, so the login-page grant never
+        // runs for already-signed-in users; this closes the last gap — the first
+        // authenticated request after an update grants Owner when no admin exists.
+        // There is no explicit UseAuthentication() call in this file: WebApplication
+        // injects it before user middleware (AddAuthentication is registered above),
+        // so context.User is already resolved at this point. Must stay above the
+        // Map* calls so every request (page, circuit, controller) passes through it.
+        app.UseMiddleware<OwnerBootstrapMiddleware>();
+
         // While a client patch job is queued/running, keep users on the patcher page:
         // MCEPatcher.Core swaps the process working directory, which breaks the rest
         // of the panel (DB access etc.) until the job finishes. Applies to document

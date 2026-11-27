@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Identity;
 namespace Apace.LauncherUI.Utils;
 
 /// <summary>
-/// Refreshes "Permission" claims from the database on every request.
-/// This ensures newly auto-seeded permissions take effect immediately
+/// Refreshes "Permission" and role claims from the database on every request.
+/// This ensures newly auto-seeded permissions and role grants take effect immediately
 /// without requiring the user to log out and back in.
 /// </summary>
 public sealed class PermissionClaimsTransformation : IClaimsTransformation
@@ -37,10 +37,6 @@ public sealed class PermissionClaimsTransformation : IClaimsTransformation
         }
 
         var roleNames = await _userManager.GetRolesAsync(user);
-        if (roleNames.Count == 0)
-        {
-            return principal;
-        }
 
         // Build fresh set of permission claims from role claims in the DB
         var freshPermissions = new HashSet<string>();
@@ -59,12 +55,7 @@ public sealed class PermissionClaimsTransformation : IClaimsTransformation
             }
         }
 
-        if (freshPermissions.Count == 0)
-        {
-            return principal;
-        }
-
-        // Replace existing Permission claims with fresh ones
+        // Replace existing claims with fresh ones
         var identity = principal.Identities.FirstOrDefault(i => i.IsAuthenticated);
         if (identity is null)
         {
@@ -84,6 +75,27 @@ public sealed class PermissionClaimsTransformation : IClaimsTransformation
         foreach (var permission in freshPermissions)
         {
             identity.AddClaim(new Claim("Permission", permission));
+        }
+
+        // WHY: grants that happen after the cookie was issued (bootstrap at login /
+        // middleware) must be visible without a re-login; Permission claims were
+        // already refreshed — roles were not, which left role MANAGEMENT dead for a
+        // bootstrapped owner (Users.razor / RoleManagement.razor derive
+        // _userMinPosition from ClaimTypes.Role, which stayed at the stale cookie value).
+        // NOTE: this sync must run even when there are no permission claims or no roles
+        // at all — a role with zero Permission claims (or a fully revoked user) still
+        // needs its stale role claims replaced/removed.
+        var staleRoleClaims = identity.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .ToList();
+        foreach (var staleRole in staleRoleClaims)
+        {
+            identity.TryRemoveClaim(staleRole);
+        }
+
+        foreach (var roleName in roleNames)
+        {
+            identity.AddClaim(new Claim(ClaimTypes.Role, roleName, ClaimValueTypes.String, "LOCAL AUTHORITY"));
         }
 
         return principal;
