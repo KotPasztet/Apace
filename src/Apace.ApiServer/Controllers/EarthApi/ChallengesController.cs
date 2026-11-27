@@ -27,6 +27,7 @@ internal sealed class ChallengesController : ControllerBase
     private const string DailyGroupId = "c1a1beef-0d01-4b1a-8d1e-000000000001";
     internal const string DailyBonusChallengeId = "c1a1beef-0d01-4b1a-8d1e-000000000002";
     private const string DailyLoginGroupId = "d4111000-0000-4000-8000-000000000000";
+    internal const string DailyLoginParentId = "d4111000-0000-4000-8000-0000000000f0";
     private const string TreasureHuntReferenceId = "2b64c950-f80b-4491-b81d-bf90cee88db1";
     private const string BestDefenseReferenceId = "06eb0e50-b18d-43e8-9aad-422203ffdf28";
     private const string ChopChopReferenceId = "bd9d3fd7-12ef-49e0-91fa-c971795f8e35";
@@ -41,7 +42,9 @@ internal sealed class ChallengesController : ControllerBase
     private const string FinalSeasonChallengeReferenceId = "1e4899f5-039e-48f0-a1cc-bd1bda871e96";
     internal const string DefaultActiveSeasonChallengeId = "f0532069-a70a-4a01-8611-f770bb46d9cd";
 
-    private static readonly string[] DailyLoginChallengeIds =
+    internal const int PlaceholderDailyLoginExperience = 25;
+
+    internal static readonly string[] DailyLoginChallengeIds =
     [
         "d4111000-0000-4000-8000-000000000001",
         "d4111000-0000-4000-8000-000000000002",
@@ -330,29 +333,47 @@ internal sealed class ChallengesController : ControllerBase
     {
         string today = DateTimeOffset.FromUnixTimeMilliseconds(now).UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         int currentDay = TokenUtils.GetDailyLoginCycleDay(tokenClaims, today);
-        bool claimedToday = TokenUtils.IsDailyLoginClaimedToday(tokenClaims, today);
         Rewards rewards = Utils.Rewards.FromDBRewardsModel(DailyLoginRewards()).ToApiResponse();
+
+        challenges[DailyLoginParentId] = new ChallengeRecord(
+            DailyLoginParentId,
+            null,
+            DailyLoginGroupId,
+            "SignIn",
+            "Regular",
+            "retention",
+            "common",
+            0,
+            endTimeUtc,
+            "Active",
+            false,
+            0,
+            0,
+            1,
+            [],
+            "And",
+            new Utils.Rewards().ToApiResponse(),
+            new Dictionary<string, object>());
 
         for (int index = 0; index < DailyLoginChallengeIds.Length; index++)
         {
             int day = index + 1;
-            bool claimed = day < currentDay || day == currentDay && claimedToday;
-            string state = claimed ? "Completed" : day == currentDay ? "Active" : "Locked";
+            bool reached = day <= currentDay;
 
             challenges[DailyLoginChallengeIds[index]] = new ChallengeRecord(
                 DailyLoginChallengeIds[index],
-                null,
+                DailyLoginParentId,
                 DailyLoginGroupId,
                 "SignIn",
                 "Regular",
                 "retention",
                 "common",
-                index,
+                day,
                 endTimeUtc,
-                state,
-                claimed,
-                claimed ? 100 : 0,
-                claimed ? 1 : 0,
+                reached ? "Completed" : "Locked",
+                reached,
+                reached ? 100 : 0,
+                reached ? 1 : 0,
                 1,
                 index == 0 ? [] : [DailyLoginChallengeIds[index - 1]],
                 "And",
@@ -372,8 +393,8 @@ internal sealed class ChallengesController : ControllerBase
         return index >= 0;
     }
 
-    private static DBRewards DailyLoginRewards()
-        => new(0, 25, null, new Dictionary<string, int?> { [CommonAdventureCrystalId] = 1 }, [], []);
+    internal static DBRewards DailyLoginRewards()
+        => new(0, PlaceholderDailyLoginExperience, null, new Dictionary<string, int?> { [CommonAdventureCrystalId] = 1 }, [], []);
 
     private static Dictionary<string, object> BuildSeasonChallenges(string seasonEndTime, string dailyEndTime, ChallengeProgressVersion progress, string activeSeasonChallengeId)
     {
