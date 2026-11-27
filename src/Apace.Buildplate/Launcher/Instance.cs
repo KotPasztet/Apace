@@ -15,6 +15,10 @@ public sealed class Instance
 {
     private const long HOST_PLAYER_CONNECT_TIMEOUT = 120_000;
 
+    // Upper bound for LastError so startup failure reasons stay a compact, single
+    // field in the "stopped" event payload (exception messages only, no stack traces).
+    private const int MAX_LAST_ERROR_LENGTH = 300;
+
     public static Instance Run(EventBusClient eventBusClient, string? playerId, string buildplateId, BuildplateSource buildplateSource, string instanceId, bool survival, bool night, bool saveEnabled, InventoryType inventoryType, long? shutdownTime, DirectoryInfo baseDir, string eventBusConnectionString)
     {
         if (playerId is null && buildplateSource is BuildplateSource.PLAYER)
@@ -60,6 +64,12 @@ public sealed class Instance
 
     private string? _dimensionKey;
     public string? DimensionKey => _dimensionKey;
+
+    // Why the instance failed to start: set right before RunAsync exits early on a
+    // startup failure, read by the InstanceManager once RunAsync has finished and
+    // attached to the "stopped" event payload. Null for a normal lifecycle.
+    public string? LastError => _lastError;
+    private volatile string? _lastError;
     private readonly TaskCompletionSource _shutdownTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Lock _shutdownLock = new Lock();
     private volatile bool _shuttingDown;
@@ -137,6 +147,7 @@ public sealed class Instance
             catch (Exception exception)
             {
                 _logger.Error(exception, "Buildplate load response contained invalid base64 data");
+                SetLastError($"Buildplate load response contained invalid base64 data: {exception.Message}");
                 return;
             }
 
@@ -146,12 +157,26 @@ public sealed class Instance
                 if (worldDataDir is null)
                 {
                     _logger.Error("Could not set up files for server");
+                    SetLastError("Failed to set up server files: could not create server directories");
                     return;
                 }
             }
             catch (IOException exception)
             {
                 _logger.Error(exception, "Could not set up files for server");
+                SetLastError($"Failed to set up server files: {exception.Message}");
+                return;
+            }
+            catch (InvalidDataException exception)
+            {
+                _logger.Error(exception, "Could not set up files for server");
+                SetLastError($"Failed to set up server files: {exception.Message}");
+                return;
+            }
+            catch (Exception exception)
+            {
+                _logger.Error(exception, "Could not set up files for server");
+                SetLastError($"Failed to set up server files: {exception.Message}");
                 return;
             }
 
@@ -190,12 +215,14 @@ public sealed class Instance
             if (createInstanceResponse is null)
             {
                 _logger.Error("Could not create instance {InstanceId} on persistent Fabric server", InstanceId);
+                SetLastError("Failed to create instance on persistent Fabric server: no response");
                 return;
             }
 
             if (!createInstanceResponse.Success)
             {
                 _logger.Error("Failed to create instance {InstanceId} on persistent Fabric server: {Error}", InstanceId, createInstanceResponse.Error);
+                SetLastError($"Failed to create instance on persistent Fabric server: {createInstanceResponse.Error ?? "no error details"}");
                 return;
             }
 
@@ -218,6 +245,7 @@ public sealed class Instance
         catch (Exception exception)
         {
             _logger.Error(exception, $"Unhandled exception: {exception.Message}");
+            SetLastError($"Unhandled exception: {exception.Message}");
         }
         finally
         {
@@ -620,6 +648,10 @@ public sealed class Instance
             true,                   // keepInventory
             worldDataBase64
         );
+
+    // Startup failure reason surfaced via the "stopped" event; messages only, no stack traces.
+    private void SetLastError(string reason)
+        => _lastError = reason.Length <= MAX_LAST_ERROR_LENGTH ? reason : reason[..MAX_LAST_ERROR_LENGTH];
 
     private async Task<DirectoryInfo?> SetupServerFiles(byte[] serverData)
     {

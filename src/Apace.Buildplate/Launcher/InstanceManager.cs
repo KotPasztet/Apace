@@ -66,6 +66,13 @@ public sealed class InstanceManager
         InstanceType Type
     );
 
+    // Payload of the "stopped" event: the instance id plus the startup failure
+    // reason, if the instance died before becoming ready (null for a normal shutdown).
+    private sealed record StoppedNotification(
+        string InstanceId,
+        string? Error
+    );
+
     // Response to the connector plugin's playerLogin request (see
     // ViennaConnectorPlugin.PlayerLoginResponse): accepted + the instance the
     // player should be routed to.
@@ -215,7 +222,12 @@ public sealed class InstanceManager
                         {
                             await instance.WaitForShutdownAsync();
 
-                            instanceManager.SendEventBusMessage("stopped", instance.InstanceId);
+                            // Include the startup failure reason (if any) so the API server
+                            // can surface why the instance stopped before becoming ready.
+                            instanceManager.SendEventBusMessage("stopped", Json.Serialize(new StoppedNotification(
+                                instance.InstanceId,
+                                instance.LastError
+                            )));
                         }
                         catch (Exception ex)
                         {

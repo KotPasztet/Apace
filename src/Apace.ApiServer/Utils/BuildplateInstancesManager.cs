@@ -22,6 +22,13 @@ public sealed class BuildplateInstancesManager
     // Players currently routed to another player's instance as guests (playerId -> host instanceId)
     private readonly Dictionary<string, string> _guests = [];
 
+    // Stopped instances whose "stopped" event carried a failure reason, kept so a
+    // readiness waiter that only sees the instance disappear can surface why it
+    // stopped (consumed by ConsumeStopReason). Failure stops are rare, but bound the
+    // map anyway so reasons nobody waited for cannot accumulate forever.
+    private const int MaxTrackedStoppedInstances = 128;
+    private readonly Dictionary<string, InstanceInfo> _stoppedInstances = [];
+
     // unambiguous characters only, the code is typed in manually by players
     private const string JoinCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -360,6 +367,21 @@ public sealed class BuildplateInstancesManager
         }
     }
 
+    // Returns and clears the launcher-reported failure reason for a stopped instance,
+    // if its "stopped" event carried one.
+    public string? ConsumeStopReason(string instanceId)
+    {
+        lock (_instances)
+        {
+            if (_stoppedInstances.Remove(instanceId, out InstanceInfo? instanceInfo))
+            {
+                return instanceInfo.StopReason;
+            }
+
+            return null;
+        }
+    }
+
     public async Task<bool> AddGuestAsync(string playerId, string instanceId)
     {
         Log.Information($"Adding player {playerId} as guest to instance {instanceId}");
@@ -551,13 +573,41 @@ public sealed class BuildplateInstancesManager
                 break;
             case "stopped":
                 {
+                    // The payload is a JSON object (instanceId + optional error);
+                    // launchers older than the error field published the bare instance
+                    // id, so fall back to reading it as-is when the payload is not JSON.
                     string instanceId = @event.Data;
+                    string? stopReason = null;
+                    try
+                    {
+                        StoppedNotification? stoppedNotification = Json.Deserialize<StoppedNotification>(@event.Data);
+                        if (stoppedNotification is not null && !string.IsNullOrEmpty(stoppedNotification.InstanceId))
+                        {
+                            instanceId = stoppedNotification.InstanceId;
+                            stopReason = stoppedNotification.Error;
+                        }
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        // legacy bare instance id payload
+                    }
+
                     lock (_instances)
                     {
                         var instanceInfo = _instances.JavaRemove(instanceId);
                         if (instanceInfo is not null)
                         {
-                            Log.Information($"Buildplate instance {instanceId} has stopped");
+                            Log.Information($"Buildplate instance {instanceId} has stopped{(stopReason is null ? "" : $": {stopReason}")}");
+
+                            if (stopReason is not null)
+                            {
+                                if (_stoppedInstances.Count >= MaxTrackedStoppedInstances)
+                                {
+                                    _stoppedInstances.Clear();
+                                }
+
+                                _stoppedInstances[instanceId] = instanceInfo with { StopReason = stopReason };
+                            }
 
                             var instanceIds = _instancesByBuildplateId.GetOrDefault(instanceInfo.BuildplateId);
                             instanceIds?.Remove(instanceInfo.InstanceId);
@@ -607,6 +657,11 @@ public sealed class BuildplateInstancesManager
         InstanceType Type
     );
 
+    private sealed record StoppedNotification(
+        string InstanceId,
+        string? Error
+    );
+
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum InstanceType
     {
@@ -633,6 +688,10 @@ public sealed class BuildplateInstancesManager
         int Port,
 
         bool Ready,
-        bool ShuttingDown
+        bool ShuttingDown,
+
+        // Why the instance stopped, from the launcher's "stopped" event; null unless
+        // the launcher attached a failure reason.
+        string? StopReason = null
     );
 }
