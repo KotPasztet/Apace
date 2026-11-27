@@ -189,7 +189,6 @@ internal sealed class TappablesController : ApaceControllerBase
 
         TappablesManager.Tappable[] tappables = tappablesManager.GetTappablesAround(lat, lon, 1.5);
         TappablesManager.Encounter[] encounters = tappablesManager.GetEncountersAround(lat, lon, 1.5);
-        TappablesManager.Adventure[] adventures = tappablesManager.GetPlayerAdventuresAround(playerId, lat, lon, 1.5);
 
         try
         {
@@ -230,8 +229,7 @@ internal sealed class TappablesController : ApaceControllerBase
                     new ActiveLocation.MetadataR(U.RandomUuid().ToString(), Enum.Parse<Rarity>(encounter.Rarity.ToString())),
                     null,
                     new ActiveLocation.EncounterMetadataR(
-                        ActiveLocation.EncounterMetadataR.EncounterTypeE.SHORT_4X4_PEACEFUL,    // TODO
-                                                                                                //UUID.randomUUID().toString(),    // TODO: what is this field for and does it matter what we put here?
+                        GetEncounterType(encounter),
                         encounter.Id,
                         encounter.EncounterBuildplateId,
                         ActiveLocation.EncounterMetadataR.AnchorStateE.OFF,
@@ -240,30 +238,7 @@ internal sealed class TappablesController : ApaceControllerBase
                     )
                 ));
 
-            IEnumerable<ActiveLocation> activeLocationAdventures = adventures
-                .Where(adventure => adventure.SpawnTime <= requestStartedOn + 30000 && adventure.SpawnTime + adventure.ValidFor > requestStartedOn)
-                .OrderBy(adventure => DistanceSquared(adventure.Lat, adventure.Lon, lat, lon))
-                .Take(1)
-                .Select(adventure => new ActiveLocation(
-                    adventure.Id,
-                    TappablesManager.LocationToTileId(adventure.Lat, adventure.Lon),
-                    new Coordinate(adventure.Lat, adventure.Lon),
-                    TimeFormatter.FormatTime(adventure.SpawnTime),
-                    TimeFormatter.FormatTime(adventure.SpawnTime + adventure.ValidFor),
-                    ActiveLocation.TypeE.PLAYER_ADVENTURE,
-                    adventure.Icon,
-                    new ActiveLocation.MetadataR(adventure.Id, Enum.Parse<Rarity>(adventure.Rarity.ToString())),
-                    new ActiveLocation.TappableMetadataR(Enum.Parse<Rarity>(adventure.Rarity.ToString())),
-                    new ActiveLocation.EncounterMetadataR(
-                        ActiveLocation.EncounterMetadataR.EncounterTypeE.SHORT_4X4_PEACEFUL,
-                        adventure.Id,
-                        adventure.AdventureBuildplateId,
-                        ActiveLocation.EncounterMetadataR.AnchorStateE.OFF,
-                        "",
-                        "")
-                ));
-
-            ActiveLocation[] activeLocations = [.. activeLocationTappables, .. activeLocationEncounters, .. activeLocationAdventures];
+            ActiveLocation[] activeLocations = [.. activeLocationTappables, .. activeLocationEncounters];
 
             return EarthJson(new Dictionary<string, object>()
             {
@@ -276,6 +251,11 @@ internal sealed class TappablesController : ApaceControllerBase
             throw new ServerErrorException(ex);
         }
     }
+
+    internal static ActiveLocation.EncounterMetadataR.EncounterTypeE GetEncounterType(TappablesManager.Encounter encounter)
+        => encounter.Hostile
+            ? ActiveLocation.EncounterMetadataR.EncounterTypeE.SHORT_4X4_HOSTILE
+            : ActiveLocation.EncounterMetadataR.EncounterTypeE.SHORT_4X4_PEACEFUL;
 
     private static double DistanceSquared(double lat1, double lon1, double lat2, double lon2)
     {

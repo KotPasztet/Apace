@@ -9,6 +9,9 @@ public sealed class StaticData
     private TappablesConfig? _tappablesConfig;
     private EncountersConfig? _encountersConfig;
     private AdventuresConfig? _adventuresConfig;
+    private AdventureChestBlocks? _adventureChestBlocks;
+    private AdventureLoot? _adventureLoot;
+    private AdventureFootprints? _adventureFootprints;
     private TileRenderer? _tileRenderer;
     private Buildplates? _buildplates;
     private Playfab? _playfab;
@@ -27,6 +30,12 @@ public sealed class StaticData
     public EncountersConfig EncountersConfig => _encountersConfig ??= new EncountersConfig(Path.Combine(Directory, "encounters"));
 
     public AdventuresConfig AdventuresConfig => _adventuresConfig ??= new AdventuresConfig(Path.Combine(Directory, "adventures"));
+
+    public AdventureChestBlocks AdventureChestBlocks => _adventureChestBlocks ??= new AdventureChestBlocks(Path.Combine(Directory, "adventures"));
+
+    public AdventureFootprints AdventureFootprints => _adventureFootprints ??= new AdventureFootprints(Path.Combine(Directory, "adventures"));
+
+    public AdventureLoot AdventureLoot => _adventureLoot ??= new AdventureLoot(Path.Combine(Directory, "adventures"));
 
     public TileRenderer TileRenderer => _tileRenderer ??= new TileRenderer(Path.Combine(Directory, "tile_renderer"));
 

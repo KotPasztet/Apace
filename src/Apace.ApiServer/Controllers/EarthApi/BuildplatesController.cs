@@ -39,6 +39,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
     private static BuildplateInstancesManager buildplateInstancesManager => Program.buildplateInstancesManager;
     private static Catalog catalog => Program.staticData.Catalog;
     private static TappablesManager tappablesManager => Program.tappablesManager;
+    private static readonly Lazy<AdventureFootprints?> adventureFootprints = new(() => LoadAdventureFootprints(Program.staticData));
 
     [HttpGet("buildplates")]
     public async Task<Results<ContentHttpResult, BadRequest>> GetBuildplates(CancellationToken cancellationToken)
@@ -418,7 +419,8 @@ internal sealed class BuildplatesController : ApaceControllerBase
         float? Latitude,
         float? Longitude,
         float? Lat,
-        float? Lon
+        float? Lon,
+        string[]? ScrollsToDeactivate = null
     );
 
     [HttpPost("multiplayer/encounters/{encounterId}/instances")]
@@ -468,11 +470,16 @@ internal sealed class BuildplatesController : ApaceControllerBase
         }
 
         long requestStartedOn = HttpContext.GetTimestamp();
+        string[] scrollsToDeactivate = request.ScrollsToDeactivate ?? [];
+        if (scrollsToDeactivate.Length > 0)
+        {
+            Log.Information("Player {PlayerId} replaces adventures {AdventureIds}", playerId, scrollsToDeactivate);
+        }
 
         await AdventureScrollLock.WaitAsync(cancellationToken);
         try
         {
-            TappablesManager.Adventure? recentAtLocation = tappablesManager.GetRecentPlayerAdventureAtLocation(playerId, lat, lon, requestStartedOn);
+            TappablesManager.Adventure? recentAtLocation = tappablesManager.GetRecentPlayerAdventureAtLocation(playerId, lat, lon, requestStartedOn, scrollsToDeactivate);
             if (recentAtLocation is not null)
             {
                 return EarthJson(AdventureToActiveLocation(recentAtLocation));
@@ -510,7 +517,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
                 return TypedResults.NotFound();
             }
 
-            TappablesManager.Adventure? recentAdventure = tappablesManager.GetRecentPlayerAdventure(playerId, lat, lon, templateId, requestStartedOn);
+            TappablesManager.Adventure? recentAdventure = tappablesManager.GetRecentPlayerAdventure(playerId, lat, lon, templateId, requestStartedOn, scrollsToDeactivate);
             if (recentAdventure is not null)
             {
                 return EarthJson(AdventureToActiveLocation(recentAdventure));
@@ -539,7 +546,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
             string rarity = catalogItem.Rarity.ToString();
 
             // the new crystal replaces the player's current adventure(s), remember which ones before PlacePlayerAdventure drops the recent one
-            string[] previousAdventureIds = [.. tappablesManager.GetAllPlayerAdventures(playerId).Select(adventure => adventure.Id)];
+            string[] previousAdventureIds = [.. tappablesManager.GetAllPlayerAdventures(playerId).Select(previous => previous.Id), .. scrollsToDeactivate];
 
             TappablesManager.Adventure adventure = tappablesManager.PlacePlayerAdventure(
                 playerId,
@@ -549,7 +556,8 @@ internal sealed class BuildplatesController : ApaceControllerBase
                 60 * 60 * 1000,
                 AdventureMapIcons.ToClientMapIcon(catalogItem.Name, rarity),
                 Enum.Parse<TappablesManager.Adventure.RarityE>(rarity),
-                templateId);
+                templateId,
+                scrollsToDeactivate);
 
             // End the previous adventure's running instance too, otherwise it lingers until its hour is up
             // and can even be handed back for the new adventure when both crystals roll the same template.
@@ -600,7 +608,6 @@ internal sealed class BuildplatesController : ApaceControllerBase
         ActiveLocation[] activeLocations = [.. tappablesManager.GetAllPlayerAdventures(playerId)
             .Where(adventure => adventure.SpawnTime + adventure.ValidFor > requestStartedOn)
             .OrderBy(adventure => adventure.SpawnTime)
-            .Take(1)
             .Select(AdventureToActiveLocation)];
 
         return EarthJson(activeLocations);
@@ -948,7 +955,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
             BuildplateInstancesManager.InstanceType.SHARED_BUILD => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.SHARED_BUILDPLATE_PLAY, Source.SHARED),
             BuildplateInstancesManager.InstanceType.SHARED_PLAY => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.SHARED_BUILDPLATE_PLAY, Source.SHARED),
             BuildplateInstancesManager.InstanceType.ENCOUNTER => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.ENCOUNTER, Source.ENCOUNTER),
-            BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.PLAYER_ADVENTURE, Source.ENCOUNTER),
+            BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE => (true, BuildplateInstance.GameplayMetadataR.GameplayModeE.ENCOUNTER, Source.ENCOUNTER),
             _ => throw new UnreachableException(),
         };
 
@@ -1053,24 +1060,75 @@ internal sealed class BuildplatesController : ApaceControllerBase
                 instanceInfo.PlayerId,
                 "2020.1217.02",
                 buildplateInstancesManager.GetJoinCode(instanceInfo.InstanceId),
-                new Dimension(size, size),
-                new Offset(0, offset, 0),
+                InstanceDimension(instanceInfo.Type, instanceInfo.BuildplateId, size, adventureFootprints.Value),
+                InstanceOffset(instanceInfo.Type, instanceInfo.BuildplateId, offset, adventureFootprints.Value),
                 instanceInfo.Type is BuildplateInstancesManager.InstanceType.PLAY
-                    or BuildplateInstancesManager.InstanceType.ENCOUNTER
-                    or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE
                     ? Program.PlayableScale
                     : !fullsize ? scale : 1,
                 fullsize,
                 gameplayMode,
                 SurfaceOrientation.HORIZONTAL,
                 null,
-                null,    // TODO
+                GetAdventureRarity(instanceInfo, Program.staticData),
                 []
             ),
             "776932eeeb69",
             //new Coordinate(50.99636722700025f, -0.7234904312500047f)
             new Coordinate(0.0f, 0.0f)    // TODO
         );
+    }
+
+    internal static Rarity? GetAdventureRarity(BuildplateInstancesManager.InstanceInfo instanceInfo, StaticData.StaticData staticData)
+        => instanceInfo.Type is BuildplateInstancesManager.InstanceType.ENCOUNTER or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE
+            && staticData.AdventuresConfig.GetBuildplateFolder(instanceInfo.BuildplateId) is { } folder
+            ? AdventureFolderToRarity(folder)
+            : null;
+
+    internal static Rarity? AdventureFolderToRarity(string folder)
+        => Enum.GetNames<Rarity>().Contains(folder, StringComparer.OrdinalIgnoreCase)
+            ? Enum.Parse<Rarity>(folder, true)
+            : null;
+
+    internal static Dimension InstanceDimension(BuildplateInstancesManager.InstanceType type, string buildplateId, int size, AdventureFootprints? footprints)
+    {
+        if (type is BuildplateInstancesManager.InstanceType.ENCOUNTER or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE
+            && footprints?.GetFootprint(buildplateId) is { } footprint)
+        {
+            return new Dimension(footprint.X, footprint.Z);
+        }
+
+        return new Dimension(size, size);
+    }
+
+    internal static Offset InstanceOffset(BuildplateInstancesManager.InstanceType type, string buildplateId, int offset, AdventureFootprints? footprints)
+    {
+        if (type is BuildplateInstancesManager.InstanceType.ENCOUNTER or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE
+            && footprints?.GetFootprint(buildplateId)?.Offset is { } footprintOffset)
+        {
+            return new Offset(footprintOffset.X, offset + footprintOffset.Y, footprintOffset.Z);
+        }
+
+        return new Offset(0, offset, 0);
+    }
+
+    internal static AdventureFootprints? LoadAdventureFootprints(Apace.StaticData.StaticData staticData)
+    {
+        try
+        {
+            AdventureFootprints footprints = staticData.AdventureFootprints;
+            Log.Information($"Loaded {footprints.Count} adventure footprints");
+            return footprints;
+        }
+        catch (StaticDataException exception) when (exception.InnerException is FileNotFoundException or DirectoryNotFoundException)
+        {
+            Log.Information($"No adventures/{AdventureFootprints.FileName} in static data, adventures use their template size");
+            return null;
+        }
+        catch (Exception exception)
+        {
+            Log.Error($"Could not load adventures/{AdventureFootprints.FileName}, adventures use their template size: {exception}");
+            return null;
+        }
     }
 
     private sealed record BuildplateGeometry(int Size, int Offset, int Scale);

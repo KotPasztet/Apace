@@ -1,5 +1,6 @@
 ﻿
 using System.Text.Json.Serialization;
+using Apace.ApiServer.Utils;
 
 namespace Apace.ApiServer.Types.Common;
 
@@ -27,7 +28,9 @@ public sealed record Token(
         [JsonStringEnumMemberName("challenge.progress")]
         CHALLENGE_PROGRESS,
         [JsonStringEnumMemberName("challenge.completed")]
-        CHALLENGE_COMPLETED
+        CHALLENGE_COMPLETED,
+        [JsonStringEnumMemberName(ClientTokenTypes.AdventureReward)]
+        ADVENTURE_REWARD
 #pragma warning restore CA1707 // Identifiers should not contain underscores
     }
 

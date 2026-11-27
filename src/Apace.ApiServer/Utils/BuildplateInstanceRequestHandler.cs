@@ -24,18 +24,24 @@ public sealed class BuildplateInstanceRequestHandler
     private readonly EarthDB _earthDB;
     private readonly ObjectStoreClient _objectStoreClient;
     private readonly Catalog _catalog;
+    private readonly AdventureChestBlocks? _adventureChestBlocks;
+    private readonly Publisher? _publisher;
+    private readonly BrokenAdventureChests _brokenAdventureChests = new(TimeSpan.FromHours(2));
+    private readonly AdventureBackpacks _adventureBackpacks = new();
     private static BuildplateInstancesManager BuildplateInstancesManager => Program.buildplateInstancesManager;
 
-    private BuildplateInstanceRequestHandler(EarthDB earthDB, ObjectStoreClient objectStoreClient, Catalog catalog)
+    private BuildplateInstanceRequestHandler(EarthDB earthDB, ObjectStoreClient objectStoreClient, Catalog catalog, AdventureChestBlocks? adventureChestBlocks, Publisher? publisher)
     {
         _earthDB = earthDB;
         _objectStoreClient = objectStoreClient;
         _catalog = catalog;
+        _adventureChestBlocks = adventureChestBlocks;
+        _publisher = publisher;
     }
 
     public static async Task<BuildplateInstanceRequestHandler> CreateAsync(EarthDB earthDB, EventBusClient eventBusClient, ObjectStoreClient objectStoreClient, Catalog catalog)
     {
-        var buildplateInstanceRequestHandler = new BuildplateInstanceRequestHandler(earthDB, objectStoreClient, catalog);
+        var buildplateInstanceRequestHandler = new BuildplateInstanceRequestHandler(earthDB, objectStoreClient, catalog, LoadAdventureChestBlocks(), await eventBusClient.AddPublisherAsync());
 
         RequestHandler requestHandler = await eventBusClient.AddRequestHandlerAsync("buildplates", new RequestHandlerLister(
            async request =>
@@ -175,6 +181,14 @@ public sealed class BuildplateInstanceRequestHandler
                                    ? null
                                    : await buildplateInstanceRequestHandler.HandleInventorySetHotbar(requestWithInstanceId.InstanceId, requestWithInstanceId.Request) ? "" : null;
                            }
+                       case "adventureChestBroken":
+                           {
+                               RequestWithInstanceId<AdventureChestBrokenMessage>? requestWithInstanceId = ReadRequest<AdventureChestBrokenMessage>(request.Data);
+
+                               return requestWithInstanceId is null
+                                   ? null
+                                   : await buildplateInstanceRequestHandler.HandleAdventureChestBroken(requestWithInstanceId.InstanceId, requestWithInstanceId.Request, request.Timestamp) ? "" : null;
+                           }
                        default:
                            return null;
                    }
@@ -199,6 +213,26 @@ public sealed class BuildplateInstanceRequestHandler
        ));
 
         return buildplateInstanceRequestHandler;
+    }
+
+    private static AdventureChestBlocks? LoadAdventureChestBlocks()
+    {
+        try
+        {
+            AdventureChestBlocks adventureChestBlocks = Program.staticData.AdventureChestBlocks;
+            Log.Information($"Loaded {adventureChestBlocks.Count} adventure chest blocks");
+            return adventureChestBlocks;
+        }
+        catch (StaticDataException exception) when (exception.InnerException is FileNotFoundException or DirectoryNotFoundException)
+        {
+            Log.Information($"No adventures/{AdventureChestBlocks.FileName} in static data, adventure chests are off");
+            return null;
+        }
+        catch (Exception exception)
+        {
+            Log.Error($"Could not load adventures/{AdventureChestBlocks.FileName}, adventure chests are off: {exception}");
+            return null;
+        }
     }
 
     private sealed record BuildplateLoadRequest(
@@ -487,6 +521,8 @@ public sealed class BuildplateInstanceRequestHandler
 
                 break;
             case BuildplateInstancesManager.InstanceType.PLAY:
+            case BuildplateInstancesManager.InstanceType.ENCOUNTER:
+            case BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE:
                 {
                     EarthDB.Results results = await new EarthDB.Query(false)
                         .Get("inventory", playerConnectedRequest.Uuid, typeof(Inventory))
@@ -495,6 +531,11 @@ public sealed class BuildplateInstanceRequestHandler
 
                     Inventory inventory = results.Get<Inventory>("inventory");
                     Hotbar hotbar = results.Get<Hotbar>("hotbar");
+
+                    if (instanceInfo.Type is BuildplateInstancesManager.InstanceType.ENCOUNTER or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE)
+                    {
+                        _adventureBackpacks.Open(instanceId, playerConnectedRequest.Uuid, hotbar);
+                    }
 
                     initialInventoryContents = new InventoryResponse(
                         [.. Enumerable.Concat(
@@ -538,72 +579,6 @@ public sealed class BuildplateInstanceRequestHandler
                         )],
                         [.. sharedBuildplate.Hotbar.Select(item => item is { Count: > 0 } ? new InventoryResponse.HotbarItem(item.Uuid, item.Count, item.InstanceId) : null)]
                     );
-                }
-
-                break;
-            case BuildplateInstancesManager.InstanceType.ENCOUNTER:
-            case BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE:
-                {
-                    EarthDB.Results results = await new EarthDB.Query(true)
-                        .Get("inventory", playerConnectedRequest.Uuid, typeof(Inventory))
-                        .Get("hotbar", playerConnectedRequest.Uuid, typeof(Hotbar))
-                        .Then(results1 =>
-                        {
-                            Inventory inventory = results1.Get<Inventory>("inventory");
-                            Hotbar hotbar = results1.Get<Hotbar>("hotbar");
-
-                            var inventoryResponseHotbar = new InventoryResponse.HotbarItem[7];
-                            Dictionary<string, int?> inventoryResponseStackableItems = [];
-                            LinkedList<InventoryResponse.Item> inventoryResponseNonStackableItems = [];
-                            for (int index = 0; index < 7; index++)
-                            {
-                                Hotbar.Item? item = hotbar.Items[index];
-                                if (item is not null)
-                                {
-                                    if (item.InstanceId is null)
-                                    {
-                                        if (!inventory.TakeItems(item.Uuid, item.Count))
-                                        {
-                                            hotbar.Items[index] = null;
-                                            continue;
-                                        }
-
-                                        inventoryResponseStackableItems[item.Uuid] = inventoryResponseStackableItems.GetValueOrDefault(item.Uuid, 0) + item.Count;
-                                        inventoryResponseHotbar[index] = new InventoryResponse.HotbarItem(item.Uuid, item.Count, null);
-                                    }
-                                    else
-                                    {
-                                        NonStackableItemInstance[]? takenItems = inventory.TakeItems(item.Uuid, [item.InstanceId]);
-                                        if (takenItems is null || takenItems.Length == 0)
-                                        {
-                                            hotbar.Items[index] = null;
-                                            continue;
-                                        }
-
-                                        int wear = takenItems[0].Wear;
-                                        inventoryResponseNonStackableItems.AddLast(new InventoryResponse.Item(item.Uuid, 1, item.InstanceId, wear));
-                                        inventoryResponseHotbar[index] = new InventoryResponse.HotbarItem(item.Uuid, 1, item.InstanceId);
-                                    }
-                                }
-                            }
-
-                            hotbar.LimitToInventory(inventory);
-
-                            var inventoryResponse = new InventoryResponse(
-                            [
-                                .. inventoryResponseStackableItems.Select(entry => new InventoryResponse.Item(entry.Key, entry.Value ?? 1, null, 0)),
-                                    .. inventoryResponseNonStackableItems
-                            ],
-                            inventoryResponseHotbar
-                        );
-                            return new EarthDB.Query(true)
-                                .Update("inventory", playerConnectedRequest.Uuid, inventory)
-                                .Update("hotbar", playerConnectedRequest.Uuid, hotbar)
-                                .Extra("inventoryResponse", inventoryResponse);
-                        })
-                        .ExecuteAsync(_earthDB);
-
-                    initialInventoryContents = (InventoryResponse)results.GetExtra("inventoryResponse");
                 }
 
                 break;
@@ -664,10 +639,11 @@ public sealed class BuildplateInstanceRequestHandler
         bool usesBackpack = instanceInfo.Type is BuildplateInstancesManager.InstanceType.ENCOUNTER or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE;
         if (usesBackpack)
         {
+            _adventureBackpacks.Close(instanceId, playerDisconnectedRequest.PlayerId);
+
             InventoryResponse? backpackContents = playerDisconnectedRequest.BackpackContents;
             if (backpackContents is null)
             {
-                Log.Warning("Expected backpack contents in player disconnected request; closing instance without inventory merge");
                 return new PlayerDisconnectedResponse();
             }
 
@@ -845,6 +821,13 @@ public sealed class BuildplateInstanceRequestHandler
         Inventory inventory = results.Get<Inventory>("inventory");
         Hotbar hotbar = results.Get<Hotbar>("hotbar");
 
+        Inventory? backpack = _adventureBackpacks.GetContents(instanceId, requestedInventoryPlayerId, inventory);
+        if (backpack is not null)
+        {
+            inventory = backpack;
+            hotbar.LimitToInventory(inventory);
+        }
+
         return new InventoryResponse(
             [.. Enumerable.Concat(
                 inventory.StackableItems
@@ -911,6 +894,8 @@ public sealed class BuildplateInstanceRequestHandler
             })
             .ExecuteAsync(_earthDB);
 
+        _adventureBackpacks.Add(instanceId, inventoryAddItemMessage.PlayerId, inventoryAddItemMessage.ItemId, inventoryAddItemMessage.Count, inventoryAddItemMessage.InstanceId);
+
         return true;
     }
 
@@ -964,6 +949,8 @@ public sealed class BuildplateInstanceRequestHandler
                     .Extra("result", result);
             })
             .ExecuteAsync(_earthDB);
+
+        _adventureBackpacks.Remove(instanceId, inventoryRemoveItemRequest.PlayerId, inventoryRemoveItemRequest.ItemId, inventoryRemoveItemRequest.Count, inventoryRemoveItemRequest.InstanceId);
 
         return results.GetExtra("result");
     }
@@ -1025,6 +1012,90 @@ public sealed class BuildplateInstanceRequestHandler
             .ExecuteAsync(_earthDB);
 
         return true;
+    }
+
+    // either can be null when the JSON has them as null or leaves them out
+    private async Task<bool> HandleAdventureChestBroken(string? instanceId, AdventureChestBrokenMessage? adventureChestBrokenMessage, long timestamp)
+    {
+        if (instanceId is null || adventureChestBrokenMessage is not { IsComplete: true })
+        {
+            Log.Error($"Incomplete adventureChestBroken request for instance {instanceId}");
+            return false;
+        }
+
+        BuildplateInstancesManager.InstanceInfo? instanceInfo = BuildplateInstancesManager.GetInstanceInfo(instanceId);
+        if (instanceInfo is null)
+        {
+            Log.Debug($"Ignoring adventure chest in unknown instance {instanceId}");
+            return true;
+        }
+
+        if (instanceInfo.Type is not (BuildplateInstancesManager.InstanceType.ENCOUNTER or BuildplateInstancesManager.InstanceType.PLAYER_ADVENTURE))
+        {
+            Log.Debug($"Ignoring adventure chest in {instanceInfo.Type} instance {instanceId}");
+            return true;
+        }
+
+        if (_adventureChestBlocks is null)
+        {
+            Log.Debug($"Ignoring adventure chest in instance {instanceId}, adventure chests are off");
+            return true;
+        }
+
+        AdventureChestBlocks.RarityE? rarity = _adventureChestBlocks.GetRarity(adventureChestBrokenMessage.BlockState);
+        if (rarity is null)
+        {
+            Log.Debug($"Ignoring {adventureChestBrokenMessage.BlockState} in instance {instanceId}, it is not an adventure chest block");
+            return true;
+        }
+
+        // the bridge logs players in with their player ID as their Minecraft name
+        string playerId = instanceInfo.PlayerId ?? adventureChestBrokenMessage.MinecraftName;
+
+        if (!_brokenAdventureChests.TryAdd(instanceId, adventureChestBrokenMessage.X, adventureChestBrokenMessage.Y, adventureChestBrokenMessage.Z, timestamp))
+        {
+            Log.Debug($"Ignoring adventure chest at {adventureChestBrokenMessage.X} {adventureChestBrokenMessage.Y} {adventureChestBrokenMessage.Z} in instance {instanceId}, it has already been broken");
+            return true;
+        }
+
+        Log.Information($"Adventure chest broken in instance {instanceId} by {playerId} ({rarity.Value})");
+        await ChallengeEvents.RecordAdventureCompletedAsync(playerId, _earthDB);
+        if (rarity.Value == AdventureChestBlocks.RarityE.RARE && ChallengeEvents.GetEventRule("adventure_rare_chest") is { } rareChestRule)
+        {
+            await ChallengeEvents.RecordChallengeEventAsync(playerId, "adventure_rare_chest", rareChestRule, _earthDB);
+        }
+
+        IReadOnlyDictionary<string, int>? items = await AdventureChestRewards.RollAndGiveAsync(playerId, instanceId, rarity.Value.ToString(), timestamp);
+        if (items is not null)
+        {
+            await PublishAdventureChestLoot(instanceId, AdventureChestLootMessage.Create(playerId, rarity.Value.ToString().ToLowerInvariant(), items));
+        }
+
+        return true;
+    }
+
+    private async Task PublishAdventureChestLoot(string instanceId, AdventureChestLootMessage message)
+    {
+        if (_publisher is null)
+        {
+            return;
+        }
+
+        string json = Json.Serialize(message);
+        foreach (string queueName in AdventureChestLootMessage.QueueNames(instanceId))
+        {
+            try
+            {
+                if (!await _publisher.PublishAsync(queueName, AdventureChestLootMessage.EventType, json))
+                {
+                    Log.Warning("Could not publish the adventure chest loot of instance {InstanceId} on {QueueName}", instanceId, queueName);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.Warning(exception, "Could not publish the adventure chest loot of instance {InstanceId} on {QueueName}", instanceId, queueName);
+            }
+        }
     }
 
     private static RequestWithInstanceId<T>? ReadRequest<T>(string str)

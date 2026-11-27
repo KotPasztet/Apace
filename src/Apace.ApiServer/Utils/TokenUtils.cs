@@ -28,6 +28,36 @@ public static class TokenUtils
         return getQuery;
     }
 
+    // one token per adventure instance, more loot is added to it
+    public static EarthDB.Query AddOrUpdateAdventureRewardToken(string playerId, string instanceId, IReadOnlyDictionary<string, int> items)
+    {
+        var getQuery = new EarthDB.Query(true);
+        getQuery.Get("tokens", playerId, typeof(Tokens));
+        getQuery.Then(results =>
+        {
+            Tokens tokens = results.Get<Tokens>("tokens");
+
+            Tokens.TokenWithId? existing = tokens.GetTokens()
+                .FirstOrDefault(token => token.Token is Tokens.AdventureRewardToken adventureReward && adventureReward.InstanceId == instanceId);
+
+            Rewards rewards = existing is not null
+                ? Rewards.FromDBRewardsModel(((Tokens.AdventureRewardToken)existing.Token).Rewards)
+                : new Rewards();
+            foreach ((string itemId, int count) in items)
+            {
+                rewards.AddItem(itemId, count);
+            }
+
+            string id = existing?.Id ?? U.RandomUuid().ToString();
+            tokens.AddToken(id, new Tokens.AdventureRewardToken(instanceId, rewards.ToDBRewardsModel()));
+
+            return new EarthDB.Query(true)
+                .Update("tokens", playerId, tokens)
+                .Extra("tokenId", id);
+        });
+        return getQuery;
+    }
+
     public static async Task EnsureDailyLoginToken(string playerId, CancellationToken cancellationToken)
     {
         string today = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -221,6 +251,13 @@ public static class TokenUtils
                 {
                     var oobeAdventureCrystalToken = (Tokens.OobeAdventureCrystalToken)token;
                     getQuery.Then(Rewards.FromDBRewardsModel(oobeAdventureCrystalToken.Rewards).ToRedeemQuery(playerId, currentTime, staticData), false);
+                }
+
+                break;
+            case Tokens.Token.TypeE.ADVENTURE_REWARD:
+                {
+                    var adventureRewardToken = (Tokens.AdventureRewardToken)token;
+                    getQuery.Then(Rewards.FromDBRewardsModel(adventureRewardToken.Rewards).ToRedeemQuery(playerId, currentTime, staticData), false);
                 }
 
                 break;

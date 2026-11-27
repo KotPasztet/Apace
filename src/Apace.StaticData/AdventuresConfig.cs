@@ -83,6 +83,38 @@ public sealed class AdventuresConfig
         return PickTemplateForFolder(folder, random);
     }
 
+    public string? GetBuildplateName(string templateId)
+        => _buildplatesByFolder.Values
+            .SelectMany(buildplates => buildplates)
+            .FirstOrDefault(buildplate => buildplate.TemplateId == templateId && !string.IsNullOrWhiteSpace(buildplate.Name))?.Name;
+
+    public string? GetBuildplateFolder(string templateId)
+        => _buildplatesByFolder.Keys
+            .FirstOrDefault(folder => _buildplatesByFolder[folder].Any(buildplate => buildplate.TemplateId == templateId));
+
+    public IEnumerable<string> TemplateIds
+        => _buildplatesByFolder.Values
+            .SelectMany(buildplates => buildplates)
+            .Select(buildplate => buildplate.TemplateId)
+            .Distinct();
+
+    // returns the template ids that were removed
+    public string[] KeepTemplates(Func<string, bool> keep)
+    {
+        string[] removed = [.. TemplateIds.Where(templateId => !keep(templateId))];
+        if (removed.Length == 0)
+        {
+            return removed;
+        }
+
+        foreach (string folder in _buildplatesByFolder.Keys.ToArray())
+        {
+            _buildplatesByFolder[folder] = [.. _buildplatesByFolder[folder].Where(buildplate => !removed.Contains(buildplate.TemplateId))];
+        }
+
+        return removed;
+    }
+
     private static AdventureSpawnConfig LoadSpawnConfig(string dir)
     {
         string spawnConfigFile = Path.Combine(dir, "adventures-spawn.json");
@@ -157,6 +189,7 @@ public sealed class AdventuresConfig
 
     private sealed record AdventureBuildplate(
         string TemplateId,
-        int Weight
+        int Weight,
+        string? Name = null
     );
 }

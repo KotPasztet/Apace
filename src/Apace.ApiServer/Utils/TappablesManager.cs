@@ -214,7 +214,7 @@ public sealed class TappablesManager
         return adventure;
     }
 
-    public Adventure? GetRecentPlayerAdventure(string playerId, float lat, float lon, string adventureBuildplateId, long currentTime)
+    public Adventure? GetRecentPlayerAdventure(string playerId, float lat, float lon, string adventureBuildplateId, long currentTime, IReadOnlyCollection<string> replacedAdventureIds)
     {
         if (!_recentAdventureIdsByPlayer.TryGetValue(playerId, out string? adventureId))
         {
@@ -224,6 +224,7 @@ public sealed class TappablesManager
         foreach (Adventure adventure in _adventures.Values.SelectMany(adventures => adventures.Values))
         {
             if (adventure.Id == adventureId &&
+                !replacedAdventureIds.Contains(adventure.Id) &&
                 adventure.AdventureBuildplateId == adventureBuildplateId &&
                 adventure.SpawnTime + adventure.ValidFor > currentTime &&
                 currentTime - adventure.SpawnTime <= 30 * 1000 &&
@@ -236,7 +237,7 @@ public sealed class TappablesManager
         return null;
     }
 
-    public Adventure? GetRecentPlayerAdventureAtLocation(string playerId, float lat, float lon, long currentTime)
+    public Adventure? GetRecentPlayerAdventureAtLocation(string playerId, float lat, float lon, long currentTime, IReadOnlyCollection<string> replacedAdventureIds)
     {
         if (!_recentAdventureIdsByPlayer.TryGetValue(playerId, out string? adventureId))
         {
@@ -246,6 +247,7 @@ public sealed class TappablesManager
         foreach (Adventure adventure in _adventures.Values.SelectMany(adventures => adventures.Values))
         {
             if (adventure.Id == adventureId &&
+                !replacedAdventureIds.Contains(adventure.Id) &&
                 adventure.SpawnTime + adventure.ValidFor > currentTime &&
                 currentTime - adventure.SpawnTime <= 60 * 1000 &&
                 IsSamePlayerAdventureLocation(adventure, lat, lon))
@@ -257,10 +259,10 @@ public sealed class TappablesManager
         return null;
     }
 
-    public Adventure PlacePlayerAdventure(string playerId, float lat, float lon, long spawnTime, long validFor, string icon, Adventure.RarityE rarity, string adventureBuildplateId)
+    public Adventure PlacePlayerAdventure(string playerId, float lat, float lon, long spawnTime, long validFor, string icon, Adventure.RarityE rarity, string adventureBuildplateId, IReadOnlyCollection<string> replacedAdventureIds)
     {
-        Adventure? recent = GetRecentPlayerAdventureAtLocation(playerId, lat, lon, spawnTime)
-            ?? GetRecentPlayerAdventure(playerId, lat, lon, adventureBuildplateId, spawnTime);
+        Adventure? recent = GetRecentPlayerAdventureAtLocation(playerId, lat, lon, spawnTime, replacedAdventureIds)
+            ?? GetRecentPlayerAdventure(playerId, lat, lon, adventureBuildplateId, spawnTime, replacedAdventureIds);
         if (recent is not null)
         {
             return recent;
@@ -584,7 +586,8 @@ public sealed class TappablesManager
         long ValidFor,
         string Icon,
         Encounter.RarityE Rarity,
-        string EncounterBuildplateId
+        string EncounterBuildplateId,
+        bool Hostile = false
     )
     {
         [JsonConverter(typeof(JsonStringEnumConverter))]

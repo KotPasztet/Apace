@@ -10,7 +10,8 @@ public sealed record Encounter(
     long ValidFor,
     string Icon,
     Encounter.RarityE Rarity,
-    string EncounterBuildplateId
+    string EncounterBuildplateId,
+    bool Hostile = false
 )
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]

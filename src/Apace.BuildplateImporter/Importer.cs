@@ -29,7 +29,7 @@ public sealed class Importer : IAsyncDisposable
         Logger = logger;
     }
 
-    public async Task<bool> ImportTemplateAsync(string templateId, string name, Stream stream, CancellationToken cancellationToken = default)
+    public async Task<bool> ImportTemplateAsync(string templateId, string name, Stream stream, bool requirePreview = false, CancellationToken cancellationToken = default)
     {
         var worldData = await WorldData.LoadFromZipAsync(stream, Logger, cancellationToken);
 
@@ -39,6 +39,11 @@ public sealed class Importer : IAsyncDisposable
         }
 
         byte[] preview = await GeneratePreview(worldData);
+
+        if (requirePreview && preview.Length == 0)
+        {
+            return false;
+        }
 
         return await StoreTemplate(templateId, name, preview, worldData, cancellationToken);
     }

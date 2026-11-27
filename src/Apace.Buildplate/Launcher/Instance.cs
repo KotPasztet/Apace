@@ -341,6 +341,22 @@ public sealed class Instance
                 }
 
                 break;
+            case "adventureChestBroken":
+                {
+                    // published by a separate Fabric mod, so a bad message is dropped instead of closing the instance like ReadJson does
+                    var adventureChestBrokenMessage = AdventureChestBrokenMessage.Read(@event.Data);
+                    if (adventureChestBrokenMessage is not null)
+                    {
+                        SendEventBusRequest<object>("adventureChestBroken", adventureChestBrokenMessage, false)
+                            .Forget();
+                    }
+                    else
+                    {
+                        _logger.Warning("Ignoring adventureChestBroken event with invalid data: {Data}", @event.Data.Length > 200 ? @event.Data[..200] : @event.Data);
+                    }
+                }
+
+                break;
         }
     }
 

@@ -52,6 +52,7 @@ public sealed class Tokens
     [JsonDerivedType(typeof(OobeAdventureCrystalToken), "OOBE_ADVENTURE_CRYSTAL")]
     [JsonDerivedType(typeof(ChallengeProgressToken), "CHALLENGE_PROGRESS")]
     [JsonDerivedType(typeof(ChallengeCompletedToken), "CHALLENGE_COMPLETED")]
+    [JsonDerivedType(typeof(AdventureRewardToken), "ADVENTURE_REWARD")]
     public abstract class Token
     {
         [JsonIgnore]
@@ -71,7 +72,8 @@ public sealed class Tokens
             DAILY_LOGIN,
             OOBE_ADVENTURE_CRYSTAL,
             CHALLENGE_PROGRESS,
-            CHALLENGE_COMPLETED
+            CHALLENGE_COMPLETED,
+            ADVENTURE_REWARD
 #pragma warning restore CA1707 // Identifiers should not contain underscores
         }
     }
@@ -149,6 +151,19 @@ public sealed class Tokens
         {
             ChallengeId = challengeId;
             ChallengeReferenceId = challengeReferenceId;
+        }
+    }
+
+    public sealed class AdventureRewardToken : Token
+    {
+        public string InstanceId { get; init; }
+        public Rewards Rewards { get; init; }
+
+        public AdventureRewardToken(string instanceId, Rewards rewards)
+            : base(TypeE.ADVENTURE_REWARD)
+        {
+            InstanceId = instanceId;
+            Rewards = rewards;
         }
     }
 }

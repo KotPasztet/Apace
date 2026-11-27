@@ -145,18 +145,11 @@ public sealed class BuildplateInstancesManager
                 foreach (string loopInstanceId in instanceIds)
                 {
                     InstanceInfo? instanceInfo = _instances.GetOrDefault(loopInstanceId);
-                    if (instanceInfo is not null && !instanceInfo.ShuttingDown)
+                    if (instanceInfo is not null && CanReuseInstance(instanceInfo, playerId, encounterId, type))
                     {
-                        bool sameEncounter = instanceInfo.EncounterId == encounterId || type is InstanceType.PLAYER_ADVENTURE;
-                        if (instanceInfo.Type == type &&
-                            instanceInfo.PlayerId == playerId &&
-                            sameEncounter
-                        )
-                        {
-                            Log.Information($"Found existing buildplate instance {loopInstanceId}");
-                            reusedInstanceId = loopInstanceId;
-                            break;
-                        }
+                        Log.Information($"Found existing buildplate instance {loopInstanceId}");
+                        reusedInstanceId = loopInstanceId;
+                        break;
                     }
                 }
             }
@@ -249,6 +242,13 @@ public sealed class BuildplateInstancesManager
 
         _requestSender = await _eventBusClient.AddRequestSenderAsync();
     }
+
+    // player adventures carry the adventure id as the encounter id
+    internal static bool CanReuseInstance(InstanceInfo instanceInfo, string? playerId, string? encounterId, InstanceType type)
+        => !instanceInfo.ShuttingDown &&
+            instanceInfo.Type == type &&
+            instanceInfo.PlayerId == playerId &&
+            instanceInfo.EncounterId == encounterId;
 
     /// <summary>
     /// Ends the running instances of the given player adventures early (a second adventure crystal replaces the first adventure).

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using System.Security.Claims;
 using Apace.ApiServer.Exceptions;
 using Apace.ApiServer.Types.Common;
@@ -97,19 +98,31 @@ internal sealed class TokensController : ApaceControllerBase
 
         if (token is not null)
         {
+            if (token is Tokens.AdventureRewardToken adventureReward)
+            {
+                Log.Information("Adventure reward token {TokenId} for instance {InstanceId} redeemed by {PlayerId}", tokenId, adventureReward.InstanceId, playerId);
+            }
+
             var updates = new EarthApiResponse.UpdatesResponse(results);
             if (token is Tokens.ChallengeProgressToken or Tokens.ChallengeCompletedToken or Tokens.DailyLoginToken)
             {
                 updates.Map["challenges"] = (int)(requestStartedOn / 1000);
             }
 
-            return EarthJson(TokenToApiResponse(token), updates);
+            return EarthJson(RedeemResponse(token), updates);
         }
         else
         {
             return TypedResults.BadRequest();
         }
     }
+
+    internal static Dictionary<string, object?> RedeemResponse(Tokens.Token token)
+        => new()
+        {
+            { "token", TokenToApiResponse(token) },
+            { "updates", null }
+        };
 
     internal static Token TokenToApiResponse(Tokens.Token token)
     {
@@ -136,6 +149,9 @@ internal sealed class TokensController : ApaceControllerBase
                 properties["challengeid"] = challengeCompleted.ChallengeId;
                 properties["challengereferenceid"] = challengeCompleted.ChallengeReferenceId;
                 break;
+            case Tokens.AdventureRewardToken adventureReward:
+                properties["instanceId"] = adventureReward.InstanceId;
+                break;
         }
 
         Rewards rewards = token switch
@@ -143,6 +159,7 @@ internal sealed class TokensController : ApaceControllerBase
             Tokens.LevelUpToken levelUp => Rewards.FromDBRewardsModel(levelUp.Rewards).SetLevel(((Tokens.LevelUpToken)token).Level),
             Tokens.DailyLoginToken dailyLogin => Rewards.FromDBRewardsModel(dailyLogin.Rewards),
             Tokens.OobeAdventureCrystalToken oobeAdventureCrystal => Rewards.FromDBRewardsModel(oobeAdventureCrystal.Rewards),
+            Tokens.AdventureRewardToken adventureReward => Rewards.FromDBRewardsModel(adventureReward.Rewards),
             _ => new Rewards(),
         };
 
@@ -154,6 +171,7 @@ internal sealed class TokensController : ApaceControllerBase
             Tokens.OobeAdventureCrystalToken => Token.LifetimeE.PERSISTENT,
             Tokens.ChallengeProgressToken => Token.LifetimeE.TRANSIENT,
             Tokens.ChallengeCompletedToken => Token.LifetimeE.TRANSIENT,
+            Tokens.AdventureRewardToken => Token.LifetimeE.TRANSIENT,
             _ => throw new InvalidDataException($"Unknown Token type '{token?.GetType()?.ToString() ?? null}'"),
         };
 

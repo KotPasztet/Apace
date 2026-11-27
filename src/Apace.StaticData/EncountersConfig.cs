@@ -7,16 +7,27 @@ namespace Apace.StaticData;
 
 public sealed class EncountersConfig
 {
+    private const string SpawnConfigFileName = "encounters-spawn.json";
+    private const string HostileConfigFileName = "encounters-hostile.json";
+    private const int DefaultChancePerTile = 100;
+
     public readonly ImmutableArray<EncounterConfig> Encounters;
+    public readonly int ChancePerTile;
+    public readonly string? HostileIcon;
+
+    private readonly ImmutableHashSet<string> _hostileBuildplates = [];
 
     internal EncountersConfig(string dir)
     {
         try
         {
+            ChancePerTile = LoadChancePerTile(dir);
+            (HostileIcon, _hostileBuildplates) = LoadHostile(dir);
+
             LinkedList<EncounterConfig> encounters = [];
             foreach (string file in Directory.EnumerateFiles(dir))
             {
-                if (Path.GetExtension(file) != ".json")
+                if (Path.GetExtension(file) != ".json" || Path.GetFileName(file) is SpawnConfigFileName or HostileConfigFileName)
                 {
                     continue;
                 }
@@ -48,6 +59,38 @@ public sealed class EncountersConfig
         }
     }
 
+    public bool IsHostile(string buildplateId)
+        => _hostileBuildplates.Contains(buildplateId);
+
+    private static (string? Icon, ImmutableHashSet<string> Buildplates) LoadHostile(string dir)
+    {
+        string hostileConfigFile = Path.Combine(dir, HostileConfigFileName);
+        if (!File.Exists(hostileConfigFile))
+        {
+            return (null, []);
+        }
+
+        using var stream = File.OpenRead(hostileConfigFile);
+        HostileConfig? hostileConfig = Json.Deserialize<HostileConfig>(stream);
+        Debug.Assert(hostileConfig is not null);
+        string? icon = string.IsNullOrWhiteSpace(hostileConfig.Icon) ? null : hostileConfig.Icon.Trim();
+        return (icon, [.. (hostileConfig.Hostile ?? []).Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim())]);
+    }
+
+    private static int LoadChancePerTile(string dir)
+    {
+        string spawnConfigFile = Path.Combine(dir, SpawnConfigFileName);
+        if (!File.Exists(spawnConfigFile))
+        {
+            return DefaultChancePerTile;
+        }
+
+        using var stream = File.OpenRead(spawnConfigFile);
+        SpawnConfig? spawnConfig = Json.Deserialize<SpawnConfig>(stream);
+        Debug.Assert(spawnConfig is not null);
+        return spawnConfig.ChancePerTile >= 1 ? spawnConfig.ChancePerTile : DefaultChancePerTile;
+    }
+
     public record EncounterConfig(
         string Icon,
         EncounterConfig.RarityE Rarity,
@@ -66,4 +109,13 @@ public sealed class EncountersConfig
             LEGENDARY
         }
     }
+
+    private sealed record HostileConfig(
+        string? Icon,
+        string[]? Hostile
+    );
+
+    private sealed record SpawnConfig(
+        int ChancePerTile
+    );
 }

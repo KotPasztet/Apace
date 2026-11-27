@@ -422,6 +422,11 @@ public static class Program
 
         Log.Information("Imported shop buidplates");
 
+        await ImportAdventureBuildplatesAsync();
+        await RemoveMissingAdventureTemplatesAsync();
+
+        LogAdventureRewards();
+
         tappablesManager = await TappablesManager.CreateAsync(eventBus);
         buildplateInstancesManager = await BuildplateInstancesManager.CreateAsync(eventBus);
 
@@ -466,4 +471,138 @@ public static class Program
 
     public static async Task<ObjectStoreClient> GetObjectStoreClient()
         => await ObjectStoreClient.ConnectAsync(objectStoreClientConnectionString);
+
+    internal static async Task<(int Imported, int Failed, int Present)> ImportAdventureBuildplatesAsync(IEnumerable<StaticBuidplate> buildplates, Func<string, bool> isPresent, Func<StaticBuidplate, Task<bool>> importBuildplate, int retries, TimeSpan retryDelay)
+    {
+        int imported = 0;
+        int failed = 0;
+        int present = 0;
+        foreach (var buildplate in buildplates)
+        {
+            try
+            {
+                if (isPresent(buildplate.Id))
+                {
+                    present++;
+                    continue;
+                }
+
+                Log.Information($"Importing adventure buildplate {buildplate.Id}");
+                bool success = await importBuildplate(buildplate);
+                while (!success && imported == 0 && retries > 0)
+                {
+                    retries--;
+                    Log.Warning($"Could not import adventure buildplate {buildplate.Id}, retrying in {retryDelay.TotalSeconds} seconds");
+                    await Task.Delay(retryDelay);
+                    success = await importBuildplate(buildplate);
+                }
+
+                if (success)
+                {
+                    imported++;
+                }
+                else
+                {
+                    Log.Error($"Failed to import adventure buildplate {buildplate.Id}");
+                    failed++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Failed to import adventure buildplate {buildplate.Id}: {ex}");
+                failed++;
+            }
+        }
+
+        return (imported, failed, present);
+    }
+
+    private static async Task ImportAdventureBuildplatesAsync()
+    {
+        Log.Information("Importing adventure buildplates");
+        try
+        {
+            AdventuresConfig adventuresConfig = staticData.AdventuresConfig;
+            StaticBuidplate[] adventureBuildplates = [.. staticData.Buildplates.AdventureBuildplates];
+
+            EarthDB.ObjectResults currentAdventureBuildplates = await new EarthDB.ObjectQuery(true)
+                .GetBuildplates(adventureBuildplates.Select(buildplate => buildplate.Id))
+                .ExecuteAsync(DB);
+
+            // the buildplate launcher may not answer preview requests yet
+            var (imported, failed, present) = await ImportAdventureBuildplatesAsync(
+                adventureBuildplates,
+                id => currentAdventureBuildplates.GetBuildplate(id) is not null,
+                async buildplate =>
+                {
+                    string name = adventuresConfig.GetBuildplateName(buildplate.Id) ?? buildplate.Id;
+                    using var buildplateData = buildplate.OpenRead();
+                    return await importer.ImportTemplateAsync(buildplate.Id, $"[ADVENTURE] {name}", buildplateData, requirePreview: true);
+                },
+                12,
+                TimeSpan.FromSeconds(5));
+
+            Log.Information($"Adventure buildplates: {imported} imported, {failed} failed, {present} already present");
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to import adventure buildplates: {ex}");
+        }
+    }
+
+    private static async Task RemoveMissingAdventureTemplatesAsync()
+    {
+        try
+        {
+            AdventuresConfig adventuresConfig = staticData.AdventuresConfig;
+
+            EarthDB.ObjectResults currentTemplates = await new EarthDB.ObjectQuery(false)
+                .GetBuildplates(adventuresConfig.TemplateIds)
+                .ExecuteAsync(DB);
+
+            foreach (string templateId in adventuresConfig.KeepTemplates(id => currentTemplates.GetBuildplate(id) is not null))
+            {
+                Log.Warning($"Adventure buildplate {templateId} is not imported, leaving it out of the adventure pools");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to check the adventure pools: {ex}");
+        }
+    }
+
+    private static void LogAdventureRewards()
+    {
+        try
+        {
+            string clientType = Json.Serialize(Types.Common.Token.Type.ADVENTURE_REWARD).Trim('"');
+            uint hash = ClientTokenTypes.Fnv1a32(clientType);
+            if (hash == ClientTokenTypes.AdventureRewardHash)
+            {
+                Log.Information($"Adventure reward clientType {clientType} has the hash the client expects (0x{hash:x8})");
+            }
+            else
+            {
+                Log.Error($"Adventure reward clientType {clientType} hashes to 0x{hash:x8} instead of 0x{ClientTokenTypes.AdventureRewardHash:x8}, the client will ignore adventure reward tokens");
+            }
+
+            AdventureLoot adventureLoot = staticData.AdventureLoot;
+            foreach ((string rarity, string error) in adventureLoot.Errors)
+            {
+                Log.Error($"Could not read adventure loot{(rarity.Length > 0 ? $" for {rarity}" : "")}: {error}");
+            }
+
+            string[] rarityOrder = ["common", "uncommon", "rare", "epic", "legendary"];
+            var tables = adventureLoot.Tables
+                .OrderBy(table => Array.IndexOf(rarityOrder, table.Key.ToLowerInvariant()) is int index and >= 0 ? index : rarityOrder.Length)
+                .ThenBy(table => table.Key, StringComparer.Ordinal)
+                .Select(table => $"{table.Key} {table.Value.Items.Length} items ({table.Value.Items.Count(item => item.Uncertain)} uncertain)")
+                .ToArray();
+            Log.Information(tables.Length > 0 ? $"Adventure loot: {string.Join(", ", tables)}" : "No adventure loot tables");
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to check adventure rewards: {ex}");
+        }
+    }
 }

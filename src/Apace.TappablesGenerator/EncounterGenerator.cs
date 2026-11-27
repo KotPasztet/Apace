@@ -8,7 +8,6 @@ namespace Apace.TappablesGenerator;
 public class EncounterGenerator
 {
     // TODO: make these configurable
-    private static readonly int CHANCE_PER_TILE = 100;
     private static readonly long MIN_DELAY = 1 * 60 * 1000;
     private static readonly long MAX_DELAY = 2 * 60 * 1000;
 
@@ -42,7 +41,7 @@ public class EncounterGenerator
         }
 
         List<Encounter> encounters = [];
-        if (_random.Next(0, CHANCE_PER_TILE) == 0)
+        if (_random.Next(0, _staticData.EncountersConfig.ChancePerTile) == 0)
         {
             long spawnDelay = _random.NextInt64(MIN_DELAY, MAX_DELAY + 1);
 
@@ -64,15 +63,18 @@ public class EncounterGenerator
             float lat = _random.NextSingle(tileBounds[1], tileBounds[0]);
             float lon = _random.NextSingle(tileBounds[2], tileBounds[3]);
 
+            bool hostile = _staticData.EncountersConfig.IsHostile(encounterBuildplateId);
+
             var encounter = new Encounter(
                 U.RandomUuid().ToString(),
                 lat,
                 lon,
                 currentTime + spawnDelay,
                 encounterConfig.Duration * 1000,
-                encounterConfig.Icon,
+                hostile ? _staticData.EncountersConfig.HostileIcon ?? encounterConfig.Icon : encounterConfig.Icon,
                 Enum.Parse<Encounter.RarityE>(encounterConfig.Rarity.ToString()),
-                encounterBuildplateId
+                encounterBuildplateId,
+                hostile
             );
 
             encounters.Add(encounter);
