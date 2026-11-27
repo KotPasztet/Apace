@@ -243,6 +243,12 @@ public partial class Program
             // account exists (unambiguous); with more, the first successful sign-in decides
             // (see OwnerBootstrap.EnsureOwnerForUserAsync in the login pages).
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            // Remove the artifact user shipped inside the v0.2.0–v0.2.3 release ZIPs, if this
+            // install carries one — BEFORE the owner bootstrap below, so the real first
+            // account is the one that gets Owner.
+            await RemoveBundledDatabaseUserAsync(userManager);
+
             var userCount = await userManager.Users.CountAsync();
             if (!(await userManager.GetUsersInRoleAsync(ApplicationRole.Owner)).Any())
             {
@@ -333,6 +339,46 @@ public partial class Program
             {
                 await roleManager.RemoveClaimAsync(ownerRole, claim);
             }
+        }
+    }
+
+    // WHY: the v0.2.0–v0.2.3 release ZIPs bundled the developer's local database
+    // (the csproj copied Data\app.db into the publish output), so installs created from
+    // those zips carry a pre-existing owner account (testupload@apace.local) that keeps
+    // every new account from ever becoming admin. The shipped DB is byte-identical in
+    // every zip, so the artifact user is recognized by its constant SecurityStamp + Id —
+    // nobody legitimately produces that exact pair, so a matching NAME alone never
+    // deletes anything (a user may have named their own account the same).
+    private static async Task RemoveBundledDatabaseUserAsync(UserManager<ApplicationUser> userManager)
+    {
+        const string BundledNormalizedUserName = "TESTUPLOAD@APACE.LOCAL";
+        const string BundledSecurityStamp = "LLH23F64OI4BZIRADJPFI3ZJER6MLJNA";
+        const string BundledUserId = "f179a98f-bd61-4ab1-b654-30d4867e3a5c";
+
+        // FindByNameAsync normalizes the lookup key, so the constant matches the stored
+        // NormalizedUserName regardless of how UserName was cased in the shipped DB.
+        var user = await userManager.FindByNameAsync(BundledNormalizedUserName);
+        if (user == null)
+        {
+            return;
+        }
+
+        if (!string.Equals(user.SecurityStamp, BundledSecurityStamp, StringComparison.Ordinal)
+            || !string.Equals(user.Id, BundledUserId, StringComparison.Ordinal))
+        {
+            Log.Debug("Found a user named '{Name}' whose SecurityStamp/Id do not match the v0.2.0–v0.2.3 bundled artifact database user — left untouched", user.UserName);
+            return;
+        }
+
+        var delete = await userManager.DeleteAsync(user);
+        if (delete.Succeeded)
+        {
+            Log.Warning("Detected the v0.2.0–v0.2.3 bundled artifact database user (testupload@apace.local) — removed; this install now behaves as a fresh install");
+        }
+        else
+        {
+            Log.Warning("Failed to remove the v0.2.0–v0.2.3 bundled artifact database user (testupload@apace.local): {Errors}",
+                string.Join(", ", delete.Errors.Select(e => e.Description)));
         }
     }
 

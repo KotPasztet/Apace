@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.2.4 — 2026-11-27
+
+> Scope: release-packaging fix — **release ZIPs no longer ship the developer's local database**.
+> Headlines: the csproj copied `Data/app.db` into the publish output, so the **v0.2.0–v0.2.3** release ZIPs bundled a DB with a pre-existing owner account — on a fresh install the first registered account could never get admin (Android main channel affected, dev/OCI unaffected). Already-poisoned installs self-heal on the first panel start: the shipped owner account is recognized by its constant SecurityStamp/Id and removed.
+
+---
+
+## 🗄️ fix(panel): the developer's local database is out of the release ZIPs
+
+- **The bug**: `Apace.LauncherUI.csproj` carried `<None Update="Data\app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />`, so `dotnet publish` copied the developer's local `Data/app.db` into the publish output — every release ZIP from **v0.2.0 through v0.2.3** contains `launcher/Data/app.db` with an existing **owner** account (`testupload@apace.local`). On a fresh install (Apace-Launcher on Android, **main** channel) the panel starts on that bundled DB, so no new account is ever granted the owner role — the first registered account on a fresh install can never become admin.
+- **The fix**: `Data/app.db` is excluded from every publish (the csproj copy line is gone) and `publish.ps1` strips `launcher/Data` from the publish output as a guard — release artifacts never carry a developer/runtime database, and a fresh install creates its own DB on first boot.
+- **Existing poisoned installs heal automatically**: the panel's startup now removes the shipped user on first start after the update — the bundled DB was byte-identical in every zip, so the artifact account is recognized by its constant SecurityStamp + Id (`LLH23F64OI4BZIRADJPFI3ZJER6MLJNA` / `f179a98f-bd61-4ab1-b654-30d4867e3a5c`, a pair nobody legitimately produces) and deleted with a clear warning; the install then behaves as a fresh one and the existing bootstrap paths grant Owner to the real first account. A user who merely NAMED their account `testupload@apace.local` is left untouched (stamp/Id mismatch, logged at Debug).
+- **Affected**: release ZIPs **v0.2.0–v0.2.3** (Android main channel, where the panel runs on the bundled DB). Unaffected: dev builds and OCI/Docker installs.
+
 ## Unreleased (dev) — the AR-scan native crash root-caused in the disassembly and hex-patched (fix-arcore-session-race), multiplayer join answers 200 again, marketplace logs go quiet
 
 > The field report "the second QR button still crashes after the permission fix" traced to a completely different animal: a NATIVE SIGSEGV that Breakpad intercepts before Android's tombstone (empty crash buffer, `Breakpad DumpCallback` in the log). Disassembly of `libgenoa.so` found the exact defect: `AndroidAR::stop()` destroys the AR session ASYNCHRONOUSLY (the only async call-site — `_uninitialize` uses the synchronous variant of the same call) and immediately constructs the replacement session, whose `_tryInitialize` never takes the session's recursive_mutex — so `ArSession_create` enters an in-flight `ArSession_destroy` inside ARCore 1.50 (Dynamite) and dies on the delete thread (3/3 crashes: signal 11, crash tid == delete tid, create 2–46 ms after the delete log). The fix is four bytes. Along the way the same session produced two server-side fixes: the multiplayer join popup ("Couldn't connect to server" right after a QR scan) was OUR `encounters/state` answering 400 to EVERY valid request, and the marketplace had been drowning the ApiServer log with per-item dead-probe lines.

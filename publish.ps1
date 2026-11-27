@@ -64,6 +64,16 @@ foreach ($buildProfile in $profiles) {
             -BuildProfile $buildProfile
     }
 
+    # Never ship a developer/runtime database in release artifacts — fresh installs must
+    # create their own DB; a shipped DB with a pre-existing owner account locks every new
+    # install out of the admin panel. The v0.2.0–v0.2.3 release ZIPs carried launcher/Data/app.db
+    # from the developer's machine (the csproj copied Data\app.db into the publish output), so
+    # the first registered account on a fresh install could never become owner. The csproj copy
+    # is gone; this guard strips the directory if anything still lands it in the publish output.
+    if (Test-Path "$publishDir/launcher/Data") {
+        Remove-Item -Path "$publishDir/launcher/Data" -Recurse -Force
+    }
+
     Copy-Item -Path "staticdata" -Destination "$publishDir/staticdata" -Recurse -Force
 
     # Overlay Apace-shipped staticdata on top of the Solace.StaticData submodule:
