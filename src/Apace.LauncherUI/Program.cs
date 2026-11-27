@@ -222,6 +222,23 @@ public partial class Program
 
             // First update check ~30 s after startup, then every 6 h (UpdateCheckService).
             updateCheckService.Start();
+
+            if (Environment.GetEnvironmentVariable("APACE_AUTOSTART") is "1" or "true")
+            {
+                Log.Information("APACE_AUTOSTART is set, starting all components");
+                var serverManager = app.Services.GetRequiredService<ServerManager>();
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await serverManager.Start();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Automatic start failed");
+                    }
+                });
+            }
         });
 
         // Apply database migrations and initialize built-in roles
