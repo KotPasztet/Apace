@@ -201,7 +201,7 @@ public sealed class ActiveSeasonChallengeTests
 
         JsonObject challenges = List(progress, now);
 
-        Assert.Equal("Claimed", challenges[CollectMobsId]!["state"]!.GetValue<string>());
+        Assert.Equal("Completed", challenges[CollectMobsId]!["state"]!.GetValue<string>());
         Assert.Contains(CollectMobsId, progress.ClaimedChallengeIds);
         Assert.Equal(0, challenges[PlayAdventuresId]!["currentCount"]!.GetValue<int>());
         Assert.Equal(0, challenges[PlaceAnimalsId]!["currentCount"]!.GetValue<int>());

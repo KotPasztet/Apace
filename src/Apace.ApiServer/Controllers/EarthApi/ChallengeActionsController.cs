@@ -66,7 +66,7 @@ internal sealed class ChallengeActionsController : ApaceControllerBase
         return EarthJson(new Dictionary<string, object?>
         {
             ["challengeId"] = challengeId,
-            ["state"] = claimAllowed ? "Claimed" : "Active",
+            ["state"] = claimAllowed ? "Completed" : "Active",
             ["rewards"] = claimAllowed ? apiRewards ?? rewards.ToApiResponse() : new RedeemRewards().ToApiResponse(),
             ["updates"] = new Dictionary<string, object>()
         }, updates);
@@ -140,7 +140,7 @@ internal sealed class ChallengeActionsController : ApaceControllerBase
         return EarthJson(new Dictionary<string, object?>
         {
             ["challengeId"] = challengeId,
-            ["state"] = "Claimed",
+            ["state"] = "Completed",
             ["rewards"] = results.GetExtra("rewards"),
             ["updates"] = new Dictionary<string, object>()
         }, updates);

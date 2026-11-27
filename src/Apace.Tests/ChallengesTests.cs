@@ -59,6 +59,81 @@ public sealed class ChallengesTests
     }
 
     [Fact]
+    public void AClaimedDailyStaysListedAsCompleted()
+    {
+        long now = At("2026-11-27T12:00:00Z");
+        var progress = new ChallengeProgressVersion();
+        string key = ChallengesController.DailyChallengeKeys.First(id => List(progress, now).ContainsKey(id));
+        Assert.Equal("Active", List(progress, now)[key]!["state"]!.GetValue<string>());
+
+        progress.ClaimedChallengeIds.Add(key);
+
+        JsonNode card = List(progress, now)[key]!;
+        Assert.Equal("Completed", card["state"]!.GetValue<string>());
+        Assert.True(card["isComplete"]!.GetValue<bool>());
+        Assert.Equal(100, card["percentComplete"]!.GetValue<int>());
+        Assert.Equal(card["totalThreshold"]!.GetValue<int>(), card["currentCount"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void ACompletedUnclaimedDailyStaysListedAsCompleted()
+    {
+        long now = At("2026-11-27T12:00:00Z");
+        var progress = new ChallengeProgressVersion();
+        string key = ChallengesController.DailyChallengeKeys.First(id => List(progress, now).ContainsKey(id));
+        string referenceId = List(progress, now)[key]!["referenceId"]!.GetValue<string>();
+        int threshold = List(progress, now)[key]!["totalThreshold"]!.GetValue<int>();
+        progress.ObjectiveCounts[referenceId] = threshold;
+
+        JsonNode card = List(progress, now)[key]!;
+        Assert.Equal("Completed", card["state"]!.GetValue<string>());
+        Assert.Equal(threshold, card["currentCount"]!.GetValue<int>());
+        Assert.DoesNotContain(key, progress.ClaimedChallengeIds);
+    }
+
+    [Fact]
+    public void AClaimedContinuousChallengeStaysListedAsCompleted()
+    {
+        long now = At("2026-11-27T12:00:00Z");
+        var progress = new ChallengeProgressVersion();
+        string key = ChallengesController.ContinuousChallengeKeys.First();
+        progress.EnsureDate(now);
+        progress.ClaimedChallengeIds.Add(key);
+
+        JsonNode card = List(progress, now)[key]!;
+        Assert.Equal("Completed", card["state"]!.GetValue<string>());
+        Assert.True(card["isComplete"]!.GetValue<bool>());
+        Assert.Equal(card["totalThreshold"]!.GetValue<int>(), card["currentCount"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void AClaimedChallengeCannotBeClaimedTwice()
+    {
+        long now = At("2026-11-27T12:00:00Z");
+        var progress = new ChallengeProgressVersion();
+        string key = ChallengesController.ContinuousChallengeKeys.First();
+
+        var first = ChallengeActionsController.ApplyModifyState(progress, key, now);
+        var second = ChallengeActionsController.ApplyModifyState(progress, key, now);
+
+        Assert.True(first.FirstClaim);
+        Assert.False(second.FirstClaim);
+    }
+
+    [Fact]
+    public void NoListedChallengeIsEverClaimed()
+    {
+        long now = At("2026-11-27T12:00:00Z");
+        var progress = new ChallengeProgressVersion();
+        progress.EnsureDate(now);
+        progress.ClaimedChallengeIds.UnionWith(ChallengesController.DailyChallengeKeys);
+        progress.ClaimedChallengeIds.UnionWith(ChallengesController.ContinuousChallengeKeys);
+        progress.ClaimedChallengeIds.UnionWith(ChallengesController.SeasonChallengeIds());
+
+        Assert.All(List(progress, now), entry => Assert.NotEqual("Claimed", entry.Value!["state"]!.GetValue<string>()));
+    }
+
+    [Fact]
     public void NewDayClearsDailyAndContinuousClaimsAndKeepsTheRest()
     {
         const string DailyKey = "252bb18b-5a96-4ac5-bca0-45c1a0d51269";

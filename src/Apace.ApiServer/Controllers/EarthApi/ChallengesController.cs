@@ -197,9 +197,10 @@ internal sealed class ChallengesController : ControllerBase
             int currentCount = Math.Min(progress.GetObjectiveProgress(challenge.ReferenceId), threshold);
             bool isComplete = currentCount >= threshold;
             bool isClaimed = progress.ClaimedChallengeIds?.Contains(challenge.Key) == true;
-            if (isComplete || isClaimed)
+            bool done = isComplete || isClaimed;
+            if (done)
             {
-                continue;
+                currentCount = threshold;
             }
 
             challenges[challenge.Key] = new ChallengeRecord(
@@ -212,8 +213,8 @@ internal sealed class ChallengesController : ControllerBase
                 "Common",
                 index + 1,
                 dailyEndTime,
-                "Active",
-                false,
+                done ? "Completed" : "Active",
+                done,
                 currentCount * 100 / threshold,
                 currentCount,
                 threshold,
@@ -227,18 +228,17 @@ internal sealed class ChallengesController : ControllerBase
         for (int index = 0; index < ContinuousChallengePool.Length; index++)
         {
             DailyChallengeDefinition challenge = ContinuousChallengePool[index];
-            if (progress.RemovedContinuousChallengeIds?.Contains(challenge.Key) == true ||
-                progress.ClaimedChallengeIds?.Contains(challenge.Key) == true)
+            if (progress.RemovedContinuousChallengeIds?.Contains(challenge.Key) == true)
             {
                 continue;
             }
 
             int threshold = challenge.Threshold;
             int currentCount = Math.Min(progress.GetObjectiveProgress(challenge.ReferenceId), threshold);
-            bool isComplete = currentCount >= threshold;
-            if (isComplete)
+            bool done = currentCount >= threshold || progress.ClaimedChallengeIds?.Contains(challenge.Key) == true;
+            if (done)
             {
-                continue;
+                currentCount = threshold;
             }
 
             challenges[challenge.Key] = new ChallengeRecord(
@@ -251,8 +251,8 @@ internal sealed class ChallengesController : ControllerBase
                 "Common",
                 index + 1,
                 dailyEndTime,
-                "Active",
-                false,
+                done ? "Completed" : "Active",
+                done,
                 currentCount * 100 / threshold,
                 currentCount,
                 threshold,
@@ -337,7 +337,7 @@ internal sealed class ChallengesController : ControllerBase
         {
             int day = index + 1;
             bool claimed = day < currentDay || day == currentDay && claimedToday;
-            string state = claimed ? "Claimed" : day == currentDay ? "Active" : "Locked";
+            string state = claimed ? "Completed" : day == currentDay ? "Active" : "Locked";
 
             challenges[DailyLoginChallengeIds[index]] = new ChallengeRecord(
                 DailyLoginChallengeIds[index],
@@ -392,7 +392,7 @@ internal sealed class ChallengesController : ControllerBase
         bool isClaimed = progress.ClaimedChallengeIds?.Contains(challengeId) == true;
         if (challenge.IsComplete)
         {
-            return challenge with { State = isClaimed ? "Claimed" : challenge.State };
+            return challenge with { State = isClaimed ? "Completed" : challenge.State };
         }
 
         if (IsSeasonChallenge(challenge) && !isClaimed && !unlocked.Contains(challengeId))
@@ -403,7 +403,7 @@ internal sealed class ChallengesController : ControllerBase
         int threshold = Math.Max(1, challenge.TotalThreshold);
         int currentCount = isClaimed ? threshold : Math.Min(objectiveCount, threshold);
         bool isComplete = currentCount >= threshold;
-        string state = isClaimed ? "Claimed" : isComplete ? "Completed" : challenge.State == "Locked" || challengeId == activeSeasonChallengeId ? "Active" : challenge.State;
+        string state = isComplete ? "Completed" : challenge.State == "Locked" || challengeId == activeSeasonChallengeId ? "Active" : challenge.State;
 
         return challenge with
         {
