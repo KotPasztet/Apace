@@ -56,6 +56,20 @@ internal static class ResourcePackPatcher
 
             Log.Debug("Done");
 
+            if (options.FiveCrystalSlots)
+            {
+                Log.Information("Showing five adventure crystal slots");
+                string crystalsUiPath = Path.Combine(resourcePackRoot, "ui", CrystalSlots.UiFileName);
+                if (!File.Exists(crystalsUiPath))
+                {
+                    Log.Fatal($"Adventure crystal UI not found at '{crystalsUiPath}'");
+                    return false;
+                }
+
+                CrystalSlots.Apply(crystalsUiPath);
+                Log.Debug("Done");
+            }
+
             Log.Information("Patching resource pack json files");
 
             Log.Information("Generating _ui_defs.json");

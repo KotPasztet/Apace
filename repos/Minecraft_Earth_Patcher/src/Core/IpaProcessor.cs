@@ -92,6 +92,34 @@ public static class IpaProcessor
             Log.Debug("Done");
         }
 
+        if (options.FixUiAnimation)
+        {
+            Log.Information("Fixing UI animation scripts");
+            PatchUiAnimation(exePath);
+            Log.Debug("Done");
+        }
+
+        if (options.RemoveSunsetPopup)
+        {
+            Log.Information("Removing the sunset popup on the map");
+            PatchSunsetPopup(exePath);
+            Log.Debug("Done");
+        }
+
+        if (options.FiveCrystalSlots)
+        {
+            Log.Information("Showing five adventure crystal slots");
+            string crystalsUiPath = Path.Combine(appDir, "data", "resource_packs", "genoa", "ui", CrystalSlots.UiFileName);
+            if (!File.Exists(crystalsUiPath))
+            {
+                Log.Fatal($"Adventure crystal UI not found at '{crystalsUiPath}'");
+                return false;
+            }
+
+            CrystalSlots.Apply(crystalsUiPath);
+            Log.Debug("Done");
+        }
+
         Log.Information("Aligning symbol string table");
         AlignSymbolStringTable(exePath);
         Log.Debug("Done");
@@ -100,6 +128,7 @@ public static class IpaProcessor
         {
             Log.Information("Removing DRM and code signature");
             RemoveDrm(appDir);
+            RemoveSupportedDevices(appDir);
             Log.Debug("Done");
         }
 
@@ -254,6 +283,7 @@ public static class IpaProcessor
             [$"{appEntryPrefix}Info.plist"] = Path.Combine(appDir, "Info.plist"),
             [$"{appEntryPrefix}minecraftearthtf"] = exePath,
             [$"{appEntryPrefix}Frameworks/Xal.framework/Xal"] = Path.Combine(appDir, "Frameworks", "Xal.framework", "Xal"),
+            [$"{appEntryPrefix}data/resource_packs/genoa/ui/{CrystalSlots.UiFileName}"] = Path.Combine(appDir, "data", "resource_packs", "genoa", "ui", CrystalSlots.UiFileName),
             [$"{appEntryPrefix}Entitlements.plist"] = Path.Combine(appDir, "Entitlements.plist"),
         };
 
@@ -361,6 +391,64 @@ public static class IpaProcessor
         (0x884AC, new byte[] { 0xE3, 0xE3, 0x00, 0x91 }, new byte[] { 0xE3, 0x03, 0x01, 0x91 }),
         (0x884B0, new byte[] { 0xE4, 0x03, 0x1D, 0x32 }, new byte[] { 0xE4, 0x00, 0x80, 0x52 }),
     };
+
+    private static readonly (long Offset, byte[] Original, byte[] Patched)[] UiAnimationSites =
+    {
+        (0x40D7AD0, new byte[] { 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00 }, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }),
+        (0xC950C, new byte[] { 0x19, 0x02, 0x00, 0x94 }, new byte[] { 0x0A, 0x00, 0x00, 0x14 }),
+    };
+
+    private static void PatchUiAnimation(string exePath)
+    {
+        byte[] data = File.ReadAllBytes(exePath);
+
+        if (UiAnimationSites.All(site => data.AsSpan((int)site.Offset, site.Patched.Length).SequenceEqual(site.Patched)))
+        {
+            return;
+        }
+
+        foreach (var (offset, original, _) in UiAnimationSites)
+        {
+            byte[] actual = data.AsSpan((int)offset, original.Length).ToArray();
+            if (!actual.SequenceEqual(original))
+            {
+                throw new InvalidDataException($"Unexpected bytes at UI animation site 0x{offset:X} (found {Convert.ToHexString(actual)}, expected {Convert.ToHexString(original)}), the binary may be different from the supported version");
+            }
+        }
+
+        foreach (var (offset, _, patched) in UiAnimationSites)
+        {
+            Array.Copy(patched, 0, data, offset, patched.Length);
+        }
+
+        File.WriteAllBytes(exePath, data);
+    }
+
+    private const long SunsetPopupBranchAddress = 0x1587718;
+
+    private static readonly byte[] SunsetPopupBranchOriginal = { 0x08, 0x1A, 0x00, 0x35 };
+    private static readonly byte[] SunsetPopupBranchPatched = { 0xD0, 0x00, 0x00, 0x14 };
+
+    private static void PatchSunsetPopup(string exePath)
+    {
+        byte[] data = File.ReadAllBytes(exePath);
+
+        byte[] actual = new byte[4];
+        Array.Copy(data, SunsetPopupBranchAddress, actual, 0, 4);
+        if (actual.SequenceEqual(SunsetPopupBranchPatched))
+        {
+            return;
+        }
+
+        if (!actual.SequenceEqual(SunsetPopupBranchOriginal))
+        {
+            throw new InvalidDataException($"Unexpected bytes at sunset popup branch 0x{SunsetPopupBranchAddress:X} (found {Convert.ToHexString(actual)}, expected {Convert.ToHexString(SunsetPopupBranchOriginal)}), the binary may be different from the supported version");
+        }
+
+        Array.Copy(SunsetPopupBranchPatched, 0, data, SunsetPopupBranchAddress, 4);
+
+        File.WriteAllBytes(exePath, data);
+    }
 
     private const long ForceInteractiveSignInAddress = 0x6F9314;
 
@@ -909,6 +997,32 @@ public static class IpaProcessor
         return BitConverter.GetBytes(insn);
     }
 
+    private static void RemoveSupportedDevices(string appDir)
+    {
+        string plistPath = Path.Combine(appDir, "Info.plist");
+        if (!File.Exists(plistPath))
+            return;
+
+        string text = File.ReadAllText(plistPath);
+        const string keyTag = "<key>UISupportedDevices</key>";
+        int start = text.IndexOf(keyTag, StringComparison.Ordinal);
+        if (start < 0)
+            return;
+
+        int arrayEnd = text.IndexOf("</array>", start, StringComparison.Ordinal);
+        if (arrayEnd < 0)
+            return;
+
+        int end = arrayEnd + "</array>".Length;
+        while (start > 0 && char.IsWhiteSpace(text[start - 1]) && text[start - 1] != '\n')
+            start--;
+        while (end < text.Length && (text[end] == '\r' || text[end] == '\n'))
+            end++;
+
+        File.WriteAllText(plistPath, text.Remove(start, end - start));
+        Log.Information("Removed UISupportedDevices from Info.plist");
+    }
+
     private static void PatchAppName(string appDir, string newName)
     {
         string plistPath = Path.Combine(appDir, "Info.plist");
@@ -1048,6 +1162,9 @@ public static class IpaProcessor
         public bool ChangeXboxLiveAddress { get; set; } = true;
         public bool DisableSunsetTimeCheck { get; set; } = true;
         public bool DisableSpeedLimit { get; set; } = false;
+        public bool FixUiAnimation { get; set; } = true;
+        public bool RemoveSunsetPopup { get; set; } = true;
+        public bool FiveCrystalSlots { get; set; } = true;
         public bool ChangeAppName { get; set; } = true;
         public bool ChangeBundleId { get; set; } = false;
         public string BundleId { get; set; } = "";

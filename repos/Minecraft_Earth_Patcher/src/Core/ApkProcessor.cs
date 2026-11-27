@@ -223,6 +223,8 @@ public static class ApkProcessor
 
         public required IEnumerable<string> Variables { get; init; }
 
+        public bool FiveCrystalSlots { get; init; } = true;
+
         public bool NonInteractive { get; init; }
 
         public bool SkipDecode { get; init; }
