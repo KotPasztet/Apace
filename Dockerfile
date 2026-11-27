@@ -247,6 +247,10 @@ RUN if [ -d /app/staticdata/server_template_dir/mods ]; then \
         mkdir -p /app/defaults && \
         cp -r /app/staticdata/server_template_dir/mods /app/defaults/mods; \
     fi
+RUN if [ -d /app/staticdata/server_template_dir/datapacks ]; then \
+        mkdir -p /app/defaults && \
+        cp -r /app/staticdata/server_template_dir/datapacks /app/defaults/datapacks; \
+    fi
 
 # Generate entrypoint inline (no external file — avoids COPY failures).
 # Syncs Fabric mods from /app/defaults/mods/ into the volume-mounted
@@ -270,6 +274,19 @@ RUN printf '%s\n' \
         '            echo "entrypoint: updating mod $name in server_template_dir..."' \
         '            cp -f "$jar" "$DST_MODS/$name"' \
         '        fi' \
+        '    done' \
+        'fi' \
+        '' \
+        'SRC_DATAPACKS="/app/defaults/datapacks"' \
+        'DST_DATAPACKS="/app/staticdata/server_template_dir/datapacks"' \
+        '' \
+        'if [ -d "$SRC_DATAPACKS" ]; then' \
+        '    mkdir -p "$DST_DATAPACKS"' \
+        '    for pack in "$SRC_DATAPACKS"/*; do' \
+        '        [ -e "$pack" ] || continue' \
+        '        name="$(basename "$pack")"' \
+        '        rm -rf "$DST_DATAPACKS/$name"' \
+        '        cp -r "$pack" "$DST_DATAPACKS/$name"' \
         '    done' \
         'fi' \
         '' \
