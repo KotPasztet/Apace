@@ -5,8 +5,8 @@
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
-@using Microsoft.EntityFrameworkCore
 @using Apace.LauncherUI.Data
+@using Apace.LauncherUI.Utils
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -78,8 +78,6 @@ error.Description))}";
 
     public async Task RegisterUser(EditContext editContext)
     {
-        var firstUser = !await UserManager.Users.AnyAsync();
-
         var user = CreateUser();
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
@@ -95,11 +93,10 @@ error.Description))}";
 
         Logger.LogInformation("User created a new account with password.");
 
-        // Assign owner role if first user
-        if (firstUser)
-        {
-            await UserManager.AddToRoleAsync(user, ApplicationRole.Owner);
-        }
+        // WHY: first-ever account becomes owner, decided by role membership (not by an
+        // "empty users table" pre-check — a stale row used to block the grant forever),
+        // and the result is logged instead of silently ignored.
+        await OwnerBootstrap.EnsureOwnerAfterCreateAsync(UserManager, user, Logger);
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);

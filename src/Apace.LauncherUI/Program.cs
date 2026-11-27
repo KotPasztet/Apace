@@ -226,6 +226,26 @@ public partial class Program
 
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
             await EnsureBuiltInRolesAsync(roleManager);
+
+            // WHY: self-heal for installs stuck with "account exists, no admin" (the old
+            // empty-table pre-check could leave the first account without the owner role).
+            // Runs once at startup, before the app accepts requests: if any user exists
+            // but the owner role has zero members, promote the first user (by Id).
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var firstUser = await userManager.Users.OrderBy(u => u.Id).FirstOrDefaultAsync();
+            if (firstUser is not null && !(await userManager.GetUsersInRoleAsync(ApplicationRole.Owner)).Any())
+            {
+                var add = await userManager.AddToRoleAsync(firstUser, ApplicationRole.Owner);
+                if (add.Succeeded)
+                {
+                    Log.Information("Owner bootstrap: granted owner to the only existing user '{Name}' (no admin existed after update)", firstUser.UserName);
+                }
+                else
+                {
+                    Log.Warning("Owner bootstrap: failed to grant owner to the only existing user '{Name}': {Errors}",
+                        firstUser.UserName, string.Join(", ", add.Errors.Select(e => e.Description)));
+                }
+            }
         }
 
         // extract buildplates from db/objectstore

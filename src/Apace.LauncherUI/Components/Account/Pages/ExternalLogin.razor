@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using Apace.LauncherUI.Data
+@using Apace.LauncherUI.Utils
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -154,6 +155,11 @@
         var result = await UserManager.CreateAsync(user);
         if (result.Succeeded)
         {
+            // WHY: external signup used to never grant the owner role, so the first
+            // account created this way left the panel without an admin. Same shared
+            // conditional grant as password registration (one gate, one check).
+            await OwnerBootstrap.EnsureOwnerAfterCreateAsync(UserManager, user, Logger);
+
             result = await UserManager.AddLoginAsync(user, externalLoginInfo);
             if (result.Succeeded)
             {
