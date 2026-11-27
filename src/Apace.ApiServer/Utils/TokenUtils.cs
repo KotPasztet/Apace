@@ -9,7 +9,6 @@ namespace Apace.ApiServer.Utils;
 
 public static class TokenUtils
 {
-    private const string CommonAdventureCrystalId = "4f16a053-4929-263a-c91a-29663e29df76";
 
     public static EarthDB.Query AddToken(string playerId, Tokens.Token token)
     {
@@ -64,7 +63,16 @@ public static class TokenUtils
 
         try
         {
-            await new EarthDB.Query(true)
+            await EnsureDailyLoginTokenQuery(playerId, today).ExecuteAsync(Program.DB, cancellationToken);
+        }
+        catch (EarthDB.DatabaseException exception)
+        {
+            Log.Warning(exception, "Could not create daily login token for {PlayerId}", playerId);
+        }
+    }
+
+    internal static EarthDB.Query EnsureDailyLoginTokenQuery(string playerId, string today)
+        => new EarthDB.Query(true)
                 .Get("tokenClaims", playerId, typeof(TokenClaims))
                 .Get("tokens", playerId, typeof(Tokens))
                 .Then(results =>
@@ -72,39 +80,28 @@ public static class TokenUtils
                     TokenClaims tokenClaims = results.Get<TokenClaims>("tokenClaims");
                     Tokens tokens = results.Get<Tokens>("tokens");
 
+                    string challengeId = ChallengesController.DailyLoginChallengeIds[GetDailyLoginCycleDay(tokenClaims, today) - 1];
                     bool changed = false;
+                    bool hasCurrent = false;
                     foreach (Tokens.TokenWithId existingToken in tokens.GetTokens())
                     {
-                        if (existingToken.Token is Tokens.DailyLoginToken dailyLoginToken && dailyLoginToken.Date != today)
+                        if (existingToken.Token is not Tokens.DailyLoginToken dailyLoginToken)
                         {
-                            tokens.RemoveToken(existingToken.Id);
-                            changed = true;
+                            continue;
                         }
 
-                        if (existingToken.Token is Tokens.DailyLoginToken dailyLoginTokenToday && dailyLoginTokenToday.Date == today && !Guid.TryParse(existingToken.Id, out _))
+                        bool current = dailyLoginToken.Date == today && dailyLoginToken.ChallengeId == challengeId && Guid.TryParse(existingToken.Id, out _);
+                        if (current && !hasCurrent && !tokenClaims.RedeemedDailyLoginDates.Contains(today))
                         {
-                            tokens.RemoveToken(existingToken.Id);
-                            changed = true;
+                            hasCurrent = true;
+                            continue;
                         }
+
+                        tokens.RemoveToken(existingToken.Id);
+                        changed = true;
                     }
 
-                    if (tokenClaims.RedeemedDailyLoginDates.Contains(today))
-                    {
-                        foreach (Tokens.TokenWithId existingToken in tokens.GetTokens())
-                        {
-                            if (existingToken.Token is Tokens.DailyLoginToken dailyLoginToken && dailyLoginToken.Date == today)
-                            {
-                                tokens.RemoveToken(existingToken.Id);
-                                changed = true;
-                            }
-                        }
-
-                        return changed
-                            ? new EarthDB.Query(true).Update("tokens", playerId, tokens)
-                            : EarthDB.Query.Empty;
-                    }
-
-                    if (tokens.GetTokens().Any(token => token.Token is Tokens.DailyLoginToken dailyLoginToken && dailyLoginToken.Date == today && Guid.TryParse(token.Id, out _)))
+                    if (tokenClaims.RedeemedDailyLoginDates.Contains(today) || hasCurrent)
                     {
                         return changed
                             ? new EarthDB.Query(true).Update("tokens", playerId, tokens)
@@ -112,25 +109,10 @@ public static class TokenUtils
                     }
 
                     // the streak advances when the token is claimed (DoActionsOnRedeemedToken), not when it is created
-                    tokens.AddToken(U.RandomUuid().ToString(), new Tokens.DailyLoginToken(
-                        today,
-                        new Apace.DB.Models.Common.Rewards(
-                            0,
-                            25,
-                            null,
-                            new Dictionary<string, int?> { [CommonAdventureCrystalId] = 1 },
-                            [],
-                            [])));
+                    tokens.AddToken(U.RandomUuid().ToString(), new Tokens.DailyLoginToken(today, ChallengesController.DailyLoginRewards(), challengeId));
 
                     return new EarthDB.Query(true).Update("tokens", playerId, tokens);
-                })
-                .ExecuteAsync(Program.DB, cancellationToken);
-        }
-        catch (EarthDB.DatabaseException exception)
-        {
-            Log.Warning(exception, "Could not create daily login token for {PlayerId}", playerId);
-        }
-    }
+                });
 
     // port of Solace v0.0.7 ChallengeProgressVersion.GetDailyLoginDay: the cycle day is derived from the
     // last CLAIM date, so a streak whose last claim was neither today nor yesterday starts over at day 1
@@ -169,6 +151,17 @@ public static class TokenUtils
             ? Math.Max(1, tokenClaims.DailyLoginStreak) + 1
             : 1;
         tokenClaims.LastDailyLoginDate = date;
+    }
+
+    internal static bool RecordDailyLoginClaim(TokenClaims tokenClaims, string date)
+    {
+        bool firstClaim = tokenClaims.RedeemedDailyLoginDates.Add(date);
+        if (firstClaim)
+        {
+            ClaimDailyLogin(tokenClaims, date);
+        }
+
+        return firstClaim;
     }
 
     private static string GetDate(long timestamp)
@@ -231,11 +224,7 @@ public static class TokenUtils
 
                         // the streak advances on claim (not on token creation); RedeemedDailyLoginDates keeps
                         // double claims of the same day from advancing the streak or granting rewards twice
-                        bool firstClaim = tokenClaims.RedeemedDailyLoginDates.Add(dailyLoginToken.Date);
-                        if (firstClaim)
-                        {
-                            ClaimDailyLogin(tokenClaims, dailyLoginToken.Date);
-                        }
+                        bool firstClaim = RecordDailyLoginClaim(tokenClaims, dailyLoginToken.Date);
 
                         var updateQuery = new EarthDB.Query(true)
                             .Update("tokenClaims", playerId, tokenClaims);

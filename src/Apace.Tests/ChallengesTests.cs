@@ -210,17 +210,6 @@ public sealed class ChallengesTests
     }
 
     [Fact]
-    public void DailyLoginTokenNamesTheBonusChallenge()
-    {
-        var token = new Tokens.DailyLoginToken("2026-11-22", new Apace.DB.Models.Common.Rewards(0, 25, null, new Dictionary<string, int?>(), [], []));
-
-        Dictionary<string, string> properties = TokensController.TokenToApiResponse(token).ClientProperties;
-
-        Assert.Equal(ChallengesController.DailyBonusChallengeId, properties["challengeid"]);
-        Assert.NotEqual("29ebe650-072f-4f70-996f-4ffdda93ed1f", properties["challengeid"]);
-    }
-
-    [Fact]
     public void BonusChallengeIdCollidesWithNoClientChallenge()
     {
         var progress = new ChallengeProgressVersion();

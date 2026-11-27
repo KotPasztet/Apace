@@ -106,12 +106,14 @@ public sealed class Tokens
     {
         public string Date { get; init; }
         public Rewards Rewards { get; init; }
+        public string? ChallengeId { get; init; }
 
-        public DailyLoginToken(string date, Rewards rewards)
+        public DailyLoginToken(string date, Rewards rewards, string? challengeId = null)
             : base(TypeE.DAILY_LOGIN)
         {
             Date = date;
             Rewards = rewards;
+            ChallengeId = challengeId;
         }
     }
 

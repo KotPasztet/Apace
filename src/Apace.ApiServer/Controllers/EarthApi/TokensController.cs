@@ -135,8 +135,8 @@ internal sealed class TokensController : ApaceControllerBase
             case Tokens.DailyLoginToken dailyLogin:
                 properties["date"] = dailyLogin.Date;
                 properties["login_count"] = "7";
-                properties["challengeid"] = ChallengesController.DailyBonusChallengeId;
-                properties["challengereferenceid"] = DailyReferenceId;
+                properties["challengeid"] = dailyLogin.ChallengeId ?? ChallengesController.DailyLoginChallengeIds[0];
+                properties["challengereferenceid"] = dailyLogin.ChallengeId ?? ChallengesController.DailyLoginChallengeIds[0];
                 break;
             case Tokens.OobeAdventureCrystalToken oobeAdventureCrystal:
                 properties["itemid"] = oobeAdventureCrystal.ItemId;
