@@ -17,7 +17,9 @@ public static class OwnerBootstrap
     // the grant forever; and external signup gets the grant too, not just password
     // registration. Failure to add the role is logged, not silently ignored.
     // Thin wrapper kept for the registration call sites (Register, ExternalLogin).
-    public static Task EnsureOwnerAfterCreateAsync(UserManager<ApplicationUser> userManager, ApplicationUser user, ILogger logger)
+    // Returns true when an owner exists afterwards (granted here or already one);
+    // OwnerBootstrapMiddleware flips its fast-path flag on true and retries on false.
+    public static Task<bool> EnsureOwnerAfterCreateAsync(UserManager<ApplicationUser> userManager, ApplicationUser user, ILogger logger)
     {
         return EnsureOwnerForUserAsync(userManager, user, logger);
     }
@@ -25,9 +27,12 @@ public static class OwnerBootstrap
     // WHY: Identity Id is a random GUID, so the startup self-heal cannot tell WHICH
     // account should own a multi-user install — the first successful sign-in is the
     // only unambiguous bootstrap signal. Login pages call this after a successful
-    // sign-in, under the same Gate as registration: grant only when the Owner role
-    // has no members (no-op once an owner exists).
-    public static async Task EnsureOwnerForUserAsync(UserManager<ApplicationUser> userManager, ApplicationUser user, ILogger logger)
+    // sign-in, and OwnerBootstrapMiddleware calls it for users returning via a
+    // persisted cookie, under the same Gate as registration: grant only when the
+    // Owner role has no members (no-op once an owner exists). Returns true when an
+    // owner exists afterwards (granted here or already one), false when the grant
+    // failed — the page call sites await it as a plain statement and ignore the value.
+    public static async Task<bool> EnsureOwnerForUserAsync(UserManager<ApplicationUser> userManager, ApplicationUser user, ILogger logger)
     {
         await Gate.WaitAsync();
         try
@@ -35,7 +40,7 @@ public static class OwnerBootstrap
             var hasOwner = (await userManager.GetUsersInRoleAsync(ApplicationRole.Owner)).Any();
             if (hasOwner)
             {
-                return;
+                return true;
             }
 
             var add = await userManager.AddToRoleAsync(user, ApplicationRole.Owner);
@@ -45,12 +50,12 @@ public static class OwnerBootstrap
                 // startup covers a missing owner; but leave a trace so it stays diagnosable.
                 logger.LogWarning("Owner bootstrap: failed to grant owner role to '{UserName}': {Errors}",
                     user.UserName, string.Join(", ", add.Errors.Select(e => e.Description)));
+                return false;
             }
-            else
-            {
-                logger.LogInformation("Owner bootstrap: granted owner role to '{UserName}' (no admin existed).",
-                    user.UserName);
-            }
+
+            logger.LogInformation("Owner bootstrap: granted owner role to '{UserName}' (no admin existed).",
+                user.UserName);
+            return true;
         }
         finally
         {
