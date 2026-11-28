@@ -1,0 +1,7 @@
+{
+  "minecraft:ochre_froglight[axis=x]": "COMMON",
+  "minecraft:ochre_froglight[axis=z]": "UNCOMMON",
+  "minecraft:verdant_froglight[axis=x]": "RARE",
+  "minecraft:pearlescent_froglight[axis=x]": "EPIC",
+  "minecraft:pearlescent_froglight[axis=z]": "LEGENDARY"
+}

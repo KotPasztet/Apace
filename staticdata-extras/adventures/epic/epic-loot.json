@@ -1,0 +1,550 @@
+{
+  "source": "adventure_chest entries of Crafters Guide's item_data.dat (craftersguide.stents.dev)",
+  "items": [
+    {
+      "id": "6f5ef528-c271-e8cf-28df-8ac0654aed47",
+      "name": "spawn_egg:32",
+      "chance": 7.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "7a97f4f8-21f5-4e65-1e8f-69c1251cf9d9",
+      "name": "activator_rail",
+      "chance": 2.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "1d549957-68d0-730a-56f3-d33996738d84",
+      "name": "adventure_crystal_epic",
+      "chance": 100.0,
+      "min": 1,
+      "max": 1,
+      "group": "crystal",
+      "uncertain": false
+    },
+    {
+      "id": "19177297-160a-0b9d-4b51-5ff0d927e44e",
+      "name": "iron_block",
+      "chance": 8.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "3f473106-d0c3-4f44-9db9-ace843e3a11a",
+      "name": "diamond_shovel",
+      "chance": 1.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "198e4b14-f7e1-1f8a-2a8d-9055d5a7697d",
+      "name": "gold_block",
+      "chance": 6.8,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "9fca899c-6764-c9da-5e6b-47db6305aac9",
+      "name": "beetroot_soup",
+      "chance": 6.8,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c0e40829-fb2a-1fa3-4513-818bbfccac1a",
+      "name": "detector_rail",
+      "chance": 2.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "f00bc1de-33b7-9420-6638-8c6753f71643",
+      "name": "gray_glazed_terracotta",
+      "chance": 3.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "b2972abc-bf65-8b19-aaa9-a67732e6923e",
+      "name": "cooked_rabbit",
+      "chance": 7.8,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "07d29b57-cba3-71de-5a3f-3ea5752fdb6e",
+      "name": "spawn_egg:34",
+      "chance": 6.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "f4303405-3ff8-690c-104f-e7c42fe35c9d",
+      "name": "bookshelf",
+      "chance": 1.7,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "706e6a56-816f-5b91-d7f9-efbf17455cb9",
+      "name": "green_glazed_terracotta",
+      "chance": 2.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "b6c38658-3dd1-5e14-1ffd-956c4bb4348b",
+      "name": "lime_glazed_terracotta",
+      "chance": 2.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "fd595ab4-a2c8-b278-caf7-91021fd32811",
+      "name": "cookie",
+      "chance": 4.5,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "33ed746f-7115-d1b5-1a47-056422800c5d",
+      "name": "yellow_glazed_terracotta",
+      "chance": 3.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c0589660-aa65-740c-f0c9-08349929460a",
+      "name": "silver_glazed_terracotta",
+      "chance": 3.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "2f493be1-b5d5-547a-b991-cf30a9f1e99a",
+      "name": "lapis_block",
+      "chance": 5.3,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "fabec585-3c93-49c4-0ec5-4184cb24cbc7",
+      "name": "gunpowder",
+      "chance": 8.1,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "7d5dd2a0-c2ba-d663-de2f-14843c88b383",
+      "name": "quartz_block:3",
+      "chance": 3.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "42431c81-8c9e-87c5-6a3d-47344931df53",
+      "name": "redstone_block",
+      "chance": 7.7,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "837f079f-1257-486a-9ef1-b910da677981",
+      "name": "golden_shovel",
+      "chance": 2.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "081a1c01-f504-40b4-b7d0-59d9f8c4d918",
+      "name": "diamond_pickaxe",
+      "chance": 1.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "a1c6f586-c60c-929c-276d-bf24f0e174d1",
+      "name": "glowstone",
+      "chance": 2.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "6116b348-0b54-d20f-ac3a-09d285ea5dc5",
+      "name": "purple_glazed_terracotta",
+      "chance": 3.1,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "4754dd83-4a0b-41d5-aaa5-8be886d93629",
+      "name": "golden_hoe",
+      "chance": 2.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "96c15281-3347-1b4e-b464-4613d4047bba",
+      "name": "pink_glazed_terracotta",
+      "chance": 4.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "0d494b76-58cd-4744-aa3e-affe0e4ebb87",
+      "name": "golden_pickaxe",
+      "chance": 3.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "fb867518-05b7-497f-afbc-5b88a490469b",
+      "name": "diamond_hoe",
+      "chance": 1.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "1eb4c044-716e-4a26-80f3-be2a7f30fe70",
+      "name": "diamond_sword",
+      "chance": 1.3,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "7411f28b-5ea9-ce1e-46d4-e1f31ec4b0fe",
+      "name": "orange_glazed_terracotta",
+      "chance": 1.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "36e0ec59-ab45-e654-c5e4-9bda569ea3b7",
+      "name": "cooked_salmon",
+      "chance": 5.0,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "18f14347-4294-ec5a-9d47-62b8791084ac",
+      "name": "glowstone_dust",
+      "chance": 1.8,
+      "min": 3,
+      "max": 6,
+      "uncertain": false
+    },
+    {
+      "id": "aa27137d-eb9f-473b-290e-2b8467add1c4",
+      "name": "magenta_glazed_terracotta",
+      "chance": 3.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "bc7973d3-488f-54a0-3f59-93285b2fda7f",
+      "name": "quartz",
+      "chance": 0.9,
+      "min": 6,
+      "max": 8,
+      "uncertain": false
+    },
+    {
+      "id": "81afb63a-be28-0e12-47d0-e2eba32e1365",
+      "name": "spawn_egg:35",
+      "chance": 10.1,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "1d4db1f9-f350-44ad-b19c-87fd57ac4ae1",
+      "name": "golden_axe",
+      "chance": 3.4,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "06b9a70e-2456-10e9-f241-22f31a9f43e1",
+      "name": "minecart",
+      "chance": 4.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "b584305e-7ff3-54b9-af7d-7e9c07c890d1",
+      "name": "slime",
+      "chance": 2.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c409783a-8f32-fa9f-1026-54bbaaaedc38",
+      "name": "tnt",
+      "chance": 3.3,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "bda92a47-adde-2188-0c18-2f091958bf34",
+      "name": "diamond_ore",
+      "chance": 0.8,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c14ba849-ef0b-6b26-cfeb-f6b7c6cc7d00",
+      "name": "brick",
+      "chance": 5.1,
+      "min": 1,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "13062bb3-f148-7ede-deee-f3e550e8c8b2",
+      "name": "cauldron",
+      "chance": 5.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "250b2d5d-685e-c75e-e2f3-6b922ce318d0",
+      "name": "golden_rail",
+      "chance": 1.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "ea389d44-f530-3443-440c-d9c0bc89f53b",
+      "name": "bucket:10",
+      "chance": 1.3,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "b168485f-dd72-4c6a-af04-46858c42d8a1",
+      "name": "spawn_egg:33",
+      "chance": 2.6,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "84aaf925-dbe5-f122-9139-08098789e4f8",
+      "name": "bow",
+      "chance": 8.2,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "f274c113-0017-4eb7-bf29-fceb6373a2d3",
+      "name": "golden_sword",
+      "chance": 2.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "0014bea1-1588-fed5-16e1-9ae3a6983e5c",
+      "name": "magma_cream",
+      "chance": 5.8,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "c290939b-a19f-c3c6-d310-b34fee81bd56",
+      "name": "reeds",
+      "chance": 2.2,
+      "min": 2,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "ae6efe59-cc9c-61c0-0ac3-25c93a11138e",
+      "name": "dye:4",
+      "chance": 3.8,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "f998cbd3-433a-db65-8707-0a160bdd63ee",
+      "name": "bone_block",
+      "chance": 6.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "1c548de0-92d4-3ba2-84d1-fc2671d388cb",
+      "name": "gold_ingot",
+      "chance": 3.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "ab5e5e1e-1b73-9ba0-0e6b-2d5051585e69",
+      "name": "blue_glazed_terracotta",
+      "chance": 2.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "85a279d4-d403-4487-d96d-17a91604e638",
+      "name": "spawn_egg:5006",
+      "chance": 3.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "595660a4-85b5-ac91-45be-ded273457fe4",
+      "name": "brown_glazed_terracotta",
+      "chance": 3.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "32932f8e-56cb-9a0d-8c52-6c91b254068a",
+      "name": "light_blue_glazed_terracotta",
+      "chance": 3.1,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "cc92a51e-e8a0-b0b8-d81d-3dbc7f25a8e8",
+      "name": "cyan_glazed_terracotta",
+      "chance": 2.3,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "e6e669cd-4fb6-dd0f-8eee-1644b53c3eaf",
+      "name": "red_glazed_terracotta",
+      "chance": 1.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "408bb17b-da92-0cea-7496-ee01c6a542d7",
+      "name": "diamond",
+      "chance": 1.1,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "e7c7f2ff-4233-0824-5d87-3344c9082616",
+      "name": "white_glazed_terracotta",
+      "chance": 2.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "ab316728-9922-430c-808b-ff3b6e3cd00a",
+      "name": "diamond_axe",
+      "chance": 1.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "d3165763-3ea0-7817-3370-049ba0cc545a",
+      "name": "red_sandstone",
+      "chance": 2.0,
+      "min": 2,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "98d448b8-4f4c-7470-db01-e5f8b1e065e5",
+      "name": "paper",
+      "chance": 1.3,
+      "min": 2,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "55d8cf9b-27a2-b059-2697-6084be68304e",
+      "name": "brick_block",
+      "chance": 3.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "9daf4912-7cd2-172d-6d1b-aa4bd3fc8319",
+      "name": "golden_carrot",
+      "chance": 3.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "8130deac-949a-4016-f7f2-e5dad0df7018",
+      "name": "black_glazed_terracotta",
+      "chance": 3.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "07e88c0d-1bc5-dc66-9121-8be6f437ec30",
+      "name": "quartz_block:1",
+      "chance": 3.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    }
+  ]
+}

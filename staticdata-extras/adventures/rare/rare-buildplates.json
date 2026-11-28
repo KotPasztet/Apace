@@ -1,0 +1,20 @@
+{
+  "buildplates": [
+    { "templateId": "9ff959d5-379f-cfe5-1250-9688e7a62d2e", "weight": 10, "name": "Bank Heist" },
+    { "templateId": "82f2fb72-7194-c70a-a19a-f882c82282a6", "weight": 10, "name": "Bone Spider Mausoleum" },
+    { "templateId": "28ddd4a9-f058-4dd5-c7c3-8eb0da5933fd", "weight": 10, "name": "Bunker Hill" },
+    { "templateId": "3c067578-df86-0341-6172-d3e645884ce8", "weight": 10, "name": "Buried Booty" },
+    { "templateId": "0e9742c4-be2b-4390-7854-c7c53a5c650c", "weight": 10, "name": "Chiseled Stone Falls" },
+    { "templateId": "63ff77bf-0500-2ec9-ed59-4a3f60effd0e", "weight": 10, "name": "Creeper Surprise" },
+    { "templateId": "8c716bef-fb7d-3f42-b1eb-83a2f176595c", "weight": 10, "name": "It's a Trap!" },
+    { "templateId": "ae165f35-fa96-02cd-739f-8e84bb927a23", "weight": 10, "name": "Pillar of Gold" },
+    { "templateId": "3f2dde7d-e218-43fb-3c6e-351109a32add", "weight": 10, "name": "Pyromaniac" },
+    { "templateId": "0be235a0-dd6f-4669-5ac0-cc67531dd455", "weight": 10, "name": "Skeleton Falls" },
+    { "templateId": "18353f53-f68b-22a2-70b9-e5dc796131f2", "weight": 10, "name": "Stronghold" },
+    { "templateId": "ac772cd2-68f6-88b4-3957-548c2499a95b", "weight": 10, "name": "The Arena" },
+    { "templateId": "30954446-9983-614a-4021-efb33769f62b", "weight": 10, "name": "The Blue Room" },
+    { "templateId": "290146e2-05d4-9027-bed4-19b7ba604d8e", "weight": 10, "name": "The Diamond Room" },
+    { "templateId": "edc99a3b-1c2f-9359-924e-e7c430553f36", "weight": 10, "name": "The Viaduct" },
+    { "templateId": "b06cef02-6ddd-236c-9436-86f60008d365", "weight": 10, "name": "Wood Fort" }
+  ]
+}
