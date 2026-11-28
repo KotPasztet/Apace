@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.2.5 — 2026-11-28
+
+> Scope: installers and stability — **the Windows installer no longer closes PowerShell**, the quick-launchers are actually downloaded, mobile-launcher requirements are stated. Plus the multiplayer routing and diagnostics from dev.
+
+---
+
+## 🪟 Windows installer: "Docker not found" closed PowerShell instantly
+
+- **The bug**: every failure path in `install.ps1` ended with `exit 1`. The documented way to run it is `iwr … | iex`, and `exit` inside `Invoke-Expression` terminates the **user's whole PowerShell session** — the window closed with code 1 and the message was gone before it could be read.
+- **The fix**: `return` instead of `exit` (ends only the script). Verified with PowerShell 7.7 on the no-Docker path and on the "Docker present but not starting" path, both piped into `iex` and run as a file: the session survives and the message stays on screen.
+- The "Docker not found" message now says plainly that the installer **does not install Docker** and offers the Docker-free route (`-Mode --no-docker`), instead of just dropping the user. `QUICKINSTALL.md` claimed the installer installs Docker — true for `install.sh` (apt/dnf/pacman/brew), never true for `install.ps1`; the docs are split per platform now.
+
+## 🚀 Quickstart: the launchers the docs point at were never downloaded
+
+- `README` and `QUICKINSTALL` tell users to run `run.sh` / `run.ps1` from `~/apace` after installing, but the installers only ever fetched `docker-compose.yml` — following the docs ended in `run.sh: No such file or directory`. Both installers download the quick-launcher now.
+- `install.sh` used GNU-only `sed -i '/a\ text'`, which fails on BSD sed and — with `set -e` — aborted the install on macOS. Replaced with a POSIX `awk` insertion (identical output, verified against the GNU result; not run on a real macOS).
+- `install.ps1` documented `iex -args '--no-docker'`; `Invoke-Expression` has no `-args`. The header shows the scriptblock form that works.
+
+## 📱 Termux installer: the patcher's framework and zipalign are provisioned
+
+- On a Termux install the patch job died in the link step: the bundled aapt2 fails with SIGILL (exit 132) and the fallback distro aapt2 2.19 then rejects apktool's own framework (`LoadedArsc.cpp:94`). The Docker image avoids this by shipping Google's platform-29 `android.jar` as `/opt/android-framework/1.apk` and exporting `APKTOOL_FRAMEWORK_DIR`; the Termux installer never got that wiring. It does now (idempotent, cleans up on failure) and `run-inside.sh` exports `APKTOOL_FRAMEWORK_DIR` and `ZIPALIGN_PATH` when present.
+- **Not verified on a device** — the Termux install and a real patch job were not run here. The Apace-Launcher app has its own rootfs and `run-inside.sh` (separate repo) and needs the same provisioning.
+
+## 📋 Mobile launcher requirements are stated
+
+- README and the website now list: ARM64, Android 8.0+, **4 GB RAM (6 GB recommended)**, ~3.5 GB free space. The RAM figure is an estimate from the stack's composition (.NET with a 512 MB heap, Java server and bridge, the APK build tools while patching) — not a measurement on a device.
+
+## 🛰️ Multiplayer: tolerant player-id routing + instance stop reasons
+
+- The buildplate launcher's `playerLogin` routing compared player ids exactly; an iOS client logs in with the **numeric** xuid derived from the same hex playfab id the API registers. Routing now falls back to a tolerant numeric↔hex match and covers the host's own login. **Not confirmed as the fix for any specific report** — multiplayer works for other users; the one remaining report (an iPhone 7) is still open.
+- An instance that died between "started" and "ready" returned an **empty 500** and logged its reason only in the launcher's local log. The reason now reaches the ApiServer log (Warning) and the 500 body.
+- **The bridge jars are unchanged from v0.2.4.** A rebuilt bridge jar that briefly lived on dev was withdrawn — it had deleted the `RemotePlayers` classes (see the entry below).
+
+## ⚠️ Known — not fixed in this release
+
+- The mobile launcher closes on low-RAM phones while patching: the app checks free storage (3.5 GB) but never RAM, and patching runs the APK build tools next to the server processes. Requirements are now stated; the app itself is unchanged.
+- A guest can still sit ~30 s on `buildplate_loading_screen` after a successful `playerConnected` in some sessions — not reproduced; needs the launcher and Java Server logs from one such join.
+
 ## v0.2.4 — 2026-11-27
 
 > Scope: release-packaging fix — **release ZIPs no longer ship the developer's local database**.
