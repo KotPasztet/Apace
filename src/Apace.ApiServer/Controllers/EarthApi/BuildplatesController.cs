@@ -31,6 +31,9 @@ internal sealed class BuildplatesController : ApaceControllerBase
     // Tapping a pin that is about to expire should not give a few seconds of play: every encounter instance lasts at least this long
     private const long MinEncounterInstanceLifetimeMs = 30 * 60 * 1000;
 
+    // Number of 1-second readiness polls before giving up on an instance (the loop in WaitForInstanceReadyAsync)
+    private const int WaitForReadyMaxSeconds = 90;
+
     private static readonly SemaphoreSlim AdventureScrollLock = new(1, 1);
     private static EarthDB earthDB => Program.DB;
     private static BuildplateInstancesManager buildplateInstancesManager => Program.buildplateInstancesManager;
@@ -382,7 +385,8 @@ internal sealed class BuildplatesController : ApaceControllerBase
             return TypedResults.NotFound();
         }
 
-        instanceInfo = await WaitForInstanceReadyAsync(instanceInfo.InstanceId, cancellationToken);
+        var (readyInstanceInfo, _) = await WaitForInstanceReadyAsync(instanceInfo.InstanceId, cancellationToken);
+        instanceInfo = readyInstanceInfo;
         if (instanceInfo is null)
         {
             return TypedResults.NotFound();
@@ -709,10 +713,11 @@ internal sealed class BuildplatesController : ApaceControllerBase
             return TypedResults.InternalServerError();
         }
 
-        BuildplateInstancesManager.InstanceInfo? instanceInfo = await WaitForInstanceReadyAsync(instanceId, cancellationToken);
+        (BuildplateInstancesManager.InstanceInfo? instanceInfo, string? stopReason) = await WaitForInstanceReadyAsync(instanceId, cancellationToken);
         if (instanceInfo is null)
         {
-            return TypedResults.InternalServerError();
+            Log.Warning("Buildplate instance {InstanceId} stopped before ready: {Reason}", instanceId, stopReason);
+            return InstanceErrorJson(stopReason);
         }
 
         BuildplateInstance? buildplateInstance = await InstanceInfoToApiResponse(instanceInfo, cancellationToken);
@@ -751,7 +756,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
             return TypedResults.InternalServerError();
         }
 
-        BuildplateInstancesManager.InstanceInfo? instanceInfo = await WaitForInstanceReadyAsync(instanceId, cancellationToken);
+        var (instanceInfo, _) = await WaitForInstanceReadyAsync(instanceId, cancellationToken);
         if (instanceInfo is null)
         {
             return TypedResults.InternalServerError();
@@ -792,7 +797,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
             return TypedResults.InternalServerError();
         }
 
-        BuildplateInstancesManager.InstanceInfo? instanceInfo = await WaitForInstanceReadyAsync(instanceId, cancellationToken);
+        var (instanceInfo, _) = await WaitForInstanceReadyAsync(instanceId, cancellationToken);
         if (instanceInfo is null)
         {
             return TypedResults.InternalServerError();
@@ -822,7 +827,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
             return TypedResults.InternalServerError();
         }
 
-        BuildplateInstancesManager.InstanceInfo? instanceInfo = await WaitForInstanceReadyAsync(instanceId, cancellationToken);
+        var (instanceInfo, _) = await WaitForInstanceReadyAsync(instanceId, cancellationToken);
         if (instanceInfo is null)
         {
             return TypedResults.InternalServerError();
@@ -837,7 +842,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
         return EarthJson(buildplateInstance);
     }
 
-    private static async Task<BuildplateInstancesManager.InstanceInfo?> WaitForInstanceReadyAsync(string instanceId, CancellationToken cancellationToken)
+    private static async Task<(BuildplateInstancesManager.InstanceInfo? InstanceInfo, string? StopReason)> WaitForInstanceReadyAsync(string instanceId, CancellationToken cancellationToken)
     {
         BuildplateInstancesManager.InstanceInfo? instanceInfo;
         int waitCount = 0;
@@ -847,7 +852,7 @@ internal sealed class BuildplatesController : ApaceControllerBase
             instanceInfo = buildplateInstancesManager.GetInstanceInfo(instanceId);
             if (instanceInfo is null || instanceInfo.ShuttingDown)
             {
-                return null;
+                return (null, buildplateInstancesManager.ConsumeStopReason(instanceId) ?? "instance stopped before becoming ready");
             }
 
             if (!instanceInfo.Ready)
@@ -865,10 +870,19 @@ internal sealed class BuildplatesController : ApaceControllerBase
                 waitCount++;
             }
         }
-        while (!instanceInfo.Ready && waitCount < 90);
+        while (!instanceInfo.Ready && waitCount < WaitForReadyMaxSeconds);
 
-        return instanceInfo.Ready ? instanceInfo : null;
+        return instanceInfo.Ready
+            ? (instanceInfo, null)
+            : (null, $"Instance did not become ready within {WaitForReadyMaxSeconds} seconds");
     }
+
+    // 500 with the failure reason in the body: bare InternalServerError responses
+    // carry no information, so the launcher-reported stop reason travels as
+    // {"error": "..."} using the same JSON conventions as EarthJson (which has no
+    // error field of its own).
+    private static ContentHttpResult InstanceErrorJson(string? error)
+        => TypedResults.Content(Common.Json.Serialize(new { error }), "application/json", Encoding.UTF8, StatusCodes.Status500InternalServerError);
 
     private static bool TryGetCoordinate(AdventureScrollRequest request, out float lat, out float lon)
     {

@@ -20,10 +20,24 @@ curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/install.sh |
 iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex
 ```
 
-The installer installs Docker if it's missing, downloads `docker-compose.yml` into `~/apace`,
-creates the persistent volumes under `/opt/apace-persistent` (`C:\apace-persistent` on Windows:
-worlds, accounts, logs), writes a default `config.json` with the API port already set to 1808,
-and starts the container. The ApiServer's own config (`api_config.json`, which holds the JWT
+On **Linux / macOS** the installer installs Docker itself if it is missing (via apt, dnf, pacman or
+Homebrew), downloads `docker-compose.yml` and the `run.sh` quick-launcher into `~/apace`,
+creates the persistent volumes under `/opt/apace-persistent` (worlds, accounts, logs), writes a
+default `config.json` with the API port already set to 1808, and starts the container.
+
+On **Windows** the installer does **not** install Docker — you need [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
+installed and running first. If it is not found, the installer stops and tells you so. It then
+downloads `docker-compose.yml` and the `run.ps1` quick-launcher into `~/apace`, creates the
+persistent volumes under `C:\apace-persistent`, writes the same `config.json`, and starts the
+container. To run Apace on Windows without Docker at all, use the direct download instead
+(needs .NET 10 Runtime and Java 17):
+
+```powershell
+iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 -OutFile install.ps1
+pwsh .\install.ps1 -Mode --no-docker
+```
+
+The ApiServer's own config (`api_config.json`, which holds the JWT
 login secrets) is persisted too, under `/opt/apace-persistent/api-config/` — without it the
 secrets would reset on every image update and every player would have to log in again.
 

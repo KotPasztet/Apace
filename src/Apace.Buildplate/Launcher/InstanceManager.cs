@@ -1,4 +1,6 @@
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json.Serialization;
 using Serilog;
@@ -62,6 +64,13 @@ public sealed class InstanceManager
         string Address,
         int Port,
         InstanceType Type
+    );
+
+    // Payload of the "stopped" event: the instance id plus the startup failure
+    // reason, if the instance died before becoming ready (null for a normal shutdown).
+    private sealed record StoppedNotification(
+        string InstanceId,
+        string? Error
     );
 
     // Response to the connector plugin's playerLogin request (see
@@ -213,7 +222,12 @@ public sealed class InstanceManager
                         {
                             await instance.WaitForShutdownAsync();
 
-                            instanceManager.SendEventBusMessage("stopped", instance.InstanceId);
+                            // Include the startup failure reason (if any) so the API server
+                            // can surface why the instance stopped before becoming ready.
+                            instanceManager.SendEventBusMessage("stopped", Json.Serialize(new StoppedNotification(
+                                instance.InstanceId,
+                                instance.LastError
+                            )));
                         }
                         catch (Exception ex)
                         {
@@ -256,17 +270,26 @@ public sealed class InstanceManager
 
                     lock (instanceManager._lock)
                     {
-                        if (instanceManager._guestInstances.TryGetValue(playerId, out string? guestInstanceId))
+                        // Exact key hit first, then a tolerant scan: the guest is registered
+                        // with the hex playfab id the API server knows, but iOS clients log
+                        // in with the numeric xuid form of the same id (see PlayerIdsMatch).
+                        string? guestKey = playerId;
+                        if (!instanceManager._guestInstances.ContainsKey(guestKey))
+                        {
+                            guestKey = instanceManager._guestInstances.Keys.FirstOrDefault(key => PlayerIdsMatch(key, playerId));
+                        }
+
+                        if (guestKey is not null && instanceManager._guestInstances.TryGetValue(guestKey, out string? guestInstanceId))
                         {
                             if (instanceManager._activeInstances.ContainsKey(guestInstanceId))
                             {
                                 Log.Information($"playerLogin for player {playerId}: routing guest to instance {guestInstanceId}");
                                 return Json.Serialize(new PlayerLoginResponse(true, guestInstanceId));
                             }
-                            instanceManager._guestInstances.TryRemove(playerId, out _);
+                            instanceManager._guestInstances.TryRemove(guestKey, out _);
                         }
 
-                        Instance? instance = instanceManager._activeInstances.Values.Where(instance => instance.PlayerId == playerId).OrderByDescending(instance => instance.CreatedAt).FirstOrDefault();
+                        Instance? instance = instanceManager._activeInstances.Values.Where(instance => PlayerIdsMatch(instance.PlayerId, playerId)).OrderByDescending(instance => instance.CreatedAt).FirstOrDefault();
                         if (instance is null)
                         {
                             Log.Information($"playerLogin for player {playerId}: no active instance, rejecting");
@@ -477,5 +500,57 @@ public sealed class InstanceManager
 
         await _publisher.FlushAsync();
         await _publisher.CloseAsync();
+    }
+
+    // Tolerant player id comparison: the API server and the instances register
+    // players by their hex playfab id, but iOS clients (XAL) log in with the
+    // numeric (uint64) xuid derived from that same hex id. Mirrors the ApiServer's
+    // XuidUtils.Matches: ids match when they are equal (case-insensitive) or when
+    // they are numeric forms of the same id. Rare path (login routing only), so
+    // no performance concerns.
+    private static bool PlayerIdsMatch(string? a, string? b)
+    {
+        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b))
+        {
+            return false;
+        }
+
+        if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return TryGetNumericPlayerId(a, out ulong numericA)
+            && TryGetNumericPlayerId(b, out ulong numericB)
+            && numericA == numericB;
+    }
+
+    // Numeric form of a player id: a decimal xuid (as sent by iOS clients) passes
+    // through as is, a 16-char hex playfab id is converted with the same derivation
+    // the iOS client's xuid was built with (ApiServer's XuidUtils.FromUserId).
+    private static bool TryGetNumericPlayerId(string playerId, out ulong numeric)
+    {
+        if (ulong.TryParse(playerId, NumberStyles.None, CultureInfo.InvariantCulture, out numeric))
+        {
+            return true;
+        }
+
+        if (playerId.Length == 16)
+        {
+            try
+            {
+                byte[] bytes = Convert.FromHexString(playerId);
+
+                // Keep it in the range of real xuids (2535...) so both forms agree
+                numeric = 0x0009_0000_0000_0000UL | (BinaryPrimitives.ReadUInt64LittleEndian(bytes) & 0x0000_FFFF_FFFF_FFFFUL);
+                return true;
+            }
+            catch (FormatException)
+            {
+                // not a hex id
+            }
+        }
+
+        return false;
     }
 }

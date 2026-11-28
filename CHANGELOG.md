@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.2.5 — 2026-11-28
+
+> Scope: installers and stability — **the Windows installer no longer closes PowerShell**, the quick-launchers are actually downloaded, mobile-launcher requirements are stated. Plus the multiplayer routing and diagnostics from dev.
+
+---
+
+## 🪟 Windows installer: "Docker not found" closed PowerShell instantly
+
+- **The bug**: every failure path in `install.ps1` ended with `exit 1`. The documented way to run it is `iwr … | iex`, and `exit` inside `Invoke-Expression` terminates the **user's whole PowerShell session** — the window closed with code 1 and the message was gone before it could be read.
+- **The fix**: `return` instead of `exit` (ends only the script). Verified with PowerShell 7.7 on the no-Docker path and on the "Docker present but not starting" path, both piped into `iex` and run as a file: the session survives and the message stays on screen.
+- The "Docker not found" message now says plainly that the installer **does not install Docker** and offers the Docker-free route (`-Mode --no-docker`), instead of just dropping the user. `QUICKINSTALL.md` claimed the installer installs Docker — true for `install.sh` (apt/dnf/pacman/brew), never true for `install.ps1`; the docs are split per platform now.
+
+## 🚀 Quickstart: the launchers the docs point at were never downloaded
+
+- `README` and `QUICKINSTALL` tell users to run `run.sh` / `run.ps1` from `~/apace` after installing, but the installers only ever fetched `docker-compose.yml` — following the docs ended in `run.sh: No such file or directory`. Both installers download the quick-launcher now.
+- `install.sh` used GNU-only `sed -i '/a\ text'`, which fails on BSD sed and — with `set -e` — aborted the install on macOS. Replaced with a POSIX `awk` insertion (identical output, verified against the GNU result; not run on a real macOS).
+- `install.ps1` documented `iex -args '--no-docker'`; `Invoke-Expression` has no `-args`. The header shows the scriptblock form that works.
+
+## 📱 Termux installer: the patcher's framework and zipalign are provisioned
+
+- On a Termux install the patch job died in the link step: the bundled aapt2 fails with SIGILL (exit 132) and the fallback distro aapt2 2.19 then rejects apktool's own framework (`LoadedArsc.cpp:94`). The Docker image avoids this by shipping Google's platform-29 `android.jar` as `/opt/android-framework/1.apk` and exporting `APKTOOL_FRAMEWORK_DIR`; the Termux installer never got that wiring. It does now (idempotent, cleans up on failure) and `run-inside.sh` exports `APKTOOL_FRAMEWORK_DIR` and `ZIPALIGN_PATH` when present.
+- **Not verified on a device** — the Termux install and a real patch job were not run here. The Apace-Launcher app has its own rootfs and `run-inside.sh` (separate repo) and needs the same provisioning.
+
+## 📋 Mobile launcher requirements are stated
+
+- README and the website now list: ARM64, Android 8.0+, **4 GB RAM (6 GB recommended)**, ~3.5 GB free space. The RAM figure is an estimate from the stack's composition (.NET with a 512 MB heap, Java server and bridge, the APK build tools while patching) — not a measurement on a device.
+
+## 🛰️ Multiplayer: tolerant player-id routing + instance stop reasons
+
+- The buildplate launcher's `playerLogin` routing compared player ids exactly; an iOS client logs in with the **numeric** xuid derived from the same hex playfab id the API registers. Routing now falls back to a tolerant numeric↔hex match and covers the host's own login. **Not confirmed as the fix for any specific report** — multiplayer works for other users; the one remaining report (an iPhone 7) is still open.
+- An instance that died between "started" and "ready" returned an **empty 500** and logged its reason only in the launcher's local log. The reason now reaches the ApiServer log (Warning) and the 500 body.
+- **The bridge jars are unchanged from v0.2.4.** A rebuilt bridge jar that briefly lived on dev was withdrawn — it had deleted the `RemotePlayers` classes (see the entry below).
+
+## ⚠️ Known — not fixed in this release
+
+- The mobile launcher closes on low-RAM phones while patching: the app checks free storage (3.5 GB) but never RAM, and patching runs the APK build tools next to the server processes. Requirements are now stated; the app itself is unchanged.
+- A guest can still sit ~30 s on `buildplate_loading_screen` after a successful `playerConnected` in some sessions — not reproduced; needs the launcher and Java Server logs from one such join.
+
 ## v0.2.4 — 2026-11-27
 
 > Scope: release-packaging fix — **release ZIPs no longer ship the developer's local database**.
@@ -34,6 +72,12 @@
 - Per-item dead verdicts (pieces AND the "Live skin pack … probed dead" spam, ~20–30 lines/min on the dying CDN) → Debug, folded into new shape tallies (`skinpack-no-contents`/`skinpack-probe-404` join the existing shapes); one aggregate Information line per warm-up pass and per 60 s idle tick ("Live persona dead probes since the last report: N (by shape: …)"). The pass-end report now splits skin packs (mirrored/dead).
 - Benign empty searches — the client's normal probes for `ResourcePackTreatment_V1.2`/`StoreConfig_V1.1` that never match anything — demote their "search failed/matched no items" lines to Debug; PersonaDurable and every other type keep Warning/Information (an empty match there means real pieces are missing).
 - The framework's response-caching middleware logs two Information lines per uncached request ("No cached response available…" / "The response could not be cached…") — the normal outcome for this server; silenced with a `Microsoft.AspNetCore.ResponseCaching` namespace override (Warning+ stays visible). "warm-up skipped: no stamp change" (60 s tick) → Debug; the histograms and pass reports keep their Information level.
+
+### 🛑 multiplayer: the rebuilt bridge jar is withdrawn (it had deleted RemotePlayers), iOS identity routing fixed
+
+- **Withdrawn — read this before touching `server_jars/`.** The first revision of this entry shipped a fountain bridge jar rebuilt from the `KotPasztet/Fountain-bridge` fork and called it "logs only, zero behavior change". That was wrong and it broke multiplayer on dev: the bridge jar that ships in Apace is a **prebuilt binary from Apace-Rework whose sources are not in any repository on this machine** — it carries the `RemotePlayers` classes (remote players rendered as floating nametags, and `AddPlayerPacket` intercepted so the Genoa client does not crash on it). The fork has no commit that ever contained `RemotePlayers`. A rebuild from the fork therefore silently deletes the multiplayer feature; the only visible symptom is that clients are kicked as soon as another player is in the instance. **Never rebuild or replace `server_jars/*.jar` from the forks — only the prebuilt Apace-Rework binaries are valid.** Both jars are restored byte-for-byte to the `main` versions (`fb24c8a1…` / `cd089565…`). The instrumentation described in the first bullet is therefore NOT in the shipped jars; the Fabric-side placement logging stays in the `Fountain-fabric` fork source but is not in the shipped Fabric mod either. PR #1 (gameplay fixes) from the fork is not shipped for the same reason.
+- Field report (unchanged, still the open problem): a guest (Android S21) scanned a QR of an iPhone-hosted session — the WHOLE server leg went green (HTTP join 200, addGuest, RakNet `playerLogin`+`playerConnected`, initial player state), then the guest sat on `buildplate_loading_screen` for ~30 s and hit the client timeout without ever receiving world data. That failure zone is silent in the ApiServer log — it lives in the Fountain bridge / connector plugin / Fabric.
+- The buildplate launcher's `playerLogin` routing compared player ids exactly, but an iOS client logs in with the NUMERIC xuid derived from the same hex playfab id the API registers (`d81388a63a4f1724` == `2620388111029208` — verified on a live identity). Routing now falls back to a tolerant numeric↔hex match (mirrors the ApiServer's `XuidUtils.Matches`), covers the host's own login too, and logs every routing decision at Info.
 
 ## Unreleased (dev) — the QR-scanner permission crash joins the Apace patcher (fix-qr-permission-context, Android, default on)
 

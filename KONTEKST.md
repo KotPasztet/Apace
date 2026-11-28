@@ -271,6 +271,18 @@ worktree), `update.sh/ps1`, `tailscale-setup.sh`, `entrypoint.sh` (Docker).
    i licznik `MarkBinaryLanded` nie obejmują ręcznych/panelowych zapisów).
    Binary-less listowanie twarzy pozostaje ZAKAZANE (equip wisi — b4dbde5).
    Knob `deadRetryHours` (packs.json, default 24, hand-edit only).
+10. **`server_jars/*.jar` NIGDY nie przebudowywać z forków (27.11 — wypadek)**.
+    Jar fountain w repo to prebuilt z Apace-Rework (`a121f31`); jego źródła
+    nie istnieją w żadnym repo na tej maszynie — fork
+    `KotPasztet/Fountain-bridge` nie ma ani jednego commita z
+    `RemotePlayers` (klasy renderujące zdalnych graczy jako nametagi i
+    przechwytujące `AddPlayerPacket`, na którym klient Genoa pada).
+    Przebudowa z forka = ciche usunięcie multiplayera (kick, gdy w
+    instancji jest drugi gracz). Tak właśnie zepsułem dev w `65aa00f`
+    (opisane błędnie jako „tylko logi"); cofnięte w `62a009d`.
+    **Jedyne ważne binarki: te z Apace-Rework / z `main`.** Instrumentacja
+    mostku i PR #1 z forka NIE są shipped. Przed zmianą czegokolwiek w
+    `server_jars/`: porównać listę klas z wersją z `main`.
 
 ## 14. Znane problemy / otwarte wątki
 
@@ -295,6 +307,17 @@ worktree), `update.sh/ps1`, `tailscale-setup.sh`, `entrypoint.sh` (Docker).
   Launcher" (publicAddress czytany tylko przy starcie) + forward UDP 19132 /
   Tailscale; TCP 19132 refused z zewnątrz jest NORMALNE — bridge jest UDP-only
   (RakNet). Fix `encounters/state` (26.11) wymaga obrazu `:dev` na telefonie.
+  **Kick „od razu” na dev (27.11)** — spowodowany przeze mnie: jar fountain
+  bez `RemotePlayers` (patrz §13.10). Jary przywrócone z `main` w `62a009d`;
+  **po wdrożeniu dev z tym commitem multiplayer ma wrócić do stanu z main —
+  wymaga potwierdzenia w terenie (2×iPhone, iPhone+Android)**. Odrębne,
+  nadal otwarte: gość wisi ~30 s na `buildplate_loading_screen` po udanym
+  `playerConnected` (log z 19:25 i z 22:03). ApiServer tego nie widzi —
+  potrzebny **log launchera buildplate** (`Instance.cs`: „Creating
+  instance … on persistent Fabric server", „Instance … is ready", „host
+  player must connect first") i **log Java Server** (zakładka w panelu).
+  Od `2e9cf49` powód wcześniejszego stopu instancji trafia do loga
+  ApiServer jako Warning i do body 500.
 - **Face cosmetics (eyes/mouth/face_accessory/hair) — mechanizm domknięty,
   czeka na potwierdzenie w terenie** (26.11). Diagnoza: jedyny warunek
   zerujący te zakładki to brak binarki na dysku (pack/compat gate ich w
