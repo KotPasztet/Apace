@@ -18,6 +18,12 @@
 - `install.sh` used GNU-only `sed -i '/a\ text'`, which fails on BSD sed and — with `set -e` — aborted the install on macOS. Replaced with a POSIX `awk` insertion (identical output, verified against the GNU result; not run on a real macOS).
 - `install.ps1` documented `iex -args '--no-docker'`; `Invoke-Expression` has no `-args`. The header shows the scriptblock form that works.
 
+## 📦 Release ZIPs: `run_launcher.ps1` was broken in v0.2.0–v0.2.4
+
+- **The bug**: the local release build extracted `run_launcher.ps1` from `publish.ps1` with a stale hardcoded line range. The script that shipped in every ZIP from v0.2.0 to v0.2.4 begins with a pasted fragment of `publish.ps1` (the mods-copy lines) and ends on a bare `finally {` — it does not even parse (`The string is missing the terminator: '@`). Anyone starting the ZIP with `run_launcher.ps1` got a parse error.
+- **The fix**: the build now derives the range from the here-string markers, asserts the shebang and the closing brace, and parses the result with a real PowerShell before it is packaged. `run_launcher.ps1` in the v0.2.5 ZIPs parses clean.
+- **Workaround if you are on an older ZIP**: start the launcher directly instead — `cd launcher` then `dotnet Launcher.dll` (Windows: `Launcher.exe`), or `.NET 10 Runtime` + `java` and the `run.sh` from the repository.
+
 ## 📱 Termux installer: the patcher's framework and zipalign are provisioned
 
 - On a Termux install the patch job died in the link step: the bundled aapt2 fails with SIGILL (exit 132) and the fallback distro aapt2 2.19 then rejects apktool's own framework (`LoadedArsc.cpp:94`). The Docker image avoids this by shipping Google's platform-29 `android.jar` as `/opt/android-framework/1.apk` and exporting `APKTOOL_FRAMEWORK_DIR`; the Termux installer never got that wiring. It does now (idempotent, cleans up on failure) and `run-inside.sh` exports `APKTOOL_FRAMEWORK_DIR` and `ZIPALIGN_PATH` when present.
