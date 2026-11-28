@@ -116,7 +116,7 @@ Linux (Bash):
   iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.ps1 | iex
   ```
   Flags and the manual converter: [docs/solace-migration.md](docs/solace-migration.md).
-* **Mobile launcher (Android)** — the whole stack on the phone, no PC needed: [ApaceProject/Apace-Launcher](https://github.com/ApaceProject/Apace-Launcher) hosts the ApiServer, panel and Fabric server on-device, patches the client APK/IPA and tracks dev-channel updates — grab the APK from [releases](https://github.com/ApaceProject/Apace-Launcher/releases).
+* **Mobile launcher (Android)** — the whole stack on the phone, no PC needed: [ApaceProject/Apace-Launcher](https://github.com/ApaceProject/Apace-Launcher) hosts the ApiServer, panel and Fabric server on-device, patches the client APK/IPA and tracks dev-channel updates — grab the APK from [releases](https://github.com/ApaceProject/Apace-Launcher/releases). Needs an ARM64 phone with Android 8.0+, 4 GB of RAM (6 GB or more recommended) and ~3.5 GB of free space.
 * **Termux (Android)** — host the server on an Android phone straight from [Termux](https://f-droid.org/packages/com.termux/); no Docker needed, the installer sets up a minimal Ubuntu via proot-distro:
 
   ```bash

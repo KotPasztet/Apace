@@ -6,6 +6,12 @@
 
 param([string]$Mode = "docker")
 
+# NEVER use `exit` in this script. The documented invocation is
+# `iwr .../install.ps1 | iex`, and `exit` inside Invoke-Expression terminates the
+# USER'S whole PowerShell session: the window closes with code 1 and the error
+# message is gone before anyone can read it. `return` ends only the script and
+# leaves the session open (verified with PowerShell 7.7: the session survives).
+
 Write-Host "=== Apace Installer ===" -ForegroundColor Cyan
 Write-Host ""
 
@@ -23,7 +29,7 @@ if ($Mode -eq "--no-docker") {
     }
     if (-not $arch) {
         Write-Host "Unsupported CPU architecture: $cpuArch" -ForegroundColor Red
-        exit 1
+        return
     }
 
     $APACE_DIR = "$env:USERPROFILE\apace"
@@ -35,7 +41,7 @@ if ($Mode -eq "--no-docker") {
     if (-not $asset) {
         Write-Host "No Windows release found for win-$arch. Try Docker mode instead." -ForegroundColor Red
         Write-Host "  iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 | iex"
-        exit 1
+        return
     }
 
     Write-Host "Downloading $($asset.name) ($([math]::Round($asset.size/1MB, 1)) MB)..."
@@ -55,10 +61,23 @@ if ($Mode -eq "--no-docker") {
 
 } else {
     # ─── Docker mode ──────────────────────────────────────────────────
+    # This installer does NOT install Docker. It needs an existing Docker
+    # Desktop, so say so plainly and offer the Docker-free path instead of
+    # just dropping the user.
     if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-        Write-Host "Docker not found. Install Docker Desktop:" -ForegroundColor Yellow
-        Write-Host "  https://docs.docker.com/desktop/setup/install/windows-install/"
-        exit 1
+        Write-Host ""
+        Write-Host "Docker was not found on this computer." -ForegroundColor Yellow
+        Write-Host "Apace needs Docker Desktop to run this way. This installer does not install it."
+        Write-Host ""
+        Write-Host "  Option A - install Docker Desktop, then run this command again:"
+        Write-Host "            https://docs.docker.com/desktop/setup/install/windows-install/"
+        Write-Host ""
+        Write-Host "  Option B - run Apace WITHOUT Docker (downloads the release directly):"
+        Write-Host "            iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/install.ps1 -OutFile install.ps1"
+        Write-Host "            pwsh .\install.ps1 -Mode --no-docker"
+        Write-Host "            (needs .NET 10 Runtime + Java 17)"
+        Write-Host ""
+        return
     }
 
     # Try up to 30 s for Docker to be responsive
@@ -88,9 +107,12 @@ if ($Mode -eq "--no-docker") {
     }
 
     if (-not $dockerOk) {
-        Write-Host "Docker failed to start!" -ForegroundColor Red
-        Write-Host "Start Docker Desktop manually and re-run this script." -ForegroundColor Yellow
-        exit 1
+        Write-Host ""
+        Write-Host "Docker is installed but did not start within 30 seconds." -ForegroundColor Red
+        Write-Host "Start Docker Desktop, wait until it says it is running, then run this command again."
+        Write-Host "  Or run without Docker:  pwsh .\install.ps1 -Mode --no-docker"
+        Write-Host ""
+        return
     }
     Write-Host "Docker is running." -ForegroundColor Green
 
