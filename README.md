@@ -9,7 +9,7 @@
   <a href="https://discord.gg/5K8HJukMSX"><img src="https://img.shields.io/badge/Discord-join_us-5865F2?logo=discord&logoColor=white&style=flat-square" alt="Discord"></a>
 </p>
 
-Really fast replacement server for Minecraft Earth™ — a Minecraft Earth revival project based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
+The easiest and fastest way to play Minecraft Earth™ again — a Minecraft Earth revival project. Run the whole server on your phone with the [mobile launcher](https://github.com/ApaceProject/Apace-Launcher), or self-host on a PC or Raspberry Pi.
 
 > [!NOTE]
 > **Actively developed.** Per-feature status: the table below.
@@ -56,11 +56,11 @@ Really fast replacement server for Minecraft Earth™ — a Minecraft Earth revi
 
 Remaining work lives in [TODO.md](TODO.md).
 
-## Apace v0.1 vs Solace
+## Apace v0.1 vs the previous architecture
 
 The v0.1 **persistent-server architecture**: one Fabric server hosts every buildplate as an on-demand dimension on a single shared Bedrock port, with the client patcher built into the panel.
 
-|                                        | Solace / previous architecture                     | Apace v0.1                                                       |
+|                                        | Previous architecture                              | Apace v0.1                                                       |
 |----------------------------------------|----------------------------------------------------|------------------------------------------------------------------|
 | Buildplate instance creation           | Boots a whole new server (JVM pair) per buildplate | Dynamically registered dimension, created in **~1 s**            |
 | Buildplate load                        | Wait for a full server boot                        | **3471% faster** — wait time reduced by **97.2%**                |
@@ -68,7 +68,7 @@ The v0.1 **persistent-server architecture**: one Fabric server hosts every build
 | 15 concurrent buildplates              | **24 GB**                                          | **~1.9 GB** (≈92% less)                                          |
 | Boot worldgen ("Preparing spawn area") | Minutes                                            | **Seconds** (air overworld, no Nether/End)                       |
 
-*Measured against v0.0.3 (the previous, Solace-derived architecture) — see [CHANGELOG.md](CHANGELOG.md).*
+*Measured against v0.0.3 (the previous architecture) — see [CHANGELOG.md](CHANGELOG.md).*
 
 ## Quick Start
 
@@ -105,17 +105,6 @@ Linux (Bash):
   ```
 
   Flags, backup rotation and rollback details: [QUICKINSTALL.md → Updating](QUICKINSTALL.md#updating).
-* **Migrating from Solace** — one command carries your Solace accounts, progress, inventory and buildplates over; shows a dry-run plan first and never modifies the Solace directory:
-Linux (Bash):
-  ```bash
-  curl -sSL https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.sh | bash
-  ```
-
-  Windows (PowerShell):
-  ```powershell
-  iwr https://raw.githubusercontent.com/ApaceProject/Apace/main/scripts/migrate-from-solace.ps1 | iex
-  ```
-  Flags and the manual converter: [docs/solace-migration.md](docs/solace-migration.md).
 * **Mobile launcher (Android)** — the whole stack on the phone, no PC needed: [ApaceProject/Apace-Launcher](https://github.com/ApaceProject/Apace-Launcher) hosts the ApiServer, panel and Fabric server on-device, patches the client APK/IPA and tracks dev-channel updates — grab the APK from [releases](https://github.com/ApaceProject/Apace-Launcher/releases). Needs an ARM64 phone with Android 8.0+, 4 GB of RAM (6 GB or more recommended) and ~3.5 GB of free space.
 * **Termux (Android)** — host the server on an Android phone straight from [Termux](https://f-droid.org/packages/com.termux/); no Docker needed, the installer sets up a minimal Ubuntu via proot-distro:
 
