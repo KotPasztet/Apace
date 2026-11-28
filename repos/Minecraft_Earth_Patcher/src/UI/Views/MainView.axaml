@@ -651,7 +651,7 @@
 											<ColumnDefinition Width="Auto"/>
 										</Grid.ColumnDefinitions>
 										<Label Grid.Column="0" VerticalAlignment="Center">App name:</Label>
-										<TextBox Text="{Binding IosAppName}" Grid.Column="1" PlaceholderText="Solace" MaxLength="50" TextWrapping="Wrap" MaxWidth="200"/>
+										<TextBox Text="{Binding IosAppName}" Grid.Column="1" PlaceholderText="Apace" MaxLength="50" TextWrapping="Wrap" MaxWidth="200"/>
 									</Grid>
 								</StackPanel>
 							</Border>

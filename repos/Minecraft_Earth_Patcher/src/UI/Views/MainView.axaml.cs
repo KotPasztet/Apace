@@ -112,7 +112,7 @@ public partial class MainView : UserControl
             {
                 Autonomous = true,
                 InIpa = ipaFile,
-                OutIpa = "Solace.ipa",
+                OutIpa = "Apace.ipa",
                 DecodedDir = "IpaDecoded",
                 Protocol = viewModel.IosProtocol,
                 Hostname = viewModel.IosHostname,
@@ -272,7 +272,7 @@ public partial class MainView : UserControl
         {
             NonInteractive = true,
             InApk = apkFile,
-            OutApk = "Solace.apk",
+            OutApk = "Apace.apk",
             ResourcePack = resourcePackFile,
             IconPath = viewModel.ChangeIcon ? viewModel.IconFilePath : null,
             DecodedDir = Path.Combine("tmp", "apk"),

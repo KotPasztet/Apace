@@ -375,7 +375,7 @@ public sealed class MainViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _iosLocatorHostname, value);
     }
 
-    private string _iosAppName = "Solace";
+    private string _iosAppName = "Apace";
     public string IosAppName
     {
         get => _iosAppName;
@@ -499,8 +499,8 @@ public sealed class MainViewModel : ViewModelBase
         DisableTelemetry = true;
         DisableMsaLoginSignatureValidation = true;
         ChangeAppName = true;
-        AppName = "Solace";
-        AppNameShort = "Solace";
+        AppName = "Apace";
+        AppNameShort = "Apace";
         ChangePackageName = true;
         PackageName = "com.github.earth_restored";
         LoginServerSingleDomainMode = true;

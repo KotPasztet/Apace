@@ -35,12 +35,12 @@ public partial class PatchView : UserControl
 
     public void OpenPatchedAPKLocation(object sender, RoutedEventArgs args)
     {
-        OpenFileLocation(Path.GetFullPath("Solace.apk"));
+        OpenFileLocation(Path.GetFullPath("Apace.apk"));
     }
 
     public void OpenPatchedIPALocation(object sender, RoutedEventArgs args)
     {
-        OpenFileLocation(Path.GetFullPath("Solace.ipa"));
+        OpenFileLocation(Path.GetFullPath("Apace.ipa"));
     }
 
     private static void OpenFileLocation(string filePath)

@@ -2,7 +2,7 @@
 
 Apace can serve character creator items (`PersonaDurable` catalog entries, like the
 built-in Bold Rabbit Feet) from simple JSON files in `staticdata/playfab/items/`.
-Neither Solace nor Vienna ever had this — items are added by dropping a file, no
+No other revival server has this — items are added by dropping a file, no
 rebuild needed (restart the Api server to pick them up).
 
 ## Item file format
