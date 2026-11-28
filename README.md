@@ -9,7 +9,7 @@
   <a href="https://discord.gg/5K8HJukMSX"><img src="https://img.shields.io/badge/Discord-join_us-5865F2?logo=discord&logoColor=white&style=flat-square" alt="Discord"></a>
 </p>
 
-Really fast replacement server for Minecraft Earth™, based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
+Really fast replacement server for Minecraft Earth™ — a Minecraft Earth revival project based on [Solace](https://github.com/Earth-Restored/Solace) with additional features and fixes.
 
 > [!NOTE]
 > **Actively developed.** Per-feature status: the table below.
