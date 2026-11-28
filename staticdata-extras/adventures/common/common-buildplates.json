@@ -1,0 +1,32 @@
+{
+  "buildplates": [
+    { "templateId": "480d0115-48b4-70cf-cf29-7c314767fe0f", "weight": 10, "name": "Chicken River" },
+    { "templateId": "1a55ec22-3a84-1f42-f6a0-28c9e7418a3e", "weight": 10, "name": "Cluckshoom Prison" },
+    { "templateId": "b8e4920f-8a9b-5701-b1ec-d2b5848853b6", "weight": 10, "name": "Creeper Caves" },
+    { "templateId": "1fcd81c1-879e-0eb8-3938-99a72a6a9580", "weight": 10, "name": "Creeper's Tomb" },
+    { "templateId": "784f80b1-7959-eaa6-e5d6-40352daf83bb", "weight": 10, "name": "Farm House" },
+    { "templateId": "aaff3a6d-7706-33ef-50eb-5fb259826f0e", "weight": 10, "name": "Gold Mine" },
+    { "templateId": "cbf51ddc-b425-12b2-e158-4af5ef55773b", "weight": 10, "name": "Holiday House" },
+    { "templateId": "05df796f-7fdb-3999-8dcd-b1206474aef3", "weight": 10, "name": "Home Demolition" },
+    { "templateId": "1cf96e9c-54b9-8a5d-9736-2a8313367eb9", "weight": 10, "name": "Jumbo in the Desert" },
+    { "templateId": "29f5a76b-350a-788a-dfda-4810382162b0", "weight": 10, "name": "Jungle Cave 2" },
+    { "templateId": "c820af70-d509-d9bf-707d-beebd318199f", "weight": 10, "name": "Lava Cave" },
+    { "templateId": "6ade6be4-20bd-bdfc-66fb-b019454a9f17", "weight": 10, "name": "Little House" },
+    { "templateId": "5e812224-682b-43f1-b1cd-fbda63b04f46", "weight": 10, "name": "Lone Sheep" },
+    { "templateId": "3cc57ec4-3d0d-6df9-ce54-630ebcb52079", "weight": 10, "name": "Moobloom's Treasure" },
+    { "templateId": "fa1d6a36-d0ae-ce4d-db35-3e05f166303c", "weight": 10, "name": "Path to Nowhere" },
+    { "templateId": "e8ebe84a-9fc0-a12b-a6e2-99d632a397e1", "weight": 10, "name": "Pig & Zombies" },
+    { "templateId": "6246f773-ade1-e681-a7f5-138fbbc54c32", "weight": 10, "name": "Rabbit Trap" },
+    { "templateId": "173c7675-4f74-9e85-ef4b-6726feca55c2", "weight": 10, "name": "Riverside 2" },
+    { "templateId": "6c243e2b-ede5-d1b9-922a-5d0efb9e2f6b", "weight": 10, "name": "Sheep" },
+    { "templateId": "5685c773-05ff-8b5d-06eb-3d79c04185c2", "weight": 10, "name": "Sheep Farm" },
+    { "templateId": "85c43deb-9b45-6dd3-2cae-0a247cc670f9", "weight": 10, "name": "Skeleton Stash" },
+    { "templateId": "3b701b80-ada4-1a10-5656-2984829ce233", "weight": 10, "name": "Spider Infestation" },
+    { "templateId": "299f2c37-ddb8-a165-1b62-42a2100ef3b9", "weight": 10, "name": "Three Birch" },
+    { "templateId": "6f7a07b2-498c-6a33-4d0e-d760006f768c", "weight": 10, "name": "Tiny Sheep Farm" },
+    { "templateId": "f6bf3869-7d1f-3195-21d3-8a693886f926", "weight": 10, "name": "Tiny Spring" },
+    { "templateId": "9146a4f2-b158-8ae5-befd-80c395bf10be", "weight": 10, "name": "Tree Spiders" },
+    { "templateId": "0c665b73-c501-5101-1af3-dbf9eb35182f", "weight": 10, "name": "Two Little Piggys" },
+    { "templateId": "26e7f36d-9035-12f7-7b7c-0531ec3dfadc", "weight": 10, "name": "Water Tank" }
+  ]
+}

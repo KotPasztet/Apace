@@ -1,0 +1,7 @@
+{
+  "buildplates": [
+    { "templateId": "5bde1857-63b7-194d-8381-7e2bd2a15542", "weight": 10, "name": "Aqua Library" },
+    { "templateId": "17d7420d-7b53-8c49-5dcf-b18c96bc6497", "weight": 10, "name": "Dark Oak Mansion" },
+    { "templateId": "743031c5-b754-42cd-98ad-dd7c7ebac768", "weight": 10, "name": "Frozen Library Tower" }
+  ]
+}

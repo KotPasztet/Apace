@@ -1,0 +1,559 @@
+{
+  "source": "adventure_chest entries of Crafters Guide's item_data.dat (craftersguide.stents.dev)",
+  "items": [
+    {
+      "id": "4f16a053-4929-263a-c91a-29663e29df76",
+      "name": "adventure_crystal_common",
+      "chance": 84.4,
+      "min": 1,
+      "max": 1,
+      "group": "crystal",
+      "uncertain": false
+    },
+    {
+      "id": "7f99f866-55e9-8c16-463d-33ec18ccf535",
+      "name": "wooden_axe",
+      "chance": 5.8,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "79c98155-b1d5-13e0-ac5d-a8c3c9a48d83",
+      "name": "hardened_clay",
+      "chance": 3.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c2fdbc1c-60ab-396c-22a8-d9a3df37555e",
+      "name": "carrot",
+      "chance": 3.8,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "74b80b10-4980-b079-5b4f-5f5051477cce",
+      "name": "snow_layer",
+      "chance": 2.0,
+      "min": 2,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "b6dd1cb9-cd05-4a90-ba32-7b18246dd5f1",
+      "name": "wooden_shovel",
+      "chance": 3.3,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "64db15cc-5620-3b5e-22b3-11ceab6a776b",
+      "name": "beetroot",
+      "chance": 1.9,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "84aaf925-dbe5-f122-9139-08098789e4f8",
+      "name": "bow",
+      "chance": 3.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "a3ffe4bd-2a20-3f4e-cbae-64883ee7bfd3",
+      "name": "stone_slab3:7",
+      "chance": 0.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "b13ff23c-7c39-c14e-c04f-61f43fe55570",
+      "name": "polished_andesite_stairs",
+      "chance": 2.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "bd3db2c5-1dbd-8f99-9064-4547590523ef",
+      "name": "apple",
+      "chance": 2.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "290f92ba-1541-8bd2-97dd-eb7f233031b8",
+      "name": "flint_and_steel",
+      "chance": 2.1,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "8e15a09c-0eb3-a84d-781e-b9b14ab71f9e",
+      "name": "sapling",
+      "chance": 3.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "d129857c-2182-ed2e-a42e-5857d527f456",
+      "name": "stone:6",
+      "chance": 1.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "01eb6e48-c264-8670-e4fe-eb3d84b38083",
+      "name": "egg",
+      "chance": 1.5,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "81a84b7e-928f-7157-254c-6543e90dbc59",
+      "name": "adventure_crystal_uncommon",
+      "chance": 15.6,
+      "min": 1,
+      "max": 1,
+      "group": "crystal",
+      "uncertain": false
+    },
+    {
+      "id": "16efd285-2ece-c1cf-9b31-632c8958e482",
+      "name": "bone",
+      "chance": 1.9,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "f4303405-3ff8-690c-104f-e7c42fe35c9d",
+      "name": "bookshelf",
+      "chance": 2.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "cd132152-9966-4050-904e-6ae6ffb885bb",
+      "name": "wooden_sword",
+      "chance": 2.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c2fead8a-3539-da39-047c-4c156c4438fe",
+      "name": "torch",
+      "chance": 1.7,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "cd621b71-a549-6751-24a1-41d60618e759",
+      "name": "cooked_beef",
+      "chance": 2.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "e5a9653f-62bf-1782-cc4c-4deafd4ab098",
+      "name": "wheat_seeds",
+      "chance": 3.3,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "538fb01a-61f7-9513-d991-a416641ae037",
+      "name": "clay",
+      "chance": 2.1,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "37fd2847-31d3-37f4-2bbc-d29752ef5405",
+      "name": "sand:1",
+      "chance": 2.7,
+      "min": 2,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "a3435b17-e552-4390-8853-908b24dbba6c",
+      "name": "stone_shovel",
+      "chance": 2.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "fabec585-3c93-49c4-0ec5-4184cb24cbc7",
+      "name": "gunpowder",
+      "chance": 1.2,
+      "min": 1,
+      "max": 2,
+      "uncertain": false
+    },
+    {
+      "id": "ba92ca3d-6afb-f37c-a71f-b85f0c5b9c24",
+      "name": "dye:15",
+      "chance": 2.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c409783a-8f32-fa9f-1026-54bbaaaedc38",
+      "name": "tnt",
+      "chance": 1.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "18f14347-4294-ec5a-9d47-62b8791084ac",
+      "name": "glowstone_dust",
+      "chance": 0.7,
+      "min": 2,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "c14fc209-f280-bccc-bb4a-6c2a3fc71abc",
+      "name": "fish",
+      "chance": 1.9,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "f67bacad-40aa-b7bc-0a53-629aed2b3ae0",
+      "name": "beetroot_seeds",
+      "chance": 3.6,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "04b60854-7133-be6c-caeb-3ab7919b8a62",
+      "name": "muttoncooked",
+      "chance": 3.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "00aaa165-3797-13f6-a8d1-6d5449316e15",
+      "name": "coal_block",
+      "chance": 3.1,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "21959c50-9406-299c-f8ad-5300052eb31b",
+      "name": "melon_seeds",
+      "chance": 2.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "730573d1-ba59-4fd4-89e0-85d4647466c2",
+      "name": "wooden_pickaxe",
+      "chance": 3.3,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "20dbd5fc-06b7-1aa1-5943-7ddaa2061e6a",
+      "name": "cooked_chicken",
+      "chance": 2.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c6692b8d-e595-591a-bd8a-0f468df3af07",
+      "name": "cooked_porkchop",
+      "chance": 2.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "f9a704a1-853d-4afd-92f5-285fb2aa2039",
+      "name": "wooden_hoe",
+      "chance": 2.8,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "81afb63a-be28-0e12-47d0-e2eba32e1365",
+      "name": "spawn_egg:35",
+      "chance": 1.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "713ddf6c-1163-3ac3-9ab3-315dc18fb9ca",
+      "name": "stone:4",
+      "chance": 1.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "06b9a70e-2456-10e9-f241-22f31a9f43e1",
+      "name": "minecart",
+      "chance": 1.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "9a0b3501-a1db-0d8c-b04a-f82a9d9d8c72",
+      "name": "stone:2",
+      "chance": 0.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "0d78acb3-3dc9-bbc4-01ae-8b10c76867f9",
+      "name": "stone_pressure_plate",
+      "chance": 2.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "ea7306fa-9dd0-897f-d1a8-2529521cd5f2",
+      "name": "bucket:3",
+      "chance": 0.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "12c4d89a-1d8f-664e-3918-4331a63a39ec",
+      "name": "polished_granite_stairs",
+      "chance": 0.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "73bbd3e1-7346-4eea-ab84-2baaca4fef53",
+      "name": "stone_pickaxe",
+      "chance": 2.4,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "a1aaafc1-3fe0-118d-15f7-1edec233ce78",
+      "name": "baked_potato",
+      "chance": 2.0,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "5f1a3136-2f8b-e960-2dbe-62b292b4b8c2",
+      "name": "stone_slab3:5",
+      "chance": 1.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "bbba2027-8d33-bcce-535c-79ea94c22cee",
+      "name": "dye:3",
+      "chance": 2.0,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "bc7973d3-488f-54a0-3f59-93285b2fda7f",
+      "name": "quartz",
+      "chance": 1.1,
+      "min": 2,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "04eafeb1-0eff-f85e-9ac9-ea6c69024035",
+      "name": "potato",
+      "chance": 3.5,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "285b1cdb-23bc-4cc0-83e2-361f90ac3dd7",
+      "name": "stone_sword",
+      "chance": 1.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "7ce55883-65c3-faa7-cbb8-9f2d872146a7",
+      "name": "lever",
+      "chance": 2.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "bfa1ceb6-2ec2-24b0-f664-2b34bdf923bb",
+      "name": "noteblock",
+      "chance": 1.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "4116dc9b-47b4-4497-a3c7-7b69685b350c",
+      "name": "stone_hoe",
+      "chance": 1.9,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "d78d2bdc-766f-e977-f0fb-15edc49d01e9",
+      "name": "feather",
+      "chance": 2.4,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "67223b6d-9de0-f2a5-25ab-1be09c7ef7ef",
+      "name": "iron_nugget",
+      "chance": 3.0,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "815afac8-1606-7013-a2aa-1ccb6cf74de3",
+      "name": "string",
+      "chance": 2.5,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "b1bae897-bbe3-226e-b28f-6f94fcbda4db",
+      "name": "planks:4",
+      "chance": 1.3,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "a2ff336f-5122-1736-c0d6-1556fe9d3e50",
+      "name": "bowl",
+      "chance": 0.8,
+      "min": 2,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "9b925673-d56d-435f-4728-0790727b33d3",
+      "name": "salmon",
+      "chance": 1.6,
+      "min": 1,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "09d5e6ff-3d69-d7b9-d74b-6ca796881c74",
+      "name": "polished_diorite_stairs",
+      "chance": 1.7,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "950c6bb0-eb0d-cb50-a579-f0916dd30ac4",
+      "name": "stone_slab3:2",
+      "chance": 1.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "a5a48e3f-4df6-5100-aa95-e81b3273ecd2",
+      "name": "flint",
+      "chance": 3.2,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "c290939b-a19f-c3c6-d310-b34fee81bd56",
+      "name": "reeds",
+      "chance": 0.5,
+      "min": 2,
+      "max": 4,
+      "uncertain": false
+    },
+    {
+      "id": "b99f2db1-bb67-0fca-6f3b-85cccda6bfe9",
+      "name": "pumpkin_seeds",
+      "chance": 2.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "135f3b43-2404-31ba-e51a-d8f14eb76d1e",
+      "name": "ice",
+      "chance": 2.3,
+      "min": 2,
+      "max": 3,
+      "uncertain": false
+    },
+    {
+      "id": "913156b3-c545-a8a1-8dec-0df0095af863",
+      "name": "bucket",
+      "chance": 1.1,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    },
+    {
+      "id": "332466c8-2358-4fca-b0b2-9949b63ca5fb",
+      "name": "stone_axe",
+      "chance": 2.6,
+      "min": 1,
+      "max": 1,
+      "uncertain": false
+    }
+  ]
+}

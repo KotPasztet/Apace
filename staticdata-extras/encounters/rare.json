@@ -1,0 +1,7 @@
+{
+  "icon": "genoa:adventure_generic_map",
+  "rarity": "RARE",
+  "duration": 600,
+  "adventureGroup": "rare",
+  "spawnWeight": 16
+}

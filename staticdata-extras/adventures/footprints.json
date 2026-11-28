@@ -1,0 +1,3788 @@
+{
+  "footprints": {
+    "01283e9d-628a-cf48-9248-1b71fcec4448": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "01283e9d-628a-cf48-9248-1b71fcec4448",
+      "name": "Spot's Mine",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "012e48ff-5834-dc3b-4e36-756c6dff03cd": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "012e48ff-5834-dc3b-4e36-756c6dff03cd",
+      "name": "Pull My Lever",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "030c9819-fe8d-5d22-af11-54cab8a243b5": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3e7c38f7-c68f-729f-a949-84abef6c1c46",
+      "name": "Open The Gates",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "03ad15b5-1342-53ae-b75f-125c41e4e28d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9b474f86-c8a8-08c4-833a-61aa9b842ace",
+      "name": "Lava Fall",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "05df796f-7fdb-3999-8dcd-b1206474aef3": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "05df796f-7fdb-3999-8dcd-b1206474aef3",
+      "name": "Home Demolition",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "0649bf77-6089-54b1-b0b3-b7ea722e1863": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1706dbb9-e34b-a338-1aca-4159821afa53",
+      "name": "Rabbit Infestation",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "06769f10-d7b9-8c68-707e-8428c51036e9": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "06769f10-d7b9-8c68-707e-8428c51036e9",
+      "name": "Undying Spider Temple",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "07391464-e061-28fb-1b36-8c7499141dfa": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "07391464-e061-28fb-1b36-8c7499141dfa",
+      "name": "Rail Puzzle",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "099308da-ec1d-6e4e-589b-a8b8fbf2c77d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "099308da-ec1d-6e4e-589b-a8b8fbf2c77d",
+      "name": "Flower Hill",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "0a82a6c8-6337-a5a6-8423-9a4faf108b23": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0a82a6c8-6337-a5a6-8423-9a4faf108b23",
+      "name": "Three Chickens House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "0af7534f-6ef3-6d87-e554-9aea36cfaa27": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0af7534f-6ef3-6d87-e554-9aea36cfaa27",
+      "name": "Night Light Ravine",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "0b141f08-cf2e-569a-aeed-f7787eeaef17": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9ff959d5-379f-cfe5-1250-9688e7a62d2e",
+      "name": "Bank Heist",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "0be235a0-dd6f-4669-5ac0-cc67531dd455": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0be235a0-dd6f-4669-5ac0-cc67531dd455",
+      "name": "Skeleton Falls",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "0c35c259-849b-93ad-1487-f902194fdada": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0c35c259-849b-93ad-1487-f902194fdada",
+      "name": "Lava Altar",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "0c665b73-c501-5101-1af3-dbf9eb35182f": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0c665b73-c501-5101-1af3-dbf9eb35182f",
+      "name": "Two Little Piggys",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "0e9742c4-be2b-4390-7854-c7c53a5c650c": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0e9742c4-be2b-4390-7854-c7c53a5c650c",
+      "name": "Chiseled Stone Falls",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "0eb00817-e313-59d4-a709-7019364dedf4": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "113140be-63d3-24a5-b559-486d138f1c2c",
+      "name": "TNT Blast Mining",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "10556f96-1c4d-aecc-6b07-c820eebd3a10": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "10556f96-1c4d-aecc-6b07-c820eebd3a10",
+      "name": "Temple of the Stripped Logs",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "10a44497-0a3f-0c1e-4855-2d2c9a3085d1": {
+      "x": 6,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "10a44497-0a3f-0c1e-4855-2d2c9a3085d1",
+      "name": "Dark Oak Hideout",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "10fbcfe9-fe70-5327-9245-211047ce9f9e": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "4844a1d3-0126-63e4-bfc8-fcf98105cc0d",
+      "name": "Puzzle Barn",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "113140be-63d3-24a5-b559-486d138f1c2c": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "113140be-63d3-24a5-b559-486d138f1c2c",
+      "name": "TNT Blast Mining",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "13c23253-df79-577e-94f0-c9f7ee08d159": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0c665b73-c501-5101-1af3-dbf9eb35182f",
+      "name": "Two Little Piggys",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "162ec0cd-7574-5ba2-bec4-b73221d03f7d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0be235a0-dd6f-4669-5ac0-cc67531dd455",
+      "name": "Skeleton Falls",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "1706dbb9-e34b-a338-1aca-4159821afa53": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1706dbb9-e34b-a338-1aca-4159821afa53",
+      "name": "Rabbit Infestation",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "173c7675-4f74-9e85-ef4b-6726feca55c2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "173c7675-4f74-9e85-ef4b-6726feca55c2",
+      "name": "Riverside 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "17d7420d-7b53-8c49-5dcf-b18c96bc6497": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "17d7420d-7b53-8c49-5dcf-b18c96bc6497",
+      "name": "Dark Oak Mansion",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "18353f53-f68b-22a2-70b9-e5dc796131f2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "18353f53-f68b-22a2-70b9-e5dc796131f2",
+      "name": "Stronghold",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "19464cda-0221-f1f5-2a32-5374615c4b18": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "19464cda-0221-f1f5-2a32-5374615c4b18",
+      "name": "Flower Garden",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "1a0a557e-c272-832a-a5a0-f2ccb77b1405": {
+      "x": 6,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1a0a557e-c272-832a-a5a0-f2ccb77b1405",
+      "name": "Bone Spider's Lair",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "1a55ec22-3a84-1f42-f6a0-28c9e7418a3e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1a55ec22-3a84-1f42-f6a0-28c9e7418a3e",
+      "name": "Cluckshoom Prison",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "1a5ab157-348b-54ad-9c5c-a04c30b9c897": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "2e2aa744-8d66-0f93-f230-9491c01f9943",
+      "name": "Twin Oaks",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "1b711658-28c4-5499-b615-0342a09e36c4": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6450fe47-38d5-0c8d-02d3-0d6e902c1139",
+      "name": "Skeleton Junction",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "1bb1f14a-29ab-5abb-8aad-6fe8b6af5a1a": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "4c26d4be-019e-cf3f-4513-f93c212ba5db",
+      "name": "Matching Wool",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "1cc905fd-b500-5790-85ce-9180410bf5c1": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b06cef02-6ddd-236c-9436-86f60008d365",
+      "name": "Wood Fort",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "1cf96e9c-54b9-8a5d-9736-2a8313367eb9": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1cf96e9c-54b9-8a5d-9736-2a8313367eb9",
+      "name": "Jumbo in the Desert",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "1e235b20-5030-9b5d-ba7d-773613b02f69": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1e235b20-5030-9b5d-ba7d-773613b02f69",
+      "name": "Muddy Pig Pen",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "1fcd81c1-879e-0eb8-3938-99a72a6a9580": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1fcd81c1-879e-0eb8-3938-99a72a6a9580",
+      "name": "Creeper's Tomb",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "2232185c-fcee-5b96-b396-6d808c4850e6": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "a21533cc-e15c-da14-952d-f263aee6694d",
+      "name": "The Dark Oak",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "2511b9a1-b67d-5d2a-be4f-3335cbdcddcd": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d0079af9-12cf-3147-fd6e-ccf6794efdb0",
+      "name": "Skeleton Ravine",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "2699c703-e75f-fe23-f087-de00cc19a36a": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "2699c703-e75f-fe23-f087-de00cc19a36a",
+      "name": "Spider Cave Nest",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "26e7f36d-9035-12f7-7b7c-0531ec3dfadc": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "26e7f36d-9035-12f7-7b7c-0531ec3dfadc",
+      "name": "Water Tank",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "272a7e7e-29d0-e9d2-4597-1fd318b0d208": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "272a7e7e-29d0-e9d2-4597-1fd318b0d208",
+      "name": "Cobweb Corner",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "2761bf10-f9cf-8527-4ed2-82ca41bebe5f": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "2761bf10-f9cf-8527-4ed2-82ca41bebe5f",
+      "name": "Cow's Flower Patch",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "27ce7cd5-2878-5c88-9442-434051769fa8": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "38ddfefd-81d3-dfde-7950-6bc20e9cb4db",
+      "name": "Melon Golem Igloo",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "281cf1c3-63db-54bf-9c96-8692b36ec4a5": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "06769f10-d7b9-8c68-707e-8428c51036e9",
+      "name": "Undying Spider Temple",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "28ddd4a9-f058-4dd5-c7c3-8eb0da5933fd": {
+      "x": 12,
+      "z": 12,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "28ddd4a9-f058-4dd5-c7c3-8eb0da5933fd",
+      "name": "Bunker Hill",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "290146e2-05d4-9027-bed4-19b7ba604d8e": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "290146e2-05d4-9027-bed4-19b7ba604d8e",
+      "name": "The Diamond Room",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "292a6098-2dc9-02bc-7781-67c661f744a4": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "292a6098-2dc9-02bc-7781-67c661f744a4",
+      "name": "The Spider Twins",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "299f2c37-ddb8-a165-1b62-42a2100ef3b9": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "299f2c37-ddb8-a165-1b62-42a2100ef3b9",
+      "name": "Three Birch",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "29f5a76b-350a-788a-dfda-4810382162b0": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "29f5a76b-350a-788a-dfda-4810382162b0",
+      "name": "Jungle Cave 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "2a5c1488-6d93-501e-8db2-71039a8f1def": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "17d7420d-7b53-8c49-5dcf-b18c96bc6497",
+      "name": "Dark Oak Mansion",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "2b73a89a-c89b-52e3-b216-4ffada7a7106": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "e885fc71-c17a-bc35-11fa-14aa5bae8560",
+      "name": "Farm Wall",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "2b8e3d20-0980-5b86-ad6a-4742609a9f9e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6246f773-ade1-e681-a7f5-138fbbc54c32",
+      "name": "Rabbit Trap",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "2e00bf16-e8ab-6fca-5d41-2cc9168140ed": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "2e00bf16-e8ab-6fca-5d41-2cc9168140ed",
+      "name": "Desert Well",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "2e2aa744-8d66-0f93-f230-9491c01f9943": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "2e2aa744-8d66-0f93-f230-9491c01f9943",
+      "name": "Twin Oaks",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "30954446-9983-614a-4021-efb33769f62b": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "30954446-9983-614a-4021-efb33769f62b",
+      "name": "The Blue Room",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3102e216-1f80-5f7a-a105-1a35e4cdbe71": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "272a7e7e-29d0-e9d2-4597-1fd318b0d208",
+      "name": "Cobweb Corner",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3344788b-f3c7-5235-4a6e-de02f5df6868": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3344788b-f3c7-5235-4a6e-de02f5df6868",
+      "name": "Jungle Pit",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "36bfb900-2ec5-7a0e-1b52-34d2ec0881b1": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "36bfb900-2ec5-7a0e-1b52-34d2ec0881b1",
+      "name": "Zombie's Mushrooms",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "36c1db42-8b32-51d2-e69d-2f5c3def7f04": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "36c1db42-8b32-51d2-e69d-2f5c3def7f04",
+      "name": "Lava Arena",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "374c1999-1b39-566b-9c90-53176548c98b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "4f39efa2-fbb1-b1c2-ad5c-12c7caf0f0a8",
+      "name": "The Jetty",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "378aed2e-f11d-5610-a66b-b872765dd76b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3b701b80-ada4-1a10-5656-2984829ce233",
+      "name": "Spider Infestation",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "38ddfefd-81d3-dfde-7950-6bc20e9cb4db": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "38ddfefd-81d3-dfde-7950-6bc20e9cb4db",
+      "name": "Melon Golem Igloo",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3b701b80-ada4-1a10-5656-2984829ce233": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3b701b80-ada4-1a10-5656-2984829ce233",
+      "name": "Spider Infestation",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3b7d5aa4-cc1a-5ca0-bb4b-3e31ca7c5fb6": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "82f2fb72-7194-c70a-a19a-f882c82282a6",
+      "name": "Bone Spider Mausoleum",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3c067578-df86-0341-6172-d3e645884ce8": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3c067578-df86-0341-6172-d3e645884ce8",
+      "name": "Buried Booty",
+      "status": "guess: the ring is not hollow, so its extent may not be the plate edge",
+      "ring": {
+        "x": 12,
+        "z": 19
+      }
+    },
+    "3cc57ec4-3d0d-6df9-ce54-630ebcb52079": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3cc57ec4-3d0d-6df9-ce54-630ebcb52079",
+      "name": "Moobloom's Treasure",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3ce1f88d-4c8a-5b97-b358-1450968f2556": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3344788b-f3c7-5235-4a6e-de02f5df6868",
+      "name": "Jungle Pit",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3d1c26f2-a1ba-5f73-a31b-4f42cc31ef02": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "cbf51ddc-b425-12b2-e158-4af5ef55773b",
+      "name": "Holiday House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3e6322c2-7299-da97-4f52-c73b05b66938": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3e6322c2-7299-da97-4f52-c73b05b66938",
+      "name": "Incomplete Circuitry",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3e7c38f7-c68f-729f-a949-84abef6c1c46": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3e7c38f7-c68f-729f-a949-84abef6c1c46",
+      "name": "Open The Gates",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "3e8c6ddf-6a4c-58e2-adb0-3cd8458b0264": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1fcd81c1-879e-0eb8-3938-99a72a6a9580",
+      "name": "Creeper's Tomb",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3f2dde7d-e218-43fb-3c6e-351109a32add": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3f2dde7d-e218-43fb-3c6e-351109a32add",
+      "name": "Pyromaniac",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3f818bbc-bdbd-c53c-8a3a-27744098b901": {
+      "x": 6,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3f818bbc-bdbd-c53c-8a3a-27744098b901",
+      "name": "Muddy Pig In The Well",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "3fd273f6-4dc6-512a-af98-a1b86bf75202": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0af7534f-6ef3-6d87-e554-9aea36cfaa27",
+      "name": "Night Light Ravine",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "412fdfe8-6f0c-95ae-5903-9a0401d813ef": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "412fdfe8-6f0c-95ae-5903-9a0401d813ef",
+      "name": "Polar Bear Puzzle",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "42ac62d6-d348-814d-515d-5f1d7188040e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "42ac62d6-d348-814d-515d-5f1d7188040e",
+      "name": "Two Cows",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "479728ab-f324-5efa-ae07-e9ca17d1956c": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "c940dc04-9986-1e43-1c05-bed4b87139fe",
+      "name": "Desert River",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "480c2730-a7c1-59a7-871c-30943410798a": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1a55ec22-3a84-1f42-f6a0-28c9e7418a3e",
+      "name": "Cluckshoom Prison",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "480d0115-48b4-70cf-cf29-7c314767fe0f": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "480d0115-48b4-70cf-cf29-7c314767fe0f",
+      "name": "Chicken River",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "4844a1d3-0126-63e4-bfc8-fcf98105cc0d": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "4844a1d3-0126-63e4-bfc8-fcf98105cc0d",
+      "name": "Puzzle Barn",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "48a99935-9659-5ea2-b945-11dd61ce317a": {
+      "x": 8,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "8c716bef-fb7d-3f42-b1eb-83a2f176595c",
+      "name": "It's a Trap!",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "495833c3-fbc7-59cb-81c0-4a6aa94c14c5": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "53a753e2-3aec-d579-5274-2dadebce57e8",
+      "name": "Ruin of Knowledge",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "4a5e7787-8105-55db-b30b-7451a44989da": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "edc99a3b-1c2f-9359-924e-e7c430553f36",
+      "name": "The Viaduct",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "4b7d3e76-917d-5c94-8b59-df5b52510f7d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0c35c259-849b-93ad-1487-f902194fdada",
+      "name": "Lava Altar",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "4c26d4be-019e-cf3f-4513-f93c212ba5db": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "4c26d4be-019e-cf3f-4513-f93c212ba5db",
+      "name": "Matching Wool",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "4c7b9289-c307-5157-ad06-67840fd84374": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "bc38698d-60f3-5a0b-979a-d51b4b323d23",
+      "name": "Rabbit Fence",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "4f39efa2-fbb1-b1c2-ad5c-12c7caf0f0a8": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "4f39efa2-fbb1-b1c2-ad5c-12c7caf0f0a8",
+      "name": "The Jetty",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5016a16c-7874-799a-b0ba-17cce98ae567": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5016a16c-7874-799a-b0ba-17cce98ae567",
+      "name": "Desert Village Ravine",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "53a753e2-3aec-d579-5274-2dadebce57e8": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "53a753e2-3aec-d579-5274-2dadebce57e8",
+      "name": "Ruin of Knowledge",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "5685c773-05ff-8b5d-06eb-3d79c04185c2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 1,
+        "z": 0
+      },
+      "world": "5685c773-05ff-8b5d-06eb-3d79c04185c2",
+      "name": "Sheep Farm",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5796a1ba-4a48-5241-9d36-ef149b1c491f": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "480d0115-48b4-70cf-cf29-7c314767fe0f",
+      "name": "Chicken River",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "57c32037-6190-528b-9fbe-26b05df5f46a": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ceb468f3-2dc8-ea71-561d-37f902447cd0",
+      "name": "Rabbit Fence 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "57f62712-3aee-52c5-bcd6-7dc122bae2d2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "7c492a0c-1c2c-a86d-5524-6b833b5c8b8a",
+      "name": "Oak Corner House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "58b482db-abd9-5b6d-a526-a19c5b21d647": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ab275d6d-b6cd-39f4-f586-c89bd1b9c666",
+      "name": "Zombie Explosives",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5926d21f-6746-437b-719b-1c1d515c435c": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5926d21f-6746-437b-719b-1c1d515c435c",
+      "name": "Snow Shelter",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5a3d44c6-0f74-be54-f3c4-9036930ab4f0": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5a3d44c6-0f74-be54-f3c4-9036930ab4f0",
+      "name": "Three Rabbit Junction",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5a9cf7fd-81aa-5c81-aeda-99d40ea9cd6b": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "4c26d4be-019e-cf3f-4513-f93c212ba5db",
+      "name": "Matching Wool",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "5b62c5fe-1844-8ac4-9149-96df32954f8a": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5b62c5fe-1844-8ac4-9149-96df32954f8a",
+      "name": "Muddy Romance",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5bde1857-63b7-194d-8381-7e2bd2a15542": {
+      "x": 14,
+      "z": 14,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5bde1857-63b7-194d-8381-7e2bd2a15542",
+      "name": "Aqua Library",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "5c143979-e869-0b77-793a-08608362b5a2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5c143979-e869-0b77-793a-08608362b5a2",
+      "name": "Combination Lock",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5c726d1f-a682-8395-cb18-71c64633602a": {
+      "x": 6,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5c726d1f-a682-8395-cb18-71c64633602a",
+      "name": "Jungle Parrot Ruin",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5d06a5ee-8e13-5e24-9e74-58e6da4e3103": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "26e7f36d-9035-12f7-7b7c-0531ec3dfadc",
+      "name": "Water Tank",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5e28d4d0-a269-5864-997b-ea12351b4537": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "c5f96740-4594-c1a0-b8fa-5bfceee3768d",
+      "name": "Oak Pig Pen",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "5e812224-682b-43f1-b1cd-fbda63b04f46": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5e812224-682b-43f1-b1cd-fbda63b04f46",
+      "name": "Lone Sheep",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "60d4b10c-6787-5fc4-83e4-e67803e522df": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5a3d44c6-0f74-be54-f3c4-9036930ab4f0",
+      "name": "Three Rabbit Junction",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "6246f773-ade1-e681-a7f5-138fbbc54c32": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6246f773-ade1-e681-a7f5-138fbbc54c32",
+      "name": "Rabbit Trap",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "62a0dfa2-96e9-5066-940b-0732ba97c45e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "752d0990-340d-a9a7-c08b-fb7da73dd4d0",
+      "name": "Lava Cave 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "62c73448-b008-c00b-0641-14da3b8fc9b7": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "62c73448-b008-c00b-0641-14da3b8fc9b7",
+      "name": "Tree Cow",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "638082e8-8b76-5948-a8c7-3dacbab6129d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6ade6be4-20bd-bdfc-66fb-b019454a9f17",
+      "name": "Little House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "63ff77bf-0500-2ec9-ed59-4a3f60effd0e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": -1,
+        "z": 0
+      },
+      "world": "63ff77bf-0500-2ec9-ed59-4a3f60effd0e",
+      "name": "Creeper Surprise",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "6450fe47-38d5-0c8d-02d3-0d6e902c1139": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6450fe47-38d5-0c8d-02d3-0d6e902c1139",
+      "name": "Skeleton Junction",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "64ee5ae9-5f4d-53a7-3a21-aa268c5f7622": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "64ee5ae9-5f4d-53a7-3a21-aa268c5f7622",
+      "name": "Sand Chamber Keep",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "676ecb2e-2e3b-532b-afcc-f4680022fe4c": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b8e4920f-8a9b-5701-b1ec-d2b5848853b6",
+      "name": "Creeper Caves",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "686e3d41-ab5f-909c-2259-36147d708ffa": {
+      "x": 8,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "686e3d41-ab5f-909c-2259-36147d708ffa",
+      "name": "Volcano",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "68a63b22-86ad-6e61-d04f-02f92e2d1def": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "68a63b22-86ad-6e61-d04f-02f92e2d1def",
+      "name": "Birch and Oak",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "6a2b29cb-8844-5cf8-8e56-fbae32d88849": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "be36e16d-610a-4d30-3f42-e2eaec949bb2",
+      "name": "Skeleton Bunker",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "6a35308b-0b7a-55aa-b2ee-0d783c7728fc": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0e9742c4-be2b-4390-7854-c7c53a5c650c",
+      "name": "Chiseled Stone Falls",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "6ade6be4-20bd-bdfc-66fb-b019454a9f17": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6ade6be4-20bd-bdfc-66fb-b019454a9f17",
+      "name": "Little House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "6c243e2b-ede5-d1b9-922a-5d0efb9e2f6b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6c243e2b-ede5-d1b9-922a-5d0efb9e2f6b",
+      "name": "Sheep",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "6d4300a8-c741-07b5-16f1-3f12187a2e8b": {
+      "x": 8,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6d4300a8-c741-07b5-16f1-3f12187a2e8b",
+      "name": "Ice Cave",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "6f33715f-9606-0ce4-9376-5767df600573": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6f33715f-9606-0ce4-9376-5767df600573",
+      "name": "Ancient Ruins",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "6f7a07b2-498c-6a33-4d0e-d760006f768c": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6f7a07b2-498c-6a33-4d0e-d760006f768c",
+      "name": "Tiny Sheep Farm",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "71664141-ff85-737b-5d32-478890b7e7a4": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "71664141-ff85-737b-5d32-478890b7e7a4",
+      "name": "Guy Fawkes 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "7187629b-2f05-69bc-c158-c69f1e7f3b04": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "7187629b-2f05-69bc-c158-c69f1e7f3b04",
+      "name": "Castle Siege",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "71e4e5a2-9e02-0efd-4a3b-505fa431f58e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "71e4e5a2-9e02-0efd-4a3b-505fa431f58e",
+      "name": "Staircase 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "72fd4a2c-4b0b-570a-91ee-841fc247201e": {
+      "x": 10,
+      "z": 10,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "743031c5-b754-42cd-98ad-dd7c7ebac768",
+      "name": "Frozen Library Tower",
+      "ring": {
+        "x": 18,
+        "z": 18
+      }
+    },
+    "743031c5-b754-42cd-98ad-dd7c7ebac768": {
+      "x": 10,
+      "z": 10,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "743031c5-b754-42cd-98ad-dd7c7ebac768",
+      "name": "Frozen Library Tower",
+      "ring": {
+        "x": 18,
+        "z": 18
+      }
+    },
+    "74fcf21a-07f7-5dd4-ba4f-d8f800378cd4": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "2e00bf16-e8ab-6fca-5d41-2cc9168140ed",
+      "name": "Desert Well",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "752d0990-340d-a9a7-c08b-fb7da73dd4d0": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "752d0990-340d-a9a7-c08b-fb7da73dd4d0",
+      "name": "Lava Cave 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "759cc8a1-423d-5887-8e70-e552febe30ea": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b1b4c9e4-f9c0-cb61-6bee-725edf867e00",
+      "name": "Spider's Hoard",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "7648d6b9-b52f-5767-8cda-ecd8ae33d531": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "68a63b22-86ad-6e61-d04f-02f92e2d1def",
+      "name": "Birch and Oak",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "77269cca-5364-57a5-801b-616740f75835": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b15001bd-0167-11ef-7c2f-12f4b06d5240",
+      "name": "Spider Ambush",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "784f80b1-7959-eaa6-e5d6-40352daf83bb": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "784f80b1-7959-eaa6-e5d6-40352daf83bb",
+      "name": "Farm House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "78d3054a-7b64-5804-b98d-b1c24b295f1b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "94cdb990-5fc7-4835-d364-c6b1246d5372",
+      "name": "Fish Pond",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "798e8078-0afb-07eb-56af-3e3b91b234f4": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "798e8078-0afb-07eb-56af-3e3b91b234f4",
+      "name": "Stone Pit",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "7ad5722f-93b3-5a13-8c75-57080215deea": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5e812224-682b-43f1-b1cd-fbda63b04f46",
+      "name": "Lone Sheep",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "7c492a0c-1c2c-a86d-5524-6b833b5c8b8a": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "7c492a0c-1c2c-a86d-5524-6b833b5c8b8a",
+      "name": "Oak Corner House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "7d47506b-3fb9-79b9-8e09-c3ee5df0144d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "7d47506b-3fb9-79b9-8e09-c3ee5df0144d",
+      "name": "Monster Under The Bed",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "815fa601-b54f-be8a-66c6-ddbbafc3231e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "815fa601-b54f-be8a-66c6-ddbbafc3231e",
+      "name": "Ice Tower",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "82f2fb72-7194-c70a-a19a-f882c82282a6": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "82f2fb72-7194-c70a-a19a-f882c82282a6",
+      "name": "Bone Spider Mausoleum",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "84909a12-e062-3966-2ac5-c461ee82f90d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "84909a12-e062-3966-2ac5-c461ee82f90d",
+      "name": "Lava Lamp",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "85c43deb-9b45-6dd3-2cae-0a247cc670f9": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "85c43deb-9b45-6dd3-2cae-0a247cc670f9",
+      "name": "Skeleton Stash",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "8b233199-ba3f-59be-953a-39839a74081b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "05df796f-7fdb-3999-8dcd-b1206474aef3",
+      "name": "Home Demolition",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "8c716bef-fb7d-3f42-b1eb-83a2f176595c": {
+      "x": 8,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "8c716bef-fb7d-3f42-b1eb-83a2f176595c",
+      "name": "It's a Trap!",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "8c89a215-9e01-5224-accc-7a685417e4ae": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "292a6098-2dc9-02bc-7781-67c661f744a4",
+      "name": "The Spider Twins",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9146a4f2-b158-8ae5-befd-80c395bf10be": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9146a4f2-b158-8ae5-befd-80c395bf10be",
+      "name": "Tree Spiders",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "92841cff-9fea-5bd3-b7e7-b7f0ced9acf8": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "07391464-e061-28fb-1b36-8c7499141dfa",
+      "name": "Rail Puzzle",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9350764e-b5a2-53f1-98c5-d092a8b1318c": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "012e48ff-5834-dc3b-4e36-756c6dff03cd",
+      "name": "Pull My Lever",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "94cdb990-5fc7-4835-d364-c6b1246d5372": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "94cdb990-5fc7-4835-d364-c6b1246d5372",
+      "name": "Fish Pond",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "95904502-656b-d1f4-624f-16dbe8fafa7d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": -3
+      },
+      "world": "95904502-656b-d1f4-624f-16dbe8fafa7d",
+      "name": "Bird Enclosure",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "95e71e5e-876d-5739-adfb-9e1cb42ffee4": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5b62c5fe-1844-8ac4-9149-96df32954f8a",
+      "name": "Muddy Romance",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "96c3c4b2-6b1f-9214-7eea-85007d33fea0": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "96c3c4b2-6b1f-9214-7eea-85007d33fea0",
+      "name": "Three Rabbits",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9734daa0-ebb3-5766-873a-48ad04e76b95": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d2c6e13d-562d-cec7-526b-bce8d2b2ebff",
+      "name": "Jungle Sinkhole",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "98ec3249-8c2c-5b05-9342-0fbf6d1dfe6c": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "fa1d6a36-d0ae-ce4d-db35-3e05f166303c",
+      "name": "Path to Nowhere",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9b34705d-fb75-3a29-f3f6-b13bf961b1fd": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9b34705d-fb75-3a29-f3f6-b13bf961b1fd",
+      "name": "Roof Sheep",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9b474f86-c8a8-08c4-833a-61aa9b842ace": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9b474f86-c8a8-08c4-833a-61aa9b842ace",
+      "name": "Lava Fall",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9dd25fb5-5fc7-56ce-8b24-54927d0a76d9": {
+      "x": 6,
+      "z": 4,
+      "offset": {
+        "x": -1,
+        "z": 0
+      },
+      "world": "c80f31c7-476f-3ae0-1108-f550f1f67239",
+      "name": "Save Cluck 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9df0ef5e-f95d-74a0-70ed-5610b174fcb9": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9df0ef5e-f95d-74a0-70ed-5610b174fcb9",
+      "name": "Spider Tower",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "9e5d155b-f8c5-567e-b820-ee8cb76d0135": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "173c7675-4f74-9e85-ef4b-6726feca55c2",
+      "name": "Riverside 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9f8c41d7-2e18-5ef5-9bb5-b6da5f74568e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ed92d60c-93e9-401c-e7a1-5b7fd00e68e5",
+      "name": "Lava Ritual",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "9ff959d5-379f-cfe5-1250-9688e7a62d2e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9ff959d5-379f-cfe5-1250-9688e7a62d2e",
+      "name": "Bank Heist",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "a1cc71a6-7eae-5182-a02b-09708ec94ee4": {
+      "x": 6,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3f818bbc-bdbd-c53c-8a3a-27744098b901",
+      "name": "Muddy Pig In The Well",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "a21533cc-e15c-da14-952d-f263aee6694d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "a21533cc-e15c-da14-952d-f263aee6694d",
+      "name": "The Dark Oak",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "a4b111b4-d69a-5e02-b825-50cef813a3e0": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b1f9fc6c-dc17-c638-34e7-27833b93750b",
+      "name": "Zombie Onslaught",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "a4b743b7-6721-5ef3-849a-d4aa245b6a5d": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "290146e2-05d4-9027-bed4-19b7ba604d8e",
+      "name": "The Diamond Room",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "a617bc54-f4f9-5b39-ad22-026eb0abaaf1": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": -3
+      },
+      "world": "95904502-656b-d1f4-624f-16dbe8fafa7d",
+      "name": "Bird Enclosure",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "a6b4d49a-5101-5648-9830-574ece40b523": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "71664141-ff85-737b-5d32-478890b7e7a4",
+      "name": "Guy Fawkes 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "a8a8e1f9-762e-5f1a-95cc-c7a7d43d24a8": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5016a16c-7874-799a-b0ba-17cce98ae567",
+      "name": "Desert Village Ravine",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "aa2981c3-00e4-5d3c-a0f1-6d2c27a22dcc": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "18353f53-f68b-22a2-70b9-e5dc796131f2",
+      "name": "Stronghold",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "aae06fbd-af63-e25f-4665-f8e8cce649e6": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "aae06fbd-af63-e25f-4665-f8e8cce649e6",
+      "name": "Icy Lair",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "aaff3a6d-7706-33ef-50eb-5fb259826f0e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "aaff3a6d-7706-33ef-50eb-5fb259826f0e",
+      "name": "Gold Mine",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ab09e590-d2a2-587e-9249-9dc724e14fdc": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1e235b20-5030-9b5d-ba7d-773613b02f69",
+      "name": "Muddy Pig Pen",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "ab275d6d-b6cd-39f4-f586-c89bd1b9c666": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ab275d6d-b6cd-39f4-f586-c89bd1b9c666",
+      "name": "Zombie Explosives",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ac772cd2-68f6-88b4-3957-548c2499a95b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": -1,
+        "z": 0
+      },
+      "world": "ac772cd2-68f6-88b4-3957-548c2499a95b",
+      "name": "The Arena",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ae165f35-fa96-02cd-739f-8e84bb927a23": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": -1,
+        "z": 0
+      },
+      "world": "ae165f35-fa96-02cd-739f-8e84bb927a23",
+      "name": "Pillar of Gold",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "aecc1e72-8a4c-8eb8-c2c3-bfa088bd2bc1": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "aecc1e72-8a4c-8eb8-c2c3-bfa088bd2bc1",
+      "name": "Jungle Gateway",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "b06cef02-6ddd-236c-9436-86f60008d365": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b06cef02-6ddd-236c-9436-86f60008d365",
+      "name": "Wood Fort",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "b13568bf-3aeb-5dcd-8aa9-9e1fc37f9902": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f6bf3869-7d1f-3195-21d3-8a693886f926",
+      "name": "Tiny Spring",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "b15001bd-0167-11ef-7c2f-12f4b06d5240": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b15001bd-0167-11ef-7c2f-12f4b06d5240",
+      "name": "Spider Ambush",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "b1b4c9e4-f9c0-cb61-6bee-725edf867e00": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b1b4c9e4-f9c0-cb61-6bee-725edf867e00",
+      "name": "Spider's Hoard",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "b1f9fc6c-dc17-c638-34e7-27833b93750b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b1f9fc6c-dc17-c638-34e7-27833b93750b",
+      "name": "Zombie Onslaught",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "b521ac67-0f65-5c60-a978-2022bbd29dbc": {
+      "x": 8,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "686e3d41-ab5f-909c-2259-36147d708ffa",
+      "name": "Volcano",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "b576481a-632d-50ad-b485-a30afd12ff2b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 1,
+        "z": 0
+      },
+      "world": "e8ebe84a-9fc0-a12b-a6e2-99d632a397e1",
+      "name": "Pig & Zombies",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "b7accd90-625c-5195-8610-ad8743daf4a5": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9df0ef5e-f95d-74a0-70ed-5610b174fcb9",
+      "name": "Spider Tower",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "b8e4920f-8a9b-5701-b1ec-d2b5848853b6": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b8e4920f-8a9b-5701-b1ec-d2b5848853b6",
+      "name": "Creeper Caves",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "b941303a-c5da-109a-0b4e-f857ba4b5734": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "b941303a-c5da-109a-0b4e-f857ba4b5734",
+      "name": "Rose & Chicken",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ba4589dd-c277-e9d4-fc4e-49edc97096d8": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ba4589dd-c277-e9d4-fc4e-49edc97096d8",
+      "name": "Zombie Bunker",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "bc38698d-60f3-5a0b-979a-d51b4b323d23": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "bc38698d-60f3-5a0b-979a-d51b4b323d23",
+      "name": "Rabbit Fence",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "bc94fed6-3d8a-561c-a6b2-8eb8fe9406c3": {
+      "x": 10,
+      "z": 10,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f8884e2c-03ab-a7d4-ceab-acb48773adbd",
+      "name": "Dimension Portal",
+      "ring": {
+        "x": 17,
+        "z": 17
+      }
+    },
+    "bcc0374c-65dd-0690-aa19-60c095b5bcf2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "bcc0374c-65dd-0690-aa19-60c095b5bcf2",
+      "name": "Big Tree 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "bd105976-a54f-5f21-bb48-7e6ce661668b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "db441a7b-2739-2afa-9372-5a61dff3653d",
+      "name": "Zombie Cave",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "bd42ac28-277d-8c39-93af-8a294b6cd31d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "bd42ac28-277d-8c39-93af-8a294b6cd31d",
+      "name": "Sheering Horned Sheep",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "be36e16d-610a-4d30-3f42-e2eaec949bb2": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "be36e16d-610a-4d30-3f42-e2eaec949bb2",
+      "name": "Skeleton Bunker",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "bf77fb27-8948-5780-a852-f636c2b7cac9": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "71e4e5a2-9e02-0efd-4a3b-505fa431f58e",
+      "name": "Staircase 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "c0d8378b-057d-55d5-b8a6-4e617171d6d2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "62c73448-b008-c00b-0641-14da3b8fc9b7",
+      "name": "Tree Cow",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "c5ae49cd-3877-52a0-b7f3-6de05b5c1607": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "784f80b1-7959-eaa6-e5d6-40352daf83bb",
+      "name": "Farm House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "c5f96740-4594-c1a0-b8fa-5bfceee3768d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "c5f96740-4594-c1a0-b8fa-5bfceee3768d",
+      "name": "Oak Pig Pen",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "c6858ad9-814d-51f0-bca9-4216c41acc49": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "bcc0374c-65dd-0690-aa19-60c095b5bcf2",
+      "name": "Big Tree 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "c6e805d7-3b08-5332-9be7-f2275d07a518": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "c820af70-d509-d9bf-707d-beebd318199f",
+      "name": "Lava Cave",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "c80f31c7-476f-3ae0-1108-f550f1f67239": {
+      "x": 6,
+      "z": 4,
+      "offset": {
+        "x": -1,
+        "z": 0
+      },
+      "world": "c80f31c7-476f-3ae0-1108-f550f1f67239",
+      "name": "Save Cluck 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "c820af70-d509-d9bf-707d-beebd318199f": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "c820af70-d509-d9bf-707d-beebd318199f",
+      "name": "Lava Cave",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "c940dc04-9986-1e43-1c05-bed4b87139fe": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "c940dc04-9986-1e43-1c05-bed4b87139fe",
+      "name": "Desert River",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "c9a5a6a2-596f-553d-9928-25a792afd0a2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "36c1db42-8b32-51d2-e69d-2f5c3def7f04",
+      "name": "Lava Arena",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ca33c18d-4d4b-52c5-9d3f-a5a07a8b706b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d30a10ea-fc1b-523a-fc86-7a438db1dd14",
+      "name": "Sunken Birch",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "cb9dff41-2991-5850-8429-ccfd47a2c22c": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "798e8078-0afb-07eb-56af-3e3b91b234f4",
+      "name": "Stone Pit",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "cbf51ddc-b425-12b2-e158-4af5ef55773b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "cbf51ddc-b425-12b2-e158-4af5ef55773b",
+      "name": "Holiday House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "cdbf971f-cd18-53d6-b6a9-68ed42dfbe89": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "db0e3c77-a20a-a317-9ebc-1737abf7689b",
+      "name": "Oasis Waterfall",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ceb468f3-2dc8-ea71-561d-37f902447cd0": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ceb468f3-2dc8-ea71-561d-37f902447cd0",
+      "name": "Rabbit Fence 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "cecc7810-e8f6-5626-bb62-81476f00bef5": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "7187629b-2f05-69bc-c158-c69f1e7f3b04",
+      "name": "Castle Siege",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "cf7bc044-7f81-91fb-ecf3-e95049ef4d0b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "cf7bc044-7f81-91fb-ecf3-e95049ef4d0b",
+      "name": "Look Up",
+      "ring": {
+        "x": 10,
+        "z": 10
+      }
+    },
+    "cfe84888-3507-90fc-ac58-21defeec36d2": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "cfe84888-3507-90fc-ac58-21defeec36d2",
+      "name": "Polar Bear Buttons",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "d0079af9-12cf-3147-fd6e-ccf6794efdb0": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d0079af9-12cf-3147-fd6e-ccf6794efdb0",
+      "name": "Skeleton Ravine",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "d121437f-d41a-2669-a616-7067333f5b0f": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d121437f-d41a-2669-a616-7067333f5b0f",
+      "name": "Sandstone Spiral",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "d271d675-59bf-5645-87a1-11872f9085ba": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "da733831-b15c-739b-8cb6-20645ddd46a8",
+      "name": "Moobloom's Flat",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "d2c6e13d-562d-cec7-526b-bce8d2b2ebff": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d2c6e13d-562d-cec7-526b-bce8d2b2ebff",
+      "name": "Jungle Sinkhole",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "d30a10ea-fc1b-523a-fc86-7a438db1dd14": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d30a10ea-fc1b-523a-fc86-7a438db1dd14",
+      "name": "Sunken Birch",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "d313b7d1-d1ac-5caf-b599-aee4d938d30f": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "84909a12-e062-3966-2ac5-c461ee82f90d",
+      "name": "Lava Lamp",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "d6a2b30f-9ffc-5b4d-a080-398b171f881f": {
+      "x": 6,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "10a44497-0a3f-0c1e-4855-2d2c9a3085d1",
+      "name": "Dark Oak Hideout",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "d701128b-6727-5840-87f2-3b15232da0b4": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "df4e9e97-fd5c-aed9-0ac6-103d421e4da4",
+      "name": "Bone Spider Bedroom",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "d91d463f-3a2e-8944-8414-1ec56db85056": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d91d463f-3a2e-8944-8414-1ec56db85056",
+      "name": "Jungle Cave",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "da6fe210-02ee-51de-8efe-f2a94cef093d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "01283e9d-628a-cf48-9248-1b71fcec4448",
+      "name": "Spot's Mine",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "da733831-b15c-739b-8cb6-20645ddd46a8": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "da733831-b15c-739b-8cb6-20645ddd46a8",
+      "name": "Moobloom's Flat",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "dafad154-65a5-0596-d8db-64ed1647e21e": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "dafad154-65a5-0596-d8db-64ed1647e21e",
+      "name": "Yin Yang",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "db0e3c77-a20a-a317-9ebc-1737abf7689b": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "db0e3c77-a20a-a317-9ebc-1737abf7689b",
+      "name": "Oasis Waterfall",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "db441a7b-2739-2afa-9372-5a61dff3653d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "db441a7b-2739-2afa-9372-5a61dff3653d",
+      "name": "Zombie Cave",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "db753ff3-801d-5a5b-b416-7bedc5547ad6": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6f7a07b2-498c-6a33-4d0e-d760006f768c",
+      "name": "Tiny Sheep Farm",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "dbcbf785-6bc9-53f9-9bae-a6c4d439fa99": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f4951605-13d2-c1a6-0936-ee2e9913cc36",
+      "name": "Zombie Canyon",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "dbe87cc2-f482-5c02-b418-f1588d3cd242": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "cf7bc044-7f81-91fb-ecf3-e95049ef4d0b",
+      "name": "Look Up",
+      "ring": {
+        "x": 10,
+        "z": 10
+      }
+    },
+    "de82e5da-108a-54ce-8d29-2ff6fad613a2": {
+      "x": 8,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "6d4300a8-c741-07b5-16f1-3f12187a2e8b",
+      "name": "Ice Cave",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "df4e9e97-fd5c-aed9-0ac6-103d421e4da4": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "df4e9e97-fd5c-aed9-0ac6-103d421e4da4",
+      "name": "Bone Spider Bedroom",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "e0cc40c9-16ea-5108-8e84-e21c818ba816": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3c067578-df86-0341-6172-d3e645884ce8",
+      "name": "Buried Booty",
+      "status": "guess: the ring is not hollow, so its extent may not be the plate edge",
+      "ring": {
+        "x": 12,
+        "z": 19
+      }
+    },
+    "e2aa1c74-7548-b640-bd4d-46573b1264a4": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "e2aa1c74-7548-b640-bd4d-46573b1264a4",
+      "name": "Looking Glass",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e3ae7dbd-0d7d-5877-94e0-e29602f653d1": {
+      "x": 10,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ffc3d962-e79c-1e7c-64d0-2534555514d4",
+      "name": "Squid Tank",
+      "status": "guess: the ring is not hollow, so its extent may not be the plate edge",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "e3f09fcc-107e-5aa4-8867-68ae53a9a303": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3e6322c2-7299-da97-4f52-c73b05b66938",
+      "name": "Incomplete Circuitry",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e443ad7a-1a38-53ca-92d7-d3fecd4890e6": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 1,
+        "z": 0
+      },
+      "world": "5685c773-05ff-8b5d-06eb-3d79c04185c2",
+      "name": "Sheep Farm",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e53622a6-8631-541d-b1f1-ff5b94965e5d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "3f2dde7d-e218-43fb-3c6e-351109a32add",
+      "name": "Pyromaniac",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e56b059c-bee6-5d5c-8bc6-927e12df35d7": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "29f5a76b-350a-788a-dfda-4810382162b0",
+      "name": "Jungle Cave 2",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e5ab175a-624f-5c84-a623-07a28bfc2ff1": {
+      "x": 6,
+      "z": 6,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5c726d1f-a682-8395-cb18-71c64633602a",
+      "name": "Jungle Parrot Ruin",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e6d48d36-175c-53a1-a40f-4c6d335fd8bb": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "9b34705d-fb75-3a29-f3f6-b13bf961b1fd",
+      "name": "Roof Sheep",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e885fc71-c17a-bc35-11fa-14aa5bae8560": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "e885fc71-c17a-bc35-11fa-14aa5bae8560",
+      "name": "Farm Wall",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e8d18ba3-fdd5-5d61-8436-122e9e3c76eb": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "0a82a6c8-6337-a5a6-8423-9a4faf108b23",
+      "name": "Three Chickens House",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e8ebe84a-9fc0-a12b-a6e2-99d632a397e1": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 1,
+        "z": 0
+      },
+      "world": "e8ebe84a-9fc0-a12b-a6e2-99d632a397e1",
+      "name": "Pig & Zombies",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "e9cf5e30-bd47-3f93-a5b1-7866eab1c083": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "e9cf5e30-bd47-3f93-a5b1-7866eab1c083",
+      "name": "Birch Pig",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ebcd991c-aab5-d99d-de49-57e096c95338": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ebcd991c-aab5-d99d-de49-57e096c95338",
+      "name": "Chicken's Bedroom",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ed92d60c-93e9-401c-e7a1-5b7fd00e68e5": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ed92d60c-93e9-401c-e7a1-5b7fd00e68e5",
+      "name": "Lava Ritual",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "edc99a3b-1c2f-9359-924e-e7c430553f36": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "edc99a3b-1c2f-9359-924e-e7c430553f36",
+      "name": "The Viaduct",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "efc49349-7857-098a-d9dd-9d30fb60df61": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "efc49349-7857-098a-d9dd-9d30fb60df61",
+      "name": "Sand Drop",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "f069df73-061b-6962-b46d-52f0356d611d": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f069df73-061b-6962-b46d-52f0356d611d",
+      "name": "Hidden Oak",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f14d712d-2f9f-560e-9483-0af3c87467a1": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d121437f-d41a-2669-a616-7067333f5b0f",
+      "name": "Sandstone Spiral",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "f1d6f210-7273-f243-8567-364f15421940": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f1d6f210-7273-f243-8567-364f15421940",
+      "name": "Lever Puzzle",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f24caa77-0a23-922b-b171-21931d572dba": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f24caa77-0a23-922b-b171-21931d572dba",
+      "name": "Note Block House",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "f3d076cf-635c-5334-86eb-3a8101278dc9": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "85c43deb-9b45-6dd3-2cae-0a247cc670f9",
+      "name": "Skeleton Stash",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f456b1e1-072e-c35a-ed9d-a798451e31c1": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f456b1e1-072e-c35a-ed9d-a798451e31c1",
+      "name": "Cursed Arena",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f4818da5-e407-6a2c-3ca0-ff1e36f255fe": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f4818da5-e407-6a2c-3ca0-ff1e36f255fe",
+      "name": "Jungle Hideout",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f4951605-13d2-c1a6-0936-ee2e9913cc36": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f4951605-13d2-c1a6-0936-ee2e9913cc36",
+      "name": "Zombie Canyon",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "f55e7398-7dd6-5481-4416-0f8779206fe7": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f55e7398-7dd6-5481-4416-0f8779206fe7",
+      "name": "Snow Pit",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "f61ea38f-5445-1ed4-431e-a639a5ba64d4": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f61ea38f-5445-1ed4-431e-a639a5ba64d4",
+      "name": "Iron Mine",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f6bf3869-7d1f-3195-21d3-8a693886f926": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f6bf3869-7d1f-3195-21d3-8a693886f926",
+      "name": "Tiny Spring",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f6c63002-a922-5810-95b9-0b82573c3c1f": {
+      "x": 6,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "1a0a557e-c272-832a-a5a0-f2ccb77b1405",
+      "name": "Bone Spider's Lair",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f6d71ada-2d78-6e5d-327b-98655d69b068": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f6d71ada-2d78-6e5d-327b-98655d69b068",
+      "name": "Moobloom's Oak",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f6f7c563-3ad2-517e-b2a7-63ab710b9974": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": -1,
+        "z": 0
+      },
+      "world": "63ff77bf-0500-2ec9-ed59-4a3f60effd0e",
+      "name": "Creeper Surprise",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "f8884e2c-03ab-a7d4-ceab-acb48773adbd": {
+      "x": 10,
+      "z": 10,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "f8884e2c-03ab-a7d4-ceab-acb48773adbd",
+      "name": "Dimension Portal",
+      "ring": {
+        "x": 17,
+        "z": 17
+      }
+    },
+    "fa11c983-f187-52c3-8d4f-ee8c037b87cc": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "7d47506b-3fb9-79b9-8e09-c3ee5df0144d",
+      "name": "Monster Under The Bed",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "fa1d6a36-d0ae-ce4d-db35-3e05f166303c": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "fa1d6a36-d0ae-ce4d-db35-3e05f166303c",
+      "name": "Path to Nowhere",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "fbc8064e-fda6-5625-8cc8-cbeb3303c5c6": {
+      "x": 8,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "aecc1e72-8a4c-8eb8-c2c3-bfa088bd2bc1",
+      "name": "Jungle Gateway",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "fd8487d9-da64-57fd-891c-fc9880ed32f0": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "19464cda-0221-f1f5-2a32-5374615c4b18",
+      "name": "Flower Garden",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ff1200a8-2f3c-5d79-a922-e7c26a4e16d8": {
+      "x": 14,
+      "z": 14,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "5bde1857-63b7-194d-8381-7e2bd2a15542",
+      "name": "Aqua Library",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    },
+    "ffb7a564-5d72-56b4-a4aa-36d205866cad": {
+      "x": 4,
+      "z": 4,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "d91d463f-3a2e-8944-8414-1ec56db85056",
+      "name": "Jungle Cave",
+      "ring": {
+        "x": 12,
+        "z": 12
+      }
+    },
+    "ffc3d962-e79c-1e7c-64d0-2534555514d4": {
+      "x": 10,
+      "z": 8,
+      "offset": {
+        "x": 0,
+        "z": 0
+      },
+      "world": "ffc3d962-e79c-1e7c-64d0-2534555514d4",
+      "name": "Squid Tank",
+      "status": "guess: the ring is not hollow, so its extent may not be the plate edge",
+      "ring": {
+        "x": 16,
+        "z": 16
+      }
+    }
+  }
+}
